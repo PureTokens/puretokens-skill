@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "name": "puretokens_media",
+  "version": "0.1.0",
+  "entry": "SKILL.md",
+  "displayName": "Pure Tokens Media",
+  "description": "Resolve a user-selected image or video model through the active Pure Tokens MCP catalog, then submit and poll exactly one media task.",
+  "mcp": {
+    "server": "puretokens-image",
+    "tools": [
+      "puretokens_list_media_models",
+      "puretokens_generate_image",
+      "puretokens_image_result",
+      "puretokens_generate_video",
+      "puretokens_video_result"
+    ]
+  },
+  "supportedClients": [
+    "claude-code",
+    "claude-desktop",
+    "codex",
+    "workbuddy",
+    "gemini-cli",
+    "grok-build",
+    "opencode"
+  ],
+  "excludedClients": [
+    "trae"
+  ],
+  "rules": {
+    "requiresExactModelId": true,
+    "naturalLanguageResolutionBelongsToSkill": true,
+    "neverGuessModelOrProtocol": true,
+    "neverResubmitPendingTask": true
+  }
+}

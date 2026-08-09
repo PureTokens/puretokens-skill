@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "skills": [
+    {
+      "name": "puretokens_media",
+      "version": "0.1.0",
+      "entry": "skills/puretokens_media/SKILL.md",
+      "manifest": "skills/puretokens_media/skill.json",
+      "summary": "Select and invoke Pure Tokens image and video MCP tools safely."
+    }
+  ]
+}

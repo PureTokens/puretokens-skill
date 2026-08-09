@@ -1,0 +1,28 @@
+{
+  "name": "puretokens-skill",
+  "version": "0.1.0",
+  "description": "Private, installable Pure Tokens skills and skill management tooling.",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "puretokens-skill": "./bin/puretokens-skill.js"
+  },
+  "files": [
+    "bin/",
+    "schemas/",
+    "scripts/",
+    "skills/",
+    "README.md",
+    "README.en.md",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "list": "node bin/puretokens-skill.js list",
+    "validate": "node scripts/validate-skills.mjs",
+    "test": "node --test",
+    "check": "npm run validate && npm test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
