@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "normalization": "Ignore case, spaces, hyphens, underscores, and periods. Match complete registered phrases only; do not use fuzzy or substring matching.",
+  "aliases": [
+    {
+      "phrases": ["image2", "image 2", "gpt image 2", "openai image 2"],
+      "capability": "image",
+      "modelIds": ["gpt-image-2"]
+    },
+    {
+      "phrases": ["gemini pro image", "gemini 3 pro image"],
+      "capability": "image",
+      "modelIds": ["gemini-3.0-pro-image"]
+    },
+    {
+      "phrases": ["gemini flash lite image", "gemini 3.1 flash lite image"],
+      "capability": "image",
+      "modelIds": ["gemini-3.1-flash-lite-image"]
+    },
+    {
+      "phrases": ["grok image", "grok imagine"],
+      "capability": "image",
+      "modelIds": ["grok-imagine-1.0", "grok-imagine-image", "grok-imagine-image-quality"]
+    },
+    {
+      "phrases": ["grok quality image", "grok high quality image"],
+      "capability": "image",
+      "modelIds": ["grok-imagine-image-quality"]
+    },
+    {
+      "phrases": ["wan image", "wan 2.7 image"],
+      "capability": "image",
+      "modelIds": ["wan2.7-image"]
+    },
+    {
+      "phrases": ["grok video", "grok imagine video"],
+      "capability": "video",
+      "modelIds": ["grok-imagine-video", "grok-imagine-video-1.5"]
+    },
+    {
+      "phrases": ["grok 1.5 video", "grok video 1.5", "grok imagine video 1.5"],
+      "capability": "video",
+      "modelIds": ["grok-imagine-video-1.5"]
+    }
+  ]
+}

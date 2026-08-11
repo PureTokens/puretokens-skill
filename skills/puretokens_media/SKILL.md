@@ -14,7 +14,7 @@ MCP 是严格的执行层，不负责自然语言识别、供应商推断或模�
 你不负责：
 
 - 修改客户端配置、分组或 Router；
-- 根据模型名称猜测供应商、协议或能力；
+- 根据未登记的模型名称猜测供应商、协议或能力；
 - 在用户未指定且目录存在多个候选时私自选模型；
 - 在任务失败、超时或返回 `safeToResubmit=false` 后自动换模型或重新提交；
 - 暴露、请求或记录任何凭据、Cookie、密码、Router Token 或本地授权地址。
@@ -53,17 +53,30 @@ puretokens_list_media_models
 
 ### 2. 解析用户指定的模型
 
+本 Skill 负责自然语言理解。用户不必记住完整模型 ID；例如“用 image2 生图”应先被识别为本 Skill 的已登记自然语言别名，再在当前目录中确认是否真的存在 `gpt-image-2`。
+
+已登记别名位于：
+
+```text
+skills/puretokens_media/references/natural-language-aliases.json
+```
+
+别名表是 Skill 的受控产品能力，不是模型猜测。它只把一个完整自然语言短语映射到一个或多个明确的候选 `modelIds` 和所需能力；实际选择仍必须由本次目录返回的精确 ID 和能力确认。
+
 匹配优先级：
 
 1. 用户提供的精确 `id`；
 2. 目录返回的精确 `displayName`；
 3. 目录返回的精确 `aliases`；
-4. 用户只指定供应商或媒体类型时，只有该条件下**唯一**候选才可继续；
-5. 否则列出候选的精确 `id`、能力以及目录提供的显示信息，并要求用户明确选择。
+4. Skill 的已登记自然语言别名：读取别名表，找到完整匹配的短语后，只保留目录中同时满足精确 `modelIds` 与所需 `capabilities` 的候选；
+5. 用户只指定供应商或媒体类型时，只有该条件下**唯一**候选才可继续；
+6. 否则列出候选的精确 `id`、能力以及目录提供的显示信息，并要求用户明确选择。
 
-匹配时只可忽略大小写、空格、连字符、下划线和句点的排版差异。不得做子串模糊匹配、拼音猜测、名称推断、协议推断或跨供应商兜底。
+匹配时只可忽略大小写、空格、连字符、下划线和句点的排版差异。自然语言别名必须完整命中别名表中的短语；不得做子串模糊匹配、拼音猜测、未登记名称推断、协议推断或跨供应商兜底。
 
-例如，只有目录明确把 `image2` 作为某个模型的别名时，“用 image2”才能自动解析。只有目录明确展示对应 Grok 视频模型时，“用 Grok Video”才能自动解析。
+例如，“用 image2 生成一只狗”完整命中别名表后，只能在目录返回 `gpt-image-2` 且其能力含 `image` 时自动调用；若当前分组没有该模型，必须说明“当前分组没有可用的 gpt-image-2”，不能改用其他图片模型。
+
+“用 Grok Video”可能映射到多个已登记视频候选；若目录同时返回 `grok-imagine-video` 和 `grok-imagine-video-1.5`，必须让用户选择，不能擅自选版本。用户说“用 Grok 1.5 Video”才可唯一解析到 `grok-imagine-video-1.5`（前提是该 ID 在目录中）。
 
 ### 3. 判断图片或视频工具
 
@@ -111,7 +124,7 @@ puretokens_list_media_models
 Pure Tokens Skill Manager 生成 Claude Desktop 导入包：
 
 ```text
-node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out puretokens_media-0.2.0.zip
+node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out puretokens_media-0.2.1.zip
 ```
 
 在 Claude Desktop 中打开 **Settings → Features → Skills**（部分版本显示为 **Customize → Skills**），选择 **Upload skill**，上传 ZIP 并打开开关。更新时生成新版本 ZIP，先关闭旧版本，再上传并启用新版本；卸载时关闭并删除该 Skill。Claude 的菜单名称以已安装版本为准。

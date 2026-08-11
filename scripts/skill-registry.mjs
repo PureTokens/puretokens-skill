@@ -59,6 +59,7 @@ export async function validateRepository() {
       errors.push(`${directory}: manifest and skills/index.json versions differ`);
     }
     if (manifest?.behaviorTests) await verifyFile(errors, manifest.behaviorTests);
+    if (manifest?.naturalLanguageAliases) await verifyFile(errors, manifest.naturalLanguageAliases);
     const claudeDesktop = manifest?.distribution?.claudeDesktop;
     if (claudeDesktop) {
       if (claudeDesktop.format !== "zip") errors.push(`${directory}: Claude Desktop distribution must use zip format`);

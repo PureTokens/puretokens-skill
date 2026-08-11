@@ -6,6 +6,7 @@
 - Added the Pure Tokens Skill brand hero asset generated with Image-2 and the official Pure Tokens icon.
 - Added model-capability tables, usage examples, and copyable agent installation prompts in both languages.
 - Reworked the README for first-time users with separate image/video model tables and plain-language examples.
+- Added the Skill-owned natural-language alias registry, including `image2` → `gpt-image-2`, with live-catalog verification and no silent fallback.
 
 ## 0.2.0 — 2026-08-09
 

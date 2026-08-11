@@ -29,9 +29,25 @@ test("media Skill publishes the complete MCP tool contract", async () => {
   assert.equal(manifest.rules.neverAutoResubmitAfterError, true);
   assert.equal(manifest.rules.neverAutoSwitchModelAfterError, true);
   assert.equal(manifest.rules.successRequiresNativeMediaResult, true);
+  assert.equal(manifest.rules.usesCuratedNaturalLanguageAliasRegistry, true);
+  assert.equal(manifest.naturalLanguageAliases, "skills/puretokens_media/references/natural-language-aliases.json");
   assert.match(skillText, /第一步必须调用[：:][\s\S]*puretokens_list_media_models/);
   assert.match(skillText, /稳定的 `request_id`/);
   assert.match(skillText, /同一个 `task_id`/);
+});
+
+test("natural language aliases resolve only to explicit catalog model IDs", async () => {
+  const aliases = JSON.parse(await readFile(
+    path.join(skillRoot, "references", "natural-language-aliases.json"),
+    "utf8"
+  ));
+  const image2 = aliases.aliases.find((entry) => entry.phrases.includes("image2"));
+  assert.deepEqual(image2, {
+    phrases: ["image2", "image 2", "gpt image 2", "openai image 2"],
+    capability: "image",
+    modelIds: ["gpt-image-2"]
+  });
+  assert.match(aliases.normalization, /complete registered phrases/i);
 });
 
 test("media Skill behavior scenarios cover ambiguity, empty catalog, unavailable MCP, failure, and timeout", async () => {

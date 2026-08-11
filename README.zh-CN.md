@@ -26,15 +26,17 @@
 
 下面是公开目录当前列出的图片模型。你的客户端或分组可能只显示其中一部分；只有 `puretokens_list_media_models` 实时返回精确 ID 或别名时，模型才可以使用。
 
-| 模型 ID | 适合做什么 | 真实使用示例 |
-| --- | --- | --- |
-| `gpt-image-2` | 高质量海报、产品视觉、插画 | `使用 gpt-image-2 做一张橙色产品发布海报。` |
-| `gemini-3.0-pro-image` | 细节丰富的概念图和营销图 | `使用 gemini-3.0-pro-image 做一张高级云计算主视觉。` |
-| `gemini-3.1-flash-lite-image` | 快速缩略图和社交媒体草稿 | `使用 gemini-3.1-flash-lite-image 做三张明亮的社交媒体缩略图。` |
-| `grok-imagine-1.0` | 快速创意和轻松有趣的场景 | `使用 grok-imagine-1.0 画一只在城市公园里的快乐机器人。` |
-| `grok-imagine-image` | 社交内容和日常生图 | `使用 grok-imagine-image 做一张咖啡店开业宣传图。` |
-| `grok-imagine-image-quality` | 更精细的品牌主视觉 | `使用 grok-imagine-image-quality 做一张精致的应用商店横幅。` |
-| `wan2.7-image` | 中文海报和产品宣传图 | `使用 wan2.7-image 做一张春节促销海报。` |
+用户不需要记完整 ID。像 `image2` 这样的已登记说法由 Skill 负责理解，然后仍会先去实时目录确认，确认成功才发送请求。
+
+| 模型 ID | 也可以这样说 | 适合做什么 | 真实使用示例 |
+| --- | --- | --- | --- |
+| `gpt-image-2` | `image2`、`gpt image 2`、`openai image 2` | 高质量海报、产品视觉、插画 | `使用 image2 做一张橙色产品发布海报。` |
+| `gemini-3.0-pro-image` | `gemini pro image` | 细节丰富的概念图和营销图 | `使用 gemini pro image 做一张高级云计算主视觉。` |
+| `gemini-3.1-flash-lite-image` | `gemini flash lite image` | 快速缩略图和社交媒体草稿 | `使用 gemini flash lite image 做三张明亮的社交媒体缩略图。` |
+| `grok-imagine-1.0` | `grok image`、`grok imagine` | 快速创意和轻松有趣的场景 | `使用 grok-imagine-1.0 画一只在城市公园里的快乐机器人。` |
+| `grok-imagine-image` | `grok image`、`grok imagine` | 社交内容和日常生图 | `使用 grok-imagine-image 做一张咖啡店开业宣传图。` |
+| `grok-imagine-image-quality` | `grok quality image` | 更精细的品牌主视觉 | `使用 grok quality image 做一张精致的应用商店横幅。` |
+| `wan2.7-image` | `wan image`、`wan 2.7 image` | 中文海报和产品宣传图 | `使用 wan 2.7 image 做一张春节促销海报。` |
 
 Skill 只提交一次 `puretokens_generate_image`，然后用 `puretokens_image_result` 查询同一个任务。
 
@@ -42,10 +44,10 @@ Skill 只提交一次 `puretokens_generate_image`，然后用 `puretokens_image_
 
 下面是公开目录当前列出的视频模型。模型必须在实时目录中声明 `video` 能力，才能生成视频。
 
-| 模型 ID | 适合做什么 | 真实使用示例 |
-| --- | --- | --- |
-| `grok-imagine-video` | 短视频和快速创意片段 | `使用 grok-imagine-video 做一条 5 秒咖啡广告。` |
-| `grok-imagine-video-1.5` | 更完整的短广告 | `使用 grok-imagine-video-1.5 做一条 15 秒、16:9 的产品广告。` |
+| 模型 ID | 也可以这样说 | 适合做什么 | 真实使用示例 |
+| --- | --- | --- | --- |
+| `grok-imagine-video` | `grok video`、`grok imagine video` | 短视频和快速创意片段 | `使用 grok-imagine-video 做一条 5 秒咖啡广告。` |
+| `grok-imagine-video-1.5` | `grok 1.5 video`、`grok video 1.5` | 更完整的短广告 | `使用 grok 1.5 video 做一条 15 秒、16:9 的产品广告。` |
 
 Skill 只提交一次 `puretokens_generate_video`，然后用 `puretokens_video_result` 查询同一个任务。
 
@@ -55,8 +57,8 @@ Skill 只提交一次 `puretokens_generate_video`，然后用 `puretokens_video_
 
 | 你想做什么 | 直接这样说 |
 | --- | --- |
-| 生成图片 | `使用 gpt-image-2 生成一只可爱的狗。` |
-| 生成视频 | `使用 grok-imagine-video-1.5 生成一条 15 秒、16:9 的产品广告。` |
+| 生成图片 | `使用 image2 生成一只可爱的狗。` |
+| 生成视频 | `使用 grok 1.5 video 生成一条 15 秒、16:9 的产品广告。` |
 | 查看可用模型 | `列出我现在能用的图片和视频模型。` |
 
 ## 设计边界
@@ -153,7 +155,7 @@ Claude Desktop 和 WorkBuddy 使用图形界面上传本地 Skill 包。生成 Z
 
 ```bash
 node bin/puretokens-skill.js validate
-node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out ./puretokens_media-0.2.0.zip
+node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out ./puretokens_media-0.2.1.zip
 ```
 
 ZIP 内部结构为：

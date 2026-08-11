@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "name": "puretokens_media",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "entry": "SKILL.md",
   "displayName": "Pure Tokens Media",
   "description": "Resolve a user-selected image or video model through the active Pure Tokens MCP catalog, then submit and poll exactly one media task with a stable request ID and no automatic fallback.",
@@ -16,6 +16,7 @@
     ]
   },
   "behaviorTests": "skills/puretokens_media/references/behavior-scenarios.json",
+  "naturalLanguageAliases": "skills/puretokens_media/references/natural-language-aliases.json",
   "distribution": {
     "claudeDesktop": {
       "format": "zip",
@@ -43,6 +44,7 @@
   "rules": {
     "requiresExactModelId": true,
     "naturalLanguageResolutionBelongsToSkill": true,
+    "usesCuratedNaturalLanguageAliasRegistry": true,
     "neverGuessModelOrProtocol": true,
     "neverResubmitPendingTask": true,
     "stableRequestIdRequired": true,

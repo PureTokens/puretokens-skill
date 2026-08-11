@@ -26,15 +26,17 @@ Current Skill:
 
 These are the image models currently shown by the public catalog. Your client/group may show fewer models. The Skill uses a model only when the live `puretokens_list_media_models` response contains the exact ID or alias.
 
-| Model ID | Good for | Real example |
-| --- | --- | --- |
-| `gpt-image-2` | High-quality posters, product visuals, illustrations | `Use gpt-image-2 to make a clean orange product launch poster.` |
-| `gemini-3.0-pro-image` | Detailed concept art and polished marketing images | `Use gemini-3.0-pro-image to create a premium cloud-computing hero image.` |
-| `gemini-3.1-flash-lite-image` | Fast thumbnails and social media drafts | `Use gemini-3.1-flash-lite-image to make three bright social thumbnails.` |
-| `grok-imagine-1.0` | Fast creative concepts and playful scenes | `Use grok-imagine-1.0 to draw a cheerful robot in a city park.` |
-| `grok-imagine-image` | Social posts and everyday image generation | `Use grok-imagine-image to create a realistic café opening post.` |
-| `grok-imagine-image-quality` | Sharper brand key visuals | `Use grok-imagine-image-quality to make a polished app-store banner.` |
-| `wan2.7-image` | Chinese posters and product creatives | `Use wan2.7-image to make a Chinese New Year promotion poster.` |
+You do not need to type the full ID. Registered phrases such as `image2` are understood by the Skill and verified against the live catalog before a request is sent.
+
+| Model ID | You can also say | Good for | Real example |
+| --- | --- | --- | --- |
+| `gpt-image-2` | `image2`, `gpt image 2`, `openai image 2` | High-quality posters, product visuals, illustrations | `Use image2 to make a clean orange product launch poster.` |
+| `gemini-3.0-pro-image` | `gemini pro image` | Detailed concept art and polished marketing images | `Use gemini pro image to create a premium cloud-computing hero image.` |
+| `gemini-3.1-flash-lite-image` | `gemini flash lite image` | Fast thumbnails and social media drafts | `Use gemini flash lite image to make three bright social thumbnails.` |
+| `grok-imagine-1.0` | `grok image`, `grok imagine` | Fast creative concepts and playful scenes | `Use grok-imagine-1.0 to draw a cheerful robot in a city park.` |
+| `grok-imagine-image` | `grok image`, `grok imagine` | Social posts and everyday image generation | `Use grok-imagine-image to create a realistic café opening post.` |
+| `grok-imagine-image-quality` | `grok quality image` | Sharper brand key visuals | `Use grok quality image to make a polished app-store banner.` |
+| `wan2.7-image` | `wan image`, `wan 2.7 image` | Chinese posters and product creatives | `Use wan 2.7 image to make a Chinese New Year promotion poster.` |
 
 The Skill calls `puretokens_generate_image` once, then polls the same task with `puretokens_image_result`.
 
@@ -42,10 +44,10 @@ The Skill calls `puretokens_generate_image` once, then polls the same task with 
 
 These are the video models currently shown by the public catalog. A model must have live capability `video` before it can be used.
 
-| Model ID | Good for | Real example |
-| --- | --- | --- |
-| `grok-imagine-video` | Short social clips and quick concepts | `Use grok-imagine-video to make a 5-second coffee ad.` |
-| `grok-imagine-video-1.5` | More polished short advertisements | `Use grok-imagine-video-1.5 to make a 15-second 16:9 product ad.` |
+| Model ID | You can also say | Good for | Real example |
+| --- | --- | --- | --- |
+| `grok-imagine-video` | `grok video`, `grok imagine video` | Short social clips and quick concepts | `Use grok-imagine-video to make a 5-second coffee ad.` |
+| `grok-imagine-video-1.5` | `grok 1.5 video`, `grok video 1.5` | More polished short advertisements | `Use grok 1.5 video to make a 15-second 16:9 product ad.` |
 
 The Skill calls `puretokens_generate_video` once, then polls the same task with `puretokens_video_result`.
 
@@ -55,8 +57,8 @@ If a model is missing, ambiguous, or does not have the requested capability, the
 
 | You want | Say this |
 | --- | --- |
-| Generate an image | `Use gpt-image-2 to generate a cute dog.` |
-| Generate a video | `Use grok-imagine-video-1.5 to make a 15-second 16:9 product ad.` |
+| Generate an image | `Use image2 to generate a cute dog.` |
+| Generate a video | `Use grok 1.5 video to make a 15-second 16:9 product ad.` |
 | See available models | `List the image and video models I can use now.` |
 
 ## Boundaries
@@ -153,7 +155,7 @@ Claude Desktop and WorkBuddy use a graphical local Skill upload. Create the ZIP:
 
 ```bash
 node bin/puretokens-skill.js validate
-node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out ./puretokens_media-0.2.0.zip
+node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out ./puretokens_media-0.2.1.zip
 ```
 
 The ZIP has this layout:

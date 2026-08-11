@@ -21,7 +21,7 @@ test("Claude Desktop bundle includes the skill root and required files", async (
   await runCli(["bundle", "puretokens_media", "--format", "claude-desktop", "--out", output]);
   const bundle = await readFile(output);
   assert.equal(bundle.readUInt32LE(0), 0x04034b50);
-  for (const file of ["SKILL.md", "skill.json", "references/model-catalog-contract.md", "references/behavior-scenarios.json"]) {
+  for (const file of ["SKILL.md", "skill.json", "references/model-catalog-contract.md", "references/behavior-scenarios.json", "references/natural-language-aliases.json"]) {
     assert.ok(bundle.includes(Buffer.from(`puretokens_media/${file}`)));
   }
 });
@@ -32,7 +32,7 @@ test("install, upgrade, and explicit uninstall only manage the named Skill direc
   const skillDirectory = path.join(temporaryRoot, "puretokens_media");
   await runCli(["install", "puretokens_media", "--target", temporaryRoot]);
   const manifest = JSON.parse(await readFile(path.join(skillDirectory, "skill.json"), "utf8"));
-  assert.equal(manifest.version, "0.2.0");
+  assert.equal(manifest.version, "0.2.1");
   await writeFile(path.join(skillDirectory, "SKILL.md"), "local modification\n");
   await runCli(["upgrade", "puretokens_media", "--target", temporaryRoot]);
   const upgraded = await readFile(path.join(skillDirectory, "SKILL.md"), "utf8");

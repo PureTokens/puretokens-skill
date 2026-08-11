@@ -36,6 +36,8 @@ To support a stable natural-language skill without embedding a model-name table 
 
 The Router remains authoritative. A Skill may use only fields actually returned by the catalog. It must send `id`, never `displayName` or an alias, to generation tools.
 
+The Skill may also maintain an explicit user-facing phrase registry, such as `image2` → `gpt-image-2`. This registry only produces candidate canonical IDs; it never grants availability, invents capabilities, or bypasses the live catalog. The candidate is usable only when the current catalog returns that exact `id` with the requested capability.
+
 ## Required invariants
 
 - `id` is unique in the active client profile.
