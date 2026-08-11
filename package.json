@@ -12,8 +12,9 @@
     "schemas/",
     "scripts/",
     "skills/",
+    "assets/",
     "README.md",
-    "README.en.md",
+    "README.zh-CN.md",
     "CHANGELOG.md"
   ],
   "scripts": {

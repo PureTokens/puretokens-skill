@@ -1,34 +1,42 @@
+<p align="center">
+  <img src="./assets/brand/puretokens-skill-hero.png" alt="Pure Tokens Skill — one skill, every model" width="100%" />
+</p>
+
+<p align="center">
+  <strong>English</strong> · <a href="./README.zh-CN.md">中文</a>
+</p>
+
 # Pure Tokens Skills
 
-`puretokens-skill` 是 Pure Tokens Skill 的源仓库。它管理 Skill 指令、版本、兼容性声明、各客户端安装说明和校验工具；不保存用户凭据、Router 配置或模型路由逻辑。
+`puretokens-skill` is the source repository for Pure Tokens Skills. It owns Skill instructions, versions, compatibility declarations, client installation instructions, and validation tools. It does not contain user credentials, Router configuration, or model-routing logic.
 
-当前 Skill：
+Current Skill:
 
-| Skill | 用途 |
+| Skill | Purpose |
 | --- | --- |
-| `puretokens_media` | 按当前目录精确选择图片或视频模型，通过 `puretokens-image` MCP 提交一次任务并轮询同一任务。 |
+| `puretokens_media` | Select an exact image or video model from the live catalog, submit one task through `puretokens-image`, and poll that same task. |
 
-## 设计边界
+## Boundaries
 
 ```text
-用户自然语言 → Skill → Pure Tokens MCP → 本地 Router → Pure Tokens 服务
+Natural-language user request → Skill → Pure Tokens MCP → local Router → Pure Tokens service
 ```
 
-- Skill 负责理解“用 image2”“用 Grok Video”等表达，先查询媒体目录，唯一匹配后选择工具，并在歧义时询问。
-- MCP 只接受精确模型 ID，执行参数校验、单次提交和结果轮询；它不做自然语言识别、不猜模型、不静默换模型。
-- BFF / Router 仍是模型是否可用、分组权限和媒体协议的权威来源。
+- The Skill interprets requests such as “use image2” or “use Grok Video”, reads the live catalog, asks for clarification when the match is not unique, and selects the correct tool.
+- MCP accepts only an exact model ID. It validates arguments, submits once, and polls the result. MCP never performs natural-language matching, guesses a model, or silently substitutes one.
+- BFF and Router remain authoritative for model availability, group access, and media protocol.
 
-## 前置条件
+## Prerequisites
 
-用户必须先在 Pure Tokens Desktop 中对当前客户端完成“验证并应用”，并重启目标客户端。Desktop 会为支持的客户端配置名为 `puretokens-image` 的 MCP 服务。Skill 不会替代 MCP 配置，也不会携带任何凭据。
+The user must first complete “Verify and apply” for the current client in Pure Tokens Desktop and restart that client. Desktop configures an MCP server named `puretokens-image` for supported clients. The Skill does not replace MCP configuration and never carries credentials.
 
-## 从 GitHub 安装和更新
+## Install and update from GitHub
 
-Pure Tokens Desktop 不会把 Skill 文件写入客户端目录，也不会把 Skill 内容绑定在 Desktop 版本中。请始终从本仓库获取最新安装说明和 Skill 文件。安装前先在 Pure Tokens Desktop 对目标客户端完成“验证并应用”，然后重启目标客户端并新建会话。
+Pure Tokens Desktop does not write Skill files into client directories and does not tie Skill contents to a Desktop release. Always use this repository for the current installation instructions and Skill files. Before installing, complete “Verify and apply” for the target client in Pure Tokens Desktop, then restart that client and start a new chat.
 
-### Codex、Claude Code、Gemini CLI、OpenCode
+### Codex, Claude Code, Gemini CLI, and OpenCode
 
-在本仓库页面点击 **Code → Download ZIP**，或先克隆仓库，然后在仓库目录执行对应命令。需要 Node.js 20 或更高版本。
+Use **Code → Download ZIP** on this repository page, or clone the repository. The manager requires Node.js 20 or later.
 
 ```bash
 git clone https://github.com/yanyansay/puretokens-skill.git
@@ -36,7 +44,7 @@ cd puretokens-skill
 node bin/puretokens-skill.js validate
 ```
 
-按客户端安装到各自的用户级 Skill 目录：
+Install into the target client's user Skill directory:
 
 ```bash
 # Codex
@@ -52,14 +60,14 @@ node bin/puretokens-skill.js install puretokens_media --target ~/.gemini/skills
 node bin/puretokens-skill.js install puretokens_media --target ~/.config/opencode/skills
 ```
 
-更新时从 GitHub 重新下载或拉取仓库，然后执行对应的 `upgrade` 命令：
+To update, pull or download the latest repository contents and run the matching `upgrade` command:
 
 ```bash
 git pull
 node bin/puretokens-skill.js upgrade puretokens_media --target ~/.codex/skills
 ```
 
-把 `~/.codex/skills` 换成当前客户端的目标目录即可。升级只替换由 Pure Tokens 管理、且包含匹配 `skill.json` 与 `SKILL.md` 的目录，不会覆盖其他 Skill。
+Replace `~/.codex/skills` with the target directory for the client you are updating. Upgrade replaces only a Pure Tokens-managed directory containing matching `skill.json` and `SKILL.md`; it never overwrites another Skill.
 
 ### Windows PowerShell
 
@@ -70,20 +78,20 @@ node .\bin\puretokens-skill.js validate
 node .\bin\puretokens-skill.js install puretokens_media --target "$HOME\.codex\skills"
 ```
 
-其他客户端将目标目录改为 `$HOME\.claude\skills`、`$HOME\.gemini\skills` 或 `$HOME\.config\opencode\skills`。如果 PowerShell 找不到 `node`，先从 Node.js 官方网站安装 Node.js LTS，再重新打开 PowerShell。
+Use `$HOME\.claude\skills`, `$HOME\.gemini\skills`, or `$HOME\.config\opencode\skills` for the other clients. If PowerShell cannot find `node`, install Node.js LTS from the official Node.js website and reopen PowerShell.
 
-## Claude Desktop 和 WorkBuddy 导入
+## Import into Claude Desktop and WorkBuddy
 
-不要把复制到 `~/.codex/skills` 当成 Claude Desktop 安装完成。该目录只适用于 Codex 本机 Skill。
+Copying a Skill to `~/.codex/skills` is not a Claude Desktop installation. That directory is only for Codex local Skills.
 
-Claude Desktop 和 WorkBuddy 使用图形界面上传本地 Skill 包。生成 ZIP：
+Claude Desktop and WorkBuddy use a graphical local Skill upload. Create the ZIP:
 
 ```bash
 node bin/puretokens-skill.js validate
 node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out ./puretokens_media-0.2.0.zip
 ```
 
-ZIP 内部结构为：
+The ZIP has this layout:
 
 ```text
 puretokens_media/
@@ -94,15 +102,15 @@ puretokens_media/
     └── model-catalog-contract.md
 ```
 
-在 Claude Desktop 中打开 **Settings → Features → Skills**（部分版本显示为 **Customize → Skills**），选择 **Upload skill**，上传 ZIP 并启用 `Pure Tokens Media`。如果当前版本没有 Skills 入口，则该版本不能导入自定义 Skill，只能使用 MCP 的工具描述；升级或使用支持 Skills 的 Claude 客户端后再导入。
+In Claude Desktop, open **Settings → Features → Skills** (some builds show **Customize → Skills**), choose **Upload skill**, upload the ZIP, and enable `Pure Tokens Media`. If the installed build has no Skills entry, it cannot import custom Skills; that build can still use MCP tool descriptions, but it will not receive this Skill's deterministic model-selection and no-fallback policy.
 
-在 WorkBuddy 中打开 **Skills → 添加技能 → 上传技能**，选择同一个 ZIP，确认 `Pure Tokens Media` 出现在已安装列表并启用，然后新建会话。WorkBuddy 负责导入和本地配置，Pure Tokens Desktop 不会尝试写入 WorkBuddy 未公开的本地目录。
+In WorkBuddy, open **Skills → Add Skill → Upload skill**, choose the same ZIP, confirm `Pure Tokens Media` appears in the installed list, enable it, and start a new chat. WorkBuddy owns the import and local configuration; Pure Tokens Desktop does not write to an undocumented WorkBuddy directory.
 
-更新时从 GitHub 获取新版本、重新生成 ZIP，在 Claude Desktop 或 WorkBuddy 中停用旧 Skill、上传新 ZIP 并启用。卸载时在对应 Skills 页面关闭并删除 Skill。不要直接删除 MCP 配置；MCP 由 Pure Tokens Desktop 管理。
+To update, get the new version from GitHub, generate a new ZIP, disable the old Skill, upload the new ZIP, and enable it in Claude Desktop or WorkBuddy. To uninstall, disable and delete the Skill from the client's Skills page. Do not delete the MCP entry directly; Pure Tokens Desktop owns MCP configuration.
 
-## Codex 本机安装、升级和卸载
+## Codex local install, upgrade, and uninstall
 
-默认目录是 Codex 的本机 Skill 目录：
+The default Codex Skill directory is:
 
 ```bash
 node bin/puretokens-skill.js list
@@ -111,7 +119,7 @@ node bin/puretokens-skill.js upgrade puretokens_media
 node bin/puretokens-skill.js uninstall puretokens_media --yes
 ```
 
-也可以指定项目目录：
+An explicit project directory is also supported:
 
 ```bash
 node bin/puretokens-skill.js install puretokens_media --target .codex/skills
@@ -119,26 +127,21 @@ node bin/puretokens-skill.js upgrade puretokens_media --target .codex/skills
 node bin/puretokens-skill.js uninstall puretokens_media --target .codex/skills --yes
 ```
 
-升级会先把旧目录原子移到临时备份位置，替换成功后再清理备份。卸载要求显式 `--yes`，并且只删除包含匹配 `skill.json` 和 `SKILL.md` 的受管 Skill 目录。
+Upgrade atomically moves the old managed directory to a temporary backup and cleans it up only after replacement succeeds. Uninstall requires explicit `--yes` and removes only a managed directory containing a matching `skill.json` and `SKILL.md`.
 
-## 模型选择规则
+## Model-selection rules
 
-`puretokens_media` 必须先调用 `puretokens_list_media_models`，只依据本次响应的 `id`、`displayName`、`aliases`、`provider` 和 `capabilities` 匹配。生成工具必须传精确 `model` 和稳定 `request_id`。一次用户请求只提交一次；宿主重试时复用同一 `request_id`，结果工具始终使用同一 `task_id`。
+`puretokens_media` must call `puretokens_list_media_models` first and match only fields returned in that response: `id`, `displayName`, `aliases`, `provider`, and `capabilities`. Generation calls must include the exact `model` and a stable `request_id`. One logical user request submits once; a host retry reuses the same `request_id`; result polling always uses the same `task_id`.
 
-模型歧义、目录为空、MCP 不可用、工具错误和轮询超时的行为测试见 `skills/puretokens_media/references/behavior-scenarios.json`。任何错误都不得自动换模型或重新提交，除非用户明确选择了新的具体模型。
+Behavior scenarios for ambiguity, an empty catalog, unavailable MCP, task failure, and polling timeout are stored in `skills/puretokens_media/references/behavior-scenarios.json`. No error may trigger an automatic model switch or resubmission unless the user explicitly chooses a new model.
 
-## 安全边界
+## Security boundary
 
-Skill 不包含、也不会索取：
+The Skill does not contain or request cloud credentials, Router tokens, cookies, passwords, user configuration, group routing, payment data, local authorization addresses, media, task results, or prompt history.
 
-- 云端凭据、Router Token、Cookie 或密码；
-- 用户配置、分组路由或支付数据；
-- 本地授权地址或客户端私有文件；
-- 图片、视频、任务结果或提示词历史。
+Trae is currently not supported by this media Skill flow.
 
-Trae 目前不支持该 Skill 的媒体 MCP 流程。
-
-## 校验
+## Validation
 
 ```bash
 npm run check
@@ -146,4 +149,4 @@ node bin/puretokens-skill.js validate
 npm test
 ```
 
-本仓库不启用 GitHub Actions，不发布 npm 包，也不自动发布 Claude Desktop Skill；只有明确执行 bundle 并在 Claude Desktop 中上传后才会生效。
+This repository does not enable GitHub Actions, publish an npm package, or automatically publish a Claude Desktop Skill. It becomes active in Claude Desktop only after the generated bundle is uploaded and enabled.

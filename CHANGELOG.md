@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased — 2026-08-11
+
+- Made `README.md` the English-first entry point with a top-level English/中文 switch and added the Chinese README mirror.
+- Added the Pure Tokens Skill brand hero asset generated with Image-2 and the official Pure Tokens icon.
+
 ## 0.2.0 — 2026-08-09
 
 - Made the media Skill enforce catalog-first model selection, exact capability matching, stable request IDs, single submission, same-task polling, and no automatic fallback after errors or timeouts.
@@ -9,6 +14,6 @@
 
 ## 0.1.0 — 2026-08-09
 
-- Created the private Pure Tokens skill management repository.
+- Created the Pure Tokens skill management repository.
 - Added `puretokens_media`, the shared skill for selecting and invoking Pure Tokens image and video MCP tools.
 - Added a versioned skill registry, machine-readable manifest, media model catalog schema, safe local installer and repository validation.
