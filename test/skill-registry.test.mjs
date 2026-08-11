@@ -8,6 +8,7 @@ test("the skill registry has one valid media skill", async () => {
   assert.deepEqual(registry.skills.map((skill) => skill.name), ["puretokens_media"]);
   assert.equal(records.length, 1);
   assert.equal(records[0].manifest.name, "puretokens_media");
+  assert.equal(registry.skills[0].version, records[0].manifest.version);
   assert.equal(records[0].frontmatter.name, "puretokens_media");
 });
 

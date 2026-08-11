@@ -1,7 +1,7 @@
 {
   "name": "puretokens-skill",
-  "version": "0.1.0",
-  "description": "Private, installable Pure Tokens skills and skill management tooling.",
+  "version": "0.2.0",
+  "description": "Installable Pure Tokens skills and skill management tooling.",
   "private": true,
   "type": "module",
   "bin": {
@@ -20,7 +20,8 @@
     "list": "node bin/puretokens-skill.js list",
     "validate": "node scripts/validate-skills.mjs",
     "test": "node --test",
-    "check": "npm run validate && npm test"
+    "check": "npm run validate && npm test",
+    "bundle:claude": "node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out dist/puretokens_media-0.2.0.zip --force"
   },
   "engines": {
     "node": ">=20"

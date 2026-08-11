@@ -53,7 +53,21 @@ export async function validateRepository() {
     if (!manifest?.version || !/^\d+\.\d+\.\d+$/.test(manifest.version)) errors.push(`${directory}: manifest version must be semver`);
     if (seen.has(name)) errors.push(`${directory}: duplicate skill name ${name}`);
     seen.add(name);
-    if (!registryByName.has(name)) errors.push(`${directory}: missing skills/index.json entry`);
+    const registryEntry = registryByName.get(name);
+    if (!registryEntry) errors.push(`${directory}: missing skills/index.json entry`);
+    if (registryEntry && registryEntry.version !== manifest.version) {
+      errors.push(`${directory}: manifest and skills/index.json versions differ`);
+    }
+    if (manifest?.behaviorTests) await verifyFile(errors, manifest.behaviorTests);
+    const claudeDesktop = manifest?.distribution?.claudeDesktop;
+    if (claudeDesktop) {
+      if (claudeDesktop.format !== "zip") errors.push(`${directory}: Claude Desktop distribution must use zip format`);
+      if (claudeDesktop.archiveRoot !== name) errors.push(`${directory}: Claude Desktop archive root must match the skill name`);
+      if (!Array.isArray(claudeDesktop.requiredFiles) || !claudeDesktop.requiredFiles.includes("SKILL.md")) {
+        errors.push(`${directory}: Claude Desktop bundle must include SKILL.md`);
+      }
+      if (claudeDesktop.enableAfterImport !== true) errors.push(`${directory}: Claude Desktop bundle must require explicit enablement`);
+    }
     if (forbiddenPattern.test(skillText) || forbiddenPattern.test(JSON.stringify(manifest))) {
       errors.push(`${directory}: skill content contains a forbidden credential or local-runtime marker`);
     }

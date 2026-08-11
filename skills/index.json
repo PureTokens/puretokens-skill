@@ -3,10 +3,11 @@
   "skills": [
     {
       "name": "puretokens_media",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "entry": "skills/puretokens_media/SKILL.md",
       "manifest": "skills/puretokens_media/skill.json",
-      "summary": "Select and invoke Pure Tokens image and video MCP tools safely."
+      "summary": "Resolve an exact Pure Tokens media model, submit one task, and poll it without fallback or duplicate billing.",
+      "distribution": "claude-desktop-zip"
     }
   ]
 }
