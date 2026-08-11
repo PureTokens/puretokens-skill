@@ -10,32 +10,54 @@
 
 `puretokens-skill` 是 Pure Tokens Skill 的源仓库。它管理 Skill 指令、版本、兼容性声明、各客户端安装说明和校验工具；不保存用户凭据、Router 配置或模型路由逻辑。
 
+## 3 步开始
+
+1. 在 Pure Tokens Desktop 中对当前客户端点击 **验证并应用**，然后重启客户端。
+2. 按客户端安装表安装 `puretokens_media`，或复制下面的 Agent 提示词。
+3. 新建会话，直接说：`使用 <模型 ID> 生成……`。
+
 当前 Skill：
 
 | Skill | 用途 |
 | --- | --- |
 | `puretokens_media` | 按当前目录精确选择图片或视频模型，通过 `puretokens-image` MCP 提交一次任务并轮询同一任务。 |
 
-## 支持的模型与使用方法
+## 图片模型
 
-模型目录是实时返回的。下表列出已接入的模型类型和常见示例；只有当前客户端和分组的 `puretokens_list_media_models` 返回了精确 `id`（或精确别名），模型才可用。
+下面是公开目录当前列出的图片模型。你的客户端或分组可能只显示其中一部分；只有 `puretokens_list_media_models` 实时返回精确 ID 或别名时，模型才可以使用。
 
-| 媒体 | 目录能力 | 可能看到的模型 ID 或别名 | 使用方式 |
-| --- | --- | --- | --- |
-| 图片 | `image` | `gpt-image-2`、`codex-gpt-image-2`、`gemini-3-pro-image-preview`、`gemini-3.1-flash-image-preview`、`grok-imagine-image`、`grok-imagine-image-lite`、`grok-imagine-image-pro` | “使用 `gpt-image-2` 生成……” → `puretokens_generate_image` |
-| 视频 | `video` | 目录返回的精确视频模型，例如已配置时的 `grok-imagine-video-1.5`、`seedance-2.0`、`ltx-2.3-fat` | “使用 `grok-imagine-video-1.5` 生成 5 秒广告” → `puretokens_generate_video` |
-| 图片和视频 | `image` + `video` | 实时目录同时声明两种能力的模型 | 先确认用户要图片还是视频，再调用对应工具 |
+| 模型 ID | 适合做什么 | 真实使用示例 |
+| --- | --- | --- |
+| `gpt-image-2` | 高质量海报、产品视觉、插画 | `使用 gpt-image-2 做一张橙色产品发布海报。` |
+| `gemini-3.0-pro-image` | 细节丰富的概念图和营销图 | `使用 gemini-3.0-pro-image 做一张高级云计算主视觉。` |
+| `gemini-3.1-flash-lite-image` | 快速缩略图和社交媒体草稿 | `使用 gemini-3.1-flash-lite-image 做三张明亮的社交媒体缩略图。` |
+| `grok-imagine-1.0` | 快速创意和轻松有趣的场景 | `使用 grok-imagine-1.0 画一只在城市公园里的快乐机器人。` |
+| `grok-imagine-image` | 社交内容和日常生图 | `使用 grok-imagine-image 做一张咖啡店开业宣传图。` |
+| `grok-imagine-image-quality` | 更精细的品牌主视觉 | `使用 grok-imagine-image-quality 做一张精致的应用商店横幅。` |
+| `wan2.7-image` | 中文海报和产品宣传图 | `使用 wan2.7-image 做一张春节促销海报。` |
 
-Skill 不会根据名称猜模型。模型不存在、有多个候选或没有对应能力时，会展示实时候选并询问用户，绝不会静默替换模型。
+Skill 只提交一次 `puretokens_generate_image`，然后用 `puretokens_image_result` 查询同一个任务。
 
-### 使用示例
+## 视频模型
 
-| 用户说法 | Skill 行为 |
+下面是公开目录当前列出的视频模型。模型必须在实时目录中声明 `video` 能力，才能生成视频。
+
+| 模型 ID | 适合做什么 | 真实使用示例 |
+| --- | --- | --- |
+| `grok-imagine-video` | 短视频和快速创意片段 | `使用 grok-imagine-video 做一条 5 秒咖啡广告。` |
+| `grok-imagine-video-1.5` | 更完整的短广告 | `使用 grok-imagine-video-1.5 做一条 15 秒、16:9 的产品广告。` |
+
+Skill 只提交一次 `puretokens_generate_video`，然后用 `puretokens_video_result` 查询同一个任务。
+
+如果模型不存在、有多个候选，或者没有对应能力，Skill 会列出实时候选并让你选择，不会偷偷换模型。
+
+## 你可以这样说
+
+| 你想做什么 | 直接这样说 |
 | --- | --- |
-| `用 image2 生成一只可爱的狗。` | 先读目录 → 匹配目录返回的精确 ID/别名 → 只提交一次 `puretokens_generate_image` → 轮询同一任务。 |
-| `用 gpt-image-2，正方形，高质量。` | 匹配精确 ID → 工具支持时传入 `size`、`quality` → 轮询同一任务。 |
-| `用 Grok Video 生成 15 秒、16:9 的产品广告。` | 先读目录 → 要求唯一视频匹配 → 调用 `puretokens_generate_video` 并传入 `seconds`、`aspect_ratio`。 |
-| `列出现在能用的图片模型。` | 调用 `puretokens_list_media_models`，只展示实时能力包含 `image` 的条目。 |
+| 生成图片 | `使用 gpt-image-2 生成一只可爱的狗。` |
+| 生成视频 | `使用 grok-imagine-video-1.5 生成一条 15 秒、16:9 的产品广告。` |
+| 查看可用模型 | `列出我现在能用的图片和视频模型。` |
 
 ## 设计边界
 
@@ -81,23 +103,26 @@ node bin/puretokens-skill.js install puretokens_media --target ~/.gemini/skills
 node bin/puretokens-skill.js install puretokens_media --target ~/.config/opencode/skills
 ```
 
-### 可直接复制给 Agent 的安装提示词
+### 直接复制给 Agent
 
-把下面提示词复制给能够执行本机命令的 Agent，把 `<客户端>` 替换为 `Codex`、`Claude Code`、`Gemini CLI` 或 `OpenCode`：
+把下面提示词复制给能够执行本机命令的 Agent：
 
 ```text
-请从公开仓库 https://github.com/yanyansay/puretokens-skill 为我的 <客户端> 安装 Pure Tokens Skill。
+请从公开仓库 https://github.com/yanyansay/puretokens-skill 为我当前使用的客户端安装 Pure Tokens Skill。
 
-1. 将仓库克隆或下载到临时工作目录。
-2. 执行 `node bin/puretokens-skill.js validate`。
-3. 只安装 `puretokens_media` 到对应的用户 Skill 目录：
+1. 先判断当前客户端是 Codex、Claude Code、Gemini CLI 还是 OpenCode。
+2. 将仓库克隆或下载到临时工作目录。
+3. 执行 `node bin/puretokens-skill.js validate`。
+4. 只用 `install` 或 `upgrade` 安装 `puretokens_media` 到对应的用户 Skill 目录：
    - Codex：~/.codex/skills
    - Claude Code：~/.claude/skills
    - Gemini CLI：~/.gemini/skills
    - OpenCode：~/.config/opencode/skills
-4. 使用管理器的 `install` 或 `upgrade` 命令，不要覆盖其他 Skill。
-5. 不要读取、索取、打印或保存 API Key、Cookie、密码、Router Token 或本地授权地址。
-6. 返回实际安装目录和校验结果。不要声称 Claude Desktop 或 WorkBuddy 已通过此提示词自动安装；这两个客户端必须按 README 的 ZIP 上传流程手动导入。
+5. 不要覆盖其他 Skill。
+6. 不要读取、索取、打印或保存 API Key、Cookie、密码、Router Token 或本地授权地址。
+7. 返回实际安装目录和校验结果。
+
+如果当前是 Claude Desktop 或 WorkBuddy，不要声称已经自动安装。请按 README 生成 ZIP，并告诉我应该在哪里上传和启用。
 ```
 
 更新时从 GitHub 重新下载或拉取仓库，然后执行对应的 `upgrade` 命令：
