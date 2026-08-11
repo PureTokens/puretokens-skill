@@ -16,6 +16,27 @@
 | --- | --- |
 | `puretokens_media` | 按当前目录精确选择图片或视频模型，通过 `puretokens-image` MCP 提交一次任务并轮询同一任务。 |
 
+## 支持的模型与使用方法
+
+模型目录是实时返回的。下表列出已接入的模型类型和常见示例；只有当前客户端和分组的 `puretokens_list_media_models` 返回了精确 `id`（或精确别名），模型才可用。
+
+| 媒体 | 目录能力 | 可能看到的模型 ID 或别名 | 使用方式 |
+| --- | --- | --- | --- |
+| 图片 | `image` | `gpt-image-2`、`codex-gpt-image-2`、`gemini-3-pro-image-preview`、`gemini-3.1-flash-image-preview`、`grok-imagine-image`、`grok-imagine-image-lite`、`grok-imagine-image-pro` | “使用 `gpt-image-2` 生成……” → `puretokens_generate_image` |
+| 视频 | `video` | 目录返回的精确视频模型，例如已配置时的 `grok-imagine-video-1.5`、`seedance-2.0`、`ltx-2.3-fat` | “使用 `grok-imagine-video-1.5` 生成 5 秒广告” → `puretokens_generate_video` |
+| 图片和视频 | `image` + `video` | 实时目录同时声明两种能力的模型 | 先确认用户要图片还是视频，再调用对应工具 |
+
+Skill 不会根据名称猜模型。模型不存在、有多个候选或没有对应能力时，会展示实时候选并询问用户，绝不会静默替换模型。
+
+### 使用示例
+
+| 用户说法 | Skill 行为 |
+| --- | --- |
+| `用 image2 生成一只可爱的狗。` | 先读目录 → 匹配目录返回的精确 ID/别名 → 只提交一次 `puretokens_generate_image` → 轮询同一任务。 |
+| `用 gpt-image-2，正方形，高质量。` | 匹配精确 ID → 工具支持时传入 `size`、`quality` → 轮询同一任务。 |
+| `用 Grok Video 生成 15 秒、16:9 的产品广告。` | 先读目录 → 要求唯一视频匹配 → 调用 `puretokens_generate_video` 并传入 `seconds`、`aspect_ratio`。 |
+| `列出现在能用的图片模型。` | 调用 `puretokens_list_media_models`，只展示实时能力包含 `image` 的条目。 |
+
 ## 设计边界
 
 ```text
@@ -58,6 +79,25 @@ node bin/puretokens-skill.js install puretokens_media --target ~/.gemini/skills
 
 # OpenCode
 node bin/puretokens-skill.js install puretokens_media --target ~/.config/opencode/skills
+```
+
+### 可直接复制给 Agent 的安装提示词
+
+把下面提示词复制给能够执行本机命令的 Agent，把 `<客户端>` 替换为 `Codex`、`Claude Code`、`Gemini CLI` 或 `OpenCode`：
+
+```text
+请从公开仓库 https://github.com/yanyansay/puretokens-skill 为我的 <客户端> 安装 Pure Tokens Skill。
+
+1. 将仓库克隆或下载到临时工作目录。
+2. 执行 `node bin/puretokens-skill.js validate`。
+3. 只安装 `puretokens_media` 到对应的用户 Skill 目录：
+   - Codex：~/.codex/skills
+   - Claude Code：~/.claude/skills
+   - Gemini CLI：~/.gemini/skills
+   - OpenCode：~/.config/opencode/skills
+4. 使用管理器的 `install` 或 `upgrade` 命令，不要覆盖其他 Skill。
+5. 不要读取、索取、打印或保存 API Key、Cookie、密码、Router Token 或本地授权地址。
+6. 返回实际安装目录和校验结果。不要声称 Claude Desktop 或 WorkBuddy 已通过此提示词自动安装；这两个客户端必须按 README 的 ZIP 上传流程手动导入。
 ```
 
 更新时从 GitHub 重新下载或拉取仓库，然后执行对应的 `upgrade` 命令：

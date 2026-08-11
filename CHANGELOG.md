@@ -4,6 +4,7 @@
 
 - Made `README.md` the English-first entry point with a top-level English/中文 switch and added the Chinese README mirror.
 - Added the Pure Tokens Skill brand hero asset generated with Image-2 and the official Pure Tokens icon.
+- Added model-capability tables, usage examples, and copyable agent installation prompts in both languages.
 
 ## 0.2.0 — 2026-08-09
 

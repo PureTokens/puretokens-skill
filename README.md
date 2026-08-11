@@ -16,6 +16,27 @@ Current Skill:
 | --- | --- |
 | `puretokens_media` | Select an exact image or video model from the live catalog, submit one task through `puretokens-image`, and poll that same task. |
 
+## Supported models and usage
+
+The model catalog is live. The table below lists model families and current examples; a model is usable only when `puretokens_list_media_models` returns its exact `id` (or an exact returned alias) for the active client and group.
+
+| Media | Catalog capability | Model IDs or aliases you may see | How to use |
+| --- | --- | --- | --- |
+| Image | `image` | `gpt-image-2`, `codex-gpt-image-2`, `gemini-3-pro-image-preview`, `gemini-3.1-flash-image-preview`, `grok-imagine-image`, `grok-imagine-image-lite`, `grok-imagine-image-pro` | “Use `gpt-image-2` to generate …” → `puretokens_generate_image` |
+| Video | `video` | Any exact video ID returned by the catalog, such as `grok-imagine-video-1.5`, `seedance-2.0`, or `ltx-2.3-fat` when configured | “Use `grok-imagine-video-1.5` to make a 5-second ad” → `puretokens_generate_video` |
+| Both | `image` + `video` | A model whose live entry declares both capabilities | Ask which medium is intended, then call only the matching tool |
+
+Model names are not guessed from spelling. If a name is missing, ambiguous, or has no requested capability, the Skill shows the live candidates and asks you to choose. It never silently substitutes a model.
+
+### Usage examples
+
+| User request | Required behavior |
+| --- | --- |
+| `Use image2 to generate a cute dog.` | List the catalog → match an exact returned `id`/alias → submit once with `puretokens_generate_image` → poll the same task. |
+| `Use gpt-image-2, square, high quality.` | Match the exact ID → pass `size` and `quality` if the tool supports them → poll the same task. |
+| `Use Grok Video to make a 15-second 16:9 product ad.` | List the catalog → require one exact video match → call `puretokens_generate_video` with `seconds` and `aspect_ratio`. |
+| `Show me the available image models.` | Call `puretokens_list_media_models` and show only entries whose live capabilities include `image`. |
+
 ## Boundaries
 
 ```text
@@ -58,6 +79,25 @@ node bin/puretokens-skill.js install puretokens_media --target ~/.gemini/skills
 
 # OpenCode
 node bin/puretokens-skill.js install puretokens_media --target ~/.config/opencode/skills
+```
+
+### Copyable agent installation prompt
+
+Paste this into an agent that can run local commands. Replace `<client>` with `Codex`, `Claude Code`, `Gemini CLI`, or `OpenCode`:
+
+```text
+Install Pure Tokens Skill for <client> from the public repository https://github.com/yanyansay/puretokens-skill.
+
+1. Clone or download the repository into a temporary working directory.
+2. Run `node bin/puretokens-skill.js validate`.
+3. Install only `puretokens_media` into the correct user Skill directory:
+   - Codex: ~/.codex/skills
+   - Claude Code: ~/.claude/skills
+   - Gemini CLI: ~/.gemini/skills
+   - OpenCode: ~/.config/opencode/skills
+4. Use the manager command `install` or `upgrade`; do not overwrite other Skills.
+5. Do not read, request, print, or store API keys, cookies, passwords, Router tokens, or local authorization URLs.
+6. Report the exact target directory and validation result. Do not claim Claude Desktop or WorkBuddy is installed by this prompt; those clients require the ZIP upload flow in the README.
 ```
 
 To update, pull or download the latest repository contents and run the matching `upgrade` command:
