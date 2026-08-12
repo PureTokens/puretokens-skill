@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <strong>English</strong> · <a href="./README.zh-CN.md">中文</a>
+  <strong>English</strong> · <a href="./README.zh-CN.md">中文</a> · <a href="./CHANGELOG.md">Changelog</a>
 </p>
 
 # Pure Tokens Skills
