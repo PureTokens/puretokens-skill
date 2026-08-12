@@ -14,31 +14,45 @@
 
 1. In Pure Tokens Desktop, click **Verify and apply** for your client, then restart it.
 2. Install `puretokens_media` using the client table or the copyable agent prompt below.
-3. Start a new chat and say: `Use <model ID> to generate ...`.
+3. Start a new chat. Say `Generate a cute dog` for the default image model, or name a model such as `Use Nano Banana Pro to generate ...`.
 
 Current Skill:
 
 | Skill | Purpose |
 | --- | --- |
-| `puretokens_media` | Select an exact image or video model from the live catalog, submit one task through `puretokens-image`, and poll that same task. |
+| `puretokens_media` | Check your Pure Tokens balance or model price, or select an exact image/video model from the live catalog and poll the same task. |
+
+## Check your balance
+
+Ask `How much Pure Tokens balance do I have?` or `Check my Pure Tokens balance.` The Skill calls `puretokens_get_balance` directly and shows only the balance fields returned by Pure Tokens. It does not read model catalogs, API keys, Cookies, passwords, or local Router credentials.
+
+## Check a model price
+
+Ask `How much does gpt-image-2 cost?` or `What is the price of image2?` The Skill checks the live catalog, resolves only a registered alias to an exact model ID, then calls `puretokens_get_model_price`. It shows every selected-group price, including the group multiplier and update time.
+
+Prices are never guessed from a model name. If the model is unavailable, ambiguous, or uses dynamic billing, the Skill reports that state instead of inventing a fixed price, choosing a group, or silently substituting another model.
 
 ## Image models
 
 These are the image models currently shown by the public catalog. Your client/group may show fewer models. The Skill uses a model only when the live `puretokens_list_media_models` response contains the exact ID or alias.
 
-You do not need to type the full ID. Registered phrases such as `image2` are understood by the Skill and verified against the live catalog before a request is sent.
+You do not need to type the full ID. Registered phrases such as `image2` and `Nano Banana Pro` are understood by the Skill and verified against the live catalog before a request is sent. If you simply ask for an image, the Skill uses `gpt-image-2`; if that exact model is unavailable in your current group, it stops and shows the available candidates instead of silently switching models.
 
 | Model ID | You can also say | Good for | Real example |
 | --- | --- | --- | --- |
 | `gpt-image-2` | `image2`, `gpt image 2`, `openai image 2` | High-quality posters, product visuals, illustrations | `Use image2 to make a clean orange product launch poster.` |
 | `gemini-3.0-pro-image` | `gemini pro image` | Detailed concept art and polished marketing images | `Use gemini pro image to create a premium cloud-computing hero image.` |
 | `gemini-3.1-flash-lite-image` | `gemini flash lite image` | Fast thumbnails and social media drafts | `Use gemini flash lite image to make three bright social thumbnails.` |
+| `gemini-3-pro-image-preview` | `nano banana pro` | Detailed, professional Gemini image work | `Use Nano Banana Pro to create a premium product key visual.` |
+| `gemini-3.1-flash-image-preview` | `nano banana 2` | Faster Gemini image generation and conversational edits | `Use Nano Banana 2 to create a bright product social post.` |
 | `grok-imagine-1.0` | `grok image`, `grok imagine` | Fast creative concepts and playful scenes | `Use grok-imagine-1.0 to draw a cheerful robot in a city park.` |
 | `grok-imagine-image` | `grok image`, `grok imagine` | Social posts and everyday image generation | `Use grok-imagine-image to create a realistic café opening post.` |
 | `grok-imagine-image-quality` | `grok quality image` | Sharper brand key visuals | `Use grok quality image to make a polished app-store banner.` |
 | `wan2.7-image` | `wan image`, `wan 2.7 image` | Chinese posters and product creatives | `Use wan 2.7 image to make a Chinese New Year promotion poster.` |
 
 The Skill calls `puretokens_generate_image` once, then polls the same task with `puretokens_image_result`.
+
+`Nano Banana` by itself means the Gemini Nano Banana family. When both `Nano Banana Pro` and `Nano Banana 2` are available, the Skill asks which one you want. When only one is available, it uses that one. This keeps a named choice from turning into an invisible model substitution.
 
 ## Video models
 
@@ -49,7 +63,7 @@ These are the video models currently shown by the public catalog. A model must h
 | `grok-imagine-video` | `grok video`, `grok imagine video` | Short social clips and quick concepts | `Use grok-imagine-video to make a 5-second coffee ad.` |
 | `grok-imagine-video-1.5` | `grok 1.5 video`, `grok video 1.5` | More polished short advertisements | `Use grok 1.5 video to make a 15-second 16:9 product ad.` |
 
-The Skill calls `puretokens_generate_video` once, then polls the same task with `puretokens_video_result`.
+The Skill calls `puretokens_generate_video` once, then polls the same task with `puretokens_video_result`. If you simply ask for a video, it uses `grok-imagine-video-1.5`; if that exact model is unavailable in your current group, it stops and shows the available candidates.
 
 If a model is missing, ambiguous, or does not have the requested capability, the Skill shows the live candidates and asks you to choose. It never silently changes models.
 
@@ -57,8 +71,10 @@ If a model is missing, ambiguous, or does not have the requested capability, the
 
 | You want | Say this |
 | --- | --- |
-| Generate an image | `Use image2 to generate a cute dog.` |
-| Generate a video | `Use grok 1.5 video to make a 15-second 16:9 product ad.` |
+| Generate an image | `Generate a cute dog.` |
+| Generate a video | `Generate a 15-second 16:9 product ad.` |
+| Check a model price | `How much does gpt-image-2 cost?` |
+| Use Nano Banana | `Use Nano Banana Pro to create a premium product key visual.` |
 | See available models | `List the image and video models I can use now.` |
 
 ## Boundaries
@@ -86,7 +102,6 @@ Use **Code → Download ZIP** on this repository page, or clone the repository. 
 ```bash
 git clone https://github.com/yanyansay/puretokens-skill.git
 cd puretokens-skill
-node bin/puretokens-skill.js validate
 ```
 
 Install into the target client's user Skill directory:
@@ -114,15 +129,14 @@ Install Pure Tokens Skill for the client I am using from https://github.com/yany
 
 1. Identify whether this is Codex, Claude Code, Gemini CLI, or OpenCode.
 2. Clone or download the repository into a temporary working directory.
-3. Run `node bin/puretokens-skill.js validate`.
-4. Install or upgrade only `puretokens_media` in the matching user Skill directory:
+3. Install or upgrade only `puretokens_media` in the matching user Skill directory:
    - Codex: ~/.codex/skills
    - Claude Code: ~/.claude/skills
    - Gemini CLI: ~/.gemini/skills
    - OpenCode: ~/.config/opencode/skills
 5. Do not overwrite any other Skill.
 6. Do not read, request, print, or store API keys, cookies, passwords, Router tokens, or local authorization URLs.
-7. Tell me the installed directory and whether validation passed.
+7. Tell me the installed directory and whether the operation succeeded.
 
 If this is Claude Desktop or WorkBuddy, do not claim it was installed automatically. Build the ZIP following the README, then tell me exactly where to upload and enable it.
 ```
@@ -141,7 +155,6 @@ Replace `~/.codex/skills` with the target directory for the client you are updat
 ```powershell
 git clone https://github.com/yanyansay/puretokens-skill.git
 Set-Location puretokens-skill
-node .\bin\puretokens-skill.js validate
 node .\bin\puretokens-skill.js install puretokens_media --target "$HOME\.codex\skills"
 ```
 
@@ -154,8 +167,7 @@ Copying a Skill to `~/.codex/skills` is not a Claude Desktop installation. That 
 Claude Desktop and WorkBuddy use a graphical local Skill upload. Create the ZIP:
 
 ```bash
-node bin/puretokens-skill.js validate
-node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out ./puretokens_media-0.2.1.zip
+node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out ./puretokens_media-0.2.4.zip
 ```
 
 The ZIP has this layout:
@@ -200,6 +212,8 @@ Upgrade atomically moves the old managed directory to a temporary backup and cle
 
 `puretokens_media` must call `puretokens_list_media_models` first and match only fields returned in that response: `id`, `displayName`, `aliases`, `provider`, and `capabilities`. Generation calls must include the exact `model` and a stable `request_id`. One logical user request submits once; a host retry reuses the same `request_id`; result polling always uses the same `task_id`.
 
+For a price request, the Skill calls `puretokens_get_model_price` with the exact resolved model ID and displays every group-specific result. It never infers a price, silently selects a group, or turns a dynamic billing rule into a static amount.
+
 Behavior scenarios for ambiguity, an empty catalog, unavailable MCP, task failure, and polling timeout are stored in `skills/puretokens_media/references/behavior-scenarios.json`. No error may trigger an automatic model switch or resubmission unless the user explicitly chooses a new model.
 
 ## Security boundary
@@ -207,13 +221,3 @@ Behavior scenarios for ambiguity, an empty catalog, unavailable MCP, task failur
 The Skill does not contain or request cloud credentials, Router tokens, cookies, passwords, user configuration, group routing, payment data, local authorization addresses, media, task results, or prompt history.
 
 Trae is currently not supported by this media Skill flow.
-
-## Validation
-
-```bash
-npm run check
-node bin/puretokens-skill.js validate
-npm test
-```
-
-This repository does not enable GitHub Actions, publish an npm package, or automatically publish a Claude Desktop Skill. It becomes active in Claude Desktop only after the generated bundle is uploaded and enabled.

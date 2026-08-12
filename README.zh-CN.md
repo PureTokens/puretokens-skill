@@ -14,31 +14,45 @@
 
 1. 在 Pure Tokens Desktop 中对当前客户端点击 **验证并应用**，然后重启客户端。
 2. 按客户端安装表安装 `puretokens_media`，或复制下面的 Agent 提示词。
-3. 新建会话，直接说：`使用 <模型 ID> 生成……`。
+3. 新建会话。直接说“生成一只可爱的狗”即可使用默认图片模型；也可以说“使用 Nano Banana Pro 生成……”。
 
 当前 Skill：
 
 | Skill | 用途 |
 | --- | --- |
-| `puretokens_media` | 按当前目录精确选择图片或视频模型，通过 `puretokens-image` MCP 提交一次任务并轮询同一任务。 |
+| `puretokens_media` | 查询 Pure Tokens 余额或模型价格，或按当前目录精确选择图片/视频模型，提交一次任务并轮询同一任务。 |
+
+## 查询余额
+
+直接说“查询我的 Pure Tokens 余额”“我还剩多少余额”或“查一下余额”。Skill 会直接调用 `puretokens_get_balance`，只展示 Pure Tokens 返回的余额和额度字段；不会读取模型目录、API Key、Cookie、密码或本地 Router 凭据。
+
+## 查询模型价格
+
+直接说“gpt-image-2 多少钱？”或“image2 的价格”。Skill 会先读取实时模型目录，只在已登记别名唯一对应到目录中的精确模型 ID 后，调用 `puretokens_get_model_price`。返回结果会展示当前选中分组中的全部价格、分组倍率和更新时间。
+
+价格不会根据模型名称猜测。如果模型不可用、匹配有歧义，或者计费方式是动态计费，Skill 会如实提示，不会估算价格、偷偷选择分组或换成其他模型。
 
 ## 图片模型
 
 下面是公开目录当前列出的图片模型。你的客户端或分组可能只显示其中一部分；只有 `puretokens_list_media_models` 实时返回精确 ID 或别名时，模型才可以使用。
 
-用户不需要记完整 ID。像 `image2` 这样的已登记说法由 Skill 负责理解，然后仍会先去实时目录确认，确认成功才发送请求。
+用户不需要记完整 ID。像 `image2`、`Nano Banana Pro` 这样的已登记说法由 Skill 负责理解，然后仍会先去实时目录确认，确认成功才发送请求。只说“生成图片”时默认使用 `gpt-image-2`；如果当前分组没有该精确模型，Skill 会停止并展示可用候选，不会偷偷换模型。
 
 | 模型 ID | 也可以这样说 | 适合做什么 | 真实使用示例 |
 | --- | --- | --- | --- |
 | `gpt-image-2` | `image2`、`gpt image 2`、`openai image 2` | 高质量海报、产品视觉、插画 | `使用 image2 做一张橙色产品发布海报。` |
 | `gemini-3.0-pro-image` | `gemini pro image` | 细节丰富的概念图和营销图 | `使用 gemini pro image 做一张高级云计算主视觉。` |
 | `gemini-3.1-flash-lite-image` | `gemini flash lite image` | 快速缩略图和社交媒体草稿 | `使用 gemini flash lite image 做三张明亮的社交媒体缩略图。` |
+| `gemini-3-pro-image-preview` | `nano banana pro` | 更细致、更专业的 Gemini 图片生成 | `使用 Nano Banana Pro 做一张高级产品主视觉。` |
+| `gemini-3.1-flash-image-preview` | `nano banana 2` | 更快速的 Gemini 生图和对话式编辑 | `使用 Nano Banana 2 做一张明亮的产品社交海报。` |
 | `grok-imagine-1.0` | `grok image`、`grok imagine` | 快速创意和轻松有趣的场景 | `使用 grok-imagine-1.0 画一只在城市公园里的快乐机器人。` |
 | `grok-imagine-image` | `grok image`、`grok imagine` | 社交内容和日常生图 | `使用 grok-imagine-image 做一张咖啡店开业宣传图。` |
 | `grok-imagine-image-quality` | `grok quality image` | 更精细的品牌主视觉 | `使用 grok quality image 做一张精致的应用商店横幅。` |
 | `wan2.7-image` | `wan image`、`wan 2.7 image` | 中文海报和产品宣传图 | `使用 wan 2.7 image 做一张春节促销海报。` |
 
 Skill 只提交一次 `puretokens_generate_image`，然后用 `puretokens_image_result` 查询同一个任务。
+
+只说 `Nano Banana` 时，表示 Gemini Nano Banana 模型家族。当前目录同时有 `Nano Banana Pro` 和 `Nano Banana 2` 时，Skill 会让你选择；只有一个可用时才会直接使用。这样不会把已指定的模型悄悄换成另一个。
 
 ## 视频模型
 
@@ -49,7 +63,7 @@ Skill 只提交一次 `puretokens_generate_image`，然后用 `puretokens_image_
 | `grok-imagine-video` | `grok video`、`grok imagine video` | 短视频和快速创意片段 | `使用 grok-imagine-video 做一条 5 秒咖啡广告。` |
 | `grok-imagine-video-1.5` | `grok 1.5 video`、`grok video 1.5` | 更完整的短广告 | `使用 grok 1.5 video 做一条 15 秒、16:9 的产品广告。` |
 
-Skill 只提交一次 `puretokens_generate_video`，然后用 `puretokens_video_result` 查询同一个任务。
+Skill 只提交一次 `puretokens_generate_video`，然后用 `puretokens_video_result` 查询同一个任务。只说“生成视频”时默认使用 `grok-imagine-video-1.5`；如果当前分组没有该精确模型，Skill 会停止并展示可用候选。
 
 如果模型不存在、有多个候选，或者没有对应能力，Skill 会列出实时候选并让你选择，不会偷偷换模型。
 
@@ -57,8 +71,10 @@ Skill 只提交一次 `puretokens_generate_video`，然后用 `puretokens_video_
 
 | 你想做什么 | 直接这样说 |
 | --- | --- |
-| 生成图片 | `使用 image2 生成一只可爱的狗。` |
-| 生成视频 | `使用 grok 1.5 video 生成一条 15 秒、16:9 的产品广告。` |
+| 生成图片 | `生成一只可爱的狗。` |
+| 生成视频 | `生成一条 15 秒、16:9 的产品广告。` |
+| 查询模型价格 | `gpt-image-2 多少钱？` |
+| 使用 Nano Banana | `使用 Nano Banana Pro 做一张高级产品主视觉。` |
 | 查看可用模型 | `列出我现在能用的图片和视频模型。` |
 
 ## 设计边界
@@ -86,7 +102,6 @@ Pure Tokens Desktop 不会把 Skill 文件写入客户端目录，也不会把 S
 ```bash
 git clone https://github.com/yanyansay/puretokens-skill.git
 cd puretokens-skill
-node bin/puretokens-skill.js validate
 ```
 
 按客户端安装到各自的用户级 Skill 目录：
@@ -114,15 +129,14 @@ node bin/puretokens-skill.js install puretokens_media --target ~/.config/opencod
 
 1. 先判断当前客户端是 Codex、Claude Code、Gemini CLI 还是 OpenCode。
 2. 将仓库克隆或下载到临时工作目录。
-3. 执行 `node bin/puretokens-skill.js validate`。
-4. 只用 `install` 或 `upgrade` 安装 `puretokens_media` 到对应的用户 Skill 目录：
+3. 只用 `install` 或 `upgrade` 安装 `puretokens_media` 到对应的用户 Skill 目录：
    - Codex：~/.codex/skills
    - Claude Code：~/.claude/skills
    - Gemini CLI：~/.gemini/skills
    - OpenCode：~/.config/opencode/skills
 5. 不要覆盖其他 Skill。
 6. 不要读取、索取、打印或保存 API Key、Cookie、密码、Router Token 或本地授权地址。
-7. 返回实际安装目录和校验结果。
+7. 返回实际安装目录和操作结果。
 
 如果当前是 Claude Desktop 或 WorkBuddy，不要声称已经自动安装。请按 README 生成 ZIP，并告诉我应该在哪里上传和启用。
 ```
@@ -141,7 +155,6 @@ node bin/puretokens-skill.js upgrade puretokens_media --target ~/.codex/skills
 ```powershell
 git clone https://github.com/yanyansay/puretokens-skill.git
 Set-Location puretokens-skill
-node .\bin\puretokens-skill.js validate
 node .\bin\puretokens-skill.js install puretokens_media --target "$HOME\.codex\skills"
 ```
 
@@ -154,8 +167,7 @@ node .\bin\puretokens-skill.js install puretokens_media --target "$HOME\.codex\s
 Claude Desktop 和 WorkBuddy 使用图形界面上传本地 Skill 包。生成 ZIP：
 
 ```bash
-node bin/puretokens-skill.js validate
-node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out ./puretokens_media-0.2.1.zip
+node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out ./puretokens_media-0.2.4.zip
 ```
 
 ZIP 内部结构为：
@@ -200,6 +212,8 @@ node bin/puretokens-skill.js uninstall puretokens_media --target .codex/skills -
 
 `puretokens_media` 必须先调用 `puretokens_list_media_models`，只依据本次响应的 `id`、`displayName`、`aliases`、`provider` 和 `capabilities` 匹配。生成工具必须传精确 `model` 和稳定 `request_id`。一次用户请求只提交一次；宿主重试时复用同一 `request_id`，结果工具始终使用同一 `task_id`。
 
+查询价格时，Skill 会使用解析后的精确模型 ID 调用 `puretokens_get_model_price`，展示每个分组的价格结果。不会推测价格、静默选择分组，也不会把动态计费规则当成固定金额。
+
 模型歧义、目录为空、MCP 不可用、工具错误和轮询超时的行为测试见 `skills/puretokens_media/references/behavior-scenarios.json`。任何错误都不得自动换模型或重新提交，除非用户明确选择了新的具体模型。
 
 ## 安全边界
@@ -212,13 +226,3 @@ Skill 不包含、也不会索取：
 - 图片、视频、任务结果或提示词历史。
 
 Trae 目前不支持该 Skill 的媒体 MCP 流程。
-
-## 校验
-
-```bash
-npm run check
-node bin/puretokens-skill.js validate
-npm test
-```
-
-本仓库不启用 GitHub Actions，不发布 npm 包，也不自动发布 Claude Desktop Skill；只有明确执行 bundle 并在 Claude Desktop 中上传后才会生效。

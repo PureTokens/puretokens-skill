@@ -3,10 +3,10 @@
   "skills": [
     {
       "name": "puretokens_media",
-      "version": "0.2.1",
+      "version": "0.2.4",
       "entry": "skills/puretokens_media/SKILL.md",
       "manifest": "skills/puretokens_media/skill.json",
-      "summary": "Resolve an exact Pure Tokens media model, submit one task, and poll it without fallback or duplicate billing.",
+      "summary": "Check a read-only balance snapshot or resolve an exact media model, then submit one task and poll it without fallback or duplicate billing.",
       "distribution": "claude-desktop-zip"
     }
   ]

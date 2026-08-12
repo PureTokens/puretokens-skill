@@ -18,6 +18,8 @@ test("media Skill publishes the complete MCP tool contract", async () => {
   const manifest = JSON.parse(manifestText);
   assert.equal(manifest.mcp.server, "puretokens-image");
   assert.deepEqual(manifest.mcp.tools, [
+    "puretokens_get_balance",
+    "puretokens_get_model_price",
     "puretokens_list_media_models",
     "puretokens_generate_image",
     "puretokens_image_result",
@@ -30,11 +32,25 @@ test("media Skill publishes the complete MCP tool contract", async () => {
   assert.equal(manifest.rules.neverAutoSwitchModelAfterError, true);
   assert.equal(manifest.rules.successRequiresNativeMediaResult, true);
   assert.equal(manifest.rules.usesCuratedNaturalLanguageAliasRegistry, true);
+  assert.equal(manifest.rules.usesDeterministicMediaDefaults, true);
   assert.equal(manifest.naturalLanguageAliases, "skills/puretokens_media/references/natural-language-aliases.json");
   assert.match(skillText, /第一步必须调用[：:][\s\S]*puretokens_list_media_models/);
   assert.match(skillText, /稳定的 `request_id`/);
   assert.match(skillText, /同一个 `task_id`/);
+  assert.match(skillText, /puretokens_get_balance/);
 });
+
+test("balance requests use the read-only balance tool without a media catalog lookup", async () => {
+  const skillText = await readSkill();
+  assert.match(skillText, /查询我的 Pure Tokens 余额/);
+  assert.match(skillText, /余额查询不需要先调用 `puretokens_list_media_models`/);
+  assert.match(skillText, /不得读取或展示 Cookie、API Key、Router Token、密码/);
+  assert.equal(manifestRule(await readFile(path.join(skillRoot, "skill.json"), "utf8"), "balanceUsesReadOnlySnapshot"), true);
+});
+
+function manifestRule(manifestText, name) {
+  return JSON.parse(manifestText).rules?.[name];
+}
 
 test("natural language aliases resolve only to explicit catalog model IDs", async () => {
   const aliases = JSON.parse(await readFile(
@@ -47,6 +63,23 @@ test("natural language aliases resolve only to explicit catalog model IDs", asyn
     capability: "image",
     modelIds: ["gpt-image-2"]
   });
+  const aliasesByPhrase = new Map(aliases.aliases.flatMap((entry) => entry.phrases.map((phrase) => [phrase, entry])));
+  assert.deepEqual(aliasesByPhrase.get("nano banana pro").modelIds, ["gemini-3-pro-image-preview"]);
+  assert.deepEqual(aliasesByPhrase.get("nano banana 2").modelIds, ["gemini-3.1-flash-image-preview"]);
+  assert.deepEqual(aliasesByPhrase.get("nano banana").modelIds, [
+    "gemini-3-pro-image-preview",
+    "gemini-3.1-flash-image-preview"
+  ]);
+  assert.deepEqual(aliases.defaults, {
+    image: {
+      modelId: "gpt-image-2",
+      when: "The user asks to generate an image without naming a model."
+    },
+    video: {
+      modelId: "grok-imagine-video-1.5",
+      when: "The user asks to generate a video without naming a model."
+    }
+  });
   assert.match(aliases.normalization, /complete registered phrases/i);
 });
 
@@ -57,16 +90,18 @@ test("media Skill behavior scenarios cover ambiguity, empty catalog, unavailable
   ]);
   const scenarios = JSON.parse(scenariosText).scenarios;
   assert.deepEqual(scenarios.map((scenario) => scenario.id), [
+    "balance-unavailable",
     "ambiguous-model",
+    "exact-model-price",
+    "multiple-group-prices",
+    "dynamic-model-price",
     "no-media-model",
     "mcp-unavailable",
     "task-failure",
     "task-timeout"
   ]);
-  assert.deepEqual(scenarios.slice(0, 3).map((scenario) => scenario.firstTool), [
+  assert.deepEqual(scenarios.slice(1, 2).map((scenario) => scenario.firstTool), [
     "puretokens_list_media_models",
-    "puretokens_list_media_models",
-    "puretokens_list_media_models"
   ]);
   assert.match(skillText, /模型不存在或匹配多个/);
   assert.match(skillText, /目录为空/);
@@ -75,6 +110,8 @@ test("media Skill behavior scenarios cover ambiguity, empty catalog, unavailable
   assert.match(skillText, /轮询超时/);
   assert.match(skillText, /不得自动换模型/);
   assert.match(skillText, /不得自动重新提交/);
+  assert.equal(scenarios[0].firstTool, "puretokens_get_balance");
+  assert.deepEqual(scenarios[0].forbiddenTools, ["puretokens_list_media_models", "credential_access"]);
 });
 
 test("Claude Desktop distribution remains an explicit upload and enablement flow", async () => {

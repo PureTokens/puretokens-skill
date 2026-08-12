@@ -118,7 +118,13 @@ async function bundleSkill(args) {
   }
   const source = await resolveSkillSource(options.name);
   const manifest = JSON.parse(await readFile(path.join(source, "skill.json"), "utf8"));
-  const files = ["SKILL.md", "skill.json", "references/model-catalog-contract.md", "references/behavior-scenarios.json"];
+  const files = [
+    "SKILL.md",
+    "skill.json",
+    "references/model-catalog-contract.md",
+    "references/behavior-scenarios.json",
+    "references/natural-language-aliases.json"
+  ];
   const entries = [];
   for (const relativePath of files) {
     const absolutePath = path.join(source, relativePath);

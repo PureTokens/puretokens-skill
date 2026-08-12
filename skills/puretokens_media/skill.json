@@ -1,13 +1,15 @@
 {
   "schemaVersion": 1,
   "name": "puretokens_media",
-  "version": "0.2.1",
+  "version": "0.2.4",
   "entry": "SKILL.md",
   "displayName": "Pure Tokens Media",
-  "description": "Resolve a user-selected image or video model through the active Pure Tokens MCP catalog, then submit and poll exactly one media task with a stable request ID and no automatic fallback.",
+  "description": "Check a read-only Pure Tokens balance snapshot, or handle a Pure Tokens image or video request.",
   "mcp": {
     "server": "puretokens-image",
     "tools": [
+      "puretokens_get_balance",
+      "puretokens_get_model_price",
       "puretokens_list_media_models",
       "puretokens_generate_image",
       "puretokens_image_result",
@@ -45,6 +47,8 @@
     "requiresExactModelId": true,
     "naturalLanguageResolutionBelongsToSkill": true,
     "usesCuratedNaturalLanguageAliasRegistry": true,
+    "usesDeterministicMediaDefaults": true,
+    "balanceUsesReadOnlySnapshot": true,
     "neverGuessModelOrProtocol": true,
     "neverResubmitPendingTask": true,
     "stableRequestIdRequired": true,

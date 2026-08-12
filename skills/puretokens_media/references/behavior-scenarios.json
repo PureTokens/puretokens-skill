@@ -3,11 +3,39 @@
   "skill": "puretokens_media",
   "scenarios": [
     {
+      "id": "balance-unavailable",
+      "when": "The user asks for their Pure Tokens balance but the Desktop-published balance snapshot is unavailable or the MCP call fails.",
+      "firstTool": "puretokens_get_balance",
+      "expected": "report_balance_unavailable_without_catalog_or_credential_access",
+      "forbiddenTools": ["puretokens_list_media_models", "credential_access"]
+    },
+    {
       "id": "ambiguous-model",
       "when": "The requested display name, alias, provider, or media type matches more than one catalog model.",
       "firstTool": "puretokens_list_media_models",
       "expected": "ask_user_to_choose",
       "forbiddenTools": ["puretokens_generate_image", "puretokens_generate_video"]
+    },
+    {
+      "id": "exact-model-price",
+      "when": "The user asks for the price of one exact model id or a uniquely resolved curated alias.",
+      "firstTool": "puretokens_list_media_models",
+      "expected": "call_puretokens_get_model_price_and_show_every_group_price",
+      "forbiddenTools": ["automatic_price_inference", "automatic_model_substitution"]
+    },
+    {
+      "id": "multiple-group-prices",
+      "when": "The exact model is active in more than one selected group.",
+      "firstTool": "puretokens_get_model_price",
+      "expected": "show_all_group_specific_prices",
+      "forbiddenTools": ["silent_group_selection"]
+    },
+    {
+      "id": "dynamic-model-price",
+      "when": "The price tool returns mode=dynamic or no usable static price.",
+      "firstTool": "puretokens_get_model_price",
+      "expected": "report_dynamic_or_unavailable_without_guessing",
+      "forbiddenTools": ["static_price_inference"]
     },
     {
       "id": "no-media-model",
