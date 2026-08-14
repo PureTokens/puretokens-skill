@@ -165,7 +165,7 @@ node .\bin\puretokens-skill.js install puretokens_media --target "$HOME\.codex\s
 Claude Desktop 使用图形界面上传本地 Skill 包。生成 ZIP：
 
 ```bash
-node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out ./puretokens_media-0.2.9.zip
+node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out ./puretokens_media-0.3.2.zip
 ```
 
 ZIP 内部结构为：
@@ -181,7 +181,7 @@ puretokens_media/
 
 在 Claude Desktop 中打开 **Settings → Features → Skills**（部分版本显示为 **Customize → Skills**），选择 **Upload skill**，上传 ZIP 并启用 `Pure Tokens Media`。如果当前版本没有 Skills 入口，则该版本不能导入自定义 Skill，只能使用 MCP 的工具描述；升级或使用支持 Skills 的 Claude 客户端后再导入。
 
-WorkBuddy 不需要手动上传或启用独立 Skill。在 Pure Tokens Desktop 中选择兼容分组并点击 **验证并应用** 后，Desktop 会从共享 `puretokens_media` 源原子化生成并受管常驻的 `puretokens_workbuddy_router` 交付载荷，以及 `puretokens-image` MCP 条目和引用资料。随后重启 WorkBuddy 或新建会话。用户直接说生图、生视频时会优先走 Pure Tokens；用户明确指定 WorkBuddy 内置 `ImageGen` 或 `VideoGen` 时仍保留该选择。
+WorkBuddy 不需要手动上传或启用独立 Skill。在 Pure Tokens Desktop 中选择兼容分组并点击 **验证并应用** 后，Desktop 会从共享 `puretokens_media` 源原子化生成并受管常驻的 `puretokens_workbuddy_router` 交付载荷，以及 `puretokens-image` MCP 条目和引用资料。随后重启 WorkBuddy 或新建会话。用户直接说生图、生视频时会先发现延迟加载的 MCP 工具，再通过 `DeferExecuteTool` 实际调用；只发现工具或渲染出组件都不代表已经调用媒体模型。用户明确指定 WorkBuddy 内置 `ImageGen` 或 `VideoGen` 时仍保留该选择。
 
 更新 Claude Desktop 时从 GitHub 获取新版本、重新生成 ZIP、停用旧 Skill、上传新 ZIP 并启用。WorkBuddy 会在下一次点击 **验证并应用** 时重新生成同一份共享媒体行为。不要直接删除 MCP 配置；MCP 由 Pure Tokens Desktop 管理。
 

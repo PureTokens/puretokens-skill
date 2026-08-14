@@ -4,6 +4,11 @@
 
 # 更新日志
 
+## 0.3.2 — 2026-08-14
+
+- 强化 WorkBuddy 媒体路由：明确 `ToolSearch` 只负责发现工具，所有 Pure Tokens 的目录、生成和结果调用都必须通过 `DeferExecuteTool` 实际执行。
+- 禁止用 SVG/HTML 组件、内置媒体工具、搜索或文字声明冒充 Pure Tokens 媒体任务成功；只有 MCP 返回实际模型及原生结果或本机交付信息时才能称为生成成功。
+
 ## 0.3.1 — 2026-08-14
 
 - 将 `puretokens_media` 收敛为 Claude Desktop 与 WorkBuddy 共用的唯一媒体行为源。WorkBuddy 的常驻路由载荷现在由该源自动生成，目录、精确模型、单次提交、轮询、交付和失败规则完全一致。

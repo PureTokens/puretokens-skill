@@ -10,9 +10,12 @@ test("WorkBuddy output is generated from the shared media source", async () => {
   const { entry, manifest, files } = await renderWorkBuddyMediaSkill();
   assert.match(entry, /^---\nname: puretokens_workbuddy_router\n[\s\S]*alwaysApply: true/m);
   assert.match(entry, /This is the WorkBuddy delivery of the shared Pure Tokens Media Skill/);
+  assert.match(entry, /ToolSearch only discovers the deferred MCP tools/);
+  assert.match(entry, /DeferExecuteTool/);
+  assert.match(entry, /Do not use `show_widget`/);
   assert.match(entry, /稳定的 `request_id`/);
   assert.equal(manifest.derivedFrom.name, "puretokens_media");
-  assert.equal(manifest.derivedFrom.version, "0.2.9");
+  assert.equal(manifest.derivedFrom.version, "0.3.2");
   assert.equal(manifest.sourceSha256, createHash("sha256").update(entry).digest("hex"));
   assert.equal(manifest.mcp.server, "puretokens-image");
   assert.deepEqual(manifest.mcp.tools, [

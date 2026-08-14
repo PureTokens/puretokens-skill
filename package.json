@@ -1,6 +1,6 @@
 {
   "name": "puretokens-skill",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Installable Pure Tokens skills and skill management tooling.",
   "private": true,
   "type": "module",
@@ -23,7 +23,7 @@
     "validate": "node scripts/validate-skills.mjs",
     "test": "node --test",
     "check": "npm run validate && npm test",
-    "bundle:claude": "node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out dist/puretokens_media-0.2.9.zip --force",
+    "bundle:claude": "node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out dist/puretokens_media-0.3.2.zip --force",
     "render:workbuddy": "node scripts/render-workbuddy-media-skill.mjs --out dist/workbuddy/puretokens_workbuddy_router"
   },
   "engines": {

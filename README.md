@@ -165,7 +165,7 @@ Copying a Skill to `~/.codex/skills` is not a Claude Desktop installation. That 
 Claude Desktop uses a graphical local Skill upload. Create the ZIP:
 
 ```bash
-node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out ./puretokens_media-0.2.9.zip
+node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out ./puretokens_media-0.3.2.zip
 ```
 
 The ZIP has this layout:
@@ -181,7 +181,7 @@ puretokens_media/
 
 In Claude Desktop, open **Settings → Features → Skills** (some builds show **Customize → Skills**), choose **Upload skill**, upload the ZIP, and enable `Pure Tokens Media`. If the installed build has no Skills entry, it cannot import custom Skills; that build can still use MCP tool descriptions, but it will not receive this Skill's deterministic model-selection and no-fallback policy.
 
-For WorkBuddy, do not upload or enable a separate Skill yourself. Selecting a compatible group and clicking **Verify and apply** in Pure Tokens Desktop atomically renders and manages the always-on `puretokens_workbuddy_router` delivery from the shared `puretokens_media` source, along with the `puretokens-image` MCP entry and its reference files. Restart WorkBuddy or start a new chat afterwards. Bare image/video requests then prefer Pure Tokens; an explicit request for WorkBuddy's built-in `ImageGen` or `VideoGen` still keeps that user choice.
+For WorkBuddy, do not upload or enable a separate Skill yourself. Selecting a compatible group and clicking **Verify and apply** in Pure Tokens Desktop atomically renders and manages the always-on `puretokens_workbuddy_router` delivery from the shared `puretokens_media` source, along with the `puretokens-image` MCP entry and its reference files. Restart WorkBuddy or start a new chat afterwards. Bare image/video requests first discover the deferred MCP tools, then actually invoke them through `DeferExecuteTool`; a discovered tool or a rendered widget is not a media generation. An explicit request for WorkBuddy's built-in `ImageGen` or `VideoGen` still keeps that user choice.
 
 To update Claude Desktop, get the new version from GitHub, generate a new ZIP, disable the old Skill, upload the new ZIP, and enable it. WorkBuddy regenerates the same shared media behavior on the next **Verify and apply**. Do not delete the MCP entry directly; Pure Tokens Desktop owns MCP configuration.
 

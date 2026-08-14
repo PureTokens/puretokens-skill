@@ -4,6 +4,11 @@
 
 # Changelog
 
+## 0.3.2 — 2026-08-14
+
+- Hardened WorkBuddy media routing: `ToolSearch` now explicitly remains discovery-only, and the managed Skill requires `DeferExecuteTool` for every Pure Tokens catalog, generation, and result call.
+- Prohibited SVG/HTML widgets, built-in media tools, search, and text claims from standing in for a successful Pure Tokens media request. A completion now requires MCP-returned model and native-result or local-delivery evidence.
+
 ## 0.3.1 — 2026-08-14
 
 - Made `puretokens_media` the single source for Claude Desktop and WorkBuddy media behavior. WorkBuddy's always-on routing payload is now generated from that shared source, including the same catalog, exact-model, single-submission, polling, delivery, and failure rules.
