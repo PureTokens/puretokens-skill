@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "name": "puretokens_media",
-  "version": "0.2.4",
+  "version": "0.2.7",
   "entry": "SKILL.md",
   "displayName": "Pure Tokens Media",
   "description": "Check a read-only Pure Tokens balance snapshot, or handle a Pure Tokens image or video request.",
@@ -55,6 +55,11 @@
     "reuseRequestIdOnHostRetry": true,
     "neverAutoResubmitAfterError": true,
     "neverAutoSwitchModelAfterError": true,
-    "successRequiresNativeMediaResult": true
+    "successRequiresNativeMediaResult": true,
+    "completedMediaRequiresLocalFileDelivery": true,
+    "completedImageRequiresNativeImageContent": true,
+    "completedMediaReportsExactModel": true,
+    "completedMediaReportsLocalDelivery": true,
+    "completedVideoUsesBoundedNativeResource": true
   }
 }

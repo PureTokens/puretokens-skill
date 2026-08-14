@@ -11,6 +11,17 @@ description: 当用户要求查询 Pure Tokens 余额、生成图片或视频、
 
 MCP 是严格的执行层，不负责自然语言识别、供应商推断或模型兜底。Skill 只能把 MCP 返回的精确模型 `id` 传给生成工具。
 
+## 分组前置条件
+
+媒体目录只代表**当前客户端已选择分组**中的可用模型，不代表公开目录中的全部模型。用户想使用某个图片或视频模型前，必须在 Pure Tokens Desktop 中：
+
+1. 打开目标客户端的配置；
+2. 选择包含该目标模型的一个或多个分组；
+3. 点击“验证并应用”；
+4. 重启目标客户端，并新建会话。
+
+只有 `puretokens_list_media_models` 返回的模型才可调用。即使文档、公开模型目录或用户的口头请求提到了一个模型，若它不在当前已选分组的实时目录中，也不得调用、猜测替代模型或绕过分组限制。
+
 你不负责：
 
 - 修改客户端配置、分组或 Router；
@@ -132,23 +143,43 @@ skills/puretokens_media/references/natural-language-aliases.json
 1. 生成一个稳定的 `request_id`（UUID 或同等强度的唯一字符串），并在本轮对话中记录它；
 2. 调用一次对应的生成工具，始终传入精确 `model`、清晰的 `prompt` 和这个 `request_id`；
 3. 如果宿主重试完全相同的工具调用，必须复用同一个 `request_id`，不能生成新的请求 ID；
-4. 生成工具返回 `task_id` 后，只允许调用同类型的结果工具，并始终使用同一个 `task_id`；
-5. 只有拿到原生图片或视频资源后，才能向用户声称生成成功。
+4. 生成工具返回 `task_id` 后，只允许调用同类型的结果工具，并始终使用同一个 `task_id`；每次结果轮询都必须带上原始的精确 `model`，这样即使 MCP 进程重启，也不会猜测或改变路由；
+5. 只有拿到 MCP 返回的实际媒体结果后，才能向用户声称生成成功；不得只展示任务 ID，也不得凭任务状态猜测结果已经可预览。
+
+所有完成回复必须明确包含：媒体类型、MCP `structuredContent.model` 返回的实际使用精确模型 ID、文件名和本机 `Downloads/Pure Tokens` 交付位置。若当前实时目录确实返回了同一模型的 `displayName` 或 `provider`，可以附带展示；不得自行补充或推断供应商。
 
 图片：
 
 调用 `puretokens_generate_image`，可按用户明确要求传 `size`、`quality`。随后只调用 `puretokens_image_result`。
 
+图片完成后：
+
+- 明确报告 `structuredContent.model` 中的实际精确模型 ID；
+- 只有工具结果的 `content[]` 中实际包含 `type == image` 时，才能说图片已生成并可在宿主内预览；
+- 读取 `structuredContent.fileName`、`folder`、`folderOpened`，说明原图已保存到本机 `Downloads/Pure Tokens`，并以实际 `folderOpened` 状态说明 Finder / Explorer 是否已定位该文件；
+- 不得伪造“图片已在上方显示”、不得提供临时 `127.0.0.1`、上游 URL 或 `file://` 链接；
+- 不负责下载、写入文件或打开文件夹，这些必须由 MCP 完成。
+
 视频：
 
 调用 `puretokens_generate_video`，可按用户明确要求传 `seconds`、`resolution`、`aspect_ratio` 或 `size`。随后只调用 `puretokens_video_result`。
+
+视频完成后：
+
+- 明确报告 `structuredContent.model` 中的实际精确模型 ID；
+- 读取工具结果的 `structuredContent.fileName`、`folder`、`folderOpened`；
+- 说明视频已保存到本机 `Downloads/Pure Tokens`，并以实际 `folderOpened` 状态说明 Finder / Explorer 是否已定位该文件；
+- 只有工具结果的 `content[]` 中实际包含 `type == resource`、`resource.mimeType` 为 `video/*` 且有实际 `resource.blob` 时，才能说支持该原生媒体资源的宿主可在对话内预览；
+- 若 `structuredContent.previewAvailable == false`，或没有上述原生 `resource`，不得声称可在客户端预览。应说明视频已保存到 `Downloads/Pure Tokens`，请从 MCP 已定位的 Finder / Explorer 文件夹打开播放；
+- 不得把 `task_id` 当作用户可预览的结果，不得伪造临时链接、上游 URL 或 `file://` 链接；
+- 不负责下载、写入文件或打开文件夹，这些必须由 MCP 完成。
 
 视频任务仍在处理中时，如实告知等待状态；轮询超时不等于成功，也不允许重新提交。
 
 ## 失败与澄清
 
-- **MCP 不可用**：停止调用，提示用户在 Pure Tokens Desktop 中对当前客户端完成“验证并应用”，重启目标客户端并新建会话。
-- **目录为空**：停止调用，提示用户在客户端配置中选择包含明确图片或视频模型的分组，再刷新并应用。
+- **MCP 不可用**：停止调用，提示用户在 Pure Tokens Desktop 中为当前客户端选择所需模型所在的分组，点击“验证并应用”，重启目标客户端并新建会话。
+- **目录为空或缺少目标模型**：停止调用，明确提示用户在客户端配置中选择包含该图片或视频模型的分组，点击“验证并应用”，重启目标客户端并新建会话后再试。
 - **模型不存在或匹配多个**：展示目录中的候选精确 ID、能力和已返回的显示信息，要求用户选择。
 - **能力不匹配**：例如目录只声明 `image` 却收到视频请求，停止调用并告知用户，不得改用文本模型。
 - **工具返回错误**：如实转述工具的安全错误；不得自动换模型、不得自动重新提交，即使错误看起来像临时故障。
@@ -164,7 +195,7 @@ skills/puretokens_media/references/natural-language-aliases.json
 Pure Tokens Skill Manager 生成 Claude Desktop 导入包：
 
 ```text
-node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out puretokens_media-0.2.4.zip
+node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out puretokens_media-0.2.7.zip
 ```
 
 在 Claude Desktop 中打开 **Settings → Features → Skills**（部分版本显示为 **Customize → Skills**），选择 **Upload skill**，上传 ZIP 并打开开关。更新时生成新版本 ZIP，先关闭旧版本，再上传并启用新版本；卸载时关闭并删除该 Skill。Claude 的菜单名称以已安装版本为准。
