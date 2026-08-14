@@ -4,6 +4,11 @@
 
 # 更新日志
 
+## 0.3.0 — 2026-08-14
+
+- 新增 `puretokens_workbuddy_router`：轻量常驻的 WorkBuddy Skill。普通生图、生视频请求会优先进入已配置的 Pure Tokens MCP，而不是 WorkBuddy 内置媒体工具；用户明确指定 WorkBuddy 内置工具时保持该选择。文本、代码等普通请求不受影响，并保持目录优先、精确模型与不静默回退的约束。
+- WorkBuddy 路由 Skill 由 Pure Tokens Desktop 作为受管集成自动安装和升级，用户无需上传或手动启用。
+
 ## 0.2.7 — 2026-08-14
 
 - 媒体完成结果现在会展示 MCP 实际返回的精确模型 ID、文件名和持久 `Downloads/Pure Tokens` 交付状态。

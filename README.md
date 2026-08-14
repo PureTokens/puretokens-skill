@@ -13,7 +13,7 @@
 ## 3-step quick start
 
 1. In Pure Tokens Desktop, select a group for your client that contains the image or video model you plan to use, then click **Verify and apply**.
-2. Install `puretokens_media` using the client table or the copyable agent prompt below.
+2. For WorkBuddy, **Verify and apply** installs its Pure Tokens media router automatically. For other clients, install `puretokens_media` using the client table or the copyable agent prompt below.
 3. Start a new chat. Say `Generate a cute dog` for the default image model, or name a model such as `Use Nano Banana Pro to generate ...`.
 
 > **Before using a specific model:** the model must belong to at least one group selected for that client. For example, select a group containing `gpt-image-2` before asking the Skill to use `image2`. After changing groups, click **Verify and apply**, restart the target client, and start a new chat. The Skill can use only models returned from the currently selected group or groups; it cannot use every model in the public catalog.
@@ -23,6 +23,7 @@ Current Skill:
 | Skill | Purpose |
 | --- | --- |
 | `puretokens_media` | Check your Pure Tokens balance or model price, or select an exact image/video model from the live catalog and poll the same task. |
+| `puretokens_workbuddy_router` | Desktop-managed WorkBuddy routing rules that prefer the configured Pure Tokens media MCP for ordinary image and video requests. |
 
 ## Check your balance
 
@@ -102,7 +103,7 @@ Only models in the selected group or groups are available to the Skill. If the t
 
 ## Install and update from GitHub
 
-Pure Tokens Desktop does not write Skill files into client directories and does not tie Skill contents to a Desktop release. Always use this repository for the current installation instructions and Skill files. Before installing, complete “Verify and apply” for the target client in Pure Tokens Desktop, then restart that client and start a new chat.
+Pure Tokens Desktop does not write shared Skill files into client directories or tie their contents to a Desktop release. The one exception is WorkBuddy's small, versioned `puretokens_workbuddy_router`, which Desktop manages transactionally after **Verify and apply** so generic image/video requests use the configured Pure Tokens MCP. Always use this repository for the current shared-Skill installation instructions and files. Before installing a shared Skill, complete **Verify and apply** for the target client, then restart that client and start a new chat.
 
 ### Codex, Claude Code, Gemini CLI, and OpenCode
 
@@ -147,7 +148,7 @@ Install Pure Tokens Skill for the client I am using from https://github.com/yany
 6. Do not read, request, print, or store API keys, cookies, passwords, Router tokens, or local authorization URLs.
 7. Tell me the installed directory and whether the operation succeeded.
 
-If this is Claude Desktop or WorkBuddy, do not claim it was installed automatically. Build the ZIP following the README, then tell me exactly where to upload and enable it.
+If this is Claude Desktop, do not claim it was installed automatically. Build the ZIP following the README, then tell me exactly where to upload and enable it. For WorkBuddy, tell me to use Pure Tokens Desktop's **Verify and apply** instead; do not manually create or replace `puretokens_workbuddy_router`.
 ```
 
 To update, pull or download the latest repository contents and run the matching `upgrade` command:
@@ -169,11 +170,11 @@ node .\bin\puretokens-skill.js install puretokens_media --target "$HOME\.codex\s
 
 Use `$HOME\.claude\skills`, `$HOME\.gemini\skills`, or `$HOME\.config\opencode\skills` for the other clients. If PowerShell cannot find `node`, install Node.js LTS from the official Node.js website and reopen PowerShell.
 
-## Import into Claude Desktop and WorkBuddy
+## Claude Desktop import and WorkBuddy routing
 
 Copying a Skill to `~/.codex/skills` is not a Claude Desktop installation. That directory is only for Codex local Skills.
 
-Claude Desktop and WorkBuddy use a graphical local Skill upload. Create the ZIP:
+Claude Desktop uses a graphical local Skill upload. Create the ZIP:
 
 ```bash
 node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out ./puretokens_media-0.2.7.zip
@@ -192,9 +193,9 @@ puretokens_media/
 
 In Claude Desktop, open **Settings → Features → Skills** (some builds show **Customize → Skills**), choose **Upload skill**, upload the ZIP, and enable `Pure Tokens Media`. If the installed build has no Skills entry, it cannot import custom Skills; that build can still use MCP tool descriptions, but it will not receive this Skill's deterministic model-selection and no-fallback policy.
 
-In WorkBuddy, open **Skills → Add Skill → Upload skill**, choose the same ZIP, confirm `Pure Tokens Media` appears in the installed list, enable it, and start a new chat. WorkBuddy owns the import and local configuration; Pure Tokens Desktop does not write to an undocumented WorkBuddy directory.
+For WorkBuddy, do not upload or enable `puretokens_workbuddy_router` yourself. Selecting a compatible group and clicking **Verify and apply** in Pure Tokens Desktop atomically manages the small router Skill in WorkBuddy's user Skill location along with the `puretokens-image` MCP entry. Restart WorkBuddy or start a new chat afterwards. Bare image/video requests then prefer Pure Tokens; an explicit request for WorkBuddy's built-in `ImageGen` or `VideoGen` still keeps that user choice.
 
-To update, get the new version from GitHub, generate a new ZIP, disable the old Skill, upload the new ZIP, and enable it in Claude Desktop or WorkBuddy. To uninstall, disable and delete the Skill from the client's Skills page. Do not delete the MCP entry directly; Pure Tokens Desktop owns MCP configuration.
+To update Claude Desktop, get the new version from GitHub, generate a new ZIP, disable the old Skill, upload the new ZIP, and enable it. WorkBuddy updates its managed router on the next **Verify and apply**. Do not delete the MCP entry directly; Pure Tokens Desktop owns MCP configuration.
 
 ## Codex local install, upgrade, and uninstall
 

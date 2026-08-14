@@ -8,6 +8,14 @@
       "manifest": "skills/puretokens_media/skill.json",
       "summary": "Check a read-only balance snapshot or resolve an exact media model, then submit one task, poll it without fallback or duplicate billing, and deliver completed media as native content plus a local Downloads file.",
       "distribution": "claude-desktop-zip"
+    },
+    {
+      "name": "puretokens_workbuddy_router",
+      "version": "1.0.0",
+      "entry": "skills/puretokens_workbuddy_router/SKILL.md",
+      "manifest": "skills/puretokens_workbuddy_router/skill.json",
+      "summary": "Always-on, lightweight WorkBuddy routing rules that prefer the configured Pure Tokens MCP for image and video generation.",
+      "distribution": "desktop-managed-workbuddy-skill"
     }
   ]
 }

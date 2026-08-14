@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -51,6 +52,15 @@ export async function validateRepository() {
     if (frontmatter.name !== name) errors.push(`${directory}: SKILL.md frontmatter name must match manifest`);
     if (!frontmatter.description) errors.push(`${directory}: SKILL.md needs a non-empty frontmatter description`);
     if (!manifest?.version || !/^\d+\.\d+\.\d+$/.test(manifest.version)) errors.push(`${directory}: manifest version must be semver`);
+    if (manifest?.sourceSha256 !== undefined) {
+      const sourceSha256 = String(manifest.sourceSha256);
+      const actualSourceSha256 = createHash("sha256").update(skillText).digest("hex");
+      if (!/^[a-f0-9]{64}$/.test(sourceSha256)) {
+        errors.push(`${directory}: sourceSha256 must be a lowercase SHA-256 digest`);
+      } else if (sourceSha256 !== actualSourceSha256) {
+        errors.push(`${directory}: sourceSha256 does not match SKILL.md`);
+      }
+    }
     if (seen.has(name)) errors.push(`${directory}: duplicate skill name ${name}`);
     seen.add(name);
     const registryEntry = registryByName.get(name);
