@@ -12,9 +12,11 @@
 
 ## 3 步开始
 
-1. 在 Pure Tokens Desktop 中对当前客户端点击 **验证并应用**，然后重启客户端。
+1. 在 Pure Tokens Desktop 中，为当前客户端选择包含你要使用的图片或视频模型的分组，然后点击 **验证并应用**。
 2. 按客户端安装表安装 `puretokens_media`，或复制下面的 Agent 提示词。
 3. 新建会话。直接说“生成一只可爱的狗”即可使用默认图片模型；也可以说“使用 Nano Banana Pro 生成……”。
+
+> **使用指定模型前请先确认：** 该模型必须位于当前客户端已选择的至少一个分组中。例如，要让 Skill 使用 `image2`，先选择包含 `gpt-image-2` 的分组。每次修改分组后，都要点击 **验证并应用**、重启目标客户端，并新建会话。Skill 只能调用当前已选分组返回的模型，不能调用公开目录中的全部模型。
 
 当前 Skill：
 
@@ -89,7 +91,14 @@ Skill 只提交一次 `puretokens_generate_video`，然后用 `puretokens_video_
 
 ## 前置条件
 
-用户必须先在 Pure Tokens Desktop 中对当前客户端完成“验证并应用”，并重启目标客户端。Desktop 会为支持的客户端配置名为 `puretokens-image` 的 MCP 服务。Skill 不会替代 MCP 配置，也不会携带任何凭据。
+使用指定图片或视频模型前，请按以下顺序完成：
+
+1. 在 Pure Tokens Desktop 中打开目标客户端的配置。
+2. 选择包含目标模型的一个或多个分组。
+3. 点击 **验证并应用**。
+4. 重启目标客户端，并新建会话。
+
+Skill 只能使用当前已选分组中的模型。如果实时媒体目录没有目标模型，请回到客户端配置，选择包含该模型的分组后再次应用配置。Desktop 会为支持的客户端配置名为 `puretokens-image` 的 MCP 服务。Skill 不会替代 MCP 配置，也不会携带任何凭据。
 
 ## 从 GitHub 安装和更新
 
@@ -167,7 +176,7 @@ node .\bin\puretokens-skill.js install puretokens_media --target "$HOME\.codex\s
 Claude Desktop 和 WorkBuddy 使用图形界面上传本地 Skill 包。生成 ZIP：
 
 ```bash
-node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out ./puretokens_media-0.2.4.zip
+node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out ./puretokens_media-0.2.7.zip
 ```
 
 ZIP 内部结构为：
@@ -210,7 +219,9 @@ node bin/puretokens-skill.js uninstall puretokens_media --target .codex/skills -
 
 ## 模型选择规则
 
-`puretokens_media` 必须先调用 `puretokens_list_media_models`，只依据本次响应的 `id`、`displayName`、`aliases`、`provider` 和 `capabilities` 匹配。生成工具必须传精确 `model` 和稳定 `request_id`。一次用户请求只提交一次；宿主重试时复用同一 `request_id`，结果工具始终使用同一 `task_id`。
+`puretokens_media` 必须先调用 `puretokens_list_media_models`，只依据本次响应的 `id`、`displayName`、`aliases`、`provider` 和 `capabilities` 匹配。生成工具必须传精确 `model` 和稳定 `request_id`。一次用户请求只提交一次；宿主重试时复用同一 `request_id`，结果工具始终使用同一 `task_id` 和原始模型。
+
+媒体完成后会展示 MCP 返回的实际精确模型、保存文件名和 `Downloads/Pure Tokens`。只有 MCP 返回原生 `image` 内容时，图片才可在支持的宿主内预览。视频在大小受限时会携带原生 MCP 资源，支持该资源的宿主可以预览；较大的视频仍会成功保存为本机 MP4，并从同一下载文件夹打开。
 
 查询价格时，Skill 会使用解析后的精确模型 ID 调用 `puretokens_get_model_price`，展示每个分组的价格结果。不会推测价格、静默选择分组，也不会把动态计费规则当成固定金额。
 

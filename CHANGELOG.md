@@ -4,6 +4,18 @@
 
 # Changelog
 
+## 0.2.7 — 2026-08-14
+
+- Completed media reports now include the exact MCP-returned model ID, filename, and durable `Downloads/Pure Tokens` delivery state.
+- Added bounded native MCP video resources for hosts that can render them. Large videos stay successful local MP4 deliveries without forcing an oversized stdio response.
+- Result polling now carries the original exact model after an MCP restart rather than guessing a default route.
+- Clarified that a target media model must be included in a group selected for the target client, followed by Verify and apply, client restart, and a new chat.
+
+## 0.2.6 — 2026-08-13
+
+- Completed image and video workflows now use the MCP-delivered local `Downloads/Pure Tokens` file as the durable delivery path, not a temporary preview URL.
+- Image success requires actual native MCP image content before the Skill may claim that an in-chat preview is available; the Skill no longer invents an “image above” state.
+
 ## 0.2.4 — 2026-08-12
 
 - Added `puretokens_get_balance`, a read-only Desktop-published balance snapshot with Chinese and English usage guidance. Balance checks do not inspect media models or any credential material.

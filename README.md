@@ -12,9 +12,11 @@
 
 ## 3-step quick start
 
-1. In Pure Tokens Desktop, click **Verify and apply** for your client, then restart it.
+1. In Pure Tokens Desktop, select a group for your client that contains the image or video model you plan to use, then click **Verify and apply**.
 2. Install `puretokens_media` using the client table or the copyable agent prompt below.
 3. Start a new chat. Say `Generate a cute dog` for the default image model, or name a model such as `Use Nano Banana Pro to generate ...`.
+
+> **Before using a specific model:** the model must belong to at least one group selected for that client. For example, select a group containing `gpt-image-2` before asking the Skill to use `image2`. After changing groups, click **Verify and apply**, restart the target client, and start a new chat. The Skill can use only models returned from the currently selected group or groups; it cannot use every model in the public catalog.
 
 Current Skill:
 
@@ -89,7 +91,14 @@ Natural-language user request → Skill → Pure Tokens MCP → local Router →
 
 ## Prerequisites
 
-The user must first complete “Verify and apply” for the current client in Pure Tokens Desktop and restart that client. Desktop configures an MCP server named `puretokens-image` for supported clients. The Skill does not replace MCP configuration and never carries credentials.
+Before using a specific image or video model, complete these steps in order:
+
+1. In Pure Tokens Desktop, open the configuration for the target client.
+2. Select one or more groups that contain the target model.
+3. Click **Verify and apply**.
+4. Restart the target client and start a new chat.
+
+Only models in the selected group or groups are available to the Skill. If the target model is absent from the live media catalog, return to client configuration, select a group that contains it, and apply the configuration again. Desktop configures an MCP server named `puretokens-image` for supported clients. The Skill does not replace MCP configuration and never carries credentials.
 
 ## Install and update from GitHub
 
@@ -167,7 +176,7 @@ Copying a Skill to `~/.codex/skills` is not a Claude Desktop installation. That 
 Claude Desktop and WorkBuddy use a graphical local Skill upload. Create the ZIP:
 
 ```bash
-node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out ./puretokens_media-0.2.4.zip
+node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out ./puretokens_media-0.2.7.zip
 ```
 
 The ZIP has this layout:
@@ -210,7 +219,9 @@ Upgrade atomically moves the old managed directory to a temporary backup and cle
 
 ## Model-selection rules
 
-`puretokens_media` must call `puretokens_list_media_models` first and match only fields returned in that response: `id`, `displayName`, `aliases`, `provider`, and `capabilities`. Generation calls must include the exact `model` and a stable `request_id`. One logical user request submits once; a host retry reuses the same `request_id`; result polling always uses the same `task_id`.
+`puretokens_media` must call `puretokens_list_media_models` first and match only fields returned in that response: `id`, `displayName`, `aliases`, `provider`, and `capabilities`. Generation calls must include the exact `model` and a stable `request_id`. One logical user request submits once; a host retry reuses the same `request_id`; result polling always uses the same `task_id` and original model.
+
+Completed media reports the exact model returned by MCP, the saved filename, and `Downloads/Pure Tokens`. Images are previewable only when MCP returns native `image` content. Videos may include a bounded native MCP resource for hosts that render it; larger videos remain successfully delivered as local MP4 files and open from the same Downloads folder.
 
 For a price request, the Skill calls `puretokens_get_model_price` with the exact resolved model ID and displays every group-specific result. It never infers a price, silently selects a group, or turns a dynamic billing rule into a static amount.
 

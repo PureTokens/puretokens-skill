@@ -31,12 +31,19 @@ test("media Skill publishes the complete MCP tool contract", async () => {
   assert.equal(manifest.rules.neverAutoResubmitAfterError, true);
   assert.equal(manifest.rules.neverAutoSwitchModelAfterError, true);
   assert.equal(manifest.rules.successRequiresNativeMediaResult, true);
+  assert.equal(manifest.rules.completedMediaRequiresLocalFileDelivery, true);
+  assert.equal(manifest.rules.completedImageRequiresNativeImageContent, true);
+  assert.equal(manifest.rules.completedMediaReportsExactModel, true);
+  assert.equal(manifest.rules.completedMediaReportsLocalDelivery, true);
+  assert.equal(manifest.rules.completedVideoUsesBoundedNativeResource, true);
   assert.equal(manifest.rules.usesCuratedNaturalLanguageAliasRegistry, true);
   assert.equal(manifest.rules.usesDeterministicMediaDefaults, true);
   assert.equal(manifest.naturalLanguageAliases, "skills/puretokens_media/references/natural-language-aliases.json");
   assert.match(skillText, /第一步必须调用[：:][\s\S]*puretokens_list_media_models/);
   assert.match(skillText, /稳定的 `request_id`/);
   assert.match(skillText, /同一个 `task_id`/);
+  assert.match(skillText, /`structuredContent\.model` 返回的实际使用精确模型 ID/);
+  assert.match(skillText, /`type == resource`/);
   assert.match(skillText, /puretokens_get_balance/);
 });
 
