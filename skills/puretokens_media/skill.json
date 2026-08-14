@@ -1,15 +1,13 @@
 {
   "schemaVersion": 1,
   "name": "puretokens_media",
-  "version": "0.2.7",
+  "version": "0.2.9",
   "entry": "SKILL.md",
   "displayName": "Pure Tokens Media",
-  "description": "Check a read-only Pure Tokens balance snapshot, or handle a Pure Tokens image or video request.",
+  "description": "Resolve and handle a Pure Tokens image or video request.",
   "mcp": {
     "server": "puretokens-image",
     "tools": [
-      "puretokens_get_balance",
-      "puretokens_get_model_price",
       "puretokens_list_media_models",
       "puretokens_generate_image",
       "puretokens_image_result",
@@ -29,6 +27,11 @@
       ],
       "importPath": "Settings > Features > Skills > Upload skill",
       "enableAfterImport": true
+    },
+    "workbuddy": {
+      "managedByDesktop": true,
+      "generatedSkillName": "puretokens_workbuddy_router",
+      "alwaysApply": true
     }
   },
   "supportedClients": [
@@ -48,7 +51,6 @@
     "naturalLanguageResolutionBelongsToSkill": true,
     "usesCuratedNaturalLanguageAliasRegistry": true,
     "usesDeterministicMediaDefaults": true,
-    "balanceUsesReadOnlySnapshot": true,
     "neverGuessModelOrProtocol": true,
     "neverResubmitPendingTask": true,
     "stableRequestIdRequired": true,

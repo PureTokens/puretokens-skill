@@ -13,7 +13,7 @@
 ## 3-step quick start
 
 1. In Pure Tokens Desktop, select a group for your client that contains the image or video model you plan to use, then click **Verify and apply**.
-2. For WorkBuddy, **Verify and apply** installs its Pure Tokens media router automatically. For other clients, install `puretokens_media` using the client table or the copyable agent prompt below.
+2. For WorkBuddy, **Verify and apply** automatically installs the always-on delivery generated from the same `puretokens_media` source. For other clients, install `puretokens_media` using the client table or the copyable agent prompt below.
 3. Start a new chat. Say `Generate a cute dog` for the default image model, or name a model such as `Use Nano Banana Pro to generate ...`.
 
 > **Before using a specific model:** the model must belong to at least one group selected for that client. For example, select a group containing `gpt-image-2` before asking the Skill to use `image2`. After changing groups, click **Verify and apply**, restart the target client, and start a new chat. The Skill can use only models returned from the currently selected group or groups; it cannot use every model in the public catalog.
@@ -22,18 +22,7 @@ Current Skill:
 
 | Skill | Purpose |
 | --- | --- |
-| `puretokens_media` | Check your Pure Tokens balance or model price, or select an exact image/video model from the live catalog and poll the same task. |
-| `puretokens_workbuddy_router` | Desktop-managed WorkBuddy routing rules that prefer the configured Pure Tokens media MCP for ordinary image and video requests. |
-
-## Check your balance
-
-Ask `How much Pure Tokens balance do I have?` or `Check my Pure Tokens balance.` The Skill calls `puretokens_get_balance` directly and shows only the balance fields returned by Pure Tokens. It does not read model catalogs, API keys, Cookies, passwords, or local Router credentials.
-
-## Check a model price
-
-Ask `How much does gpt-image-2 cost?` or `What is the price of image2?` The Skill checks the live catalog, resolves only a registered alias to an exact model ID, then calls `puretokens_get_model_price`. It shows every selected-group price, including the group multiplier and update time.
-
-Prices are never guessed from a model name. If the model is unavailable, ambiguous, or uses dynamic billing, the Skill reports that state instead of inventing a fixed price, choosing a group, or silently substituting another model.
+| `puretokens_media` | Select an exact image/video model from the live catalog, submit one task, poll the same task, and deliver its native result plus the local file. |
 
 ## Image models
 
@@ -76,7 +65,6 @@ If a model is missing, ambiguous, or does not have the requested capability, the
 | --- | --- |
 | Generate an image | `Generate a cute dog.` |
 | Generate a video | `Generate a 15-second 16:9 product ad.` |
-| Check a model price | `How much does gpt-image-2 cost?` |
 | Use Nano Banana | `Use Nano Banana Pro to create a premium product key visual.` |
 | See available models | `List the image and video models I can use now.` |
 
@@ -103,7 +91,7 @@ Only models in the selected group or groups are available to the Skill. If the t
 
 ## Install and update from GitHub
 
-Pure Tokens Desktop does not write shared Skill files into client directories or tie their contents to a Desktop release. The one exception is WorkBuddy's small, versioned `puretokens_workbuddy_router`, which Desktop manages transactionally after **Verify and apply** so generic image/video requests use the configured Pure Tokens MCP. Always use this repository for the current shared-Skill installation instructions and files. Before installing a shared Skill, complete **Verify and apply** for the target client, then restart that client and start a new chat.
+`puretokens_media` is the single behavior source for every supported client. Claude Desktop receives it as an uploadable ZIP; WorkBuddy receives a Desktop-managed, always-on generated delivery after **Verify and apply**, so generic image/video requests use the configured Pure Tokens MCP. Always use this repository for the current shared-Skill installation instructions and files. Before installing a shared Skill, complete **Verify and apply** for the target client, then restart that client and start a new chat.
 
 ### Codex, Claude Code, Gemini CLI, and OpenCode
 
@@ -148,7 +136,7 @@ Install Pure Tokens Skill for the client I am using from https://github.com/yany
 6. Do not read, request, print, or store API keys, cookies, passwords, Router tokens, or local authorization URLs.
 7. Tell me the installed directory and whether the operation succeeded.
 
-If this is Claude Desktop, do not claim it was installed automatically. Build the ZIP following the README, then tell me exactly where to upload and enable it. For WorkBuddy, tell me to use Pure Tokens Desktop's **Verify and apply** instead; do not manually create or replace `puretokens_workbuddy_router`.
+If this is Claude Desktop, do not claim it was installed automatically. Build the ZIP following the README, then tell me exactly where to upload and enable it. For WorkBuddy, tell me to use Pure Tokens Desktop's **Verify and apply** instead; do not manually create or replace its generated `puretokens_workbuddy_router` delivery.
 ```
 
 To update, pull or download the latest repository contents and run the matching `upgrade` command:
@@ -177,7 +165,7 @@ Copying a Skill to `~/.codex/skills` is not a Claude Desktop installation. That 
 Claude Desktop uses a graphical local Skill upload. Create the ZIP:
 
 ```bash
-node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out ./puretokens_media-0.2.7.zip
+node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out ./puretokens_media-0.2.9.zip
 ```
 
 The ZIP has this layout:
@@ -193,9 +181,9 @@ puretokens_media/
 
 In Claude Desktop, open **Settings → Features → Skills** (some builds show **Customize → Skills**), choose **Upload skill**, upload the ZIP, and enable `Pure Tokens Media`. If the installed build has no Skills entry, it cannot import custom Skills; that build can still use MCP tool descriptions, but it will not receive this Skill's deterministic model-selection and no-fallback policy.
 
-For WorkBuddy, do not upload or enable `puretokens_workbuddy_router` yourself. Selecting a compatible group and clicking **Verify and apply** in Pure Tokens Desktop atomically manages the small router Skill in WorkBuddy's user Skill location along with the `puretokens-image` MCP entry. Restart WorkBuddy or start a new chat afterwards. Bare image/video requests then prefer Pure Tokens; an explicit request for WorkBuddy's built-in `ImageGen` or `VideoGen` still keeps that user choice.
+For WorkBuddy, do not upload or enable a separate Skill yourself. Selecting a compatible group and clicking **Verify and apply** in Pure Tokens Desktop atomically renders and manages the always-on `puretokens_workbuddy_router` delivery from the shared `puretokens_media` source, along with the `puretokens-image` MCP entry and its reference files. Restart WorkBuddy or start a new chat afterwards. Bare image/video requests then prefer Pure Tokens; an explicit request for WorkBuddy's built-in `ImageGen` or `VideoGen` still keeps that user choice.
 
-To update Claude Desktop, get the new version from GitHub, generate a new ZIP, disable the old Skill, upload the new ZIP, and enable it. WorkBuddy updates its managed router on the next **Verify and apply**. Do not delete the MCP entry directly; Pure Tokens Desktop owns MCP configuration.
+To update Claude Desktop, get the new version from GitHub, generate a new ZIP, disable the old Skill, upload the new ZIP, and enable it. WorkBuddy regenerates the same shared media behavior on the next **Verify and apply**. Do not delete the MCP entry directly; Pure Tokens Desktop owns MCP configuration.
 
 ## Codex local install, upgrade, and uninstall
 
@@ -223,8 +211,6 @@ Upgrade atomically moves the old managed directory to a temporary backup and cle
 `puretokens_media` must call `puretokens_list_media_models` first and match only fields returned in that response: `id`, `displayName`, `aliases`, `provider`, and `capabilities`. Generation calls must include the exact `model` and a stable `request_id`. One logical user request submits once; a host retry reuses the same `request_id`; result polling always uses the same `task_id` and original model.
 
 Completed media reports the exact model returned by MCP, the saved filename, and `Downloads/Pure Tokens`. Images are previewable only when MCP returns native `image` content. Videos may include a bounded native MCP resource for hosts that render it; larger videos remain successfully delivered as local MP4 files and open from the same Downloads folder.
-
-For a price request, the Skill calls `puretokens_get_model_price` with the exact resolved model ID and displays every group-specific result. It never infers a price, silently selects a group, or turns a dynamic billing rule into a static amount.
 
 Behavior scenarios for ambiguity, an empty catalog, unavailable MCP, task failure, and polling timeout are stored in `skills/puretokens_media/references/behavior-scenarios.json`. No error may trigger an automatic model switch or resubmission unless the user explicitly chooses a new model.
 

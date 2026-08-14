@@ -32,7 +32,7 @@ test("install, upgrade, and explicit uninstall only manage the named Skill direc
   const skillDirectory = path.join(temporaryRoot, "puretokens_media");
   await runCli(["install", "puretokens_media", "--target", temporaryRoot]);
   const manifest = JSON.parse(await readFile(path.join(skillDirectory, "skill.json"), "utf8"));
-  assert.equal(manifest.version, "0.2.7");
+  assert.equal(manifest.version, "0.2.9");
   await writeFile(path.join(skillDirectory, "SKILL.md"), "local modification\n");
   await runCli(["upgrade", "puretokens_media", "--target", temporaryRoot]);
   const upgraded = await readFile(path.join(skillDirectory, "SKILL.md"), "utf8");

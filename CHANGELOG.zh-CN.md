@@ -4,6 +4,12 @@
 
 # 更新日志
 
+## 0.3.1 — 2026-08-14
+
+- 将 `puretokens_media` 收敛为 Claude Desktop 与 WorkBuddy 共用的唯一媒体行为源。WorkBuddy 的常驻路由载荷现在由该源自动生成，目录、精确模型、单次提交、轮询、交付和失败规则完全一致。
+- 移除独立的 WorkBuddy 路由 Skill 源。Pure Tokens Desktop 仍会在点击 **验证并应用** 后自动安装生成后的适配载荷，用户无需手动上传。
+- 移除媒体 Skill 中已过期的余额和模型价格工具声明；现在只暴露本地 Sidecar 实际提供的五个媒体 MCP 工具。
+
 ## 0.3.0 — 2026-08-14
 
 - 新增 `puretokens_workbuddy_router`：轻量常驻的 WorkBuddy Skill。普通生图、生视频请求会优先进入已配置的 Pure Tokens MCP，而不是 WorkBuddy 内置媒体工具；用户明确指定 WorkBuddy 内置工具时保持该选择。文本、代码等普通请求不受影响，并保持目录优先、精确模型与不静默回退的约束。

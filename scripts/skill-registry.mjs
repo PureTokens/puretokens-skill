@@ -79,6 +79,14 @@ export async function validateRepository() {
       }
       if (claudeDesktop.enableAfterImport !== true) errors.push(`${directory}: Claude Desktop bundle must require explicit enablement`);
     }
+    const workbuddy = manifest?.distribution?.workbuddy;
+    if (workbuddy) {
+      if (workbuddy.managedByDesktop !== true) errors.push(`${directory}: WorkBuddy delivery must be managed by Desktop`);
+      if (workbuddy.generatedSkillName !== "puretokens_workbuddy_router") {
+        errors.push(`${directory}: WorkBuddy generated Skill name must be puretokens_workbuddy_router`);
+      }
+      if (workbuddy.alwaysApply !== true) errors.push(`${directory}: WorkBuddy delivery must be alwaysApply`);
+    }
     if (forbiddenPattern.test(skillText) || forbiddenPattern.test(JSON.stringify(manifest))) {
       errors.push(`${directory}: skill content contains a forbidden credential or local-runtime marker`);
     }
