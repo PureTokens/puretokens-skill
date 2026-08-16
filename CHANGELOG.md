@@ -4,6 +4,22 @@
 
 # Changelog
 
+## 0.3.2 — 2026-08-14
+
+- Hardened WorkBuddy media routing: `ToolSearch` now explicitly remains discovery-only, and the managed Skill requires `DeferExecuteTool` for every Pure Tokens catalog, generation, and result call.
+- Prohibited SVG/HTML widgets, built-in media tools, search, and text claims from standing in for a successful Pure Tokens media request. A completion now requires MCP-returned model and native-result or local-delivery evidence.
+
+## 0.3.1 — 2026-08-14
+
+- Made `puretokens_media` the single source for Claude Desktop and WorkBuddy media behavior. WorkBuddy's always-on routing payload is now generated from that shared source, including the same catalog, exact-model, single-submission, polling, delivery, and failure rules.
+- Removed the independent WorkBuddy router Skill source. Pure Tokens Desktop continues to install the generated adapter automatically after **Verify and apply**; users do not upload it manually.
+- Removed stale balance and model-price tool claims from the media Skill. It now advertises only the five media MCP tools that the local sidecar actually exposes.
+
+## 0.3.0 — 2026-08-14
+
+- Added `puretokens_workbuddy_router`, a lightweight always-on WorkBuddy Skill that routes ordinary image and video requests to the configured Pure Tokens MCP before WorkBuddy's built-in media tools. It preserves an explicit user choice of a WorkBuddy built-in tool, keeps normal text/code requests untouched, and uses catalog-first exact model selection with no silent fallback.
+- WorkBuddy's router is intended to be installed and upgraded by Pure Tokens Desktop as a managed integration; users do not upload or enable it manually.
+
 ## 0.2.7 — 2026-08-14
 
 - Completed media reports now include the exact MCP-returned model ID, filename, and durable `Downloads/Pure Tokens` delivery state.

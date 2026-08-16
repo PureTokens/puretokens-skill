@@ -3,11 +3,11 @@
   "skills": [
     {
       "name": "puretokens_media",
-      "version": "0.2.7",
+      "version": "0.3.2",
       "entry": "skills/puretokens_media/SKILL.md",
       "manifest": "skills/puretokens_media/skill.json",
-      "summary": "Check a read-only balance snapshot or resolve an exact media model, then submit one task, poll it without fallback or duplicate billing, and deliver completed media as native content plus a local Downloads file.",
-      "distribution": "claude-desktop-zip"
+      "summary": "Shared source for exact Pure Tokens media selection, single task submission, safe polling, native result delivery, and WorkBuddy's desktop-managed always-on routing adapter.",
+      "distribution": "cross-client-source"
     }
   ]
 }

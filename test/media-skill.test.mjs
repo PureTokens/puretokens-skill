@@ -18,8 +18,6 @@ test("media Skill publishes the complete MCP tool contract", async () => {
   const manifest = JSON.parse(manifestText);
   assert.equal(manifest.mcp.server, "puretokens-image");
   assert.deepEqual(manifest.mcp.tools, [
-    "puretokens_get_balance",
-    "puretokens_get_model_price",
     "puretokens_list_media_models",
     "puretokens_generate_image",
     "puretokens_image_result",
@@ -44,20 +42,20 @@ test("media Skill publishes the complete MCP tool contract", async () => {
   assert.match(skillText, /同一个 `task_id`/);
   assert.match(skillText, /`structuredContent\.model` 返回的实际使用精确模型 ID/);
   assert.match(skillText, /`type == resource`/);
-  assert.match(skillText, /puretokens_get_balance/);
 });
 
-test("balance requests use the read-only balance tool without a media catalog lookup", async () => {
+test("media Skill does not advertise tools absent from the media MCP", async () => {
   const skillText = await readSkill();
-  assert.match(skillText, /查询我的 Pure Tokens 余额/);
-  assert.match(skillText, /余额查询不需要先调用 `puretokens_list_media_models`/);
-  assert.match(skillText, /不得读取或展示 Cookie、API Key、Router Token、密码/);
-  assert.equal(manifestRule(await readFile(path.join(skillRoot, "skill.json"), "utf8"), "balanceUsesReadOnlySnapshot"), true);
+  const manifest = JSON.parse(await readFile(path.join(skillRoot, "skill.json"), "utf8"));
+  assert.doesNotMatch(skillText, /puretokens_get_balance|puretokens_get_model_price/);
+  assert.deepEqual(manifest.mcp.tools, [
+    "puretokens_list_media_models",
+    "puretokens_generate_image",
+    "puretokens_image_result",
+    "puretokens_generate_video",
+    "puretokens_video_result"
+  ]);
 });
-
-function manifestRule(manifestText, name) {
-  return JSON.parse(manifestText).rules?.[name];
-}
 
 test("natural language aliases resolve only to explicit catalog model IDs", async () => {
   const aliases = JSON.parse(await readFile(
@@ -97,17 +95,13 @@ test("media Skill behavior scenarios cover ambiguity, empty catalog, unavailable
   ]);
   const scenarios = JSON.parse(scenariosText).scenarios;
   assert.deepEqual(scenarios.map((scenario) => scenario.id), [
-    "balance-unavailable",
     "ambiguous-model",
-    "exact-model-price",
-    "multiple-group-prices",
-    "dynamic-model-price",
     "no-media-model",
     "mcp-unavailable",
     "task-failure",
     "task-timeout"
   ]);
-  assert.deepEqual(scenarios.slice(1, 2).map((scenario) => scenario.firstTool), [
+  assert.deepEqual(scenarios.slice(0, 1).map((scenario) => scenario.firstTool), [
     "puretokens_list_media_models",
   ]);
   assert.match(skillText, /模型不存在或匹配多个/);
@@ -117,11 +111,9 @@ test("media Skill behavior scenarios cover ambiguity, empty catalog, unavailable
   assert.match(skillText, /轮询超时/);
   assert.match(skillText, /不得自动换模型/);
   assert.match(skillText, /不得自动重新提交/);
-  assert.equal(scenarios[0].firstTool, "puretokens_get_balance");
-  assert.deepEqual(scenarios[0].forbiddenTools, ["puretokens_list_media_models", "credential_access"]);
 });
 
-test("Claude Desktop distribution remains an explicit upload and enablement flow", async () => {
+test("the shared media source has target-specific Claude and WorkBuddy deliveries", async () => {
   const [skillText, manifestText] = await Promise.all([
     readSkill(),
     readFile(path.join(skillRoot, "skill.json"), "utf8")
@@ -130,7 +122,8 @@ test("Claude Desktop distribution remains an explicit upload and enablement flow
   assert.equal(manifest.distribution.claudeDesktop.format, "zip");
   assert.equal(manifest.distribution.claudeDesktop.archiveRoot, "puretokens_media");
   assert.equal(manifest.distribution.claudeDesktop.enableAfterImport, true);
-  assert.match(skillText, /bundle puretokens_media --format claude-desktop/);
-  assert.match(skillText, /上传 ZIP 并打开开关/);
-  assert.match(skillText, /不能算 Claude Desktop 安装完成/);
+  assert.equal(manifest.distribution.workbuddy.generatedSkillName, "puretokens_workbuddy_router");
+  assert.equal(manifest.distribution.workbuddy.alwaysApply, true);
+  assert.match(skillText, /跨客户端共用的媒体行为源/);
+  assert.match(skillText, /不得自行写入、替换或删除任何客户端的 Skill、MCP 或 Router 配置/);
 });

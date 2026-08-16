@@ -1,6 +1,6 @@
 ---
 name: puretokens_media
-description: 当用户要求查询 Pure Tokens 余额、生成图片或视频、或指定 Pure Tokens 媒体模型时使用。
+description: 当用户要求生成图片或视频、查询可用媒体模型、或指定 Pure Tokens 媒体模型时使用。
 ---
 
 # Pure Tokens Media
@@ -10,6 +10,12 @@ description: 当用户要求查询 Pure Tokens 余额、生成图片或视频、
 你是 Pure Tokens 媒体编排 Skill。你负责理解自然语言、询问必要的澄清问题，并把用户请求转换成对 `puretokens-image` MCP 的确定性工具调用。
 
 MCP 是严格的执行层，不负责自然语言识别、供应商推断或模型兜底。Skill 只能把 MCP 返回的精确模型 `id` 传给生成工具。
+
+## 执行证据
+
+工具搜索、工具目录、工具名称、模型文字回复或任意 SVG/HTML 组件都不是媒体任务执行的证据。只有对应的生成工具实际返回 MCP `structuredContent.model` 与任务状态，且后续结果工具返回原生媒体内容或本机交付元数据时，才能称为 Pure Tokens 已调用模型并生成了结果。
+
+若宿主无法实际执行所需 MCP 工具，必须如实报告 MCP 不可用或执行失败；不得用文本、内置绘图、网页搜索、SVG、HTML 或可视化组件伪造图片/视频结果，也不得声称已使用 Pure Tokens。
 
 ## 分组前置条件
 
@@ -38,32 +44,8 @@ MCP 是严格的执行层，不负责自然语言识别、供应商推断或模�
 - 用户要求生成视频、广告片、短片、动画或片段；
 - 用户明确指定媒体模型或供应商，例如“用 image2”“用 Grok Video”或“用图片模型”；
 - 用户询问当前哪些图片或视频模型可用；
-- 用户询问 Pure Tokens 余额，例如“查询我的 Pure Tokens 余额”“我还剩多少余额”“查一下余额”或 “How much balance do I have?”。
-- 用户询问某个精确模型的价格，例如“gpt-image-2 多少钱”“image2 的价格”。
 
 文本聊天、代码、图片理解、图片编辑、多图批量生成和视频编辑不在本 Skill 当前能力范围内。不要把这些请求伪装成普通生图或文生视频。
-
-## 余额查询
-
-当用户询问余额时，直接调用：
-
-```text
-puretokens_get_balance
-```
-
-余额查询不需要先调用 `puretokens_list_media_models`，也不能根据本地配置、模型目录或历史用量猜余额。只展示工具返回的 `balance_display`、`currency`、额度字段和更新时间；MCP 不可用或余额快照尚未同步时，如实说明当前无法读取。
-
-不得读取或展示 Cookie、API Key、Router Token、密码、本地授权地址或任何其他凭据。
-
-## 模型价格查询
-
-当用户询问具体模型价格时，先按上面的自然语言匹配规则得到**精确模型 ID**，然后调用：
-
-```text
-puretokens_get_model_price({ "model": "exact-model-id" })
-```
-
-MCP 只接受精确 ID，不做别名、供应商或协议推断。展示返回的每一个分组价格和更新时间；同一个模型位于多个已选分组时必须全部列出，并注明分组名称或 ID，不能静默选择一个。`mode=dynamic` 只能说明价格由动态计费规则决定，不得把表达式当成固定单价。没有价格或 MCP 不可用时如实说明，不能估算、换模型或重新请求。
 
 ## 必经流程
 
@@ -90,11 +72,7 @@ puretokens_list_media_models
 
 本 Skill 负责自然语言理解。用户不必记住完整模型 ID；例如“用 image2 生图”应先被识别为本 Skill 的已登记自然语言别名，再在当前目录中确认是否真的存在 `gpt-image-2`。
 
-已登记别名位于：
-
-```text
-skills/puretokens_media/references/natural-language-aliases.json
-```
+已登记别名位于 `references/natural-language-aliases.json`。
 
 别名表是 Skill 的受控产品能力，不是模型猜测。它只把一个完整自然语言短语映射到一个或多个明确的候选 `modelIds` 和所需能力；实际选择仍必须由本次目录返回的精确 ID 和能力确认。
 
@@ -188,29 +166,11 @@ skills/puretokens_media/references/natural-language-aliases.json
 
 只有用户明确说“换用某个具体模型重新生成”时，才能开始新的逻辑任务，并为新任务创建新的 `request_id`。
 
-## 客户端导入
+## 客户端安装边界
 
-本 Skill 是一个包含 `SKILL.md` 的标准 Skill 目录。Claude Desktop 的 Skill 导入使用 ZIP 文件；ZIP 解压后的顶层目录必须是 `puretokens_media/`，并且该目录的第一层必须包含 `SKILL.md`。导入后必须在 Claude 的 Skills 设置中启用它。仅把文件复制到 Codex 的 Skill 目录，不能算 Claude Desktop 安装完成。
-
-Pure Tokens Skill Manager 生成 Claude Desktop 导入包：
-
-```text
-node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out puretokens_media-0.2.7.zip
-```
-
-在 Claude Desktop 中打开 **Settings → Features → Skills**（部分版本显示为 **Customize → Skills**），选择 **Upload skill**，上传 ZIP 并打开开关。更新时生成新版本 ZIP，先关闭旧版本，再上传并启用新版本；卸载时关闭并删除该 Skill。Claude 的菜单名称以已安装版本为准。
-
-如果当前 Claude Desktop 版本没有 Skills 入口，它只能使用 MCP 的工具描述，不能通过本仓库自动注入 Skill；这时仍可使用 MCP，但不会获得本 Skill 的模型澄清和禁止自动换模型策略。
+本文件是跨客户端共用的媒体行为源。客户端适配层决定它如何安装、启用或注入；本 Skill 不得自行写入、替换或删除任何客户端的 Skill、MCP 或 Router 配置。缺少 MCP 或实时目录时，按“失败与澄清”处理。
 
 ## 中文示例
-
-用户说：
-
-```text
-查询我的 Pure Tokens 余额
-```
-
-流程：直接调用 `puretokens_get_balance` → 只展示返回的余额和额度信息。该请求不读取模型目录，也不读取任何凭据。
 
 用户说：
 
@@ -231,14 +191,6 @@ node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --o
 若目录只返回 `grok-imagine-video-1.5`，但没有 `Grok Video` 别名，不能假定两者相同；应让用户确认该精确 ID。
 
 ## English examples
-
-User:
-
-```text
-How much Pure Tokens balance do I have?
-```
-
-Flow: call `puretokens_get_balance` directly → show only the returned balance and quota fields. Do not list media models or access credentials.
 
 User:
 

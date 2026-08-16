@@ -13,7 +13,7 @@
 ## 3 步开始
 
 1. 在 Pure Tokens Desktop 中，为当前客户端选择包含你要使用的图片或视频模型的分组，然后点击 **验证并应用**。
-2. 按客户端安装表安装 `puretokens_media`，或复制下面的 Agent 提示词。
+2. WorkBuddy 只需点击 **验证并应用**，Pure Tokens 会自动安装由同一份 `puretokens_media` 源生成的常驻媒体规则；其他客户端按客户端安装表安装 `puretokens_media`，或复制下面的 Agent 提示词。
 3. 新建会话。直接说“生成一只可爱的狗”即可使用默认图片模型；也可以说“使用 Nano Banana Pro 生成……”。
 
 > **使用指定模型前请先确认：** 该模型必须位于当前客户端已选择的至少一个分组中。例如，要让 Skill 使用 `image2`，先选择包含 `gpt-image-2` 的分组。每次修改分组后，都要点击 **验证并应用**、重启目标客户端，并新建会话。Skill 只能调用当前已选分组返回的模型，不能调用公开目录中的全部模型。
@@ -22,17 +22,7 @@
 
 | Skill | 用途 |
 | --- | --- |
-| `puretokens_media` | 查询 Pure Tokens 余额或模型价格，或按当前目录精确选择图片/视频模型，提交一次任务并轮询同一任务。 |
-
-## 查询余额
-
-直接说“查询我的 Pure Tokens 余额”“我还剩多少余额”或“查一下余额”。Skill 会直接调用 `puretokens_get_balance`，只展示 Pure Tokens 返回的余额和额度字段；不会读取模型目录、API Key、Cookie、密码或本地 Router 凭据。
-
-## 查询模型价格
-
-直接说“gpt-image-2 多少钱？”或“image2 的价格”。Skill 会先读取实时模型目录，只在已登记别名唯一对应到目录中的精确模型 ID 后，调用 `puretokens_get_model_price`。返回结果会展示当前选中分组中的全部价格、分组倍率和更新时间。
-
-价格不会根据模型名称猜测。如果模型不可用、匹配有歧义，或者计费方式是动态计费，Skill 会如实提示，不会估算价格、偷偷选择分组或换成其他模型。
+| `puretokens_media` | 按当前目录精确选择图片/视频模型，提交一次任务并轮询同一任务，再交付原生结果和本地文件。 |
 
 ## 图片模型
 
@@ -75,7 +65,6 @@ Skill 只提交一次 `puretokens_generate_video`，然后用 `puretokens_video_
 | --- | --- |
 | 生成图片 | `生成一只可爱的狗。` |
 | 生成视频 | `生成一条 15 秒、16:9 的产品广告。` |
-| 查询模型价格 | `gpt-image-2 多少钱？` |
 | 使用 Nano Banana | `使用 Nano Banana Pro 做一张高级产品主视觉。` |
 | 查看可用模型 | `列出我现在能用的图片和视频模型。` |
 
@@ -102,7 +91,7 @@ Skill 只能使用当前已选分组中的模型。如果实时媒体目录没�
 
 ## 从 GitHub 安装和更新
 
-Pure Tokens Desktop 不会把 Skill 文件写入客户端目录，也不会把 Skill 内容绑定在 Desktop 版本中。请始终从本仓库获取最新安装说明和 Skill 文件。安装前先在 Pure Tokens Desktop 对目标客户端完成“验证并应用”，然后重启目标客户端并新建会话。
+`puretokens_media` 是所有支持客户端共用的唯一媒体行为源。Claude Desktop 通过可上传 ZIP 使用它；WorkBuddy 在点击 **验证并应用** 后由 Desktop 从同一源生成常驻交付载荷，使普通图片/视频请求进入已配置的 Pure Tokens MCP。共享 Skill 的最新安装说明和文件仍以本仓库为准。安装共享 Skill 前，先在 Pure Tokens Desktop 对目标客户端完成“验证并应用”，然后重启目标客户端并新建会话。
 
 ### Codex、Claude Code、Gemini CLI、OpenCode
 
@@ -147,7 +136,7 @@ node bin/puretokens-skill.js install puretokens_media --target ~/.config/opencod
 6. 不要读取、索取、打印或保存 API Key、Cookie、密码、Router Token 或本地授权地址。
 7. 返回实际安装目录和操作结果。
 
-如果当前是 Claude Desktop 或 WorkBuddy，不要声称已经自动安装。请按 README 生成 ZIP，并告诉我应该在哪里上传和启用。
+如果当前是 Claude Desktop，不要声称已经自动安装。请按 README 生成 ZIP，并告诉我应该在哪里上传和启用。如果当前是 WorkBuddy，请让我在 Pure Tokens Desktop 点击 **验证并应用**；不要手动创建或替换其生成的 `puretokens_workbuddy_router` 交付载荷。
 ```
 
 更新时从 GitHub 重新下载或拉取仓库，然后执行对应的 `upgrade` 命令：
@@ -169,14 +158,14 @@ node .\bin\puretokens-skill.js install puretokens_media --target "$HOME\.codex\s
 
 其他客户端将目标目录改为 `$HOME\.claude\skills`、`$HOME\.gemini\skills` 或 `$HOME\.config\opencode\skills`。如果 PowerShell 找不到 `node`，先从 Node.js 官方网站安装 Node.js LTS，再重新打开 PowerShell。
 
-## Claude Desktop 和 WorkBuddy 导入
+## Claude Desktop 导入与 WorkBuddy 路由
 
 不要把复制到 `~/.codex/skills` 当成 Claude Desktop 安装完成。该目录只适用于 Codex 本机 Skill。
 
-Claude Desktop 和 WorkBuddy 使用图形界面上传本地 Skill 包。生成 ZIP：
+Claude Desktop 使用图形界面上传本地 Skill 包。生成 ZIP：
 
 ```bash
-node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out ./puretokens_media-0.2.7.zip
+node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out ./puretokens_media-0.3.2.zip
 ```
 
 ZIP 内部结构为：
@@ -192,9 +181,9 @@ puretokens_media/
 
 在 Claude Desktop 中打开 **Settings → Features → Skills**（部分版本显示为 **Customize → Skills**），选择 **Upload skill**，上传 ZIP 并启用 `Pure Tokens Media`。如果当前版本没有 Skills 入口，则该版本不能导入自定义 Skill，只能使用 MCP 的工具描述；升级或使用支持 Skills 的 Claude 客户端后再导入。
 
-在 WorkBuddy 中打开 **Skills → 添加技能 → 上传技能**，选择同一个 ZIP，确认 `Pure Tokens Media` 出现在已安装列表并启用，然后新建会话。WorkBuddy 负责导入和本地配置，Pure Tokens Desktop 不会尝试写入 WorkBuddy 未公开的本地目录。
+WorkBuddy 不需要手动上传或启用独立 Skill。在 Pure Tokens Desktop 中选择兼容分组并点击 **验证并应用** 后，Desktop 会从共享 `puretokens_media` 源原子化生成并受管常驻的 `puretokens_workbuddy_router` 交付载荷，以及 `puretokens-image` MCP 条目和引用资料。随后重启 WorkBuddy 或新建会话。用户直接说生图、生视频时会先发现延迟加载的 MCP 工具，再通过 `DeferExecuteTool` 实际调用；只发现工具或渲染出组件都不代表已经调用媒体模型。用户明确指定 WorkBuddy 内置 `ImageGen` 或 `VideoGen` 时仍保留该选择。
 
-更新时从 GitHub 获取新版本、重新生成 ZIP，在 Claude Desktop 或 WorkBuddy 中停用旧 Skill、上传新 ZIP 并启用。卸载时在对应 Skills 页面关闭并删除 Skill。不要直接删除 MCP 配置；MCP 由 Pure Tokens Desktop 管理。
+更新 Claude Desktop 时从 GitHub 获取新版本、重新生成 ZIP、停用旧 Skill、上传新 ZIP 并启用。WorkBuddy 会在下一次点击 **验证并应用** 时重新生成同一份共享媒体行为。不要直接删除 MCP 配置；MCP 由 Pure Tokens Desktop 管理。
 
 ## Codex 本机安装、升级和卸载
 
@@ -222,8 +211,6 @@ node bin/puretokens-skill.js uninstall puretokens_media --target .codex/skills -
 `puretokens_media` 必须先调用 `puretokens_list_media_models`，只依据本次响应的 `id`、`displayName`、`aliases`、`provider` 和 `capabilities` 匹配。生成工具必须传精确 `model` 和稳定 `request_id`。一次用户请求只提交一次；宿主重试时复用同一 `request_id`，结果工具始终使用同一 `task_id` 和原始模型。
 
 媒体完成后会展示 MCP 返回的实际精确模型、保存文件名和 `Downloads/Pure Tokens`。只有 MCP 返回原生 `image` 内容时，图片才可在支持的宿主内预览。视频在大小受限时会携带原生 MCP 资源，支持该资源的宿主可以预览；较大的视频仍会成功保存为本机 MP4，并从同一下载文件夹打开。
-
-查询价格时，Skill 会使用解析后的精确模型 ID 调用 `puretokens_get_model_price`，展示每个分组的价格结果。不会推测价格、静默选择分组，也不会把动态计费规则当成固定金额。
 
 模型歧义、目录为空、MCP 不可用、工具错误和轮询超时的行为测试见 `skills/puretokens_media/references/behavior-scenarios.json`。任何错误都不得自动换模型或重新提交，除非用户明确选择了新的具体模型。
 

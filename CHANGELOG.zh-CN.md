@@ -4,6 +4,22 @@
 
 # 更新日志
 
+## 0.3.2 — 2026-08-14
+
+- 强化 WorkBuddy 媒体路由：明确 `ToolSearch` 只负责发现工具，所有 Pure Tokens 的目录、生成和结果调用都必须通过 `DeferExecuteTool` 实际执行。
+- 禁止用 SVG/HTML 组件、内置媒体工具、搜索或文字声明冒充 Pure Tokens 媒体任务成功；只有 MCP 返回实际模型及原生结果或本机交付信息时才能称为生成成功。
+
+## 0.3.1 — 2026-08-14
+
+- 将 `puretokens_media` 收敛为 Claude Desktop 与 WorkBuddy 共用的唯一媒体行为源。WorkBuddy 的常驻路由载荷现在由该源自动生成，目录、精确模型、单次提交、轮询、交付和失败规则完全一致。
+- 移除独立的 WorkBuddy 路由 Skill 源。Pure Tokens Desktop 仍会在点击 **验证并应用** 后自动安装生成后的适配载荷，用户无需手动上传。
+- 移除媒体 Skill 中已过期的余额和模型价格工具声明；现在只暴露本地 Sidecar 实际提供的五个媒体 MCP 工具。
+
+## 0.3.0 — 2026-08-14
+
+- 新增 `puretokens_workbuddy_router`：轻量常驻的 WorkBuddy Skill。普通生图、生视频请求会优先进入已配置的 Pure Tokens MCP，而不是 WorkBuddy 内置媒体工具；用户明确指定 WorkBuddy 内置工具时保持该选择。文本、代码等普通请求不受影响，并保持目录优先、精确模型与不静默回退的约束。
+- WorkBuddy 路由 Skill 由 Pure Tokens Desktop 作为受管集成自动安装和升级，用户无需上传或手动启用。
+
 ## 0.2.7 — 2026-08-14
 
 - 媒体完成结果现在会展示 MCP 实际返回的精确模型 ID、文件名和持久 `Downloads/Pure Tokens` 交付状态。
