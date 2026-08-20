@@ -89,6 +89,15 @@ export async function validateRepository() {
       }
       if (workbuddy.alwaysApply !== true) errors.push(`${directory}: WorkBuddy delivery must be alwaysApply`);
     }
+    const codex = manifest?.distribution?.codex;
+    if (codex) {
+      if (codex.managedByDesktop !== true) errors.push(`${directory}: Codex delivery must be managed by Desktop`);
+      if (codex.managedSkillDirectory !== "~/.codex/skills/puretokens_media") {
+        errors.push(`${directory}: Codex managed Skill directory must be ~/.codex/skills/puretokens_media`);
+      }
+      if (codex.requiresPluginFeature !== false) errors.push(`${directory}: Codex delivery must not require the Plugin feature`);
+      if (Object.hasOwn(codex, "plugin")) errors.push(`${directory}: Codex delivery must not declare a Plugin`);
+    }
     if (forbiddenPattern.test(skillText) || forbiddenPattern.test(JSON.stringify(manifest))) {
       errors.push(`${directory}: skill content contains a forbidden credential or local-runtime marker`);
     }

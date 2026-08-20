@@ -6,6 +6,22 @@
 
 ## Unreleased
 
+## 0.4.4 — 2026-08-20
+
+- 确认 Codex 只交付由 Desktop 受管的生成式 Skill，已彻底移除已废弃的 Plugin/Marketplace 交付。
+- 修复 Direct Cloud 结果模式契约：图片请求不再强制 `async: true`，执行层根据服务真实响应处理并交付同步 `b64_json`/`url` 或异步任务内容。
+- 明确 Skill 不亲自执行 I/O：MCP 与宿主的 Direct Cloud 执行层分别负责下载、落盘、预览和真实本机交付证据。两条执行通道都不可用时，Skill 只说明缺少的能力，不把 Desktop 或聊天中粘贴凭据当成前提。
+- 强化生成交付验证：Claude Desktop ZIP 会解包并逐文件与共享源做字节级比对，和已有 Codex、WorkBuddy 来源校验保持一致。
+
+## 0.4.3 — 2026-08-20
+
+- 统一 Direct Cloud 凭据为常规的 **API Base URL** 与 **API Key**：使用环境变量的宿主固定映射为 `PURETOKENS_API_BASE_URL` 和 `PURETOKENS_API_KEY`，不再使用容易与登录态混淆的 `PURETOKENS_ACCESS_TOKEN`。
+
+## 0.4.2 — 2026-08-20
+
+- 将 Pure Tokens 专用的 Codex Plugin 交付改为生成出的受管 Skill 交付。Pure Tokens Desktop 现在负责 `~/.codex/skills/puretokens_media` 与独立的 `puretokens-image` MCP 配置；媒体生成不再依赖 Codex Plugin Feature、Marketplace 配置或插件市场解锁。
+- 保持 Direct Cloud 不依赖 Desktop，并明确异步多图片交付：完成图片任务声明多个内容项时，按响应顺序先取 `/content`，再使用有界的 `/content?index=N` 获取后续结果。
+
 ## 0.4.1 — 2026-08-20
 
 - `puretokens_media` 默认只请求 1 个结果；只有用户明确给出数量且当前执行契约支持时才请求更多结果。一个请求绝不会变成多次生成提交。

@@ -38,7 +38,7 @@
       "id": "mcp-unavailable",
       "when": "The puretokens-image MCP server cannot be listed or called.",
       "firstTool": "puretokens_list_media_models",
-      "expected": "tell_user_to_configure_and_restart_client",
+      "expected": "use_direct_cloud_when_available_or_report_missing_execution_capability",
       "forbiddenTools": ["puretokens_generate_image", "puretokens_generate_video"]
     },
     {

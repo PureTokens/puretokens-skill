@@ -18,7 +18,7 @@
 | --- | --- | --- |
 | 由 Pure Tokens Desktop 受管的客户端 | Skill → 受管 MCP → 本地 Router → 服务 | 选择客户端分组，点击 **验证并应用**，重启客户端后新建会话。 |
 | 具备可调用 MCP 工具的 GUI 宿主 | Skill → `puretokens-image` MCP → 服务 | 为客户端安装或配置可调用的 MCP 交付；GUI 用户绝不把 Token 粘贴到对话中。 |
-| 具备终端能力的代码 Agent | Skill → Direct Cloud → 服务 | 安装 Skill，并通过宿主的 Secret/环境机制注入 `PURETOKENS_ACCESS_TOKEN`。不需要 Desktop、Router、CLI Sidecar 或 MCP。 |
+| 具备终端能力的代码 Agent | Skill → Direct Cloud → 服务 | 安装 Skill，并通过宿主的 Secret/环境机制注入 `PURETOKENS_API_KEY`。不需要 Desktop、Router、CLI Sidecar 或 MCP。 |
 
 然后新建会话。直接说“生成一只可爱的狗”即可使用默认图片模型；也可以说“使用 Nano Banana Pro 生成……”。
 
@@ -81,7 +81,7 @@ Skill 只提交一次 `puretokens_generate_video`，然后用 `puretokens_video_
 
 - Skill 负责理解“用 image2”“用 Grok Video”等表达，先查询媒体目录，唯一匹配后选择工具，并在歧义时询问。
 - MCP 只接受精确模型 ID，执行参数校验、单次提交、结果轮询和本机交付；它不做自然语言识别、不猜模型、不静默换模型。
-- GUI 客户端优先使用可调用的 `puretokens-image` MCP 工具；具备终端能力的 Agent 可以在宿主已注入 `PURETOKENS_ACCESS_TOKEN` 时使用 Direct Cloud，不需要 Pure Tokens Desktop、Router、额外 CLI 或 MCP。
+- GUI 客户端优先使用可调用的 `puretokens-image` MCP 工具；具备终端能力的 Agent 可以在宿主已注入 `PURETOKENS_API_KEY` 时使用 Direct Cloud，不需要 Pure Tokens Desktop、Router、额外 CLI 或 MCP。
 - 实时目录仍是唯一事实来源：Desktop Router 与 Direct Cloud 都读取同一份认证后的 `/v1/media/models`，并使用明确的 `image` / `video` 能力。
 
 ## 前置条件
@@ -95,13 +95,13 @@ Skill 只提交一次 `puretokens_generate_video`，然后用 `puretokens_video_
 
 Skill 只能通过 MCP 使用当前已选分组中的模型。如果实时媒体目录没有目标模型，请回到客户端配置，选择包含该模型的分组后再次应用配置。Desktop 会为支持的客户端配置名为 `puretokens-image` 的 MCP 服务。Skill 不会替代 MCP 配置，也不会携带任何凭据。
 
-Direct Cloud 不使用 Desktop 的分组选择界面。它要求宿主通过自己的 Secret 机制注入 `PURETOKENS_ACCESS_TOKEN`，并以该 API Key 的权限和认证后的 `/v1/media/models` 目录为准。Skill 永远不会索取、打印、持久化或把 Token 写入提示词。
+Direct Cloud 不使用 Desktop 的分组选择界面。用户只需在宿主的常规 **API Base URL** 和 **API Key** 配置中填写 `https://api.puretokensx.com` 与 Pure Tokens API Key；使用环境变量的宿主将这两个字段映射为 `PURETOKENS_API_BASE_URL` 和 `PURETOKENS_API_KEY`。它以该 API Key 的权限和认证后的 `/v1/media/models` 目录为准；Skill 永远不会索取、打印、持久化或把 Key 写入提示词。
 
 ## 从 GitHub 安装和更新
 
 `puretokens_media` 是所有支持客户端共用的唯一媒体行为源。Claude Desktop 通过可上传 ZIP 使用它；WorkBuddy 在点击 **验证并应用** 后由 Desktop 生成常驻交付载荷；具备终端能力的 Agent 可以在凭据已由宿主注入时直接走 Direct Cloud。共享 Skill 的最新安装说明和文件仍以本仓库为准。
 
-### Codex Plugin
+### Codex 受管 Skill
 
 这里的 **Codex** 指具备本机终端和本机文件写入权限的独立 Codex Agent，不包括仅因运行时标签显示为 Codex 的普通 ChatGPT 对话。
 
@@ -112,17 +112,15 @@ git clone https://github.com/yanyansay/puretokens-skill.git
 cd puretokens-skill
 ```
 
-如果走受管 MCP，先在 Pure Tokens Desktop 中为 Codex 配置本机 `puretokens-image` MCP；具备终端能力的 Codex Agent 也可以在宿主注入 `PURETOKENS_ACCESS_TOKEN` 时直接走 Direct Cloud：
+若 Codex 由 Desktop 管理，只需在 Pure Tokens Desktop 选择目标分组并点击 **验证并应用**。Desktop 会原子化安装生成的共享 Skill 到 `~/.codex/skills/puretokens_media`，并独立配置本机 `puretokens-image` MCP；不需要 Plugin Marketplace、插件市场解锁或用户手动配置全局设置。
+
+未由 Desktop 管理、但具备终端能力的 Codex Agent，也可以直接安装相同 Skill，并在宿主注入 `PURETOKENS_API_KEY` 时走 Direct Cloud：
 
 ```bash
-codex features enable plugins
-codex plugin marketplace add .
-codex plugin add puretokens-media@puretokens
+node bin/puretokens-skill.js install puretokens_media --target ~/.codex/skills
 ```
 
-安装后必须新建 Codex 任务。Plugin 只安装共享 Skill，不会打包、启动或替换 Desktop 受管 MCP。若 Pure Tokens Desktop 已配置可调用的 `puretokens-image` MCP，Skill 会优先使用它；否则 Direct Cloud 只要求 Agent 具备 HTTPS 执行能力和宿主注入的 Token。
-
-Pure Tokens Desktop 会在 Codex 的“验证并应用”中执行同一套官方 Plugin 安装。上面的命令仅用于本机恢复或开发。
+安装后必须新建 Codex 任务。Skill 不会打包、启动或替换 Desktop 受管 MCP。若 Pure Tokens Desktop 已配置可调用的 `puretokens-image` MCP，Skill 会优先使用它；否则 Direct Cloud 只要求 Agent 具备 HTTPS 执行能力和宿主注入的 Token。
 
 ### Claude Code、Gemini CLI、OpenCode
 
@@ -152,7 +150,7 @@ node bin/puretokens-skill.js install puretokens_media --target ~/.config/opencod
 2. 只有通过上一步检查后，才判断当前客户端是 Codex、Claude Code、Gemini CLI 还是 OpenCode。
 3. 将仓库克隆或下载到临时工作目录。
 4. 只安装对应的 Pure Tokens 交付：
-   - Codex：执行 `codex features enable plugins`、`codex plugin marketplace add <仓库根目录>`、`codex plugin add puretokens-media@puretokens`。不能用写入 `~/.codex/skills` 代替。
+   - Codex：~/.codex/skills
    - Claude Code：~/.claude/skills
    - Gemini CLI：~/.gemini/skills
    - OpenCode：~/.config/opencode/skills
@@ -165,11 +163,11 @@ node bin/puretokens-skill.js install puretokens_media --target ~/.config/opencod
 
 不要在普通 ChatGPT 对话中把这段提示词当作自助安装指令。此类对话可能运行在 Codex 运行时上，但仍无权访问用户的终端或 `~/.codex` 目录；必须明确停止，不能假称本机 Skill 已安装。
 
-更新 Codex 时先拉取仓库，再从同一 Plugin 市场重新安装：
+更新手动安装的 Codex Skill 时，先拉取仓库，再执行对应升级命令：
 
 ```bash
 git pull
-codex plugin add puretokens-media@puretokens
+node bin/puretokens-skill.js upgrade puretokens_media --target ~/.codex/skills
 ```
 
 Claude Code、Gemini CLI、OpenCode 使用上方对应目标目录的 `upgrade` 命令。升级只替换由 Pure Tokens 管理、且包含匹配 `skill.json` 与 `SKILL.md` 的目录，不会覆盖其他 Skill。
@@ -179,21 +177,19 @@ Claude Code、Gemini CLI、OpenCode 使用上方对应目标目录的 `upgrade` 
 ```powershell
 git clone https://github.com/yanyansay/puretokens-skill.git
 Set-Location puretokens-skill
-codex features enable plugins
-codex plugin marketplace add .
-codex plugin add puretokens-media@puretokens
+node .\bin\puretokens-skill.js install puretokens_media --target $HOME\.codex\skills
 ```
 
 其他客户端使用 `node .\bin\puretokens-skill.js install puretokens_media --target ...`，目标目录为 `$HOME\.claude\skills`、`$HOME\.gemini\skills` 或 `$HOME\.config\opencode\skills`。如果 PowerShell 找不到 `node`，先从 Node.js 官方网站安装 Node.js LTS，再重新打开 PowerShell。
 
 ## Claude Desktop 导入与 WorkBuddy 路由
 
-不要把复制到 `~/.codex/skills` 当成 Claude Desktop 安装完成，也不要把它当成可调用的 Codex 媒体 Plugin 安装。
+复制到 `~/.codex/skills` 只会安装 Codex 的指令层；媒体执行仍需要可调用的 `puretokens-image` MCP 或宿主注入的 Direct Cloud 凭据。
 
 Claude Desktop 使用图形界面上传本地 Skill 包。生成 ZIP：
 
 ```bash
-node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out ./puretokens_media-0.4.1.zip
+node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out ./puretokens_media-0.4.4.zip
 ```
 
 ZIP 内部结构为：
@@ -218,23 +214,16 @@ WorkBuddy 不需要手动上传或启用独立 Skill。在 Pure Tokens Desktop �
 
 更新 Claude Desktop 时从 GitHub 获取新版本、重新生成 ZIP、停用旧 Skill、上传新 ZIP 并启用。WorkBuddy 会在下一次点击 **验证并应用** 时重新生成同一份共享媒体行为。不要直接删除 MCP 配置；MCP 由 Pure Tokens Desktop 管理。
 
-## Codex Plugin 安装与更新
+## Codex 安装与更新
 
-Codex 必须使用官方 Plugin 生命周期：
+Pure Tokens Desktop 会在 **验证并应用** 时自动管理 Codex：只安装自己的 `puretokens_media` 目录、只配置自己的 `puretokens-image` MCP 条目；不会启用 Codex Plugin、注册 Marketplace，也不会修改其他 Skill。
 
-```bash
-codex features enable plugins
-codex plugin marketplace add /absolute/path/to/puretokens-skill
-codex plugin add puretokens-media@puretokens
-```
-
-仓库更新后执行：
+独立本机 Codex Agent 只安装和升级受管 Skill 目录：
 
 ```bash
-codex plugin add puretokens-media@puretokens
+node bin/puretokens-skill.js install puretokens_media --target ~/.codex/skills
+node bin/puretokens-skill.js upgrade puretokens_media --target ~/.codex/skills
 ```
-
-只有明确不再需要 Codex 媒体 Skill 时才执行 `codex plugin remove puretokens-media@puretokens`。移除 Plugin 不会删除 Pure Tokens Desktop 受管的 MCP 配置。
 
 ## 模型选择规则
 

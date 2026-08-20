@@ -6,6 +6,22 @@
 
 ## Unreleased
 
+## 0.4.4 — 2026-08-20
+
+- Confirmed the Codex delivery is only the Desktop-managed generated Skill; the retired Plugin/Marketplace delivery is removed completely.
+- Resolved the Direct Cloud result-mode contract: image requests no longer force `async: true`, so the execution layer classifies and delivers real synchronous `b64_json`/`url` responses or asynchronous task content according to the server response.
+- Clarified that the Skill never performs I/O itself: MCP and the host Direct Cloud execution layer respectively download, write, preview, and expose genuine local-delivery evidence. When neither execution route is available, the Skill reports the missing capability without making Desktop or pasted credentials a prerequisite.
+- Strengthened generated-delivery verification so Claude Desktop bundles are unpacked and compared byte-for-byte with the shared source, alongside the existing Codex and WorkBuddy provenance checks.
+
+## 0.4.3 — 2026-08-20
+
+- Standardized Direct Cloud credentials around the conventional **API Base URL** and **API Key** fields. Environment-backed hosts now use `PURETOKENS_API_BASE_URL` and `PURETOKENS_API_KEY`; the ambiguous `PURETOKENS_ACCESS_TOKEN` name is no longer part of the contract.
+
+## 0.4.2 — 2026-08-20
+
+- Replaced the Pure Tokens-specific Codex Plugin delivery with a generated managed Skill delivery. Pure Tokens Desktop now owns `~/.codex/skills/puretokens_media` and the separate `puretokens-image` MCP configuration; media generation no longer depends on the Codex Plugin feature, Marketplace setup, or Plugin unlock.
+- Kept Direct Cloud independent of Desktop and clarified asynchronous multi-image delivery: completed image tasks with multiple declared content entries retrieve `/content` followed by bounded `/content?index=N` requests in response order.
+
 ## 0.4.1 — 2026-08-20
 
 - Made `puretokens_media` request one result by default and permit a higher count only when the user explicitly provides it and the selected execution contract supports it. A request never becomes multiple generation submissions.

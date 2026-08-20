@@ -18,7 +18,7 @@ Choose the one path your host can actually execute:
 | --- | --- | --- |
 | Pure Tokens Desktop-managed client | Skill → managed MCP → local Router → service | Select the client groups, click **Verify and apply**, then restart the client and start a new chat. |
 | GUI host with callable MCP tools | Skill → `puretokens-image` MCP → service | Install/configure the callable MCP delivery for that client. The GUI user never pastes a token into chat. |
-| Terminal-capable code Agent | Skill → Direct Cloud → service | Install the Skill and inject `PURETOKENS_ACCESS_TOKEN` through the host's Secret/environment mechanism. No Desktop, Router, CLI sidecar, or MCP is required. |
+| Terminal-capable code Agent | Skill → Direct Cloud → service | Install the Skill and inject `PURETOKENS_API_KEY` through the host's Secret/environment mechanism. No Desktop, Router, CLI sidecar, or MCP is required. |
 
 Then start a new chat. Say `Generate a cute dog` for the default image model, or name a model such as `Use Nano Banana Pro to generate ...`.
 
@@ -81,7 +81,7 @@ Natural-language user request → Skill → (MCP → local Router → service | 
 
 - The Skill interprets requests such as “use image2” or “use Grok Video”, reads the live catalog, asks for clarification when the match is not unique, and selects the correct tool.
 - MCP accepts only an exact model ID. It validates arguments, submits once, polls the result, and delivers local files. MCP never performs natural-language matching, guesses a model, or silently substitutes one.
-- GUI clients use a callable `puretokens-image` MCP tool as their first execution path. A terminal-capable Agent may use Direct Cloud with a host-injected `PURETOKENS_ACCESS_TOKEN`; that mode does not require Pure Tokens Desktop, Router, an extra CLI, or MCP.
+- GUI clients use a callable `puretokens-image` MCP tool as their first execution path. A terminal-capable Agent may use Direct Cloud with a host-injected `PURETOKENS_API_KEY`; that mode does not require Pure Tokens Desktop, Router, an extra CLI, or MCP.
 - The live catalog remains authoritative. Desktop Router and Direct Cloud both read the same authenticated `/v1/media/models` response with explicit `image` / `video` capabilities.
 
 ## Prerequisites
@@ -95,13 +95,13 @@ For the managed MCP path, complete these steps in order:
 
 Only models in the selected group or groups are available to the MCP path. If the target model is absent from the live media catalog, return to client configuration, select a group that contains it, and apply the configuration again. Desktop configures an MCP server named `puretokens-image` for supported clients. The Skill does not replace MCP configuration and never carries credentials.
 
-For Direct Cloud, the host must already inject `PURETOKENS_ACCESS_TOKEN` through its own Secret mechanism. The Skill must never ask for, print, persist, or put that token in a prompt. Direct Cloud does not use the Desktop group selection UI; the API key's own permissions and the authenticated `/v1/media/models` catalog are authoritative.
+For Direct Cloud, configure the host's normal **API Base URL** and **API Key** fields with `https://api.puretokensx.com` and a Pure Tokens API key. Hosts that use environment variables map those fields to `PURETOKENS_API_BASE_URL` and `PURETOKENS_API_KEY`; the Skill must never ask for, print, persist, or put that key in a prompt. Direct Cloud does not use the Desktop group selection UI; the API key's own permissions and the authenticated `/v1/media/models` catalog are authoritative.
 
 ## Install and update from GitHub
 
 `puretokens_media` is the single behavior source for every supported client. Claude Desktop receives it as an uploadable ZIP; WorkBuddy receives a Desktop-managed, always-on generated delivery; terminal-capable Agents can use the same Skill with Direct Cloud. Always use this repository for the current shared-Skill installation instructions and files.
 
-### Codex Plugin
+### Codex managed Skill
 
 Here, **Codex** means a local Codex Agent that has a terminal and permission to write local files. It does not mean an ordinary ChatGPT conversation that happens to describe its runtime as Codex.
 
@@ -112,17 +112,15 @@ git clone https://github.com/yanyansay/puretokens-skill.git
 cd puretokens-skill
 ```
 
-If using the managed MCP path, first let Pure Tokens Desktop configure the local `puretokens-image` MCP server. A terminal-capable Codex Agent can instead use Direct Cloud when its host injects `PURETOKENS_ACCESS_TOKEN`:
+For a Desktop-managed Codex client, select the target groups and click **Verify and apply** in Pure Tokens Desktop. Desktop atomically installs the generated shared Skill at `~/.codex/skills/puretokens_media` and configures the separate local `puretokens-image` MCP server. No Plugin Marketplace, Plugin unlock, or manual global configuration is required.
+
+A terminal-capable Codex Agent that is not managed by Desktop can install the same Skill directly and use Direct Cloud when its host injects `PURETOKENS_API_KEY`:
 
 ```bash
-codex features enable plugins
-codex plugin marketplace add .
-codex plugin add puretokens-media@puretokens
+node bin/puretokens-skill.js install puretokens_media --target ~/.codex/skills
 ```
 
-Start a new Codex task after installation. The Plugin installs the shared Skill; it does not bundle, start, or replace the Desktop-managed MCP. When Pure Tokens Desktop has already configured the callable `puretokens-image` MCP, the Skill uses it. Otherwise, Direct Cloud remains available when the Agent has HTTPS execution and the host-injected token.
-
-Pure Tokens Desktop performs the same official Plugin setup during **Verify and apply** for Codex. The commands above are for local recovery or development only.
+Start a new Codex task after installation. The Skill never bundles, starts, or replaces the Desktop-managed MCP. When Pure Tokens Desktop has configured the callable `puretokens-image` MCP, the Skill uses it. Otherwise, Direct Cloud remains available when the Agent has HTTPS execution and the host-injected token.
 
 ### Claude Code, Gemini CLI, and OpenCode
 
@@ -152,7 +150,7 @@ Install Pure Tokens Skill for the client I am using from https://github.com/yany
 2. Only after that check, identify whether this is Codex, Claude Code, Gemini CLI, or OpenCode.
 3. Clone or download the repository into a temporary working directory.
 4. Install only the matching Pure Tokens delivery:
-   - Codex: run `codex features enable plugins`, `codex plugin marketplace add <repository-root>`, then `codex plugin add puretokens-media@puretokens`. Do not write `~/.codex/skills` as a substitute.
+   - Codex: `~/.codex/skills`
    - Claude Code: ~/.claude/skills
    - Gemini CLI: ~/.gemini/skills
    - OpenCode: ~/.config/opencode/skills
@@ -165,11 +163,11 @@ If this is Claude Desktop, do not claim it was installed automatically. Build th
 
 Do not use that prompt as a self-install instruction inside a normal ChatGPT chat. Such a chat can be backed by a Codex runtime while still lacking access to the user's terminal and `~/.codex` directory; it must fail closed rather than pretend that a local Skill was installed.
 
-To update Codex, pull the repository and reinstall its Plugin from the same marketplace:
+To update a manually installed Codex Skill, pull the repository and run the matching upgrade command:
 
 ```bash
 git pull
-codex plugin add puretokens-media@puretokens
+node bin/puretokens-skill.js upgrade puretokens_media --target ~/.codex/skills
 ```
 
 Claude Code, Gemini CLI, and OpenCode use the matching `upgrade` command and target directory from the installation table above. Upgrade replaces only a Pure Tokens-managed directory containing matching `skill.json` and `SKILL.md`; it never overwrites another Skill.
@@ -179,21 +177,19 @@ Claude Code, Gemini CLI, and OpenCode use the matching `upgrade` command and tar
 ```powershell
 git clone https://github.com/yanyansay/puretokens-skill.git
 Set-Location puretokens-skill
-codex features enable plugins
-codex plugin marketplace add .
-codex plugin add puretokens-media@puretokens
+node .\bin\puretokens-skill.js install puretokens_media --target $HOME\.codex\skills
 ```
 
 For the other clients, use `$HOME\.claude\skills`, `$HOME\.gemini\skills`, or `$HOME\.config\opencode\skills` with `node .\bin\puretokens-skill.js install puretokens_media --target ...`. If PowerShell cannot find `node`, install Node.js LTS from the official Node.js website and reopen PowerShell.
 
 ## Claude Desktop import and WorkBuddy routing
 
-Copying a Skill to `~/.codex/skills` is neither a Claude Desktop installation nor a callable Codex media Plugin installation.
+Copying a Skill to `~/.codex/skills` installs the Codex instruction layer only; its media execution still needs either a callable `puretokens-image` MCP server or host-injected Direct Cloud credentials.
 
 Claude Desktop uses a graphical local Skill upload. Create the ZIP:
 
 ```bash
-node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out ./puretokens_media-0.4.1.zip
+node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out ./puretokens_media-0.4.4.zip
 ```
 
 The ZIP has this layout:
@@ -218,23 +214,16 @@ For WorkBuddy, do not upload or enable a separate Skill yourself. Selecting a co
 
 To update Claude Desktop, get the new version from GitHub, generate a new ZIP, disable the old Skill, upload the new ZIP, and enable it. WorkBuddy regenerates the same shared media behavior on the next **Verify and apply**. Do not delete the MCP entry directly; Pure Tokens Desktop owns MCP configuration.
 
-## Codex Plugin install and update
+## Codex install and update
 
-Codex must use the official Plugin lifecycle:
+Pure Tokens Desktop manages Codex automatically during **Verify and apply**: it installs only its own `puretokens_media` directory and configures only its own `puretokens-image` MCP entry. It does not enable Codex Plugins, register a Marketplace, or change any other Skill.
 
-```bash
-codex features enable plugins
-codex plugin marketplace add /absolute/path/to/puretokens-skill
-codex plugin add puretokens-media@puretokens
-```
-
-To update after a repository pull, run:
+For a standalone local Codex Agent, install and update only the managed skill directory:
 
 ```bash
-codex plugin add puretokens-media@puretokens
+node bin/puretokens-skill.js install puretokens_media --target ~/.codex/skills
+node bin/puretokens-skill.js upgrade puretokens_media --target ~/.codex/skills
 ```
-
-Use `codex plugin remove puretokens-media@puretokens` only when you intentionally want to remove the Codex media Skill. Removing the Plugin does not delete the Pure Tokens Desktop-managed MCP configuration.
 
 ## Model-selection rules
 

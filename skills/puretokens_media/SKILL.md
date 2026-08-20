@@ -13,16 +13,16 @@ Skill 不持有或读取凭据。它先选择宿主已经具备的执行通道�
 
 ## 执行证据
 
-工具搜索、工具目录、工具名称、模型文字回复或任意 SVG/HTML 组件都不是媒体任务执行的证据。只有对应的生成工具实际返回 MCP `structuredContent.model` 与任务状态，且后续结果工具返回原生媒体内容或本机交付元数据时，才能称为 Pure Tokens 已调用模型并生成了结果。
+工具搜索、工具目录、工具名称、模型文字回复或任意 SVG/HTML 组件都不是媒体任务执行的证据。MCP 通道只有在生成工具实际返回 `structuredContent.model` 与任务状态，且后续结果工具返回原生媒体内容或本机交付元数据时，才能称为 Pure Tokens 已调用模型并生成了结果。Direct Cloud 通道只有在认证 HTTP 响应确认精确模型、并由宿主执行层取得实际媒体字节且完成本机交付时，才能作出同样声明。
 
-若宿主无法实际执行所需 MCP 工具，必须如实报告 MCP 不可用或执行失败；不得用文本、内置绘图、网页搜索、SVG、HTML 或可视化组件伪造图片/视频结果，也不得声称已使用 Pure Tokens。
+若两种通道都无法实际执行，必须如实报告缺少的能力；不得用文本、内置绘图、网页搜索、SVG、HTML 或可视化组件伪造图片/视频结果，也不得声称已使用 Pure Tokens。
 
 ## 执行通道
 
 先只判断宿主**实际可用**的能力，不根据客户端名称猜测：
 
 1. 若已注册 `puretokens-image` MCP 且五个媒体工具实际可调用，使用 **MCP 通道**。这是 Claude Desktop、ChatGPT、WorkBuddy 等没有原生 Shell/HTTPS 执行能力的标准通道。
-2. 若 MCP 不可用，但宿主能执行 HTTPS 请求，且通过自身 Secret/环境机制已经注入 `PURETOKENS_ACCESS_TOKEN`，使用 **Direct Cloud 通道**。这是 Claude Code、Codex、CC Switch 管理的代码 Agent 等宿主的标准通道；它不需要 Pure Tokens Desktop、Router、额外 CLI 或 MCP。
+2. 若 MCP 不可用，但宿主能执行 HTTPS 请求，且已经通过自身 Secret/环境机制配置了 Pure Tokens Direct Cloud 凭据，使用 **Direct Cloud 通道**。这是 Claude Code、Codex、CC Switch 管理的代码 Agent 等宿主的标准通道；它不需要 Pure Tokens Desktop、Router、额外 CLI 或 MCP。
 3. 两种通道都不可用时，停止并说明缺少的是“可调用 MCP 工具”或“已注入的 Direct Cloud 凭据与 HTTPS 执行能力”。不得要求用户把访问令牌发到对话中。
 
 Direct Cloud 的认证、目录、请求、轮询和本机交付契约见 `references/direct-cloud-contract.md`。它与 MCP 使用同一个认证 `GET /v1/media/models` 目录和同一份“精确 `id` + 明确 `capabilities`”契约。之后的模型解析、单任务、轮询和失败规则与本文件完全相同。
@@ -149,7 +149,7 @@ MCP 通道使用下方列出的工具。Direct Cloud 通道使用 `references/di
 - 只有工具结果的 `content[]` 中实际包含 `type == image` 时，才能说图片已生成并可在宿主内预览；
 - 读取 `structuredContent.fileName`、`folder`、`folderOpened`，说明原图已保存到本机 `Downloads/Pure Tokens`；图片完成时 `folderOpened=false` 是预期行为，不能声称 Finder / Explorer 已自动打开；
 - 若工具结果实际包含 `type == resource_link` 且其 `uri` 为 MCP 返回的本机图片快捷入口，可保留该快捷入口供用户主动打开；不得伪造“图片已在上方显示”，不得自行构造临时 `127.0.0.1`、上游 URL 或任意 `file://` 链接；
-- 不负责下载、写入文件或打开文件夹，这些必须由 MCP 完成。
+- Skill 本身不下载、写入文件或打开文件夹：MCP 通道由 MCP 执行层完成，Direct Cloud 通道由宿主的 Direct Cloud 执行层完成。两者都必须返回真实交付证据后才能报告成功。
 
 视频：
 
@@ -163,7 +163,7 @@ MCP 通道使用下方列出的工具。Direct Cloud 通道使用 `references/di
 - 只有工具结果的 `content[]` 中实际包含 `type == resource`、`resource.mimeType` 为 `video/*` 且有实际 `resource.blob` 时，才能说支持该原生媒体资源的宿主可在对话内预览；
 - 若 `structuredContent.previewAvailable == false`，或没有上述原生 `resource`，不得声称可在客户端预览。应说明视频已保存到 `Downloads/Pure Tokens`，请从 MCP 已定位的 Finder / Explorer 文件夹打开播放；
 - 不得把 `task_id` 当作用户可预览的结果，不得伪造临时链接、上游 URL 或 `file://` 链接；
-- 不负责下载、写入文件或打开文件夹，这些必须由 MCP 完成。
+- Skill 本身不下载、写入文件或打开文件夹：MCP 通道由 MCP 执行层完成，Direct Cloud 通道由宿主的 Direct Cloud 执行层完成。两者都必须返回真实交付证据后才能报告成功。
 
 视频任务仍在处理中时，如实告知等待状态；轮询超时不等于成功，也不允许重新提交。
 
@@ -171,7 +171,7 @@ Direct Cloud 的完成回复同样必须包含实际精确模型 ID、每个已�
 
 ## 失败与澄清
 
-- **MCP 不可用**：若宿主具备 Direct Cloud 所需 HTTPS 执行能力且已注入 `PURETOKENS_ACCESS_TOKEN`，切换到 Direct Cloud 并从认证目录重新开始；否则停止调用，提示用户在 Pure Tokens Desktop 中为当前客户端选择所需模型所在的分组，点击“验证并应用”，重启目标客户端并新建会话。
+- **MCP 不可用**：若宿主具备 Direct Cloud 所需 HTTPS 执行能力且已配置 Direct Cloud 凭据，切换到 Direct Cloud 并从认证目录重新开始；否则停止并明确说明当前宿主缺少“可调用 MCP 工具”或“HTTPS 执行能力与已注入的 Direct Cloud 凭据”。只有用户正在使用 Desktop 受管客户端时，才补充选择分组、点击“验证并应用”、重启客户端并新建会话的步骤；绝不要求用户把凭据发到对话中。
 - **目录为空或缺少目标模型**：停止调用，明确提示用户在客户端配置中选择包含该图片或视频模型的分组，点击“验证并应用”，重启目标客户端并新建会话后再试。
 - **模型不存在或匹配多个**：展示目录中的候选精确 ID、能力和已返回的显示信息，要求用户选择。
 - **能力不匹配**：例如目录只声明 `image` 却收到视频请求，停止调用并告知用户，不得改用文本模型。

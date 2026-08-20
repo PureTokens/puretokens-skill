@@ -6,6 +6,15 @@ import path from "node:path";
 import test from "node:test";
 import { renderWorkBuddyMediaSkill, writeWorkBuddyMediaSkill } from "../scripts/render-workbuddy-media-skill.mjs";
 import { getMediaSkillProvenance } from "../scripts/media-skill-provenance.mjs";
+import { repositoryRoot } from "../scripts/skill-registry.mjs";
+
+const sourceRoot = path.join(repositoryRoot, "skills", "puretokens_media");
+const workBuddyReferenceFiles = [
+  "references/model-catalog-contract.md",
+  "references/direct-cloud-contract.md",
+  "references/behavior-scenarios.json",
+  "references/natural-language-aliases.json"
+];
 
 test("WorkBuddy output is generated from the shared media source", async () => {
   const [rendered, sourceProvenance] = await Promise.all([
@@ -32,6 +41,12 @@ test("WorkBuddy output is generated from the shared media source", async () => {
   assert.equal(files.size, 6);
   assert.ok(files.has("references/direct-cloud-contract.md"));
   assert.ok(files.has("references/natural-language-aliases.json"));
+  const sourceSkill = await readFile(path.join(sourceRoot, "SKILL.md"), "utf8");
+  const sharedBody = sourceSkill.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n\s*/, "");
+  assert.ok(entry.endsWith(sharedBody));
+  for (const relativePath of workBuddyReferenceFiles) {
+    assert.deepEqual(files.get(relativePath), await readFile(path.join(sourceRoot, relativePath)), relativePath);
+  }
 });
 
 test("WorkBuddy renderer writes a complete managed Skill directory", async (t) => {

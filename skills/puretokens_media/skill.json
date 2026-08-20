@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "name": "puretokens_media",
-  "version": "0.4.1",
+  "version": "0.4.4",
   "entry": "SKILL.md",
   "displayName": "Pure Tokens Media",
   "description": "Resolve and handle a Pure Tokens image or video request.",
@@ -36,8 +36,9 @@
       "alwaysApply": true
     },
     "codex": {
-      "plugin": "puretokens-media@puretokens",
-      "requiresPluginFeature": true,
+      "managedByDesktop": true,
+      "managedSkillDirectory": "~/.codex/skills/puretokens_media",
+      "requiresPluginFeature": false,
       "supportsDirectCloud": true,
       "managedMcpWhenDesktopAvailable": true
     }

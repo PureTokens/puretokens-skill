@@ -3,10 +3,10 @@
   "skills": [
     {
       "name": "puretokens_media",
-      "version": "0.4.1",
+      "version": "0.4.4",
       "entry": "skills/puretokens_media/SKILL.md",
       "manifest": "skills/puretokens_media/skill.json",
-      "summary": "Shared source for exact Pure Tokens media selection, Direct Cloud or MCP execution, one task submission with explicit result counts, safe polling, native result delivery, and WorkBuddy's desktop-managed routing adapter.",
+      "summary": "Shared source for exact Pure Tokens media selection, Direct Cloud or MCP execution, one task submission with explicit result counts, safe polling, native result delivery, and Desktop-managed Codex and WorkBuddy deliveries.",
       "distribution": "cross-client-source"
     }
   ]

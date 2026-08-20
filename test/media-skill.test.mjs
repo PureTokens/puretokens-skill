@@ -11,9 +11,10 @@ async function readSkill() {
 }
 
 test("media Skill publishes the complete MCP tool contract", async () => {
-  const [skillText, manifestText] = await Promise.all([
+  const [skillText, manifestText, directCloudContract] = await Promise.all([
     readSkill(),
-    readFile(path.join(skillRoot, "skill.json"), "utf8")
+    readFile(path.join(skillRoot, "skill.json"), "utf8"),
+    readFile(path.join(skillRoot, "references", "direct-cloud-contract.md"), "utf8")
   ]);
   const manifest = JSON.parse(manifestText);
   assert.equal(manifest.mcp.server, "puretokens-image");
@@ -53,11 +54,16 @@ test("media Skill publishes the complete MCP tool contract", async () => {
   assert.match(skillText, /`type == resource`/);
   assert.match(skillText, /Direct Cloud 通道/);
   assert.match(skillText, /不需要 Pure Tokens Desktop、Router、额外 CLI 或 MCP/);
-  assert.match(skillText, /PURETOKENS_ACCESS_TOKEN/);
+  assert.match(directCloudContract, /PURETOKENS_API_KEY/);
+  assert.match(directCloudContract, /PURETOKENS_API_BASE_URL/);
+  assert.match(directCloudContract, /Do not force an `async` mode/);
+  assert.doesNotMatch(directCloudContract, /and `async: true`/);
   assert.match(skillText, /GET \/v1\/media\/models/);
   assert.match(skillText, /默认只请求 `n=1` 个结果/);
   assert.match(skillText, /同步 `data\[\]\.b64_json`、同步 `data\[\]\.url` 和异步任务/);
   assert.match(skillText, /视频始终按异步任务处理/);
+  assert.match(skillText, /Direct Cloud 通道由宿主的 Direct Cloud 执行层完成/);
+  assert.match(skillText, /缺少“可调用 MCP 工具”或“HTTPS 执行能力与已注入的 Direct Cloud 凭据”/);
   assert.doesNotMatch(skillText, /GET \/v1\/models/);
   assert.doesNotMatch(skillText, /PURETOKENS_API_KEY/);
 });
@@ -131,6 +137,7 @@ test("media Skill behavior scenarios cover ambiguity, empty catalog, unavailable
   assert.match(skillText, /MCP 不可用/);
   assert.match(skillText, /safeToResubmit=false/);
   assert.match(skillText, /轮询超时/);
+  assert.deepEqual(scenarios.find((scenario) => scenario.id === "mcp-unavailable")?.expected, "use_direct_cloud_when_available_or_report_missing_execution_capability");
   assert.match(skillText, /不得自动换模型/);
   assert.match(skillText, /不得自动重新提交/);
   assert.match(skillText, /同步图片结果、`\/content` 或本机写入失败/);
@@ -149,8 +156,9 @@ test("the shared media source has target-specific Claude and WorkBuddy deliverie
   assert.equal(manifest.distribution.workbuddy.alwaysApply, true);
   const workBuddyAdapter = await readFile(path.join(skillRoot, "adapters", "workbuddy-execution.md"), "utf8");
   assert.match(workBuddyAdapter, /DeferExecuteTool/);
-  assert.equal(manifest.distribution.codex.plugin, "puretokens-media@puretokens");
-  assert.equal(manifest.distribution.codex.requiresPluginFeature, true);
+  assert.equal(manifest.distribution.codex.managedByDesktop, true);
+  assert.equal(manifest.distribution.codex.managedSkillDirectory, "~/.codex/skills/puretokens_media");
+  assert.equal(manifest.distribution.codex.requiresPluginFeature, false);
   assert.equal(manifest.distribution.codex.supportsDirectCloud, true);
   assert.equal(manifest.distribution.codex.managedMcpWhenDesktopAvailable, true);
   assert.match(skillText, /跨客户端共用的媒体行为源/);
