@@ -17,7 +17,7 @@
 | 宿主 | 执行路径 | 配置方式 |
 | --- | --- | --- |
 | 由 Pure Tokens Desktop 受管的客户端 | Skill → 受管 MCP → 本地 Router → 服务 | 选择客户端分组，点击 **验证并应用**，重启客户端后新建会话。 |
-| 具备 MCP/Plugin/Connector 的 GUI 宿主 | Skill → MCP/Plugin/Connector → Direct Cloud | 在宿主自己的 MCP/Plugin Secret 机制中配置 `PURETOKENS_ACCESS_TOKEN`；绝不把 Token 粘贴到对话中。 |
+| 具备可调用 MCP 工具的 GUI 宿主 | Skill → `puretokens-image` MCP → 服务 | 为客户端安装或配置可调用的 MCP 交付；GUI 用户绝不把 Token 粘贴到对话中。 |
 | 具备终端能力的代码 Agent | Skill → Direct Cloud → 服务 | 安装 Skill，并通过宿主的 Secret/环境机制注入 `PURETOKENS_ACCESS_TOKEN`。不需要 Desktop、Router、CLI Sidecar 或 MCP。 |
 
 然后新建会话。直接说“生成一只可爱的狗”即可使用默认图片模型；也可以说“使用 Nano Banana Pro 生成……”。
@@ -28,11 +28,11 @@
 
 | Skill | 用途 |
 | --- | --- |
-| `puretokens_media` | 按当前目录精确选择图片/视频模型，提交一次任务并轮询同一任务，再交付原生结果和本地文件。 |
+| `puretokens_media` | 按当前目录精确选择图片/视频模型，提交一次任务并轮询同一任务，再交付实际原生媒体字节和本地文件。 |
 
 ## 图片模型
 
-下面是公开目录当前列出的图片模型。你的客户端或分组可能只显示其中一部分；只有 `puretokens_list_media_models` 实时返回精确 ID 或别名时，模型才可以使用。
+下面是已登记的模型候选，不保证每个宿主都可用。当前客户端/分组或 Direct Cloud Token 可能只返回其中一部分；只有 `puretokens_list_media_models` 或认证后的 `GET /v1/media/models` 实时返回精确 ID 和能力时，模型才可以使用。
 
 用户不需要记完整 ID。像 `image2`、`Nano Banana Pro` 这样的已登记说法由 Skill 负责理解，然后仍会先去实时目录确认，确认成功才发送请求。只说“生成图片”时默认使用 `gpt-image-2`；如果当前分组没有该精确模型，Skill 会停止并展示可用候选，不会偷偷换模型。
 
@@ -42,25 +42,25 @@
 | `gemini-3.0-pro-image` | `gemini pro image`、`nano banana pro` | 细节丰富的概念图和营销图 | `使用 Nano Banana Pro 做一张高级云计算主视觉。` |
 | `gemini-3.1-flash-lite-image` | `gemini flash lite image` | 快速缩略图和社交媒体草稿 | `使用 gemini flash lite image 做三张明亮的社交媒体缩略图。` |
 | `gemini-3.1-flash-image` | `nano banana 2` | 更快速的 Gemini 生图和对话式编辑 | `使用 Nano Banana 2 做一张明亮的产品社交海报。` |
-| `grok-imagine-1.0` | `grok image`、`grok imagine` | 快速创意和轻松有趣的场景 | `使用 grok-imagine-1.0 画一只在城市公园里的快乐机器人。` |
+| `grok-imagine-1.0` | 只接受精确 ID | 快速创意和轻松有趣的场景 | `使用 grok-imagine-1.0 画一只在城市公园里的快乐机器人。` |
 | `grok-imagine-image` | `grok image`、`grok imagine` | 社交内容和日常生图 | `使用 grok-imagine-image 做一张咖啡店开业宣传图。` |
 | `grok-imagine-image-quality` | `grok quality image` | 更精细的品牌主视觉 | `使用 grok quality image 做一张精致的应用商店横幅。` |
 | `wan2.7-image` | `wan image`、`wan 2.7 image` | 中文海报和产品宣传图 | `使用 wan 2.7 image 做一张春节促销海报。` |
 
-Skill 只提交一次 `puretokens_generate_image`，然后用 `puretokens_image_result` 查询同一个任务。
+默认只请求 1 个结果。只有用户明确给出数量、且当前执行契约支持该数量时才传入更大的数量；绝不会把一个请求拆成多次提交。MCP 路径只提交一次 `puretokens_generate_image`，然后用 `puretokens_image_result` 查询同一个任务。Direct Cloud 同时兼容同步 `data[].b64_json`、`data[].url` 和异步图片任务，但只有实际媒体字节已完成本机交付后才报告成功。
 
 只说 `Nano Banana` 时，表示 Gemini Nano Banana 模型家族。当前目录中，Nano Banana Pro 对应 `gemini-3.0-pro-image`，Nano Banana 2 对应 `gemini-3.1-flash-image`。两个模型都可用时，Skill 会让你选择；只有一个可用时才会直接使用。这样不会把已指定的模型悄悄换成另一个。
 
 ## 视频模型
 
-下面是公开目录当前列出的视频模型。模型必须在实时目录中声明 `video` 能力，才能生成视频。
+下面是已登记的视频模型候选。模型必须在实时目录中声明 `video` 能力，才能生成视频。
 
 | 模型 ID | 也可以这样说 | 适合做什么 | 真实使用示例 |
 | --- | --- | --- | --- |
 | `grok-imagine-video` | `grok video`、`grok imagine video` | 短视频和快速创意片段 | `使用 grok-imagine-video 做一条 5 秒咖啡广告。` |
 | `grok-imagine-video-1.5` | `grok 1.5 video`、`grok video 1.5` | 更完整的短广告 | `使用 grok 1.5 video 做一条 15 秒、16:9 的产品广告。` |
 
-Skill 只提交一次 `puretokens_generate_video`，然后用 `puretokens_video_result` 查询同一个任务。只说“生成视频”时默认使用 `grok-imagine-video-1.5`；如果当前分组没有该精确模型，Skill 会停止并展示可用候选。
+Skill 只提交一次 `puretokens_generate_video`，然后用 `puretokens_video_result` 查询同一个任务。Direct Cloud 视频始终按异步任务和 `/content` 交付流程处理。只说“生成视频”时默认使用 `grok-imagine-video-1.5`；如果当前分组没有该精确模型，Skill 会停止并展示可用候选。
 
 如果模型不存在、有多个候选，或者没有对应能力，Skill 会列出实时候选并让你选择，不会偷偷换模型。
 
@@ -81,7 +81,7 @@ Skill 只提交一次 `puretokens_generate_video`，然后用 `puretokens_video_
 
 - Skill 负责理解“用 image2”“用 Grok Video”等表达，先查询媒体目录，唯一匹配后选择工具，并在歧义时询问。
 - MCP 只接受精确模型 ID，执行参数校验、单次提交、结果轮询和本机交付；它不做自然语言识别、不猜模型、不静默换模型。
-- Desktop 宿主使用受管 MCP 和本地 Router；具备终端能力的 Agent 可以在宿主已注入 `PURETOKENS_ACCESS_TOKEN` 时使用 Direct Cloud，不需要 Pure Tokens Desktop、Router、额外 CLI 或 MCP。
+- GUI 客户端优先使用可调用的 `puretokens-image` MCP 工具；具备终端能力的 Agent 可以在宿主已注入 `PURETOKENS_ACCESS_TOKEN` 时使用 Direct Cloud，不需要 Pure Tokens Desktop、Router、额外 CLI 或 MCP。
 - 实时目录仍是唯一事实来源：Desktop Router 与 Direct Cloud 都读取同一份认证后的 `/v1/media/models`，并使用明确的 `image` / `video` 能力。
 
 ## 前置条件
@@ -120,7 +120,7 @@ codex plugin marketplace add .
 codex plugin add puretokens-media@puretokens
 ```
 
-安装后必须新建 Codex 任务。受管 MCP 路径下，仅复制到 `~/.codex/skills/puretokens_media` 不够：Codex 虽然会发现文字说明，但不会把 MCP 依赖绑定为可调用工具。Direct Cloud 只要求 Agent 具备 HTTPS 执行能力和宿主注入的 Token。
+安装后必须新建 Codex 任务。Plugin 只安装共享 Skill，不会打包、启动或替换 Desktop 受管 MCP。若 Pure Tokens Desktop 已配置可调用的 `puretokens-image` MCP，Skill 会优先使用它；否则 Direct Cloud 只要求 Agent 具备 HTTPS 执行能力和宿主注入的 Token。
 
 Pure Tokens Desktop 会在 Codex 的“验证并应用”中执行同一套官方 Plugin 安装。上面的命令仅用于本机恢复或开发。
 
@@ -193,7 +193,7 @@ codex plugin add puretokens-media@puretokens
 Claude Desktop 使用图形界面上传本地 Skill 包。生成 ZIP：
 
 ```bash
-node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out ./puretokens_media-0.4.0.zip
+node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out ./puretokens_media-0.4.1.zip
 ```
 
 ZIP 内部结构为：
@@ -202,6 +202,9 @@ ZIP 内部结构为：
 puretokens_media/
 ├── SKILL.md
 ├── skill.json
+├── source-delivery.json
+├── adapters/
+│   └── workbuddy-execution.md
 └── references/
     ├── behavior-scenarios.json
     ├── direct-cloud-contract.md
@@ -235,9 +238,9 @@ codex plugin add puretokens-media@puretokens
 
 ## 模型选择规则
 
-`puretokens_media` 必须先调用 `puretokens_list_media_models`，只依据本次响应的 `id`、`displayName`、`aliases`、`provider` 和 `capabilities` 匹配。生成工具必须传精确 `model` 和稳定 `request_id`。一次用户请求只提交一次；宿主重试时复用同一 `request_id`，结果工具始终使用同一 `task_id` 和原始模型。
+`puretokens_media` 必须先调用 `puretokens_list_media_models`，只依据本次响应的 `id`、`displayName`、`aliases`、`provider` 和 `capabilities` 匹配。生成工具必须传精确 `model` 和稳定 `request_id`。一次用户请求只提交一次，默认只请求 1 个结果，只有用户明确给出数量时才增加数量；宿主重试时复用同一 `request_id`，结果工具始终使用同一 `task_id` 和原始模型。
 
-媒体完成后会展示 MCP 返回的实际精确模型、保存文件名和 `Downloads/Pure Tokens`。只有 MCP 返回原生 `image` 内容时，图片才可在支持的宿主内预览。视频在大小受限时会携带原生 MCP 资源，支持该资源的宿主可以预览；较大的视频仍会成功保存为本机 MP4，并从同一下载文件夹打开。
+媒体完成后会展示实际精确模型、保存文件名和 `Downloads/Pure Tokens`。只有 MCP 或宿主返回原生 `image` 内容时，图片才可在支持的宿主内预览；Direct Cloud 会先下载 `b64_json`、返回 URL 或完成后的 `/content` 字节，再报告本机交付。视频在大小受限时会携带原生 MCP 资源，支持该资源的宿主可以预览；较大的视频仍会成功保存为本机 MP4。只有执行层实际返回本机打开文件/文件夹入口时才展示该入口。
 
 模型歧义、目录为空、MCP 不可用、工具错误和轮询超时的行为测试见 `skills/puretokens_media/references/behavior-scenarios.json`。任何错误都不得自动换模型或重新提交，除非用户明确选择了新的具体模型。
 

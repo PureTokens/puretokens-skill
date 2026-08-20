@@ -6,6 +6,7 @@ import os from "node:os";
 import path from "node:path";
 import process from "node:process";
 import { collectSkillRecords, repositoryRoot, skillsRoot, validateRepository } from "../scripts/skill-registry.mjs";
+import { getMediaSkillProvenance, mediaSkillSourceFiles } from "../scripts/media-skill-provenance.mjs";
 
 const [command, ...argumentsList] = process.argv.slice(2);
 
@@ -118,20 +119,17 @@ async function bundleSkill(args) {
   }
   const source = await resolveSkillSource(options.name);
   const manifest = JSON.parse(await readFile(path.join(source, "skill.json"), "utf8"));
-  const files = [
-    "SKILL.md",
-    "skill.json",
-    "references/model-catalog-contract.md",
-    "references/direct-cloud-contract.md",
-    "references/behavior-scenarios.json",
-    "references/natural-language-aliases.json"
-  ];
+  const files = mediaSkillSourceFiles.filter((relativePath) => relativePath !== "agents/openai.yaml");
   const entries = [];
   for (const relativePath of files) {
     const absolutePath = path.join(source, relativePath);
     if (!(await exists(absolutePath))) throw new Error(`Skill bundle file is missing: ${relativePath}`);
     entries.push({ path: relativePath, data: await readFile(absolutePath) });
   }
+  entries.push({
+    path: "source-delivery.json",
+    data: `${JSON.stringify({ delivery: "claude-desktop", derivedFrom: await getMediaSkillProvenance() }, null, 2)}\n`
+  });
   const output = path.resolve(options.out || `${options.name}-${manifest.version}-claude-desktop.zip`);
   if (await exists(output) && !options.force) {
     throw new Error(`Refusing to overwrite existing bundle: ${output} (pass --force to replace it)`);

@@ -17,7 +17,7 @@ Choose the one path your host can actually execute:
 | Host | Execution path | Setup |
 | --- | --- | --- |
 | Pure Tokens Desktop-managed client | Skill → managed MCP → local Router → service | Select the client groups, click **Verify and apply**, then restart the client and start a new chat. |
-| GUI host with an MCP/Plugin/Connector | Skill → MCP/Plugin/Connector → Direct Cloud | Configure the host's MCP/Plugin secret mechanism with `PURETOKENS_ACCESS_TOKEN`; never paste that token into chat. |
+| GUI host with callable MCP tools | Skill → `puretokens-image` MCP → service | Install/configure the callable MCP delivery for that client. The GUI user never pastes a token into chat. |
 | Terminal-capable code Agent | Skill → Direct Cloud → service | Install the Skill and inject `PURETOKENS_ACCESS_TOKEN` through the host's Secret/environment mechanism. No Desktop, Router, CLI sidecar, or MCP is required. |
 
 Then start a new chat. Say `Generate a cute dog` for the default image model, or name a model such as `Use Nano Banana Pro to generate ...`.
@@ -28,11 +28,11 @@ Current Skill:
 
 | Skill | Purpose |
 | --- | --- |
-| `puretokens_media` | Select an exact image/video model from the live catalog, submit one task, poll the same task, and deliver its native result plus the local file. |
+| `puretokens_media` | Select an exact image/video model from the live catalog, submit one task, poll the same task, and deliver actual native media bytes plus local files. |
 
 ## Image models
 
-These are the image models currently shown by the public catalog. Your client/group may show fewer models. The Skill uses a model only when the live `puretokens_list_media_models` response contains the exact ID or alias.
+These are registered model candidates, not a promise that every host can use them. Your current client/group or Direct Cloud token may show fewer models. The Skill uses a model only when the live `puretokens_list_media_models` or authenticated `GET /v1/media/models` response contains the exact ID and capability.
 
 You do not need to type the full ID. Registered phrases such as `image2` and `Nano Banana Pro` are understood by the Skill and verified against the live catalog before a request is sent. If you simply ask for an image, the Skill uses `gpt-image-2`; if that exact model is unavailable in your current group, it stops and shows the available candidates instead of silently switching models.
 
@@ -42,25 +42,25 @@ You do not need to type the full ID. Registered phrases such as `image2` and `Na
 | `gemini-3.0-pro-image` | `gemini pro image`, `nano banana pro` | Detailed concept art and polished marketing images | `Use Nano Banana Pro to create a premium cloud-computing hero image.` |
 | `gemini-3.1-flash-lite-image` | `gemini flash lite image` | Fast thumbnails and social media drafts | `Use gemini flash lite image to make three bright social thumbnails.` |
 | `gemini-3.1-flash-image` | `nano banana 2` | Faster Gemini image generation and conversational edits | `Use Nano Banana 2 to create a bright product social post.` |
-| `grok-imagine-1.0` | `grok image`, `grok imagine` | Fast creative concepts and playful scenes | `Use grok-imagine-1.0 to draw a cheerful robot in a city park.` |
+| `grok-imagine-1.0` | exact ID only | Fast creative concepts and playful scenes | `Use grok-imagine-1.0 to draw a cheerful robot in a city park.` |
 | `grok-imagine-image` | `grok image`, `grok imagine` | Social posts and everyday image generation | `Use grok-imagine-image to create a realistic café opening post.` |
 | `grok-imagine-image-quality` | `grok quality image` | Sharper brand key visuals | `Use grok quality image to make a polished app-store banner.` |
 | `wan2.7-image` | `wan image`, `wan 2.7 image` | Chinese posters and product creatives | `Use wan 2.7 image to make a Chinese New Year promotion poster.` |
 
-The Skill calls `puretokens_generate_image` once, then polls the same task with `puretokens_image_result`.
+The Skill requests one result by default. It passes a higher count only when the user explicitly asks for it and the selected execution contract supports that count; it never turns one request into several submissions. MCP calls `puretokens_generate_image` once, then polls the same task with `puretokens_image_result`. Direct Cloud accepts synchronous `data[].b64_json` and `data[].url` image results as well as asynchronous tasks, but reports success only after actual bytes are locally delivered.
 
 `Nano Banana` by itself means the Gemini Nano Banana family. The current catalog uses `gemini-3.0-pro-image` for Nano Banana Pro and `gemini-3.1-flash-image` for Nano Banana 2. When both are available, the Skill asks which one you want; when only one is available, it uses that one. This keeps a named choice from turning into an invisible model substitution.
 
 ## Video models
 
-These are the video models currently shown by the public catalog. A model must have live capability `video` before it can be used.
+These are registered video candidates. A model must have live capability `video` before it can be used.
 
 | Model ID | You can also say | Good for | Real example |
 | --- | --- | --- | --- |
 | `grok-imagine-video` | `grok video`, `grok imagine video` | Short social clips and quick concepts | `Use grok-imagine-video to make a 5-second coffee ad.` |
 | `grok-imagine-video-1.5` | `grok 1.5 video`, `grok video 1.5` | More polished short advertisements | `Use grok 1.5 video to make a 15-second 16:9 product ad.` |
 
-The Skill calls `puretokens_generate_video` once, then polls the same task with `puretokens_video_result`. If you simply ask for a video, it uses `grok-imagine-video-1.5`; if that exact model is unavailable in your current group, it stops and shows the available candidates.
+The Skill calls `puretokens_generate_video` once, then polls the same task with `puretokens_video_result`. Direct Cloud videos always use the asynchronous task and `/content` delivery flow. If you simply ask for a video, it uses `grok-imagine-video-1.5`; if that exact model is unavailable in your current group, it stops and shows the available candidates.
 
 If a model is missing, ambiguous, or does not have the requested capability, the Skill shows the live candidates and asks you to choose. It never silently changes models.
 
@@ -81,7 +81,7 @@ Natural-language user request → Skill → (MCP → local Router → service | 
 
 - The Skill interprets requests such as “use image2” or “use Grok Video”, reads the live catalog, asks for clarification when the match is not unique, and selects the correct tool.
 - MCP accepts only an exact model ID. It validates arguments, submits once, polls the result, and delivers local files. MCP never performs natural-language matching, guesses a model, or silently substitutes one.
-- A Desktop host uses the managed MCP and local Router. A terminal-capable Agent may use Direct Cloud with a host-injected `PURETOKENS_ACCESS_TOKEN`; that mode does not require Pure Tokens Desktop, Router, an extra CLI, or MCP.
+- GUI clients use a callable `puretokens-image` MCP tool as their first execution path. A terminal-capable Agent may use Direct Cloud with a host-injected `PURETOKENS_ACCESS_TOKEN`; that mode does not require Pure Tokens Desktop, Router, an extra CLI, or MCP.
 - The live catalog remains authoritative. Desktop Router and Direct Cloud both read the same authenticated `/v1/media/models` response with explicit `image` / `video` capabilities.
 
 ## Prerequisites
@@ -120,7 +120,7 @@ codex plugin marketplace add .
 codex plugin add puretokens-media@puretokens
 ```
 
-Start a new Codex task after installation. A loose `~/.codex/skills/puretokens_media` copy is not sufficient for the MCP path: Codex discovers the text but does not bind its named MCP dependency into callable tools. Direct Cloud remains available when the Agent has HTTPS execution and the host-injected token.
+Start a new Codex task after installation. The Plugin installs the shared Skill; it does not bundle, start, or replace the Desktop-managed MCP. When Pure Tokens Desktop has already configured the callable `puretokens-image` MCP, the Skill uses it. Otherwise, Direct Cloud remains available when the Agent has HTTPS execution and the host-injected token.
 
 Pure Tokens Desktop performs the same official Plugin setup during **Verify and apply** for Codex. The commands above are for local recovery or development only.
 
@@ -193,7 +193,7 @@ Copying a Skill to `~/.codex/skills` is neither a Claude Desktop installation no
 Claude Desktop uses a graphical local Skill upload. Create the ZIP:
 
 ```bash
-node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out ./puretokens_media-0.4.0.zip
+node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out ./puretokens_media-0.4.1.zip
 ```
 
 The ZIP has this layout:
@@ -202,6 +202,9 @@ The ZIP has this layout:
 puretokens_media/
 ├── SKILL.md
 ├── skill.json
+├── source-delivery.json
+├── adapters/
+│   └── workbuddy-execution.md
 └── references/
     ├── behavior-scenarios.json
     ├── direct-cloud-contract.md
@@ -235,9 +238,9 @@ Use `codex plugin remove puretokens-media@puretokens` only when you intentionall
 
 ## Model-selection rules
 
-`puretokens_media` must call `puretokens_list_media_models` first and match only fields returned in that response: `id`, `displayName`, `aliases`, `provider`, and `capabilities`. Generation calls must include the exact `model` and a stable `request_id`. One logical user request submits once; a host retry reuses the same `request_id`; result polling always uses the same `task_id` and original model.
+`puretokens_media` must call `puretokens_list_media_models` first and match only fields returned in that response: `id`, `displayName`, `aliases`, `provider`, and `capabilities`. Generation calls must include the exact `model` and a stable `request_id`. One logical user request submits once, requests one result unless the user explicitly gives a count, and reuses the same `request_id` on a host retry; result polling always uses the same `task_id` and original model.
 
-Completed media reports the exact model returned by MCP, the saved filename, and `Downloads/Pure Tokens`. Images are previewable only when MCP returns native `image` content. Videos may include a bounded native MCP resource for hosts that render it; larger videos remain successfully delivered as local MP4 files and open from the same Downloads folder.
+Completed media reports the exact model, the saved filename, and `Downloads/Pure Tokens`. Images are previewable only when MCP or the host returns native image content; Direct Cloud downloads returned `b64_json`, returned URLs, or completed `/content` bytes before it claims delivery. Videos may include a bounded native MCP resource for hosts that render it; larger videos remain successfully delivered as local MP4 files. An open-file/open-folder entry is shown only when the execution layer actually returned one.
 
 Behavior scenarios for ambiguity, an empty catalog, unavailable MCP, task failure, and polling timeout are stored in `skills/puretokens_media/references/behavior-scenarios.json`. No error may trigger an automatic model switch or resubmission unless the user explicitly chooses a new model.
 

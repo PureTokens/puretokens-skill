@@ -6,6 +6,7 @@ import path from "node:path";
 import { promisify } from "node:util";
 import test from "node:test";
 import { repositoryRoot } from "../scripts/skill-registry.mjs";
+import { getMediaSkillProvenance } from "../scripts/media-skill-provenance.mjs";
 
 const execFileAsync = promisify(execFile);
 const cli = path.join(repositoryRoot, "bin", "puretokens-skill.js");
@@ -21,9 +22,11 @@ test("Claude Desktop bundle includes the skill root and required files", async (
   await runCli(["bundle", "puretokens_media", "--format", "claude-desktop", "--out", output]);
   const bundle = await readFile(output);
   assert.equal(bundle.readUInt32LE(0), 0x04034b50);
-  for (const file of ["SKILL.md", "skill.json", "references/model-catalog-contract.md", "references/direct-cloud-contract.md", "references/behavior-scenarios.json", "references/natural-language-aliases.json"]) {
+  for (const file of ["SKILL.md", "skill.json", "source-delivery.json", "adapters/workbuddy-execution.md", "references/model-catalog-contract.md", "references/direct-cloud-contract.md", "references/behavior-scenarios.json", "references/natural-language-aliases.json"]) {
     assert.ok(bundle.includes(Buffer.from(`puretokens_media/${file}`)));
   }
+  const provenance = await getMediaSkillProvenance();
+  assert.ok(bundle.includes(Buffer.from(provenance.sourceSha256)));
 });
 
 test("install, upgrade, and explicit uninstall only manage the named Skill directory", async (t) => {
@@ -32,7 +35,7 @@ test("install, upgrade, and explicit uninstall only manage the named Skill direc
   const skillDirectory = path.join(temporaryRoot, "puretokens_media");
   await runCli(["install", "puretokens_media", "--target", temporaryRoot]);
   const manifest = JSON.parse(await readFile(path.join(skillDirectory, "skill.json"), "utf8"));
-  assert.equal(manifest.version, "0.4.0");
+  assert.equal(manifest.version, "0.4.1");
   await writeFile(path.join(skillDirectory, "SKILL.md"), "local modification\n");
   await runCli(["upgrade", "puretokens_media", "--target", temporaryRoot]);
   const upgraded = await readFile(path.join(skillDirectory, "SKILL.md"), "utf8");

@@ -1,6 +1,6 @@
 {
   "name": "puretokens-media",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Generate images and videos with Pure Tokens through Direct Cloud or the managed media MCP.",
   "author": {
     "name": "Pure Tokens"
@@ -13,7 +13,6 @@
     "puretokens"
   ],
   "skills": "./skills/",
-  "mcpServers": "./.mcp.json",
   "interface": {
     "displayName": "Pure Tokens Media",
     "shortDescription": "Generate images and videos with Pure Tokens.",
@@ -32,7 +31,7 @@
   },
   "derivedFrom": {
     "name": "puretokens_media",
-    "version": "0.4.0",
-    "sourceSha256": "bf7e5ee056c465017c3ab67008bbbcb0fb05ff4d94c14b1baee2b5ab2c2a2c2b"
+    "version": "0.4.1",
+    "sourceSha256": "8ff2f8df1fd761713e718b3b92f0d13f64bfe288e3f943d5e7e773af41917821"
   }
 }

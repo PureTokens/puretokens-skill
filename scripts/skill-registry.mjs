@@ -71,6 +71,7 @@ export async function validateRepository() {
     if (manifest?.behaviorTests) await verifyFile(errors, manifest.behaviorTests);
     if (manifest?.naturalLanguageAliases) await verifyFile(errors, manifest.naturalLanguageAliases);
     if (manifest?.directCloudContract) await verifyFile(errors, manifest.directCloudContract);
+    if (manifest?.workBuddyAdapter) await verifyFile(errors, manifest.workBuddyAdapter);
     const claudeDesktop = manifest?.distribution?.claudeDesktop;
     if (claudeDesktop) {
       if (claudeDesktop.format !== "zip") errors.push(`${directory}: Claude Desktop distribution must use zip format`);

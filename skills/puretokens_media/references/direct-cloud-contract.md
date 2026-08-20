@@ -46,16 +46,39 @@ Content-Type: application/json
 ```
 
 Image bodies use the selected exact `model`, `prompt`, optional `size` and
-`quality`, and `async: true`. A synchronous `data[].b64_json` or `data[].url`
-is a completed image. Otherwise poll `GET /v1/images/{task_id}`, then retrieve
-`GET /v1/images/{task_id}/content` only after completion.
+`quality`, and `async: true`. Set `n` to `1` unless the user explicitly asks
+for a different number of results. Pass that explicit count only when the
+selected endpoint accepts it; do not turn one request into multiple submits.
+
+An image generation response has exactly one of these successful result paths:
+
+1. Every requested result is present in `data[]` with `b64_json`: decode the
+   bytes and atomically write each local file.
+2. Every requested result is present in `data[]` with `url`: download those
+   exact returned URLs, atomically write each local file, and never expose the
+   URLs in logs or user-facing output.
+3. The response provides a task ID: poll `GET /v1/images/{task_id}`. After the
+   service reports completion, retrieve `GET /v1/images/{task_id}/content` and
+   atomically write the returned media bytes.
+
+An empty `data[]`, an entry without either supported synchronous result field,
+an unknown task state, a missing task ID, a failed download, or an incomplete
+write is not success. Do not submit again or change models automatically.
 
 Video bodies use the selected exact `model`, `prompt`, optional `seconds`,
 `size`, `resolution`, and `aspect_ratio`. Videos are always asynchronous:
-poll `GET /v1/videos/{task_id}`, then retrieve
-`GET /v1/videos/{task_id}/content` only after completion.
+the response must provide a task ID; poll `GET /v1/videos/{task_id}`, then
+retrieve `GET /v1/videos/{task_id}/content` only after completion. A completed
+status without downloadable content bytes is not a completed video delivery.
+
+Use bounded polling and stop as soon as the content bytes have been delivered
+or the task enters a terminal error state. A timeout, an unrecognized status,
+or a missing result field remains pending or failed; it never authorizes a
+second submission.
 
 The caller writes completed bytes atomically to `Downloads/Pure Tokens` and
-reports the saved file path. It may present an in-chat preview only when the
-host actually supports that media type. It must never disclose an upstream
-signed URL or treat a task ID as a completed result.
+reports each saved filename and directory. It may present an in-chat preview
+only when the host actually supports that media type, and may offer an
+open-file/open-folder control only when the host provides a real local entry.
+It must never disclose an upstream signed URL or treat a task ID, status, HTML,
+SVG, or text placeholder as a completed result.

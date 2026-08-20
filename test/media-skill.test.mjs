@@ -36,11 +36,16 @@ test("media Skill publishes the complete MCP tool contract", async () => {
   assert.equal(manifest.rules.completedVideoUsesBoundedNativeResource, true);
   assert.equal(manifest.rules.usesCuratedNaturalLanguageAliasRegistry, true);
   assert.equal(manifest.rules.usesDeterministicMediaDefaults, true);
+  assert.equal(manifest.rules.defaultResultCount, 1);
+  assert.equal(manifest.rules.explicitCountRequiredForMultipleResults, true);
   assert.equal(manifest.rules.supportsDirectCloudWithoutDesktop, true);
   assert.equal(manifest.rules.directCloudRequiresHostInjectedCredentials, true);
   assert.equal(manifest.rules.directCloudUsesExplicitGatewayEndpointCapabilities, true);
+  assert.equal(manifest.rules.directCloudDeliversSynchronousImageBytes, true);
+  assert.equal(manifest.rules.directCloudDeliversAsyncContentBytes, true);
   assert.equal(manifest.naturalLanguageAliases, "skills/puretokens_media/references/natural-language-aliases.json");
   assert.equal(manifest.directCloudContract, "skills/puretokens_media/references/direct-cloud-contract.md");
+  assert.equal(manifest.workBuddyAdapter, "skills/puretokens_media/adapters/workbuddy-execution.md");
   assert.match(skillText, /第一步必须调用[：:][\s\S]*puretokens_list_media_models/);
   assert.match(skillText, /稳定的 `request_id`/);
   assert.match(skillText, /同一个 `task_id`/);
@@ -50,6 +55,9 @@ test("media Skill publishes the complete MCP tool contract", async () => {
   assert.match(skillText, /不需要 Pure Tokens Desktop、Router、额外 CLI 或 MCP/);
   assert.match(skillText, /PURETOKENS_ACCESS_TOKEN/);
   assert.match(skillText, /GET \/v1\/media\/models/);
+  assert.match(skillText, /默认只请求 `n=1` 个结果/);
+  assert.match(skillText, /同步 `data\[\]\.b64_json`、同步 `data\[\]\.url` 和异步任务/);
+  assert.match(skillText, /视频始终按异步任务处理/);
   assert.doesNotMatch(skillText, /GET \/v1\/models/);
   assert.doesNotMatch(skillText, /PURETOKENS_API_KEY/);
 });
@@ -105,13 +113,17 @@ test("media Skill behavior scenarios cover ambiguity, empty catalog, unavailable
   ]);
   const scenarios = JSON.parse(scenariosText).scenarios;
   assert.deepEqual(scenarios.map((scenario) => scenario.id), [
+    "default-single-result",
+    "explicit-multiple-results",
+    "direct-cloud-image-delivery",
     "ambiguous-model",
     "no-media-model",
     "mcp-unavailable",
     "task-failure",
-    "task-timeout"
+    "task-timeout",
+    "content-delivery-failure"
   ]);
-  assert.deepEqual(scenarios.slice(0, 1).map((scenario) => scenario.firstTool), [
+  assert.deepEqual(scenarios.slice(3, 4).map((scenario) => scenario.firstTool), [
     "puretokens_list_media_models",
   ]);
   assert.match(skillText, /模型不存在或匹配多个/);
@@ -121,6 +133,7 @@ test("media Skill behavior scenarios cover ambiguity, empty catalog, unavailable
   assert.match(skillText, /轮询超时/);
   assert.match(skillText, /不得自动换模型/);
   assert.match(skillText, /不得自动重新提交/);
+  assert.match(skillText, /同步图片结果、`\/content` 或本机写入失败/);
 });
 
 test("the shared media source has target-specific Claude and WorkBuddy deliveries", async () => {
@@ -134,6 +147,8 @@ test("the shared media source has target-specific Claude and WorkBuddy deliverie
   assert.equal(manifest.distribution.claudeDesktop.enableAfterImport, true);
   assert.equal(manifest.distribution.workbuddy.generatedSkillName, "puretokens_workbuddy_router");
   assert.equal(manifest.distribution.workbuddy.alwaysApply, true);
+  const workBuddyAdapter = await readFile(path.join(skillRoot, "adapters", "workbuddy-execution.md"), "utf8");
+  assert.match(workBuddyAdapter, /DeferExecuteTool/);
   assert.equal(manifest.distribution.codex.plugin, "puretokens-media@puretokens");
   assert.equal(manifest.distribution.codex.requiresPluginFeature, true);
   assert.equal(manifest.distribution.codex.supportsDirectCloud, true);

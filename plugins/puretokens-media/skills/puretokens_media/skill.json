@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "name": "puretokens_media",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "entry": "SKILL.md",
   "displayName": "Pure Tokens Media",
   "description": "Resolve and handle a Pure Tokens image or video request.",
@@ -18,6 +18,7 @@
   "behaviorTests": "skills/puretokens_media/references/behavior-scenarios.json",
   "naturalLanguageAliases": "skills/puretokens_media/references/natural-language-aliases.json",
   "directCloudContract": "skills/puretokens_media/references/direct-cloud-contract.md",
+  "workBuddyAdapter": "skills/puretokens_media/adapters/workbuddy-execution.md",
   "distribution": {
     "claudeDesktop": {
       "format": "zip",
@@ -58,6 +59,8 @@
     "naturalLanguageResolutionBelongsToSkill": true,
     "usesCuratedNaturalLanguageAliasRegistry": true,
     "usesDeterministicMediaDefaults": true,
+    "defaultResultCount": 1,
+    "explicitCountRequiredForMultipleResults": true,
     "neverGuessModelOrProtocol": true,
     "neverResubmitPendingTask": true,
     "stableRequestIdRequired": true,
@@ -72,11 +75,13 @@
     "completedVideoUsesBoundedNativeResource": true,
     "supportsDirectCloudWithoutDesktop": true,
     "directCloudRequiresHostInjectedCredentials": true,
-    "directCloudUsesExplicitGatewayEndpointCapabilities": true
+    "directCloudUsesExplicitGatewayEndpointCapabilities": true,
+    "directCloudDeliversSynchronousImageBytes": true,
+    "directCloudDeliversAsyncContentBytes": true
   },
   "derivedFrom": {
     "name": "puretokens_media",
-    "version": "0.4.0",
-    "sourceSha256": "bf7e5ee056c465017c3ab67008bbbcb0fb05ff4d94c14b1baee2b5ab2c2a2c2b"
+    "version": "0.4.1",
+    "sourceSha256": "8ff2f8df1fd761713e718b3b92f0d13f64bfe288e3f943d5e7e773af41917821"
   }
 }
