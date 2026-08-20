@@ -6,9 +6,14 @@
 
 ## Unreleased
 
+## 0.4.1 — 2026-08-20
+
 - Made `puretokens_media` request one result by default and permit a higher count only when the user explicitly provides it and the selected execution contract supports it. A request never becomes multiple generation submissions.
 - Completed the Direct Cloud delivery contract: synchronous image `data[].b64_json` and `data[].url` results are decoded or downloaded into local files, asynchronous images and all videos retrieve `/content`, and no completed status is presented as success before media bytes are written. Open-file/open-folder entries and previews are now shown only when the execution layer actually returns them.
 - Added a deterministic source provenance digest covering the shared Skill, manifest, agent entry, and references. The generated Codex Plugin and WorkBuddy delivery now carry that digest; Claude Desktop ZIP bundles include `source-delivery.json`, and tests verify each delivery against the shared source.
+
+## 0.4.0 — 2026-08-20
+
 - Clarified the execution boundary for `puretokens_media`: Skill owns natural-language policy, MCP owns typed local execution, Desktop Router remains a managed transport, and terminal-capable Agents can use the Direct Cloud contract without Desktop, Router, an extra CLI, or MCP. Desktop Router and Direct Cloud now use the same authenticated `GET /v1/media/models` response shape before calling the same image/video submit, status, and content endpoints. The Codex Plugin is a generated Skill delivery and does not bundle or start the Desktop-managed MCP.
 - Added the official Codex Plugin delivery for `puretokens_media`. It uses the Desktop-managed `puretokens-image` MCP when callable, while remaining able to use Direct Cloud without that MCP.
 - Made the copyable local-agent installation prompt fail closed in ordinary ChatGPT chats. A Codex runtime label alone no longer authorizes a local Skill install; the agent must first prove it has both a terminal and local file-write access.

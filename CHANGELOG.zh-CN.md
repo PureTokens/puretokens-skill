@@ -6,9 +6,14 @@
 
 ## Unreleased
 
+## 0.4.1 — 2026-08-20
+
 - `puretokens_media` 默认只请求 1 个结果；只有用户明确给出数量且当前执行契约支持时才请求更多结果。一个请求绝不会变成多次生成提交。
 - 补全 Direct Cloud 交付契约：同步图片 `data[].b64_json` 和 `data[].url` 会被解码或下载为本地文件，异步图片和所有视频都必须取回 `/content`，只有媒体字节已经写入本机后才可将完成状态报告为成功。预览和“打开文件/文件夹”入口也只能在执行层实际返回时展示。
 - 新增覆盖共享 Skill、清单、Agent 入口和引用资料的确定性来源哈希。生成的 Codex Plugin 与 WorkBuddy 交付都携带该哈希；Claude Desktop ZIP 新增 `source-delivery.json`，测试会验证每种交付与共享源一致。
+
+## 0.4.0 — 2026-08-20
+
 - 明确 `puretokens_media` 的执行边界：Skill 负责自然语言策略，MCP 负责类型化本机执行，Desktop Router 是受管传输；具备终端能力的 Agent 可以按 Direct Cloud 契约生成媒体，不需要 Desktop、Router、额外 CLI 或 MCP。Desktop Router 与 Direct Cloud 现在都使用认证 `GET /v1/media/models` 的同一响应形状，再调用同一组图片/视频提交、状态和内容端点。Codex Plugin 是生成出的 Skill 交付物，不会打包或启动 Desktop 受管 MCP。
 - 新增官方 Codex Plugin 交付：`puretokens_media` 会在 `puretokens-image` MCP 实际可调用时使用 Desktop 受管 MCP，同时仍可在没有该 MCP 时走 Direct Cloud。
 - 收紧可复制的本机 Agent 安装提示词：普通 ChatGPT 对话即使显示 Codex 运行时，也不能被当作具备本机安装权限的 Codex。Agent 必须先确认同时具备终端和本机文件写入权限，否则明确停止。
