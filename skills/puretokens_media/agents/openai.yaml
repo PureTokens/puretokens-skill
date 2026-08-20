@@ -1,0 +1,7 @@
+interface:
+  display_name: "Pure Tokens Media"
+  short_description: "Generate images and videos with the media models available through Pure Tokens."
+  default_prompt: "Use $puretokens_media to generate an image or video through Pure Tokens."
+
+policy:
+  allow_implicit_invocation: true

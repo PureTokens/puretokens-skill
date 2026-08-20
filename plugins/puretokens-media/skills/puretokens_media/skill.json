@@ -73,5 +73,10 @@
     "supportsDirectCloudWithoutDesktop": true,
     "directCloudRequiresHostInjectedCredentials": true,
     "directCloudUsesExplicitGatewayEndpointCapabilities": true
+  },
+  "derivedFrom": {
+    "name": "puretokens_media",
+    "version": "0.4.0",
+    "sourceSha256": "bf7e5ee056c465017c3ab67008bbbcb0fb05ff4d94c14b1baee2b5ab2c2a2c2b"
   }
 }

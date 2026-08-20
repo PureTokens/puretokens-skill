@@ -8,6 +8,7 @@ const sourceSkillName = "puretokens_media";
 const workBuddySkillName = "puretokens_workbuddy_router";
 const referenceFiles = [
   "references/model-catalog-contract.md",
+  "references/direct-cloud-contract.md",
   "references/behavior-scenarios.json",
   "references/natural-language-aliases.json"
 ];

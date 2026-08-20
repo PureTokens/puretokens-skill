@@ -122,6 +122,7 @@ async function bundleSkill(args) {
     "SKILL.md",
     "skill.json",
     "references/model-catalog-contract.md",
+    "references/direct-cloud-contract.md",
     "references/behavior-scenarios.json",
     "references/natural-language-aliases.json"
   ];

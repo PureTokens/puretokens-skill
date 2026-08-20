@@ -36,12 +36,22 @@ test("media Skill publishes the complete MCP tool contract", async () => {
   assert.equal(manifest.rules.completedVideoUsesBoundedNativeResource, true);
   assert.equal(manifest.rules.usesCuratedNaturalLanguageAliasRegistry, true);
   assert.equal(manifest.rules.usesDeterministicMediaDefaults, true);
+  assert.equal(manifest.rules.supportsDirectCloudWithoutDesktop, true);
+  assert.equal(manifest.rules.directCloudRequiresHostInjectedCredentials, true);
+  assert.equal(manifest.rules.directCloudUsesExplicitGatewayEndpointCapabilities, true);
   assert.equal(manifest.naturalLanguageAliases, "skills/puretokens_media/references/natural-language-aliases.json");
+  assert.equal(manifest.directCloudContract, "skills/puretokens_media/references/direct-cloud-contract.md");
   assert.match(skillText, /第一步必须调用[：:][\s\S]*puretokens_list_media_models/);
   assert.match(skillText, /稳定的 `request_id`/);
   assert.match(skillText, /同一个 `task_id`/);
-  assert.match(skillText, /`structuredContent\.model` 返回的实际使用精确模型 ID/);
+  assert.match(skillText, /MCP 通道以 `structuredContent\.model` 为事实来源/);
   assert.match(skillText, /`type == resource`/);
+  assert.match(skillText, /Direct Cloud 通道/);
+  assert.match(skillText, /不需要 Pure Tokens Desktop、Router、额外 CLI 或 MCP/);
+  assert.match(skillText, /PURETOKENS_ACCESS_TOKEN/);
+  assert.match(skillText, /GET \/v1\/media\/models/);
+  assert.doesNotMatch(skillText, /GET \/v1\/models/);
+  assert.doesNotMatch(skillText, /PURETOKENS_API_KEY/);
 });
 
 test("media Skill does not advertise tools absent from the media MCP", async () => {
@@ -69,11 +79,11 @@ test("natural language aliases resolve only to explicit catalog model IDs", asyn
     modelIds: ["gpt-image-2"]
   });
   const aliasesByPhrase = new Map(aliases.aliases.flatMap((entry) => entry.phrases.map((phrase) => [phrase, entry])));
-  assert.deepEqual(aliasesByPhrase.get("nano banana pro").modelIds, ["gemini-3-pro-image-preview"]);
-  assert.deepEqual(aliasesByPhrase.get("nano banana 2").modelIds, ["gemini-3.1-flash-image-preview"]);
+  assert.deepEqual(aliasesByPhrase.get("nano banana pro").modelIds, ["gemini-3.0-pro-image"]);
+  assert.deepEqual(aliasesByPhrase.get("nano banana 2").modelIds, ["gemini-3.1-flash-image"]);
   assert.deepEqual(aliasesByPhrase.get("nano banana").modelIds, [
-    "gemini-3-pro-image-preview",
-    "gemini-3.1-flash-image-preview"
+    "gemini-3.0-pro-image",
+    "gemini-3.1-flash-image"
   ]);
   assert.deepEqual(aliases.defaults, {
     image: {
@@ -124,6 +134,10 @@ test("the shared media source has target-specific Claude and WorkBuddy deliverie
   assert.equal(manifest.distribution.claudeDesktop.enableAfterImport, true);
   assert.equal(manifest.distribution.workbuddy.generatedSkillName, "puretokens_workbuddy_router");
   assert.equal(manifest.distribution.workbuddy.alwaysApply, true);
+  assert.equal(manifest.distribution.codex.plugin, "puretokens-media@puretokens");
+  assert.equal(manifest.distribution.codex.requiresPluginFeature, true);
+  assert.equal(manifest.distribution.codex.supportsDirectCloud, true);
+  assert.equal(manifest.distribution.codex.managedMcpWhenDesktopAvailable, true);
   assert.match(skillText, /跨客户端共用的媒体行为源/);
-  assert.match(skillText, /不得自行写入、替换或删除任何客户端的 Skill、MCP 或 Router 配置/);
+  assert.match(skillText, /不得自行写入、替换或删除任何客户端的 Skill、MCP、Router 或 Secret 配置/);
 });

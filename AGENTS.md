@@ -16,11 +16,11 @@ scripts/                                  # repository validation helpers
 
 ## Product boundary
 
-- A **Skill** interprets the user's natural-language request, chooses a tool, resolves an explicit model selection through the model catalog, and asks a clarification question when the request is ambiguous.
-- The **Pure Tokens MCP** exposes strict typed tools, accepts only an exact model ID, submits and polls tasks, and never performs natural-language matching or silent model fallback.
-- The **BFF / Router** remain authoritative for model availability, group access and media protocol (`openai_images` / `openai_video`). A skill must never infer these from a model name.
+- A **Skill** interprets the user's natural-language request, resolves an explicit model selection through an authenticated media catalog, and asks a clarification question when the request is ambiguous. It selects an execution branch but does not itself hold credentials or execute HTTP.
+- The **Pure Tokens MCP** exposes strict typed tools, accepts only an exact model ID, submits and polls tasks, and never performs natural-language matching or silent model fallback. It is required only for hosts without native Shell/HTTPS tool execution.
+- The **Pure Tokens API** remains authoritative for API-key group access and endpoint capabilities. The **Desktop Router** remains authoritative for Desktop-managed profile access and `openai_images` / `openai_video` routing. A skill must never infer either from a model name.
 
-The current media skill depends on the `puretokens-image` MCP server installed by the Pure Tokens desktop client. Do not embed a Router token, a cloud API Key, a localhost URL, or a sidecar binary in this repository.
+The media skill supports a capability branch: use the registered `puretokens-image` MCP tools when available; otherwise an Agent with HTTPS execution and a host-injected `PURETOKENS_ACCESS_TOKEN` may use the documented Direct Cloud contract. Do not embed a Router token, a cloud access token, a localhost URL, or a sidecar binary in this repository.
 
 ## Conventions
 

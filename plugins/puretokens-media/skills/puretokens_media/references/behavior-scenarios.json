@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "skill": "puretokens_media",
+  "scenarios": [
+    {
+      "id": "ambiguous-model",
+      "when": "The requested display name, alias, provider, or media type matches more than one catalog model.",
+      "firstTool": "puretokens_list_media_models",
+      "expected": "ask_user_to_choose",
+      "forbiddenTools": ["puretokens_generate_image", "puretokens_generate_video"]
+    },
+    {
+      "id": "no-media-model",
+      "when": "The catalog is empty or has no model with the requested capability.",
+      "firstTool": "puretokens_list_media_models",
+      "expected": "report_no_available_model",
+      "forbiddenTools": ["puretokens_generate_image", "puretokens_generate_video"]
+    },
+    {
+      "id": "mcp-unavailable",
+      "when": "The puretokens-image MCP server cannot be listed or called.",
+      "firstTool": "puretokens_list_media_models",
+      "expected": "tell_user_to_configure_and_restart_client",
+      "forbiddenTools": ["puretokens_generate_image", "puretokens_generate_video"]
+    },
+    {
+      "id": "task-failure",
+      "when": "A generation or result tool returns an error, including safeToResubmit=false.",
+      "firstTool": "selected_generation_or_result_tool",
+      "expected": "report_error_without_fallback_or_resubmit",
+      "forbiddenTools": ["automatic_model_switch", "automatic_resubmission"]
+    },
+    {
+      "id": "task-timeout",
+      "when": "The matching result tool does not return a native media resource before its polling window ends.",
+      "firstTool": "selected_result_tool",
+      "expected": "report_pending_or_unknown_without_resubmit",
+      "forbiddenTools": ["automatic_model_switch", "automatic_resubmission"]
+    }
+  ]
+}

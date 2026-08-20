@@ -4,6 +4,13 @@
 
 # 更新日志
 
+## Unreleased
+
+- 明确 `puretokens_media` 的执行边界：Skill 负责自然语言策略，MCP 负责类型化本机执行，Desktop Router 是受管传输；具备终端能力的 Agent 可以按 Direct Cloud 契约生成媒体，不需要 Desktop、Router、额外 CLI 或 MCP。Desktop Router 与 Direct Cloud 现在都使用认证 `GET /v1/media/models` 的同一响应形状，再调用同一组图片/视频提交、状态和内容端点。生成的 Codex Plugin 现在携带 Direct Cloud MCP 模板，而 Desktop 会在应用配置时将其替换为受管 Router 配置。
+- 新增官方 Codex Plugin 交付：`puretokens_media` 通过 `puretokens-media@puretokens` 绑定本机 `puretokens-image` MCP，不再依赖无法注入可调用工具的松散 `~/.codex/skills` 复制。
+- 收紧可复制的本机 Agent 安装提示词：普通 ChatGPT 对话即使显示 Codex 运行时，也不能被当作具备本机安装权限的 Codex。Agent 必须先确认同时具备终端和本机文件写入权限，否则明确停止。
+- 按当前目录更新 Nano Banana 别名：`gemini-3.0-pro-image` 和 `gemini-3.1-flash-image`。
+
 ## 0.3.2 — 2026-08-14
 
 - 强化 WorkBuddy 媒体路由：明确 `ToolSearch` 只负责发现工具，所有 Pure Tokens 的目录、生成和结果调用都必须通过 `DeferExecuteTool` 实际执行。

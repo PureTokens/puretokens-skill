@@ -21,7 +21,7 @@ test("Claude Desktop bundle includes the skill root and required files", async (
   await runCli(["bundle", "puretokens_media", "--format", "claude-desktop", "--out", output]);
   const bundle = await readFile(output);
   assert.equal(bundle.readUInt32LE(0), 0x04034b50);
-  for (const file of ["SKILL.md", "skill.json", "references/model-catalog-contract.md", "references/behavior-scenarios.json", "references/natural-language-aliases.json"]) {
+  for (const file of ["SKILL.md", "skill.json", "references/model-catalog-contract.md", "references/direct-cloud-contract.md", "references/behavior-scenarios.json", "references/natural-language-aliases.json"]) {
     assert.ok(bundle.includes(Buffer.from(`puretokens_media/${file}`)));
   }
 });
@@ -32,11 +32,23 @@ test("install, upgrade, and explicit uninstall only manage the named Skill direc
   const skillDirectory = path.join(temporaryRoot, "puretokens_media");
   await runCli(["install", "puretokens_media", "--target", temporaryRoot]);
   const manifest = JSON.parse(await readFile(path.join(skillDirectory, "skill.json"), "utf8"));
-  assert.equal(manifest.version, "0.3.2");
+  assert.equal(manifest.version, "0.4.0");
   await writeFile(path.join(skillDirectory, "SKILL.md"), "local modification\n");
   await runCli(["upgrade", "puretokens_media", "--target", temporaryRoot]);
   const upgraded = await readFile(path.join(skillDirectory, "SKILL.md"), "utf8");
   assert.match(upgraded, /Pure Tokens 媒体编排 Skill/);
   await runCli(["uninstall", "puretokens_media", "--target", temporaryRoot, "--yes"]);
   await assert.rejects(readFile(path.join(skillDirectory, "SKILL.md")));
+});
+
+test("agent installation instructions fail closed in ordinary ChatGPT chats", async () => {
+  const [english, chinese] = await Promise.all([
+    readFile(path.join(repositoryRoot, "README.md"), "utf8"),
+    readFile(path.join(repositoryRoot, "README.zh-CN.md"), "utf8")
+  ]);
+
+  assert.match(english, /normal ChatGPT conversation/);
+  assert.match(english, /Do not identify it as Codex merely because/);
+  assert.match(chinese, /普通 ChatGPT 对话/);
+  assert.match(chinese, /不能只因模型或运行时标签显示 Codex/);
 });

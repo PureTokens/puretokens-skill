@@ -15,7 +15,7 @@ test("WorkBuddy output is generated from the shared media source", async () => {
   assert.match(entry, /Do not use `show_widget`/);
   assert.match(entry, /稳定的 `request_id`/);
   assert.equal(manifest.derivedFrom.name, "puretokens_media");
-  assert.equal(manifest.derivedFrom.version, "0.3.2");
+  assert.equal(manifest.derivedFrom.version, "0.4.0");
   assert.equal(manifest.sourceSha256, createHash("sha256").update(entry).digest("hex"));
   assert.equal(manifest.mcp.server, "puretokens-image");
   assert.deepEqual(manifest.mcp.tools, [
@@ -25,7 +25,8 @@ test("WorkBuddy output is generated from the shared media source", async () => {
     "puretokens_generate_video",
     "puretokens_video_result"
   ]);
-  assert.equal(files.size, 5);
+  assert.equal(files.size, 6);
+  assert.ok(files.has("references/direct-cloud-contract.md"));
   assert.ok(files.has("references/natural-language-aliases.json"));
 });
 

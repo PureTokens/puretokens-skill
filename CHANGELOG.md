@@ -4,6 +4,13 @@
 
 # Changelog
 
+## Unreleased
+
+- Clarified the execution boundary for `puretokens_media`: Skill owns natural-language policy, MCP owns typed local execution, Desktop Router remains a managed transport, and terminal-capable Agents can use the Direct Cloud contract without Desktop, Router, an extra CLI, or MCP. Desktop Router and Direct Cloud now use the same authenticated `GET /v1/media/models` response shape before calling the same image/video submit, status, and content endpoints. The generated Codex Plugin now carries a Direct Cloud MCP template while Desktop replaces it with its managed Router configuration at apply time.
+- Added the official Codex Plugin delivery for `puretokens_media`. Codex now binds the named local `puretokens-image` MCP dependency through `puretokens-media@puretokens` instead of relying on a loose `~/.codex/skills` copy that cannot inject callable tools.
+- Made the copyable local-agent installation prompt fail closed in ordinary ChatGPT chats. A Codex runtime label alone no longer authorizes a local Skill install; the agent must first prove it has both a terminal and local file-write access.
+- Updated the Nano Banana aliases to the current catalog IDs: `gemini-3.0-pro-image` and `gemini-3.1-flash-image`.
+
 ## 0.3.2 — 2026-08-14
 
 - Hardened WorkBuddy media routing: `ToolSearch` now explicitly remains discovery-only, and the managed Skill requires `DeferExecuteTool` for every Pure Tokens catalog, generation, and result call.
