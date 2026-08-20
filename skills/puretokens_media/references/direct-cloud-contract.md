@@ -61,12 +61,13 @@ Content-Type: application/json
 ```
 
 Image bodies use the selected exact `model`, `prompt`, optional `size` and
-`quality`. Do not force an `async` mode merely as Skill policy: classify the
-actual response as synchronous `data[].b64_json`, synchronous `data[].url`, or
-an asynchronous task and complete the matching delivery flow. Set `n` to `1`
-unless the user explicitly asks for a different number of results. Pass that
-explicit count only when the selected endpoint accepts it; do not turn one
-request into multiple submits.
+`quality`, and always set `async: true`. The execution layer still classifies
+the actual response defensively as synchronous `data[].b64_json`, synchronous
+`data[].url`, or an asynchronous task, because a compatible gateway response
+must never be discarded or misreported. Set `n` to `1` unless the user
+explicitly asks for a different number of results. Pass that explicit count
+only when the selected endpoint accepts it; do not turn one request into
+multiple submits.
 
 An image generation response has exactly one of these successful result paths:
 

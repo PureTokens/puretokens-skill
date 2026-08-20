@@ -6,6 +6,10 @@
 
 ## Unreleased
 
+## 0.4.5 — 2026-08-20
+
+- 恢复 Direct Cloud 图片提交策略：图片请求始终传 `async: true`。执行层仍会防御性兼容服务返回的同步 `b64_json` 或 `url`，但 Skill 不会主动请求同步图片生成。
+
 ## 0.4.4 — 2026-08-20
 
 - 确认 Codex 只交付由 Desktop 受管的生成式 Skill，已彻底移除已废弃的 Plugin/Marketplace 交付。

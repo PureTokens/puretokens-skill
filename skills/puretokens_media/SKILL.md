@@ -141,7 +141,7 @@ MCP 通道使用下方列出的工具。Direct Cloud 通道使用 `references/di
 
 图片：
 
-调用 `puretokens_generate_image`，可按用户明确要求传 `size`、`quality` 和数量。随后只调用 `puretokens_image_result`。Direct Cloud 必须兼容同步 `data[].b64_json`、同步 `data[].url` 和异步任务：前两者下载或解码后原子写入本机，异步任务只在取回 `/v1/images/{task_id}/content` 的实际字节后完成。缺少三者、下载失败或结果字段不完整均是失败，不能臆测成功或重复提交。
+调用 `puretokens_generate_image`，可按用户明确要求传 `size`、`quality` 和数量。随后只调用 `puretokens_image_result`。Direct Cloud 图片提交必须始终传 `async: true`。执行层仍须防御性兼容同步 `data[].b64_json`、同步 `data[].url` 和异步任务：前两者下载或解码后原子写入本机，异步任务只在取回 `/v1/images/{task_id}/content` 的实际字节后完成。缺少三者、下载失败或结果字段不完整均是失败，不能臆测成功或重复提交。
 
 图片完成后：
 

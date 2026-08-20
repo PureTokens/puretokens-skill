@@ -47,7 +47,7 @@
 | `grok-imagine-image-quality` | `grok quality image` | 更精细的品牌主视觉 | `使用 grok quality image 做一张精致的应用商店横幅。` |
 | `wan2.7-image` | `wan image`、`wan 2.7 image` | 中文海报和产品宣传图 | `使用 wan 2.7 image 做一张春节促销海报。` |
 
-默认只请求 1 个结果。只有用户明确给出数量、且当前执行契约支持该数量时才传入更大的数量；绝不会把一个请求拆成多次提交。MCP 路径只提交一次 `puretokens_generate_image`，然后用 `puretokens_image_result` 查询同一个任务。Direct Cloud 同时兼容同步 `data[].b64_json`、`data[].url` 和异步图片任务，但只有实际媒体字节已完成本机交付后才报告成功。
+默认只请求 1 个结果。只有用户明确给出数量、且当前执行契约支持该数量时才传入更大的数量；绝不会把一个请求拆成多次提交。MCP 路径只提交一次 `puretokens_generate_image`，然后用 `puretokens_image_result` 查询同一个任务。Direct Cloud 图片提交始终传 `async: true`；执行层仍会防御性兼容服务返回的同步 `data[].b64_json`、`data[].url` 和异步图片任务，但只有实际媒体字节已完成本机交付后才报告成功。
 
 只说 `Nano Banana` 时，表示 Gemini Nano Banana 模型家族。当前目录中，Nano Banana Pro 对应 `gemini-3.0-pro-image`，Nano Banana 2 对应 `gemini-3.1-flash-image`。两个模型都可用时，Skill 会让你选择；只有一个可用时才会直接使用。这样不会把已指定的模型悄悄换成另一个。
 
@@ -189,7 +189,7 @@ node .\bin\puretokens-skill.js install puretokens_media --target $HOME\.codex\sk
 Claude Desktop 使用图形界面上传本地 Skill 包。生成 ZIP：
 
 ```bash
-node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out ./puretokens_media-0.4.4.zip
+node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out ./puretokens_media-0.4.5.zip
 ```
 
 ZIP 内部结构为：
@@ -229,7 +229,7 @@ node bin/puretokens-skill.js upgrade puretokens_media --target ~/.codex/skills
 
 `puretokens_media` 必须先调用 `puretokens_list_media_models`，只依据本次响应的 `id`、`displayName`、`aliases`、`provider` 和 `capabilities` 匹配。生成工具必须传精确 `model` 和稳定 `request_id`。一次用户请求只提交一次，默认只请求 1 个结果，只有用户明确给出数量时才增加数量；宿主重试时复用同一 `request_id`，结果工具始终使用同一 `task_id` 和原始模型。
 
-媒体完成后会展示实际精确模型、保存文件名和 `Downloads/Pure Tokens`。只有 MCP 或宿主返回原生 `image` 内容时，图片才可在支持的宿主内预览；Direct Cloud 会先下载 `b64_json`、返回 URL 或完成后的 `/content` 字节，再报告本机交付。视频在大小受限时会携带原生 MCP 资源，支持该资源的宿主可以预览；较大的视频仍会成功保存为本机 MP4。只有执行层实际返回本机打开文件/文件夹入口时才展示该入口。
+媒体完成后会展示实际精确模型、保存文件名和 `Downloads/Pure Tokens`。只有 MCP 或宿主返回原生 `image` 内容时，图片才可在支持的宿主内预览；Direct Cloud 始终请求异步图片生成，并会以兼容兜底方式下载返回的 `b64_json`、返回 URL 或完成后的 `/content` 字节，再报告本机交付。视频在大小受限时会携带原生 MCP 资源，支持该资源的宿主可以预览；较大的视频仍会成功保存为本机 MP4。只有执行层实际返回本机打开文件/文件夹入口时才展示该入口。
 
 模型歧义、目录为空、MCP 不可用、工具错误和轮询超时的行为测试见 `skills/puretokens_media/references/behavior-scenarios.json`。任何错误都不得自动换模型或重新提交，除非用户明确选择了新的具体模型。
 

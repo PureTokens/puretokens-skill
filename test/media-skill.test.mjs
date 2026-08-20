@@ -42,6 +42,7 @@ test("media Skill publishes the complete MCP tool contract", async () => {
   assert.equal(manifest.rules.supportsDirectCloudWithoutDesktop, true);
   assert.equal(manifest.rules.directCloudRequiresHostInjectedCredentials, true);
   assert.equal(manifest.rules.directCloudUsesExplicitGatewayEndpointCapabilities, true);
+  assert.equal(manifest.rules.directCloudImagesAlwaysAsync, true);
   assert.equal(manifest.rules.directCloudDeliversSynchronousImageBytes, true);
   assert.equal(manifest.rules.directCloudDeliversAsyncContentBytes, true);
   assert.equal(manifest.naturalLanguageAliases, "skills/puretokens_media/references/natural-language-aliases.json");
@@ -56,10 +57,13 @@ test("media Skill publishes the complete MCP tool contract", async () => {
   assert.match(skillText, /不需要 Pure Tokens Desktop、Router、额外 CLI 或 MCP/);
   assert.match(directCloudContract, /PURETOKENS_API_KEY/);
   assert.match(directCloudContract, /PURETOKENS_API_BASE_URL/);
-  assert.match(directCloudContract, /Do not force an `async` mode/);
-  assert.doesNotMatch(directCloudContract, /and `async: true`/);
+  assert.match(directCloudContract, /always set `async: true`/);
+  assert.match(directCloudContract, /synchronous `data\[\]\.b64_json`/);
+  assert.match(directCloudContract, /synchronous[\s\S]*`data\[\]\.url`/);
+  assert.match(directCloudContract, /asynchronous task/);
   assert.match(skillText, /GET \/v1\/media\/models/);
   assert.match(skillText, /默认只请求 `n=1` 个结果/);
+  assert.match(skillText, /Direct Cloud 图片提交必须始终传 `async: true`/);
   assert.match(skillText, /同步 `data\[\]\.b64_json`、同步 `data\[\]\.url` 和异步任务/);
   assert.match(skillText, /视频始终按异步任务处理/);
   assert.match(skillText, /Direct Cloud 通道由宿主的 Direct Cloud 执行层完成/);
@@ -138,6 +142,7 @@ test("media Skill behavior scenarios cover ambiguity, empty catalog, unavailable
   assert.match(skillText, /safeToResubmit=false/);
   assert.match(skillText, /轮询超时/);
   assert.deepEqual(scenarios.find((scenario) => scenario.id === "mcp-unavailable")?.expected, "use_direct_cloud_when_available_or_report_missing_execution_capability");
+  assert.equal(scenarios.find((scenario) => scenario.id === "direct-cloud-image-delivery")?.expected, "force_async_true_and_write_actual_image_bytes_before_reporting_success");
   assert.match(skillText, /不得自动换模型/);
   assert.match(skillText, /不得自动重新提交/);
   assert.match(skillText, /同步图片结果、`\/content` 或本机写入失败/);

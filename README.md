@@ -47,7 +47,7 @@ You do not need to type the full ID. Registered phrases such as `image2` and `Na
 | `grok-imagine-image-quality` | `grok quality image` | Sharper brand key visuals | `Use grok quality image to make a polished app-store banner.` |
 | `wan2.7-image` | `wan image`, `wan 2.7 image` | Chinese posters and product creatives | `Use wan 2.7 image to make a Chinese New Year promotion poster.` |
 
-The Skill requests one result by default. It passes a higher count only when the user explicitly asks for it and the selected execution contract supports that count; it never turns one request into several submissions. MCP calls `puretokens_generate_image` once, then polls the same task with `puretokens_image_result`. Direct Cloud accepts synchronous `data[].b64_json` and `data[].url` image results as well as asynchronous tasks, but reports success only after actual bytes are locally delivered.
+The Skill requests one result by default. It passes a higher count only when the user explicitly asks for it and the selected execution contract supports that count; it never turns one request into several submissions. MCP calls `puretokens_generate_image` once, then polls the same task with `puretokens_image_result`. Direct Cloud image submissions always send `async: true`; its execution layer still defensively accepts compatible synchronous `data[].b64_json` and `data[].url` responses as well as asynchronous tasks, but reports success only after actual bytes are locally delivered.
 
 `Nano Banana` by itself means the Gemini Nano Banana family. The current catalog uses `gemini-3.0-pro-image` for Nano Banana Pro and `gemini-3.1-flash-image` for Nano Banana 2. When both are available, the Skill asks which one you want; when only one is available, it uses that one. This keeps a named choice from turning into an invisible model substitution.
 
@@ -189,7 +189,7 @@ Copying a Skill to `~/.codex/skills` installs the Codex instruction layer only; 
 Claude Desktop uses a graphical local Skill upload. Create the ZIP:
 
 ```bash
-node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out ./puretokens_media-0.4.4.zip
+node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out ./puretokens_media-0.4.5.zip
 ```
 
 The ZIP has this layout:
@@ -229,7 +229,7 @@ node bin/puretokens-skill.js upgrade puretokens_media --target ~/.codex/skills
 
 `puretokens_media` must call `puretokens_list_media_models` first and match only fields returned in that response: `id`, `displayName`, `aliases`, `provider`, and `capabilities`. Generation calls must include the exact `model` and a stable `request_id`. One logical user request submits once, requests one result unless the user explicitly gives a count, and reuses the same `request_id` on a host retry; result polling always uses the same `task_id` and original model.
 
-Completed media reports the exact model, the saved filename, and `Downloads/Pure Tokens`. Images are previewable only when MCP or the host returns native image content; Direct Cloud downloads returned `b64_json`, returned URLs, or completed `/content` bytes before it claims delivery. Videos may include a bounded native MCP resource for hosts that render it; larger videos remain successfully delivered as local MP4 files. An open-file/open-folder entry is shown only when the execution layer actually returned one.
+Completed media reports the exact model, the saved filename, and `Downloads/Pure Tokens`. Images are previewable only when MCP or the host returns native image content; Direct Cloud always requests asynchronous image generation and, as a compatibility fallback, downloads returned `b64_json`, returned URLs, or completed `/content` bytes before it claims delivery. Videos may include a bounded native MCP resource for hosts that render it; larger videos remain successfully delivered as local MP4 files. An open-file/open-folder entry is shown only when the execution layer actually returned one.
 
 Behavior scenarios for ambiguity, an empty catalog, unavailable MCP, task failure, and polling timeout are stored in `skills/puretokens_media/references/behavior-scenarios.json`. No error may trigger an automatic model switch or resubmission unless the user explicitly chooses a new model.
 

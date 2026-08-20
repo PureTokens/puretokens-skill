@@ -16,8 +16,8 @@
     },
     {
       "id": "direct-cloud-image-delivery",
-      "when": "A Direct Cloud image response returns data[].b64_json, data[].url, or an asynchronous task.",
-      "expected": "write_actual_image_bytes_before_reporting_success",
+      "when": "A Direct Cloud image request must send async: true and the response returns data[].b64_json, data[].url, or an asynchronous task.",
+      "expected": "force_async_true_and_write_actual_image_bytes_before_reporting_success",
       "forbiddenTools": ["upstream_url_as_delivery", "automatic_resubmission"]
     },
     {

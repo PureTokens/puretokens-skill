@@ -6,6 +6,10 @@
 
 ## Unreleased
 
+## 0.4.5 — 2026-08-20
+
+- Restored the Direct Cloud image-submit policy: image requests always send `async: true`. The execution layer still accepts a compatible synchronous `b64_json` or `url` response defensively, but the Skill never requests synchronous image generation.
+
 ## 0.4.4 — 2026-08-20
 
 - Confirmed the Codex delivery is only the Desktop-managed generated Skill; the retired Plugin/Marketplace delivery is removed completely.

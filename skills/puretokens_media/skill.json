@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "name": "puretokens_media",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "entry": "SKILL.md",
   "displayName": "Pure Tokens Media",
   "description": "Resolve and handle a Pure Tokens image or video request.",
@@ -77,6 +77,7 @@
     "supportsDirectCloudWithoutDesktop": true,
     "directCloudRequiresHostInjectedCredentials": true,
     "directCloudUsesExplicitGatewayEndpointCapabilities": true,
+    "directCloudImagesAlwaysAsync": true,
     "directCloudDeliversSynchronousImageBytes": true,
     "directCloudDeliversAsyncContentBytes": true
   }
