@@ -14,6 +14,12 @@
 
 This Skill supports **Pure Tokens only**. It must not send media requests through another provider's API, MCP server, or native media tool, even when that provider is OpenAI-compatible or offers similarly named models. If the current connection is not verifiably Pure Tokens, it stops and tells the user to switch to Pure Tokens: https://puretokensx.com/
 
+## Image dimensions
+
+`n` is only for an explicit image count, such as “generate 3 images.” A physical dimension such as `200cm x 230cm` is never an image count and cannot be passed directly to `size`.
+
+The currently supported image canvases are `1024x1024`, `1536x1024`, and `1024x1536`. An explicit `image_size` may be `1K`, `2K`, or `4K`; it is an output-resolution option, not a guaranteed physical print size. If a user requests centimetres, millimetres, metres, or inches, the Skill does not submit a request, guess DPI, convert it automatically, or choose a closest canvas. It clearly reports that the physical size cannot be guaranteed and lists the supported pixel canvases for the user to choose from.
+
 ## Quick start
 
 Choose the one path your host can actually execute:

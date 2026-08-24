@@ -85,6 +85,12 @@
       "forbiddenTools": ["third_party_media_submission", "credential_extraction", "provider_conversion", "automatic_resubmission"]
     },
     {
+      "id": "physical-image-size-not-supported",
+      "when": "The user requests an image physical size such as 200cm x 230cm, 2m x 3m, 20in x 30in, or 500mm x 700mm.",
+      "expected": "do_not_treat_the_values_as_n_or_pass_the_physical_unit_to_size; report_the_exact_supported_pixel_canvases_1024x1024_1536x1024_1024x1536_and_optional_1K_2K_4K_resolution",
+      "forbiddenTools": ["physical_size_as_image_count", "physical_size_as_size_parameter", "automatic_dpi_conversion", "nearest_size_selection", "automatic_resubmission"]
+    },
+    {
       "id": "workbuddy-explicit-host-model",
       "when": "A WorkBuddy user explicitly selects ImageGen, VideoGen, or a manually configured model, including a manually configured Pure Tokens model.",
       "firstTool": "selected_host_native_media_tool",

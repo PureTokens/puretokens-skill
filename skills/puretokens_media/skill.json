@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "name": "puretokens_media",
-  "version": "0.4.12",
+  "version": "0.4.13",
   "entry": "SKILL.md",
   "displayName": "Pure Tokens Media",
   "description": "Resolve and handle a Pure Tokens image or video request.",
@@ -84,6 +84,8 @@
     "supportsSkillDefinedConnectionVideoApi": true,
     "supportsPureTokensOnly": true,
     "nonPureTokensConnectionFailsClosed": true,
+    "physicalImageDimensionsFailClosed": true,
+    "supportedImageCanvasesAreExplicit": true,
     "desktopManagedDeliveryIsOptional": true,
     "preservesExplicitHostModelChoice": true,
     "supportsVerifiedHostNativeMediaExecution": true,
