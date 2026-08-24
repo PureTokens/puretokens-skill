@@ -1,0 +1,363 @@
+{
+  "schemaVersion": 2,
+  "updatedAt": "2026-08-21",
+  "serviceCatalog": {
+    "source": "Pure Tokens base model catalog",
+    "path": "/api/product/docs/model-catalog",
+    "capturedAt": "2026-08-21T02:46:19.421Z"
+  },
+  "availabilityNotice": {
+    "en": "This list is generated from Pure Tokens' base model catalog using explicit image/video capabilities. At execution time, the exact model and required capability must still appear in the current authenticated GET /v1/media/models response.",
+    "zh": "这份清单由 Pure Tokens 基础模型目录中的明确图片/视频能力生成。实际执行时，精确模型和所需能力仍必须出现在当前认证后的 GET /v1/media/models 响应中。"
+  },
+  "models": [
+    {
+      "id": "gpt-image-2",
+      "name": "gpt-image-2",
+      "provider": "OpenAI",
+      "vendorId": 15,
+      "capabilities": [
+        "image"
+      ],
+      "aliases": [
+        "image2",
+        "image 2",
+        "gpt image 2",
+        "openai image 2"
+      ],
+      "goodFor": {
+        "en": "High-quality posters, product visuals, and illustrations",
+        "zh": "高质量海报、产品视觉与插画"
+      },
+      "example": {
+        "en": "Use image2 to make a clean orange product launch poster.",
+        "zh": "用 image2 做一张简洁的橙色产品发布海报。"
+      }
+    },
+    {
+      "id": "grok-imagine-image",
+      "name": "grok-imagine-image",
+      "provider": "xAI",
+      "vendorId": 17,
+      "capabilities": [
+        "image"
+      ],
+      "aliases": [
+        "grok image",
+        "grok imagine"
+      ],
+      "goodFor": {
+        "en": "Social posts and everyday image generation",
+        "zh": "社交媒体配图与日常生图"
+      },
+      "example": {
+        "en": "Use grok-imagine-image to create a realistic cafe opening post.",
+        "zh": "用 grok-imagine-image 制作一张写实的咖啡馆开业宣传图。"
+      }
+    },
+    {
+      "id": "grok-imagine-image-quality",
+      "name": "grok-imagine-image-quality",
+      "provider": "xAI",
+      "vendorId": 17,
+      "capabilities": [
+        "image"
+      ],
+      "aliases": [
+        "grok quality image",
+        "grok high quality image"
+      ],
+      "goodFor": {
+        "en": "Sharper brand key visuals",
+        "zh": "更锐利的品牌主视觉"
+      },
+      "example": {
+        "en": "Use grok quality image to make a polished app-store banner.",
+        "zh": "用 grok quality image 制作一张精致的应用商店横幅。"
+      }
+    },
+    {
+      "id": "grok-imagine-video",
+      "name": "grok-imagine-video",
+      "provider": "xAI",
+      "vendorId": 17,
+      "capabilities": [
+        "video"
+      ],
+      "aliases": [
+        "grok video",
+        "grok imagine video"
+      ],
+      "goodFor": {
+        "en": "Short social clips and quick concepts",
+        "zh": "短社交视频与快速概念片"
+      },
+      "example": {
+        "en": "Use grok-imagine-video to make a 5-second coffee ad.",
+        "zh": "用 grok-imagine-video 制作一条 5 秒咖啡广告。"
+      }
+    },
+    {
+      "id": "grok-imagine-video-1.5-preview",
+      "name": "grok-imagine-video-1.5-preview",
+      "provider": "xAI",
+      "vendorId": 17,
+      "capabilities": [
+        "video"
+      ],
+      "aliases": [
+        "grok video",
+        "grok imagine video",
+        "grok 1.5 video",
+        "grok video 1.5",
+        "grok imagine video 1.5"
+      ],
+      "goodFor": {
+        "en": "Video generation",
+        "zh": "视频生成"
+      },
+      "example": {
+        "en": "Use grok-imagine-video-1.5-preview to generate a short video.",
+        "zh": "用 grok-imagine-video-1.5-preview 生成一条短视频。"
+      }
+    },
+    {
+      "id": "minimax-h3",
+      "name": "minimax-h3",
+      "provider": "MiniMax",
+      "vendorId": 34,
+      "capabilities": [
+        "video"
+      ],
+      "aliases": [
+        "minimax h3",
+        "minimax h3 video"
+      ],
+      "goodFor": {
+        "en": "Cinematic product clips and motion-led concepts",
+        "zh": "电影感产品短片与动态概念视频"
+      },
+      "example": {
+        "en": "Use minimax-h3 to make a 10-second product reveal video.",
+        "zh": "用 minimax-h3 制作一条 10 秒产品揭幕视频。"
+      }
+    },
+    {
+      "id": "nano-banana-2",
+      "name": "nano-banana-2",
+      "provider": "Google",
+      "vendorId": 18,
+      "capabilities": [
+        "image"
+      ],
+      "aliases": [
+        "nano banana",
+        "nano banana 2",
+        "nano banana two"
+      ],
+      "goodFor": {
+        "en": "Fast visual exploration and social-media creatives",
+        "zh": "快速视觉探索与社交媒体创意"
+      },
+      "example": {
+        "en": "Use Nano Banana 2 to create a bright product social post.",
+        "zh": "用 Nano Banana 2 制作一张明亮的产品社交媒体配图。"
+      }
+    },
+    {
+      "id": "nano-banana-pro",
+      "name": "nano-banana-pro",
+      "provider": "Google",
+      "vendorId": 18,
+      "capabilities": [
+        "image"
+      ],
+      "aliases": [
+        "nano banana",
+        "nano banana pro",
+        "nano banana professional"
+      ],
+      "goodFor": {
+        "en": "Polished marketing images and premium key visuals",
+        "zh": "精致营销视觉与高级主视觉"
+      },
+      "example": {
+        "en": "Use Nano Banana Pro to create a premium cloud-computing hero image.",
+        "zh": "用 Nano Banana Pro 制作一张高级云计算主视觉。"
+      }
+    },
+    {
+      "id": "qwen-image-2.0",
+      "name": "qwen-image-2.0",
+      "provider": "Qwen",
+      "vendorId": 56,
+      "capabilities": [
+        "image"
+      ],
+      "aliases": [
+        "qwen image 2",
+        "qwen image 2.0"
+      ],
+      "goodFor": {
+        "en": "General-purpose image creation and product creatives",
+        "zh": "通用生图与产品创意视觉"
+      },
+      "example": {
+        "en": "Use qwen-image-2.0 to make a clean ecommerce product scene.",
+        "zh": "用 qwen-image-2.0 制作一张简洁的电商产品场景图。"
+      }
+    },
+    {
+      "id": "qwen-image-2.0-pro",
+      "name": "qwen-image-2.0-pro",
+      "provider": "Qwen",
+      "vendorId": 56,
+      "capabilities": [
+        "image"
+      ],
+      "aliases": [
+        "qwen image 2 pro",
+        "qwen image 2.0 pro"
+      ],
+      "goodFor": {
+        "en": "Higher-fidelity campaigns and product key visuals",
+        "zh": "更高保真的营销视觉与产品主视觉"
+      },
+      "example": {
+        "en": "Use qwen-image-2.0-pro to make a premium product campaign visual.",
+        "zh": "用 qwen-image-2.0-pro 制作一张高级产品营销主视觉。"
+      }
+    },
+    {
+      "id": "seedance-2.0",
+      "name": "seedance-2.0",
+      "provider": "Doubao",
+      "vendorId": 58,
+      "capabilities": [
+        "video"
+      ],
+      "aliases": [],
+      "goodFor": {
+        "en": "Video generation",
+        "zh": "视频生成"
+      },
+      "example": {
+        "en": "Use seedance-2.0 to generate a short video.",
+        "zh": "用 seedance-2.0 生成一条短视频。"
+      }
+    },
+    {
+      "id": "seedance-2.0-fast",
+      "name": "seedance-2.0-fast",
+      "provider": "Doubao",
+      "vendorId": 58,
+      "capabilities": [
+        "video"
+      ],
+      "aliases": [],
+      "goodFor": {
+        "en": "Video generation",
+        "zh": "视频生成"
+      },
+      "example": {
+        "en": "Use seedance-2.0-fast to generate a short video.",
+        "zh": "用 seedance-2.0-fast 生成一条短视频。"
+      }
+    },
+    {
+      "id": "seedance-2.0-mini",
+      "name": "seedance-2.0-mini",
+      "provider": "Doubao",
+      "vendorId": 58,
+      "capabilities": [
+        "video"
+      ],
+      "aliases": [],
+      "goodFor": {
+        "en": "Video generation",
+        "zh": "视频生成"
+      },
+      "example": {
+        "en": "Use seedance-2.0-mini to generate a short video.",
+        "zh": "用 seedance-2.0-mini 生成一条短视频。"
+      }
+    },
+    {
+      "id": "seedance-2.5",
+      "name": "seedance-2.5",
+      "provider": "Doubao",
+      "vendorId": 58,
+      "capabilities": [
+        "video"
+      ],
+      "aliases": [],
+      "goodFor": {
+        "en": "Video generation",
+        "zh": "视频生成"
+      },
+      "example": {
+        "en": "Use seedance-2.5 to generate a short video.",
+        "zh": "用 seedance-2.5 生成一条短视频。"
+      }
+    },
+    {
+      "id": "seedream-5.0-pro",
+      "name": "seedream-5.0-pro",
+      "provider": "Doubao",
+      "vendorId": 58,
+      "capabilities": [
+        "image"
+      ],
+      "aliases": [],
+      "goodFor": {
+        "en": "Image generation",
+        "zh": "图片生成"
+      },
+      "example": {
+        "en": "Use seedream-5.0-pro to generate an image.",
+        "zh": "用 seedream-5.0-pro 生成一张图片。"
+      }
+    },
+    {
+      "id": "wan2.7-image",
+      "name": "wan2.7-image",
+      "provider": "Qwen",
+      "vendorId": 56,
+      "capabilities": [
+        "image"
+      ],
+      "aliases": [
+        "wan image",
+        "wan 2.7 image"
+      ],
+      "goodFor": {
+        "en": "Chinese posters and product creatives",
+        "zh": "中文海报与产品创意视觉"
+      },
+      "example": {
+        "en": "Use wan 2.7 image to make a Chinese New Year promotion poster.",
+        "zh": "用 wan 2.7 image 制作一张春节促销海报。"
+      }
+    },
+    {
+      "id": "wan2.7-image-pro",
+      "name": "wan2.7-image-pro",
+      "provider": "Qwen",
+      "vendorId": 56,
+      "capabilities": [
+        "image"
+      ],
+      "aliases": [
+        "wan 2.7 image pro"
+      ],
+      "goodFor": {
+        "en": "Higher-fidelity Chinese posters and brand visuals",
+        "zh": "更高保真的中文海报与品牌视觉"
+      },
+      "example": {
+        "en": "Use wan2.7-image-pro to make a premium Chinese product launch poster.",
+        "zh": "用 wan2.7-image-pro 制作一张高级中文产品发布海报。"
+      }
+    }
+  ]
+}

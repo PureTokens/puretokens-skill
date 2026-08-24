@@ -16,9 +16,10 @@
 
 | 宿主 | 执行路径 | 配置方式 |
 | --- | --- | --- |
-| 由 Pure Tokens Desktop 受管的客户端 | Skill → 受管 MCP → 本地 Router → 服务 | 选择客户端分组，点击 **验证并应用**，重启客户端后新建会话。 |
+| 由 Pure Tokens Desktop 受管的客户端 | Skill → 受管 MCP → 本地 Router → 服务 | 这是可选的便利路径：选择客户端分组，点击 **验证并应用**，重启客户端后新建会话。 |
+| 已选择原生 Pure Tokens 媒体模型的宿主 | Skill → 宿主原生媒体操作 → 服务 | 已配置操作必须提供精确、已验证的图片/视频模型和真实媒体交付；只配置通用聊天模型并不够。 |
 | 具备可调用 MCP 工具的 GUI 宿主 | Skill → `puretokens-image` MCP → 服务 | 为客户端安装或配置可调用的 MCP 交付；GUI 用户绝不把 Token 粘贴到对话中。 |
-| 具备终端能力的代码 Agent | Skill → Direct Cloud → 服务 | 安装 Skill，并通过宿主的 Secret/环境机制注入 `PURETOKENS_ACCESS_TOKEN`。不需要 Desktop、Router、CLI Sidecar 或 MCP。 |
+| 具备 HTTPS 能力的 Agent | Skill → Direct Cloud → 服务 | 安装 Skill，并通过宿主的 Secret/环境机制注入 `PURETOKENS_API_KEY`。只有确实能执行 HTTPS 并在本机交付媒体字节的 CC Switch 连接宿主才可走此路径；不需要 Desktop、Router、CLI Sidecar 或 MCP。 |
 
 然后新建会话。直接说“生成一只可爱的狗”即可使用默认图片模型；也可以说“使用 Nano Banana Pro 生成……”。
 
@@ -30,39 +31,45 @@
 | --- | --- |
 | `puretokens_media` | 按当前目录精确选择图片/视频模型，提交一次任务并轮询同一任务，再交付实际原生媒体字节和本地文件。 |
 
-## 图片模型
+<!-- media-model-catalog:start -->
+## 媒体模型清单
 
-下面是已登记的模型候选，不保证每个宿主都可用。当前客户端/分组或 Direct Cloud Token 可能只返回其中一部分；只有 `puretokens_list_media_models` 或认证后的 `GET /v1/media/models` 实时返回精确 ID 和能力时，模型才可以使用。
+已与基础模型目录同步：2026-08-21T02:46:19.421Z。
 
-用户不需要记完整 ID。像 `image2`、`Nano Banana Pro` 这样的已登记说法由 Skill 负责理解，然后仍会先去实时目录确认，确认成功才发送请求。只说“生成图片”时默认使用 `gpt-image-2`；如果当前分组没有该精确模型，Skill 会停止并展示可用候选，不会偷偷换模型。
+这份清单由 Pure Tokens 基础模型目录中的明确图片/视频能力生成。实际执行时，精确模型和所需能力仍必须出现在当前认证后的 GET /v1/media/models 响应中。
 
-| 模型 ID | 也可以这样说 | 适合做什么 | 真实使用示例 |
-| --- | --- | --- | --- |
-| `gpt-image-2` | `image2`、`gpt image 2`、`openai image 2` | 高质量海报、产品视觉、插画 | `使用 image2 做一张橙色产品发布海报。` |
-| `gemini-3.0-pro-image` | `gemini pro image`、`nano banana pro` | 细节丰富的概念图和营销图 | `使用 Nano Banana Pro 做一张高级云计算主视觉。` |
-| `gemini-3.1-flash-lite-image` | `gemini flash lite image` | 快速缩略图和社交媒体草稿 | `使用 gemini flash lite image 做三张明亮的社交媒体缩略图。` |
-| `gemini-3.1-flash-image` | `nano banana 2` | 更快速的 Gemini 生图和对话式编辑 | `使用 Nano Banana 2 做一张明亮的产品社交海报。` |
-| `grok-imagine-1.0` | 只接受精确 ID | 快速创意和轻松有趣的场景 | `使用 grok-imagine-1.0 画一只在城市公园里的快乐机器人。` |
-| `grok-imagine-image` | `grok image`、`grok imagine` | 社交内容和日常生图 | `使用 grok-imagine-image 做一张咖啡店开业宣传图。` |
-| `grok-imagine-image-quality` | `grok quality image` | 更精细的品牌主视觉 | `使用 grok quality image 做一张精致的应用商店横幅。` |
-| `wan2.7-image` | `wan image`、`wan 2.7 image` | 中文海报和产品宣传图 | `使用 wan 2.7 image 做一张春节促销海报。` |
+README 只从基础目录中带有明确图片/视频能力的模型生成，不通过模型名称推断。发布前运行 `npm run docs:sync-media-models-from-service`，从受控基础模型目录刷新清单；执行时仍以认证后的 `GET /v1/media/models` 为准。
 
-默认只请求 1 个结果。只有用户明确给出数量、且当前执行契约支持该数量时才传入更大的数量；绝不会把一个请求拆成多次提交。MCP 路径只提交一次 `puretokens_generate_image`，然后用 `puretokens_image_result` 查询同一个任务。Direct Cloud 同时兼容同步 `data[].b64_json`、`data[].url` 和异步图片任务，但只有实际媒体字节已完成本机交付后才报告成功。
+### 图片模型
 
-只说 `Nano Banana` 时，表示 Gemini Nano Banana 模型家族。当前目录中，Nano Banana Pro 对应 `gemini-3.0-pro-image`，Nano Banana 2 对应 `gemini-3.1-flash-image`。两个模型都可用时，Skill 会让你选择；只有一个可用时才会直接使用。这样不会把已指定的模型悄悄换成另一个。
+| 模型 ID | 提供方 | 也可以这样说 | 适合 | 示例 |
+| --- | --- | --- | --- | --- |
+| `gpt-image-2` | OpenAI | `image2`, `image 2`, `gpt image 2`, `openai image 2` | 高质量海报、产品视觉与插画 | `用 image2 做一张简洁的橙色产品发布海报。` |
+| `grok-imagine-image` | xAI | `grok image`, `grok imagine` | 社交媒体配图与日常生图 | `用 grok-imagine-image 制作一张写实的咖啡馆开业宣传图。` |
+| `grok-imagine-image-quality` | xAI | `grok quality image`, `grok high quality image` | 更锐利的品牌主视觉 | `用 grok quality image 制作一张精致的应用商店横幅。` |
+| `nano-banana-2` | Google | `nano banana`, `nano banana 2`, `nano banana two` | 快速视觉探索与社交媒体创意 | `用 Nano Banana 2 制作一张明亮的产品社交媒体配图。` |
+| `nano-banana-pro` | Google | `nano banana`, `nano banana pro`, `nano banana professional` | 精致营销视觉与高级主视觉 | `用 Nano Banana Pro 制作一张高级云计算主视觉。` |
+| `qwen-image-2.0` | Qwen | `qwen image 2`, `qwen image 2.0` | 通用生图与产品创意视觉 | `用 qwen-image-2.0 制作一张简洁的电商产品场景图。` |
+| `qwen-image-2.0-pro` | Qwen | `qwen image 2 pro`, `qwen image 2.0 pro` | 更高保真的营销视觉与产品主视觉 | `用 qwen-image-2.0-pro 制作一张高级产品营销主视觉。` |
+| `seedream-5.0-pro` | Doubao | 仅精确 ID | 图片生成 | `用 seedream-5.0-pro 生成一张图片。` |
+| `wan2.7-image` | Qwen | `wan image`, `wan 2.7 image` | 中文海报与产品创意视觉 | `用 wan 2.7 image 制作一张春节促销海报。` |
+| `wan2.7-image-pro` | Qwen | `wan 2.7 image pro` | 更高保真的中文海报与品牌视觉 | `用 wan2.7-image-pro 制作一张高级中文产品发布海报。` |
 
-## 视频模型
+### 视频模型
 
-下面是已登记的视频模型候选。模型必须在实时目录中声明 `video` 能力，才能生成视频。
+| 模型 ID | 提供方 | 也可以这样说 | 适合 | 示例 |
+| --- | --- | --- | --- | --- |
+| `grok-imagine-video` | xAI | `grok video`, `grok imagine video` | 短社交视频与快速概念片 | `用 grok-imagine-video 制作一条 5 秒咖啡广告。` |
+| `grok-imagine-video-1.5-preview` | xAI | `grok video`, `grok imagine video`, `grok 1.5 video`, `grok video 1.5`, `grok imagine video 1.5` | 视频生成 | `用 grok-imagine-video-1.5-preview 生成一条短视频。` |
+| `minimax-h3` | MiniMax | `minimax h3`, `minimax h3 video` | 电影感产品短片与动态概念视频 | `用 minimax-h3 制作一条 10 秒产品揭幕视频。` |
+| `seedance-2.0` | Doubao | 仅精确 ID | 视频生成 | `用 seedance-2.0 生成一条短视频。` |
+| `seedance-2.0-fast` | Doubao | 仅精确 ID | 视频生成 | `用 seedance-2.0-fast 生成一条短视频。` |
+| `seedance-2.0-mini` | Doubao | 仅精确 ID | 视频生成 | `用 seedance-2.0-mini 生成一条短视频。` |
+| `seedance-2.5` | Doubao | 仅精确 ID | 视频生成 | `用 seedance-2.5 生成一条短视频。` |
 
-| 模型 ID | 也可以这样说 | 适合做什么 | 真实使用示例 |
-| --- | --- | --- | --- |
-| `grok-imagine-video` | `grok video`、`grok imagine video` | 短视频和快速创意片段 | `使用 grok-imagine-video 做一条 5 秒咖啡广告。` |
-| `grok-imagine-video-1.5` | `grok 1.5 video`、`grok video 1.5` | 更完整的短广告 | `使用 grok 1.5 video 做一条 15 秒、16:9 的产品广告。` |
+<!-- media-model-catalog:end -->
 
-Skill 只提交一次 `puretokens_generate_video`，然后用 `puretokens_video_result` 查询同一个任务。Direct Cloud 视频始终按异步任务和 `/content` 交付流程处理。只说“生成视频”时默认使用 `grok-imagine-video-1.5`；如果当前分组没有该精确模型，Skill 会停止并展示可用候选。
-
-如果模型不存在、有多个候选，或者没有对应能力，Skill 会列出实时候选并让你选择，不会偷偷换模型。
+默认只请求 1 个结果。只有用户明确给出数量、且当前执行契约支持该数量时才传入更大的数量；绝不会把一个请求拆成多次提交。MCP 路径只提交一次对应生成工具，再轮询同一个任务。Direct Cloud 图片提交始终传 `async: true`；执行层仍会防御性兼容服务返回的同步 `data[].b64_json`、`data[].url` 和异步图片任务，但只有实际媒体字节已完成本机交付后才报告成功。
 
 ## 你可以这样说
 
@@ -81,54 +88,45 @@ Skill 只提交一次 `puretokens_generate_video`，然后用 `puretokens_video_
 
 - Skill 负责理解“用 image2”“用 Grok Video”等表达，先查询媒体目录，唯一匹配后选择工具，并在歧义时询问。
 - MCP 只接受精确模型 ID，执行参数校验、单次提交、结果轮询和本机交付；它不做自然语言识别、不猜模型、不静默换模型。
-- GUI 客户端优先使用可调用的 `puretokens-image` MCP 工具；具备终端能力的 Agent 可以在宿主已注入 `PURETOKENS_ACCESS_TOKEN` 时使用 Direct Cloud，不需要 Pure Tokens Desktop、Router、额外 CLI 或 MCP。
+- 宿主已选择的原生 Pure Tokens 媒体操作在能够报告精确已验证模型和真实媒体交付时优先；否则 GUI 客户端优先使用可调用的 `puretokens-image` MCP 工具，具备 HTTPS 能力的 Agent 可以在宿主已注入 `PURETOKENS_API_KEY` 时使用 Direct Cloud。这些独立路径都不需要 Pure Tokens Desktop、Router、额外 CLI 或 MCP。
 - 实时目录仍是唯一事实来源：Desktop Router 与 Direct Cloud 都读取同一份认证后的 `/v1/media/models`，并使用明确的 `image` / `video` 能力。
 
 ## 前置条件
 
-使用受管 MCP 指定图片或视频模型前，请按以下顺序完成：
+使用 Desktop 受管 MCP 指定图片或视频模型前，请按以下顺序完成：
 
 1. 在 Pure Tokens Desktop 中打开目标客户端的配置。
 2. 选择包含目标模型的一个或多个分组。
 3. 点击 **验证并应用**。
 4. 重启目标客户端，并新建会话。
 
-Skill 只能通过 MCP 使用当前已选分组中的模型。如果实时媒体目录没有目标模型，请回到客户端配置，选择包含该模型的分组后再次应用配置。Desktop 会为支持的客户端配置名为 `puretokens-image` 的 MCP 服务。Skill 不会替代 MCP 配置，也不会携带任何凭据。
+这个 Desktop 受管 MCP 路径只能使用当前已选分组中的模型。如果实时媒体目录没有目标模型，请回到客户端配置，选择包含该模型的分组后再次应用配置。Desktop 会为支持的客户端配置名为 `puretokens-image` 的 MCP 服务。通过 CC Switch 或其他提供方配置的自管 MCP 不要求 Desktop；模型可用性由它自己的认证 `puretokens_list_media_models` 响应决定。Skill 不会替代 MCP 配置，也不会携带任何凭据。
 
-Direct Cloud 不使用 Desktop 的分组选择界面。它要求宿主通过自己的 Secret 机制注入 `PURETOKENS_ACCESS_TOKEN`，并以该 API Key 的权限和认证后的 `/v1/media/models` 目录为准。Skill 永远不会索取、打印、持久化或把 Token 写入提示词。
+对于宿主原生手动配置的 Pure Tokens 模型，已选操作必须提供精确且已验证的 `image` 或 `video` 模型以及真实媒体交付。通用文本/聊天模型连接、不透明的模型名称或渲染组件都不满足该要求。Direct Cloud 不使用 Desktop 的分组选择界面。用户只需在宿主的常规 **API Base URL** 和 **API Key** 配置中填写 `https://api.puretokensx.com` 与 Pure Tokens API Key；使用环境变量的宿主将这两个字段映射为 `PURETOKENS_API_BASE_URL` 和 `PURETOKENS_API_KEY`。它以该 API Key 的权限和认证后的 `/v1/media/models` 目录为准；Skill 永远不会索取、打印、持久化或把 Key 写入提示词。
 
 ## 从 GitHub 安装和更新
 
-`puretokens_media` 是所有支持客户端共用的唯一媒体行为源。Claude Desktop 通过可上传 ZIP 使用它；WorkBuddy 在点击 **验证并应用** 后由 Desktop 生成常驻交付载荷；具备终端能力的 Agent 可以在凭据已由宿主注入时直接走 Direct Cloud。共享 Skill 的最新安装说明和文件仍以本仓库为准。
+`puretokens_media` 是所有支持客户端共用的唯一媒体行为源。Claude Desktop 通过可上传 ZIP 使用它；Codex 可以直接安装共享源；WorkBuddy 在需要时使用生成的适配层。Pure Tokens Desktop 可以作为可选的便利路径受管 Codex 和 WorkBuddy。共享 Skill 的最新安装说明和文件仍以本仓库为准。
 
-### Codex Plugin
+### Codex
 
-这里的 **Codex** 指具备本机终端和本机文件写入权限的独立 Codex Agent，不包括仅因运行时标签显示为 Codex 的普通 ChatGPT 对话。
+对于 Desktop 受管的 Codex，在 Pure Tokens Desktop 选择目标分组并点击 **验证并应用**；Desktop 会原子化安装生成的共享 Skill 到 `~/.codex/skills/puretokens_media`，并独立配置本机 `puretokens-image` MCP。不需要 Codex Plugin 或插件市场解锁。
 
-在本仓库页面点击 **Code → Download ZIP**，或先克隆仓库，然后在仓库目录执行对应命令。需要 Node.js 20 或更高版本。
-
-```bash
-git clone https://github.com/yanyansay/puretokens-skill.git
-cd puretokens-skill
-```
-
-如果走受管 MCP，先在 Pure Tokens Desktop 中为 Codex 配置本机 `puretokens-image` MCP；具备终端能力的 Codex Agent 也可以在宿主注入 `PURETOKENS_ACCESS_TOKEN` 时直接走 Direct Cloud：
+对于具备本机终端能力的独立 Codex Agent，可以直接安装相同的共享源，并使用自行配置的 MCP 或 Direct Cloud 能力：
 
 ```bash
-codex features enable plugins
-codex plugin marketplace add .
-codex plugin add puretokens-media@puretokens
+node bin/puretokens-skill.js install puretokens_media --target ~/.codex/skills
 ```
 
-安装后必须新建 Codex 任务。Plugin 只安装共享 Skill，不会打包、启动或替换 Desktop 受管 MCP。若 Pure Tokens Desktop 已配置可调用的 `puretokens-image` MCP，Skill 会优先使用它；否则 Direct Cloud 只要求 Agent 具备 HTTPS 执行能力和宿主注入的 Token。
-
-Pure Tokens Desktop 会在 Codex 的“验证并应用”中执行同一套官方 Plugin 安装。上面的命令仅用于本机恢复或开发。
+两种安装路径完成后都应新建 Codex 任务。Skill 不会打包、启动或替换 Desktop 受管 MCP。
 
 ### Claude Code、Gemini CLI、OpenCode
 
-按客户端安装到各自的用户级 Skill 目录：
+先克隆官方仓库，再按客户端安装到各自的用户级 Skill 目录：
 
 ```bash
+git clone https://github.com/PureTokens/puretokens-skill.git
+cd puretokens-skill
 
 # Claude Code
 node bin/puretokens-skill.js install puretokens_media --target ~/.claude/skills
@@ -145,14 +143,14 @@ node bin/puretokens-skill.js install puretokens_media --target ~/.config/opencod
 只能把下面提示词复制给能够执行本机命令且能够写入本机文件的 Agent：
 
 ```text
-请从公开仓库 https://github.com/yanyansay/puretokens-skill 为我当前使用的客户端安装 Pure Tokens Skill。
+请从公开仓库 https://github.com/PureTokens/puretokens-skill 为我当前使用的客户端安装 Pure Tokens Skill。
 
 1. 判断目标客户端前，先确认当前环境同时具备本机终端和本机文件写入权限。
-   - 如果当前是普通 ChatGPT 对话，或缺少任一能力，立即停止。不能只因模型或运行时标签显示 Codex 就把它识别为 Codex；不要克隆或下载仓库、不要写入 `~/.codex/skills`、不要声称已经安装。请告诉我改用具备终端能力的本机 Agent，或由本机管理员安装。
-2. 只有通过上一步检查后，才判断当前客户端是 Codex、Claude Code、Gemini CLI 还是 OpenCode。
+   - 如果当前是普通 ChatGPT 对话，或缺少任一能力，立即停止。不要克隆或下载仓库，也不要声称已经安装。请告诉我改用具备终端能力的本机 Agent，或由本机管理员安装。
+2. 只有通过上一步检查后，才判断当前客户端是 Codex、Claude Code、Gemini CLI 或 OpenCode。
 3. 将仓库克隆或下载到临时工作目录。
 4. 只安装对应的 Pure Tokens 交付：
-   - Codex：执行 `codex features enable plugins`、`codex plugin marketplace add <仓库根目录>`、`codex plugin add puretokens-media@puretokens`。不能用写入 `~/.codex/skills` 代替。
+   - Codex：~/.codex/skills
    - Claude Code：~/.claude/skills
    - Gemini CLI：~/.gemini/skills
    - OpenCode：~/.config/opencode/skills
@@ -160,40 +158,36 @@ node bin/puretokens-skill.js install puretokens_media --target ~/.config/opencod
 6. 不要读取、索取、打印或保存 API Key、Cookie、密码、Router Token 或本地授权地址。
 7. 返回实际安装目录和操作结果。
 
-如果当前是 Claude Desktop，不要声称已经自动安装。请按 README 生成 ZIP，并告诉我应该在哪里上传和启用。如果当前是 WorkBuddy，请让我在 Pure Tokens Desktop 点击 **验证并应用**；不要手动创建或替换其生成的 `puretokens_workbuddy_router` 交付载荷。
+如果当前是 Claude Desktop，不要声称已经自动安装。请按 README 生成 ZIP，并告诉我应该在哪里上传和启用。如果当前是 WorkBuddy，只有在已知本机 WorkBuddy Skill 目录时才使用 README 中的生成适配层命令；否则请让我在 Pure Tokens Desktop 点击 **验证并应用**。
 ```
 
-不要在普通 ChatGPT 对话中把这段提示词当作自助安装指令。此类对话可能运行在 Codex 运行时上，但仍无权访问用户的终端或 `~/.codex` 目录；必须明确停止，不能假称本机 Skill 已安装。
+不要在普通 ChatGPT 对话中把这段提示词当作自助安装指令；必须明确停止，不能假称本机 Skill 已安装。
 
-更新 Codex 时先拉取仓库，再从同一 Plugin 市场重新安装：
+更新手动安装的 Codex、Claude Code、Gemini CLI 或 OpenCode Skill 时，先拉取仓库，再执行对应升级命令：
 
 ```bash
 git pull
-codex plugin add puretokens-media@puretokens
+node bin/puretokens-skill.js upgrade puretokens_media --target ~/.codex/skills
 ```
 
-Claude Code、Gemini CLI、OpenCode 使用上方对应目标目录的 `upgrade` 命令。升级只替换由 Pure Tokens 管理、且包含匹配 `skill.json` 与 `SKILL.md` 的目录，不会覆盖其他 Skill。
+Codex、Claude Code、Gemini CLI、OpenCode 使用上方对应目标目录的 `upgrade` 命令。升级只替换由 Pure Tokens 管理、且包含匹配 `skill.json` 与 `SKILL.md` 的目录，不会覆盖其他 Skill。
 
 ### Windows PowerShell
 
 ```powershell
-git clone https://github.com/yanyansay/puretokens-skill.git
+git clone https://github.com/PureTokens/puretokens-skill.git
 Set-Location puretokens-skill
-codex features enable plugins
-codex plugin marketplace add .
-codex plugin add puretokens-media@puretokens
+node .\bin\puretokens-skill.js install puretokens_media --target $HOME\.claude\skills
 ```
 
 其他客户端使用 `node .\bin\puretokens-skill.js install puretokens_media --target ...`，目标目录为 `$HOME\.claude\skills`、`$HOME\.gemini\skills` 或 `$HOME\.config\opencode\skills`。如果 PowerShell 找不到 `node`，先从 Node.js 官方网站安装 Node.js LTS，再重新打开 PowerShell。
 
 ## Claude Desktop 导入与 WorkBuddy 路由
 
-不要把复制到 `~/.codex/skills` 当成 Claude Desktop 安装完成，也不要把它当成可调用的 Codex 媒体 Plugin 安装。
-
 Claude Desktop 使用图形界面上传本地 Skill 包。生成 ZIP：
 
 ```bash
-node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out ./puretokens_media-0.4.1.zip
+node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out ./puretokens_media-0.4.7.zip
 ```
 
 ZIP 内部结构为：
@@ -203,8 +197,6 @@ puretokens_media/
 ├── SKILL.md
 ├── skill.json
 ├── source-delivery.json
-├── adapters/
-│   └── workbuddy-execution.md
 └── references/
     ├── behavior-scenarios.json
     ├── direct-cloud-contract.md
@@ -212,35 +204,27 @@ puretokens_media/
     └── natural-language-aliases.json
 ```
 
-在 Claude Desktop 中打开 **Settings → Features → Skills**（部分版本显示为 **Customize → Skills**），选择 **Upload skill**，上传 ZIP 并启用 `Pure Tokens Media`。如果当前版本没有 Skills 入口，则该版本不能导入自定义 Skill，只能使用 MCP 的工具描述；升级或使用支持 Skills 的 Claude 客户端后再导入。
+在 Claude Desktop 中打开 **Settings → Features → Skills**（部分版本显示为 **Customize → Skills**），选择 **Upload skill**，上传 ZIP 并启用 `Pure Tokens Media`。通过 CC Switch 连接的 Claude Desktop 也可以使用同一个 ZIP：通过 CC Switch 或其他本机工具提供方独立配置可调用的 `puretokens-image` MCP。若宿主本身提供认证 HTTPS 执行和本机媒体交付能力，也可以改走 Direct Cloud。ZIP 会刻意排除仅供 WorkBuddy 使用的适配层。
 
-WorkBuddy 不需要手动上传或启用独立 Skill。在 Pure Tokens Desktop 中选择兼容分组并点击 **验证并应用** 后，Desktop 会从共享 `puretokens_media` 源原子化生成并受管常驻的 `puretokens_workbuddy_router` 交付载荷，以及 `puretokens-image` MCP 条目和引用资料。随后重启 WorkBuddy 或新建会话。用户直接说生图、生视频时会先发现延迟加载的 MCP 工具，再通过 `DeferExecuteTool` 实际调用；只发现工具或渲染出组件都不代表已经调用媒体模型。用户明确指定 WorkBuddy 内置 `ImageGen` 或 `VideoGen` 时仍保留该选择。
-
-更新 Claude Desktop 时从 GitHub 获取新版本、重新生成 ZIP、停用旧 Skill、上传新 ZIP 并启用。WorkBuddy 会在下一次点击 **验证并应用** 时重新生成同一份共享媒体行为。不要直接删除 MCP 配置；MCP 由 Pure Tokens Desktop 管理。
-
-## Codex Plugin 安装与更新
-
-Codex 必须使用官方 Plugin 生命周期：
+WorkBuddy 有两种安装路径。Pure Tokens Desktop 可以从共享 `puretokens_media` 源原子化生成并受管常驻的 `puretokens_workbuddy_router` 交付载荷，以及 `puretokens-image` MCP 条目和引用资料：选择兼容分组，点击 **验证并应用**，然后新建会话。若已知本机 WorkBuddy Skill 目录，也可由本仓库生成同一份交付物：
 
 ```bash
-codex features enable plugins
-codex plugin marketplace add /absolute/path/to/puretokens-skill
-codex plugin add puretokens-media@puretokens
+node scripts/render-workbuddy-media-skill.mjs --out ~/.workbuddy/skills/puretokens_workbuddy_router
 ```
 
-仓库更新后执行：
+自管路径仍需在 WorkBuddy、CC Switch 或其他工具提供方中配置可调用的 `puretokens-image` MCP，或者要求宿主实际具备 Direct Cloud 能力。普通生图、生视频请求会先发现延迟加载的 MCP 工具，再通过 `DeferExecuteTool` 实际调用；只发现工具或渲染出组件都不代表已经调用媒体模型。在 WorkBuddy UI 或工具上下文中选择的 `ImageGen`、`VideoGen` 或手动配置模型必须被保留。该选择若指向已验证的 Pure Tokens 图片/视频操作，由 WorkBuddy 已配置的原生执行器运行，不得再重复提交 MCP 任务。仅配置通用聊天模型，或只在消息文字中写出模型名，都不能绕过目录优先的选择规则。
 
-```bash
-codex plugin add puretokens-media@puretokens
-```
+更新 Claude Desktop 时从 GitHub 获取新版本、重新生成 ZIP、停用旧 Skill、上传新 ZIP 并启用。Desktop 受管 WorkBuddy 会在下一次点击 **验证并应用** 时重新生成同一份共享媒体行为；自管 WorkBuddy 重新运行生成命令。不得手工编辑生成后的交付物。
 
-只有明确不再需要 Codex 媒体 Skill 时才执行 `codex plugin remove puretokens-media@puretokens`。移除 Plugin 不会删除 Pure Tokens Desktop 受管的 MCP 配置。
+## Codex 安装与更新
+
+Pure Tokens Desktop 的 **验证并应用** 只会原子化替换自己的生成式 `puretokens_media` 目录，并只配置自己的 `puretokens-image` MCP 条目；不会启用 Codex Plugin、注册 Marketplace，也不会修改其他 Skill。独立 Codex 安装使用上方共享源命令，并自行提供可调用 MCP 或 Direct Cloud 执行能力。
 
 ## 模型选择规则
 
-`puretokens_media` 必须先调用 `puretokens_list_media_models`，只依据本次响应的 `id`、`displayName`、`aliases`、`provider` 和 `capabilities` 匹配。生成工具必须传精确 `model` 和稳定 `request_id`。一次用户请求只提交一次，默认只请求 1 个结果，只有用户明确给出数量时才增加数量；宿主重试时复用同一 `request_id`，结果工具始终使用同一 `task_id` 和原始模型。
+`puretokens_media` 必须先调用 `puretokens_list_media_models`，只依据本次响应的 `id`、`displayName`、`aliases`、`provider` 和 `capabilities` 匹配。MCP 生成工具必须传精确 `model` 和稳定 `request_id`；Direct Cloud 仅在宿主任务状态中保留该请求 ID，因为公共端点没有已声明的幂等字段。一次用户请求只提交一次，默认只请求 1 个结果，只有用户明确给出数量时才增加数量；MCP 宿主重试时复用同一 `request_id`。`gpt-image-2` 在生成调用中直接返回原生 MCP 图片，绝不能再调用 `puretokens_image_result`；任务型图片模型只轮询其返回的同一 `task_id` 和原始模型。
 
-媒体完成后会展示实际精确模型、保存文件名和 `Downloads/Pure Tokens`。只有 MCP 或宿主返回原生 `image` 内容时，图片才可在支持的宿主内预览；Direct Cloud 会先下载 `b64_json`、返回 URL 或完成后的 `/content` 字节，再报告本机交付。视频在大小受限时会携带原生 MCP 资源，支持该资源的宿主可以预览；较大的视频仍会成功保存为本机 MP4。只有执行层实际返回本机打开文件/文件夹入口时才展示该入口。
+媒体完成后会展示实际精确模型、保存文件名和 `Downloads/Pure Tokens`。只有 MCP 或宿主返回原生 `image` 内容时，图片才可在支持的宿主内预览；Direct Cloud 始终请求异步图片生成，并会以兼容兜底方式下载返回的 `b64_json`、返回 URL 或完成后的 `/content` 字节，再报告本机交付。完成的多图任务会通过同一个 `/content` 端点和零基 `index` 依次取回每个已声明结果。视频在大小受限时会携带原生 MCP 资源，支持该资源的宿主可以预览；较大的视频仍会成功保存为本机 MP4。只有执行层实际返回本机打开文件/文件夹入口时才展示该入口。
 
 模型歧义、目录为空、MCP 不可用、工具错误和轮询超时的行为测试见 `skills/puretokens_media/references/behavior-scenarios.json`。任何错误都不得自动换模型或重新提交，除非用户明确选择了新的具体模型。
 

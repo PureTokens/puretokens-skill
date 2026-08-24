@@ -20,7 +20,7 @@ scripts/                                  # repository validation helpers
 - The **Pure Tokens MCP** exposes strict typed tools, accepts only an exact model ID, submits and polls tasks, and never performs natural-language matching or silent model fallback. It is required only for hosts without native Shell/HTTPS tool execution.
 - The **Pure Tokens API** remains authoritative for API-key group access and endpoint capabilities. The **Desktop Router** remains authoritative for Desktop-managed profile access and `openai_images` / `openai_video` routing. A skill must never infer either from a model name.
 
-The media skill supports a capability branch: use the registered `puretokens-image` MCP tools when available; otherwise an Agent with HTTPS execution and a host-injected `PURETOKENS_ACCESS_TOKEN` may use the documented Direct Cloud contract. Do not embed a Router token, a cloud access token, a localhost URL, or a sidecar binary in this repository.
+The media skill supports a capability branch: use the registered `puretokens-image` MCP tools when available; otherwise an Agent with HTTPS execution and a host-injected `PURETOKENS_API_KEY` may use the documented Direct Cloud contract. Do not embed a Router token, a cloud API key, a localhost URL, or a sidecar binary in this repository.
 
 ## Conventions
 

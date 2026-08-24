@@ -7,7 +7,7 @@
       "when": "The user asks to generate an image without naming a model."
     },
     "video": {
-      "modelId": "grok-imagine-video-1.5",
+      "modelId": "grok-imagine-video-1.5-preview",
       "when": "The user asks to generate a video without naming a model."
     }
   },
@@ -18,29 +18,39 @@
       "modelIds": ["gpt-image-2"]
     },
     {
-      "phrases": ["gemini pro image", "gemini 3 pro image"],
-      "capability": "image",
-      "modelIds": ["gemini-3.0-pro-image"]
-    },
-    {
-      "phrases": ["gemini flash lite image", "gemini 3.1 flash lite image"],
-      "capability": "image",
-      "modelIds": ["gemini-3.1-flash-lite-image"]
-    },
-    {
       "phrases": ["nano banana"],
       "capability": "image",
-      "modelIds": ["gemini-3.0-pro-image", "gemini-3.1-flash-image"]
+      "modelIds": ["nano-banana-pro", "nano-banana-2"]
     },
     {
       "phrases": ["nano banana pro", "nano banana professional"],
       "capability": "image",
-      "modelIds": ["gemini-3.0-pro-image"]
+      "modelIds": ["nano-banana-pro"]
     },
     {
       "phrases": ["nano banana 2", "nano banana two"],
       "capability": "image",
-      "modelIds": ["gemini-3.1-flash-image"]
+      "modelIds": ["nano-banana-2"]
+    },
+    {
+      "phrases": ["qwen image 2", "qwen image 2.0"],
+      "capability": "image",
+      "modelIds": ["qwen-image-2.0"]
+    },
+    {
+      "phrases": ["qwen image 2 pro", "qwen image 2.0 pro"],
+      "capability": "image",
+      "modelIds": ["qwen-image-2.0-pro"]
+    },
+    {
+      "phrases": ["wan image", "wan 2.7 image"],
+      "capability": "image",
+      "modelIds": ["wan2.7-image"]
+    },
+    {
+      "phrases": ["wan 2.7 image pro"],
+      "capability": "image",
+      "modelIds": ["wan2.7-image-pro"]
     },
     {
       "phrases": ["grok image", "grok imagine"],
@@ -53,19 +63,19 @@
       "modelIds": ["grok-imagine-image-quality"]
     },
     {
-      "phrases": ["wan image", "wan 2.7 image"],
-      "capability": "image",
-      "modelIds": ["wan2.7-image"]
-    },
-    {
       "phrases": ["grok video", "grok imagine video"],
       "capability": "video",
-      "modelIds": ["grok-imagine-video", "grok-imagine-video-1.5"]
+      "modelIds": ["grok-imagine-video", "grok-imagine-video-1.5-preview"]
     },
     {
       "phrases": ["grok 1.5 video", "grok video 1.5", "grok imagine video 1.5"],
       "capability": "video",
-      "modelIds": ["grok-imagine-video-1.5"]
+      "modelIds": ["grok-imagine-video-1.5-preview"]
+    },
+    {
+      "phrases": ["minimax h3", "minimax h3 video"],
+      "capability": "video",
+      "modelIds": ["minimax-h3"]
     }
   ]
 }

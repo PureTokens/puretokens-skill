@@ -6,6 +6,37 @@
 
 ## Unreleased
 
+- 修复 `gpt-image-2` 的 MCP 分支：生成调用一旦已返回原生图片就结束，WorkBuddy 不会在已完成的 Image-2 响应后错误继续调用 `puretokens_image_result`。
+- 重建中英文 README 的媒体模型清单：它现在从全局基础模型目录生成，不再读取本机路由缓存或某个 API Key 范围内的响应。`npm run docs:sync-media-models-from-base-catalog` 只接受明确的图片/视频能力，并将每个已配置模型 ID 写入发布清单；执行时仍以 `GET /v1/media/models` 的认证结果为准。
+
+## 0.4.6 — 2026-08-20
+
+- 保留 Pure Tokens Desktop 作为 Codex 和 WorkBuddy 的可选受管交付，同时恢复独立安装 Skill 与 Direct Cloud 执行路径。
+- 明确手动配置 Pure Tokens 媒体模型时的第三种宿主原生执行情形：只有宿主能证明精确媒体能力和真实交付时才保留 UI/工具上下文中的显式选择；否则回到正常 MCP 或 Direct Cloud 决策树，且不得重复提交。
+- 保持新增媒体模型只要出现在认证后的实时目录即可直接使用、无需等待 Skill 更新，同时发布已登记模型清单和便利别名，让用户能发现 Skill 的能力范围。
+- 明确 Direct Cloud 的交付能力前置检查、API Key 范围内的缺模型恢复、仅宿主保存的请求 ID，以及多图通过零基 `/content?index=N` 取回的语义。
+- WorkBuddy 生成改为原子替换受管交付，避免已删除源文件留下旧行为；同时保留用户显式选择的内置或手动配置模型，并修正官方仓库地址。
+
+## 0.4.5 — 2026-08-20
+
+- 恢复 Direct Cloud 图片提交策略：图片请求始终传 `async: true`。执行层仍会防御性兼容服务返回的同步 `b64_json` 或 `url`，但 Skill 不会主动请求同步图片生成。
+
+## 0.4.4 — 2026-08-20
+
+- 确认 Codex 只交付由 Desktop 受管的生成式 Skill，已彻底移除已废弃的 Plugin/Marketplace 交付。
+- 修复 Direct Cloud 结果模式契约：图片请求不再强制 `async: true`，执行层根据服务真实响应处理并交付同步 `b64_json`/`url` 或异步任务内容。
+- 明确 Skill 不亲自执行 I/O：MCP 与宿主的 Direct Cloud 执行层分别负责下载、落盘、预览和真实本机交付证据。两条执行通道都不可用时，Skill 只说明缺少的能力，不把 Desktop 或聊天中粘贴凭据当成前提。
+- 强化生成交付验证：Claude Desktop ZIP 会解包并逐文件与共享源做字节级比对，和已有 Codex、WorkBuddy 来源校验保持一致。
+
+## 0.4.3 — 2026-08-20
+
+- 统一 Direct Cloud 凭据为常规的 **API Base URL** 与 **API Key**：使用环境变量的宿主固定映射为 `PURETOKENS_API_BASE_URL` 和 `PURETOKENS_API_KEY`，不再使用容易与登录态混淆的 `PURETOKENS_ACCESS_TOKEN`。
+
+## 0.4.2 — 2026-08-20
+
+- 将 Pure Tokens 专用的 Codex Plugin 交付改为生成出的受管 Skill 交付。Pure Tokens Desktop 现在负责 `~/.codex/skills/puretokens_media` 与独立的 `puretokens-image` MCP 配置；媒体生成不再依赖 Codex Plugin Feature、Marketplace 配置或插件市场解锁。
+- 保持 Direct Cloud 不依赖 Desktop，并明确异步多图片交付：完成图片任务声明多个内容项时，按响应顺序先取 `/content`，再使用有界的 `/content?index=N` 获取后续结果。
+
 ## 0.4.1 — 2026-08-20
 
 - `puretokens_media` 默认只请求 1 个结果；只有用户明确给出数量且当前执行契约支持时才请求更多结果。一个请求绝不会变成多次生成提交。
