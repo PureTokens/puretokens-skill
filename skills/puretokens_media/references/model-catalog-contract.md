@@ -41,17 +41,18 @@ The authenticated media catalog remains authoritative. A Skill may use only
 fields actually returned by the catalog. It must send `id`, never `displayName`
 or an alias, to generation tools.
 
-The Skill may also maintain an explicit user-facing phrase registry, such as `image2` → `gpt-image-2`. For MCP and Direct Cloud this registry only produces candidate canonical IDs; it never grants availability, invents capabilities, or bypasses the live catalog. The only exception is the Skill-defined Codex/CC Switch Pure Tokens Connection Images API: a default-image or explicit `gpt-image-2` / `image2` request there calls `POST https://api.puretokensx.com/v1/images/generations` with `model: "gpt-image-2"` directly, through the active Pure Tokens connection and without consulting this catalog. It must never call an upstream URL. All other candidates are usable only when the current catalog returns the exact `id` with the requested capability.
+The Skill may also maintain an explicit user-facing phrase registry, such as `image2` → `gpt-image-2`. For MCP and Direct Cloud this registry only produces candidate canonical IDs; it never grants availability, invents capabilities, or bypasses the live catalog. The one image exception is the Skill-defined Codex/CC Switch Pure Tokens Connection Images API: a default-image or explicit `gpt-image-2` / `image2` request there calls `POST https://api.puretokensx.com/v1/images/generations` with `model: "gpt-image-2"` directly, through the active Pure Tokens connection and without consulting this catalog. It must never call an upstream URL. For video, a Codex/CC Switch connection may use the Skill-defined Pure Tokens Connection Videos API only when the host actually exposes that connection as a callable authenticated HTTPS media executor and can deliver the returned bytes. That path must first read this catalog through the active connection, then send the exact returned `id` to `/v1/videos`; a configured chat API key alone does not prove this execution capability. All other candidates are usable only when the current catalog returns the exact `id` with the requested capability.
 
 ## Required invariants
 
-- `id` is unique in the active authorization scope: a Desktop client profile or
-  a Direct Cloud API key.
+- `id` is unique in the active authorization scope: a Desktop client profile,
+  a Direct Cloud API key, or an active connection with verified media execution.
 - Any alias is unique within the active catalog after case and punctuation
   normalization.
 - A model is listed only when an active route explicitly declares
   `image-generation` or `openai-video`.
 - Removing a Desktop group, changing a route's media endpoint metadata, or
   removing a Direct Cloud API key permission removes the model from the next
-  catalog response.
+  catalog response. The same applies to the current API key scope of a
+  verified active connection.
 - A text model is never returned as media merely because its name contains `image`, `video`, a provider name, or a marketing term.

@@ -53,6 +53,7 @@ test("media Skill publishes the complete MCP tool contract", async () => {
   assert.equal(manifest.rules.explicitCountRequiredForMultipleResults, true);
   assert.equal(manifest.rules.supportsDirectCloudWithoutDesktop, true);
   assert.equal(manifest.rules.supportsSkillDefinedImage2Api, true);
+  assert.equal(manifest.rules.supportsSkillDefinedConnectionVideoApi, true);
   assert.equal(manifest.rules.directCloudRequiresHostInjectedCredentials, true);
   assert.equal(manifest.rules.directCloudUsesExplicitGatewayEndpointCapabilities, true);
   assert.equal(manifest.rules.directCloudImagesAlwaysAsync, true);
@@ -70,10 +71,14 @@ test("media Skill publishes the complete MCP tool contract", async () => {
   assert.match(skillText, /`type == resource`/);
   assert.match(skillText, /Direct Cloud 通道/);
   assert.match(skillText, /本 Skill 定义的 Pure Tokens Connection Images API/);
+  assert.match(skillText, /Pure Tokens Connection Videos API/);
   assert.match(skillText, /POST https:\/\/api\.puretokensx\.com\/v1\/images\/generations/);
+  assert.match(skillText, /POST https:\/\/api\.puretokensx\.com\/v1\/videos/);
   assert.match(skillText, /不依赖系统、开发者或 AGENTS 指令/);
   assert.match(skillText, /Codex 或 CC Switch/);
   assert.match(skillText, /不要求 `puretokens-image` MCP 或额外的 Direct Cloud 凭据/);
+  assert.match(skillText, /可执行认证 HTTPS 视频请求并可交付实际视频字节/);
+  assert.match(skillText, /普通聊天连接仅配置 API Key/);
   assert.match(skillText, /原生 Pure Tokens 媒体执行器/);
   assert.match(skillText, /不能把它当作图片\/视频执行器/);
   assert.match(skillText, /不需要等待 Skill 发版/);
@@ -97,7 +102,8 @@ test("media Skill publishes the complete MCP tool contract", async () => {
   assert.match(skillText, /Direct Cloud 通道由宿主的 Direct Cloud 执行层完成/);
   assert.match(skillText, /已注入的 Direct Cloud 凭据、HTTPS 执行能力与真实媒体交付能力/);
   assert.doesNotMatch(skillText, /GET \/v1\/models/);
-  assert.doesNotMatch(skillText, /PURETOKENS_API_KEY/);
+  assert.doesNotMatch(skillText, /Authorization: Bearer/);
+  assert.doesNotMatch(skillText, /api\.krill-ai\.com/);
 });
 
 test("media Skill does not advertise tools absent from the media MCP", async () => {
@@ -210,6 +216,8 @@ test("media Skill behavior scenarios cover ambiguity, empty catalog, unavailable
     "direct-cloud-no-media-model",
     "direct-cloud-missing-delivery-capability",
     "skill-defined-image2-api",
+    "skill-defined-connection-video-api",
+    "connection-video-api-not-executable",
     "workbuddy-explicit-host-model",
     "host-native-model-not-verified-for-media",
     "mcp-unavailable",
@@ -229,6 +237,8 @@ test("media Skill behavior scenarios cover ambiguity, empty catalog, unavailable
   assert.equal(scenarios.find((scenario) => scenario.id === "direct-cloud-no-media-model")?.expected, "report_api_key_catalog_scope_without_desktop_group_instructions");
   assert.equal(scenarios.find((scenario) => scenario.id === "direct-cloud-missing-delivery-capability")?.expected, "report_missing_delivery_capability_without_submission");
   assert.equal(scenarios.find((scenario) => scenario.id === "skill-defined-image2-api")?.expected, "call_the_puretokens_connection_images_api_once_at_the_puretokens_user_endpoint_with_gpt_image_2_without_mcp_or_direct_cloud_fallback");
+  assert.equal(scenarios.find((scenario) => scenario.id === "skill-defined-connection-video-api")?.expected, "read_the_active_connection_catalog_then_submit_one_exact_video_model_to_the_puretokens_user_videos_endpoint_and_retrieve_the_same_task_content_without_mcp_or_direct_cloud");
+  assert.match(scenarios.find((scenario) => scenario.id === "connection-video-api-not-executable")?.expected || "", /preserve_a_user_selected_native_executor_or_continue_to_mcp_or_direct_cloud/);
   assert.equal(scenarios.find((scenario) => scenario.id === "new-live-catalog-model")?.expected, "use_the_exact_catalog_model_with_its_declared_capability_without_waiting_for_a_skill_release");
   assert.equal(scenarios.find((scenario) => scenario.id === "workbuddy-explicit-host-model")?.expected, "preserve_explicit_host_model_choice_without_mcp_reroute_or_duplicate_submission");
   assert.match(scenarios.find((scenario) => scenario.id === "host-native-model-not-verified-for-media")?.expected || "", /do_not_treat_host_model_configuration_as_media_execution/);

@@ -6,6 +6,7 @@
 
 ## Unreleased
 
+- Added the guarded Codex/CC Switch **Pure Tokens Connection Videos API** path. When the host explicitly exposes the current Pure Tokens connection as a callable authenticated HTTPS video executor with actual byte delivery, the Skill reads that connection's `/v1/media/models`, submits the exact `video` model once to `/v1/videos`, then polls and retrieves the same task's `/content`. It reuses the configured connection without Desktop, MCP, or a second Direct Cloud credential; a chat connection that merely stores an API key never pretends to provide this execution capability.
 - Corrected the Codex/CC Switch Image-2 route to the user-facing Pure Tokens connection: default and explicit `gpt-image-2` / `image2` calls use `POST https://api.puretokensx.com/v1/images/generations` with `model: "gpt-image-2"`. The Skill never calls an upstream URL, never depends on a global host instruction or MCP, and never falls back to MCP or Direct Cloud after an API-path failure.
 - Fixed the `gpt-image-2` MCP branch: its generation call now terminates on native image content, so WorkBuddy does not make a spurious `puretokens_image_result` poll after a completed Image-2 response.
 - Rebuilt the bilingual README media catalog from the global base model catalog rather than a local routing cache or an API-key-scoped response. `npm run docs:sync-media-models-from-base-catalog` accepts only explicit image/video capabilities, carries every configured model ID into the published list, and `GET /v1/media/models` remains the execution-time authorization check.
