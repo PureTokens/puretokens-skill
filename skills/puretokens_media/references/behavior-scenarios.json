@@ -75,8 +75,8 @@
     {
       "id": "connection-image-api-not-executable",
       "when": "A Codex or CC Switch chat connection has a configured API key or can read a catalog but the host does not prove callable authenticated HTTPS Images API execution and native-image delivery for an explicitly selected non-gpt-image-2 image model.",
-      "expected": "preserve_a_user_selected_native_executor_or_continue_to_mcp_or_direct_cloud_without_treating_the_chat_connection_as_an_image_executor",
-      "forbiddenTools": ["unverified_connection_image_submission", "credential_extraction", "automatic_resubmission"]
+      "expected": "before_any_fallback_submission_tell_the_user_that_the_connection_cannot_directly_execute_the_exact_model_then_use_only_a_verified_same_model_native_executor_mcp_or_direct_cloud_path_or_stop",
+      "forbiddenTools": ["unverified_connection_image_submission", "silent_fallback", "automatic_model_switch", "credential_extraction", "automatic_resubmission"]
     },
     {
       "id": "skill-defined-connection-video-api",
