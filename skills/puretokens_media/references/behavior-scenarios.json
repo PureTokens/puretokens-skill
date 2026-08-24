@@ -61,9 +61,9 @@
       "forbiddenTools": ["puretokens_generate_image", "puretokens_generate_video", "automatic_resubmission"]
     },
     {
-      "id": "host-declared-image2-api",
-      "when": "The active host system, developer, or AGENTS instructions declare an authenticated Image-2 Images API for image generation.",
-      "expected": "call_the_host_declared_images_api_once_with_its_required_image2_model_without_mcp_or_direct_cloud_fallback",
+      "id": "skill-defined-image2-api",
+      "when": "A Codex or CC Switch user with an active Pure Tokens connection asks for a default image or explicitly selects gpt-image-2/image2, including when no active system, developer, or AGENTS instruction declares an Images API.",
+      "expected": "call_the_puretokens_connection_images_api_once_at_the_puretokens_user_endpoint_with_gpt_image_2_without_mcp_or_direct_cloud_fallback",
       "forbiddenTools": ["puretokens_list_media_models", "puretokens_generate_image", "puretokens_image_result", "direct_cloud_submission", "automatic_resubmission"]
     },
     {

@@ -6,7 +6,7 @@
 
 ## Unreleased
 
-- 修复 CC Switch/Codex 在宿主已声明已认证 Image-2 Images API 时的图片路由：图片请求现在直接执行该强制的 `gpt-image-2` 路径，不要求 `puretokens-image` MCP 或 `PURETOKENS_API_KEY`；该 API 路径失败后也绝不回退到 MCP 或 Direct Cloud。
+- 纠正 Codex/CC Switch 的 Image-2 路由为面向用户的 Pure Tokens 连接：默认生图和明确 `gpt-image-2` / `image2` 调用 `POST https://api.puretokensx.com/v1/images/generations` 并传入 `model: "gpt-image-2"`。Skill 绝不调用上游地址，不依赖全局宿主指令或 MCP，且该 API 路径失败后绝不回退到 MCP 或 Direct Cloud。
 - 修复 `gpt-image-2` 的 MCP 分支：生成调用一旦已返回原生图片就结束，WorkBuddy 不会在已完成的 Image-2 响应后错误继续调用 `puretokens_image_result`。
 - 重建中英文 README 的媒体模型清单：它现在从全局基础模型目录生成，不再读取本机路由缓存或某个 API Key 范围内的响应。`npm run docs:sync-media-models-from-base-catalog` 只接受明确的图片/视频能力，并将每个已配置模型 ID 写入发布清单；执行时仍以 `GET /v1/media/models` 的认证结果为准。
 

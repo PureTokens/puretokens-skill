@@ -52,7 +52,7 @@ test("media Skill publishes the complete MCP tool contract", async () => {
   assert.equal(manifest.rules.defaultResultCount, 1);
   assert.equal(manifest.rules.explicitCountRequiredForMultipleResults, true);
   assert.equal(manifest.rules.supportsDirectCloudWithoutDesktop, true);
-  assert.equal(manifest.rules.supportsHostDeclaredImage2Api, true);
+  assert.equal(manifest.rules.supportsSkillDefinedImage2Api, true);
   assert.equal(manifest.rules.directCloudRequiresHostInjectedCredentials, true);
   assert.equal(manifest.rules.directCloudUsesExplicitGatewayEndpointCapabilities, true);
   assert.equal(manifest.rules.directCloudImagesAlwaysAsync, true);
@@ -69,7 +69,10 @@ test("media Skill publishes the complete MCP tool contract", async () => {
   assert.match(skillText, /MCP 通道以 `structuredContent\.model` 为事实来源/);
   assert.match(skillText, /`type == resource`/);
   assert.match(skillText, /Direct Cloud 通道/);
-  assert.match(skillText, /宿主指令已声明的 Image-2 Images API/);
+  assert.match(skillText, /本 Skill 定义的 Pure Tokens Connection Images API/);
+  assert.match(skillText, /POST https:\/\/api\.puretokensx\.com\/v1\/images\/generations/);
+  assert.match(skillText, /不依赖系统、开发者或 AGENTS 指令/);
+  assert.match(skillText, /Codex 或 CC Switch/);
   assert.match(skillText, /不要求 `puretokens-image` MCP 或额外的 Direct Cloud 凭据/);
   assert.match(skillText, /原生 Pure Tokens 媒体执行器/);
   assert.match(skillText, /不能把它当作图片\/视频执行器/);
@@ -206,7 +209,7 @@ test("media Skill behavior scenarios cover ambiguity, empty catalog, unavailable
     "new-live-catalog-model",
     "direct-cloud-no-media-model",
     "direct-cloud-missing-delivery-capability",
-    "host-declared-image2-api",
+    "skill-defined-image2-api",
     "workbuddy-explicit-host-model",
     "host-native-model-not-verified-for-media",
     "mcp-unavailable",
@@ -225,7 +228,7 @@ test("media Skill behavior scenarios cover ambiguity, empty catalog, unavailable
   assert.equal(scenarios.find((scenario) => scenario.id === "direct-cloud-multiple-image-content")?.expected, "retrieve_zero_based_content_indexes_in_declared_order");
   assert.equal(scenarios.find((scenario) => scenario.id === "direct-cloud-no-media-model")?.expected, "report_api_key_catalog_scope_without_desktop_group_instructions");
   assert.equal(scenarios.find((scenario) => scenario.id === "direct-cloud-missing-delivery-capability")?.expected, "report_missing_delivery_capability_without_submission");
-  assert.equal(scenarios.find((scenario) => scenario.id === "host-declared-image2-api")?.expected, "call_the_host_declared_images_api_once_with_its_required_image2_model_without_mcp_or_direct_cloud_fallback");
+  assert.equal(scenarios.find((scenario) => scenario.id === "skill-defined-image2-api")?.expected, "call_the_puretokens_connection_images_api_once_at_the_puretokens_user_endpoint_with_gpt_image_2_without_mcp_or_direct_cloud_fallback");
   assert.equal(scenarios.find((scenario) => scenario.id === "new-live-catalog-model")?.expected, "use_the_exact_catalog_model_with_its_declared_capability_without_waiting_for_a_skill_release");
   assert.equal(scenarios.find((scenario) => scenario.id === "workbuddy-explicit-host-model")?.expected, "preserve_explicit_host_model_choice_without_mcp_reroute_or_duplicate_submission");
   assert.match(scenarios.find((scenario) => scenario.id === "host-native-model-not-verified-for-media")?.expected || "", /do_not_treat_host_model_configuration_as_media_execution/);

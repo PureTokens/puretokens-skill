@@ -6,7 +6,7 @@
 
 ## Unreleased
 
-- Fixed CC Switch/Codex image routing when an active host instruction declares an authenticated Image-2 Images API: image requests now execute that mandated `gpt-image-2` route directly, without requiring `puretokens-image` MCP or `PURETOKENS_API_KEY`, and never fall back to MCP or Direct Cloud after that API path fails.
+- Corrected the Codex/CC Switch Image-2 route to the user-facing Pure Tokens connection: default and explicit `gpt-image-2` / `image2` calls use `POST https://api.puretokensx.com/v1/images/generations` with `model: "gpt-image-2"`. The Skill never calls an upstream URL, never depends on a global host instruction or MCP, and never falls back to MCP or Direct Cloud after an API-path failure.
 - Fixed the `gpt-image-2` MCP branch: its generation call now terminates on native image content, so WorkBuddy does not make a spurious `puretokens_image_result` poll after a completed Image-2 response.
 - Rebuilt the bilingual README media catalog from the global base model catalog rather than a local routing cache or an API-key-scoped response. `npm run docs:sync-media-models-from-base-catalog` accepts only explicit image/video capabilities, carries every configured model ID into the published list, and `GET /v1/media/models` remains the execution-time authorization check.
 

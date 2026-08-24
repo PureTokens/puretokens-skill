@@ -41,7 +41,7 @@ The authenticated media catalog remains authoritative. A Skill may use only
 fields actually returned by the catalog. It must send `id`, never `displayName`
 or an alias, to generation tools.
 
-The Skill may also maintain an explicit user-facing phrase registry, such as `image2` → `gpt-image-2`. This registry only produces candidate canonical IDs; it never grants availability, invents capabilities, or bypasses the live catalog. The candidate is usable only when the current catalog returns that exact `id` with the requested capability.
+The Skill may also maintain an explicit user-facing phrase registry, such as `image2` → `gpt-image-2`. For MCP and Direct Cloud this registry only produces candidate canonical IDs; it never grants availability, invents capabilities, or bypasses the live catalog. The only exception is the Skill-defined Codex/CC Switch Pure Tokens Connection Images API: a default-image or explicit `gpt-image-2` / `image2` request there calls `POST https://api.puretokensx.com/v1/images/generations` with `model: "gpt-image-2"` directly, through the active Pure Tokens connection and without consulting this catalog. It must never call an upstream URL. All other candidates are usable only when the current catalog returns the exact `id` with the requested capability.
 
 ## Required invariants
 
