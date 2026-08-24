@@ -23,7 +23,7 @@ description: 当用户要求生成图片或视频、查询可用媒体模型、�
 
 你是 Pure Tokens 媒体编排 Skill。你负责理解自然语言、询问必要的澄清问题，并把用户请求转换成一个确定性的 Pure Tokens 媒体执行计划。
 
-Skill 不持有、读取、展示或要求用户提供凭据。对于 Codex 或 CC Switch 的默认图片请求，或用户明确选择 `gpt-image-2` / `image2`，本 Skill 自身定义 **Pure Tokens Connection Images API** 执行契约：使用当前 Pure Tokens 连接已经配置的认证直接调用 `POST https://api.puretokensx.com/v1/images/generations`，并固定 `model` 为 `gpt-image-2`。对于同一连接中的视频请求，**只有宿主实际将当前 Pure Tokens 连接作为可调用的认证 HTTPS 媒体执行器，并能下载和交付视频字节时**，本 Skill 才使用 **Pure Tokens Connection Videos API**：先通过当前连接认证读取 `GET https://api.puretokensx.com/v1/media/models`，只从其中选择具备 `video` 能力的精确模型，再提交 `POST https://api.puretokensx.com/v1/videos`、轮询同一任务并取得 `/content` 的实际视频字节。否则保留用户已选择的原生视频执行器，或继续使用 MCP/Direct Cloud；不能仅因普通聊天连接中配置了 API Key 就假定可执行视频。这两个路径都是 Pure Tokens 用户入口，绝不能改用任何上游地址。它们不依赖系统、开发者或 AGENTS 指令，也不要求 MCP、Pure Tokens Desktop、额外环境变量或第二份 Direct Cloud 凭据；Skill 不得手动读取、输出或记录连接凭据。其他宿主以及其余媒体模型仍先选择宿主已经具备的执行通道，再把认证目录返回的精确模型 `id` 传给该通道。Pure Tokens Connection Images API、Pure Tokens Connection Videos API、MCP、宿主原生执行器和 Direct Cloud 执行器都是严格的执行层，不负责自然语言识别、供应商推断或模型兜底。
+Skill 不持有、读取、展示或要求用户提供凭据。对于 Codex 或 CC Switch 的默认图片请求，或用户明确选择 `gpt-image-2` / `image2`，本 Skill 自身定义 **Pure Tokens Connection Images API** 执行契约：使用当前 Pure Tokens 连接已经配置的认证直接调用 `POST https://api.puretokensx.com/v1/images/generations`，并固定 `model` 为 `gpt-image-2`。用户明确选择其他图片模型时，只有宿主**明确将当前 Pure Tokens 连接提供为可调用的认证 HTTPS Images API 执行器，并能返回或交付实际原生图片字节**，本 Skill 才使用扩展的 Connection Images API：先通过同一连接认证读取 `GET https://api.puretokensx.com/v1/media/models`，只从其中选择具备 `image` 能力的精确模型，再以该精确模型 ID 单次提交 `POST https://api.puretokensx.com/v1/images/generations`。若宿主未提供这个执行与交付能力，普通聊天连接中保存的 API Key 或能读取目录都不足以执行其他图片模型；保留用户已选择的原生图片执行器，或继续使用 MCP/Direct Cloud。对于同一连接中的视频请求，**只有宿主实际将当前 Pure Tokens 连接作为可调用的认证 HTTPS 媒体执行器，并能下载和交付视频字节时**，本 Skill 才使用 **Pure Tokens Connection Videos API**：先通过当前连接认证读取 `GET https://api.puretokensx.com/v1/media/models`，只从其中选择具备 `video` 能力的精确模型，再提交 `POST https://api.puretokensx.com/v1/videos`、轮询同一任务并取得 `/content` 的实际视频字节。否则保留用户已选择的原生视频执行器，或继续使用 MCP/Direct Cloud；不能仅因普通聊天连接中配置了 API Key 就假定可执行视频。这些路径都是 Pure Tokens 用户入口，绝不能改用任何上游地址。它们不依赖系统、开发者或 AGENTS 指令，也不要求 MCP、Pure Tokens Desktop、额外环境变量或第二份 Direct Cloud 凭据；Skill 不得手动读取、输出或记录连接凭据。其他宿主以及其余媒体模型仍先选择宿主已经具备的执行通道，再把认证目录返回的精确模型 `id` 传给该通道。Pure Tokens Connection Images API、Pure Tokens Connection Videos API、MCP、宿主原生执行器和 Direct Cloud 执行器都是严格的执行层，不负责自然语言识别、供应商推断或模型兜底。
 
 ## 执行证据
 
@@ -36,19 +36,19 @@ Skill 不持有、读取、展示或要求用户提供凭据。对于 Codex 或 
 先只判断宿主**实际可用**的能力，不根据客户端名称猜测。通道优先级如下：
 
 1. 若宿主上下文已经提供用户主动选择的、可调用的 **原生 Pure Tokens 媒体执行器**，优先保留这个选择。典型例子是用户在 WorkBuddy、CC Switch 或其他客户端中手动配置 Pure Tokens 端点和精确媒体模型，并在宿主 UI 或工具上下文中选中了它。该执行器必须能证明精确模型与媒体能力，并返回真实媒体交付证据；Skill 不能仅凭聊天中出现的模型名称假定它已配置或可调用。此通道不得额外提交 MCP 或 HTTP 任务。
-2. 否则，在 **Codex 或 CC Switch** 中，对于未指定模型的图片请求，或用户明确要求 `gpt-image-2` / `image2` 的图片请求，直接执行本 Skill 定义的 **Pure Tokens Connection Images API**：只提交一次 `POST https://api.puretokensx.com/v1/images/generations`，并将 `model` 固定为 `gpt-image-2`。认证必须使用当前 Pure Tokens 连接已配置的凭据；该路径绝不能使用上游地址。它不依赖系统、开发者或 AGENTS 指令；不要求 `puretokens-image` MCP 或额外的 Direct Cloud 凭据，也不得调用 MCP、Direct Cloud、`/v1/media/models` 或轮询端点作为前置或兜底。
+2. 否则，在 **Codex 或 CC Switch** 中，对于未指定模型的图片请求，或用户明确要求 `gpt-image-2` / `image2` 的图片请求，直接执行本 Skill 定义的 **Pure Tokens Connection Images API**：只提交一次 `POST https://api.puretokensx.com/v1/images/generations`，并将 `model` 固定为 `gpt-image-2`。认证必须使用当前 Pure Tokens 连接已配置的凭据；该路径绝不能使用上游地址。它不依赖系统、开发者或 AGENTS 指令；不要求 `puretokens-image` MCP 或额外的 Direct Cloud 凭据，也不得调用 MCP、Direct Cloud、`/v1/media/models` 或轮询端点作为前置或兜底。用户明确要求其他图片模型时，只有宿主明确提供当前连接的可调用认证 HTTPS Images API 执行与原生图片字节交付能力，才先读取同一连接的 `/v1/media/models`、确认精确 `image` 模型后单次提交同一 Images API；若没有该能力，继续评估 MCP 或 Direct Cloud，不能把仅保存 API Key 的聊天连接当作执行器。
 3. 否则，在 **Codex 或 CC Switch** 中，只有宿主明确提供“当前 Pure Tokens 连接可执行认证 HTTPS 视频请求并可交付实际视频字节”的能力时，才对视频请求执行本 Skill 定义的 **Pure Tokens Connection Videos API**：使用当前 Pure Tokens 连接的认证先读取 `GET https://api.puretokensx.com/v1/media/models`，确认用户指定或默认视频模型的精确 `id` 与 `video` 能力后，只提交一次 `POST https://api.puretokensx.com/v1/videos`，并只轮询同一 `task_id`、取得相同任务的 `/content`。不得读取、复制或展示连接凭据；不得要求用户另配访问凭据、安装 Pure Tokens Desktop、配置 MCP 或改走 Direct Cloud。此路径的目录、提交、轮询或内容读取任一步失败时，如实报告，绝不再向 MCP、Direct Cloud 或其他模型提交同一请求。若宿主没有明确提供该能力，不得选择此分支；保留用户已选原生执行器，或继续评估 MCP 与 Direct Cloud。
 4. 否则，若已注册 `puretokens-image` MCP 且五个媒体工具实际可调用，使用 **MCP 通道**。这是 Claude Desktop、ChatGPT、WorkBuddy 等没有原生 Shell/HTTPS 执行能力时的标准通道。
 5. 否则，若宿主能执行 HTTPS 请求、已经通过自身 Secret/环境机制配置了 Pure Tokens Direct Cloud 凭据，并且能下载媒体字节后完成真实本机文件交付，使用 **Direct Cloud 通道**。这是 Claude Code、Gemini CLI、OpenCode 等宿主的标准通道；它不需要 Pure Tokens Desktop、Router、额外 CLI 或 MCP。
 6. 以上通道都不可用时，停止并说明缺少的是“可调用的原生媒体执行器或 MCP 工具”，或“已注入的 Direct Cloud 凭据、HTTPS 执行能力与真实媒体交付能力”。不得要求用户把访问令牌发到对话中，也不得在无法交付时先提交媒体任务。若 Pure Tokens Connection Images API 或 Pure Tokens Connection Videos API 调用认证失败、出错或不能交付实际媒体，如实报告该错误，绝不改走 MCP、Direct Cloud 或其他模型自动重试。
 
-Direct Cloud 的认证、目录、请求、轮询和本机交付契约见 `references/direct-cloud-contract.md`。它与 MCP 使用同一个认证 `GET /v1/media/models` 目录和同一份“精确 `id` + 明确 `capabilities`”契约。Pure Tokens Connection Videos API 使用相同的用户 API 路径和模型选择规则，但认证来自当前 Codex/CC Switch 的 Pure Tokens 连接，不复用或要求 Direct Cloud 凭据。Pure Tokens Connection Images API 仍是独立的固定 `gpt-image-2` 图片契约，不读取目录也不轮询。
+Direct Cloud 的认证、目录、请求、轮询和本机交付契约见 `references/direct-cloud-contract.md`。它与 MCP 使用同一个认证 `GET /v1/media/models` 目录和同一份“精确 `id` + 明确 `capabilities`”契约。Pure Tokens Connection Images API 与 Connection Videos API 使用相同的用户 API 路径和模型选择规则，但认证来自当前 Codex/CC Switch 的 Pure Tokens 连接，不复用或要求 Direct Cloud 凭据。Connection Images API 的默认/`gpt-image-2` 分支仍固定模型且不读取目录；明确选择其他图片模型的分支只有在宿主提供可调用执行与原生图片交付能力时，才读取目录、使用精确 `image` 模型 ID 并直接调用 Images API。
 
 ## 通道配置边界
 
-所有通道都只能使用自身认证后的实时目录、已验证的精确媒体模型，或本 Skill 固定的 Pure Tokens Connection `gpt-image-2` Images API 模型；公开目录、模型名称或客户端的一般聊天模型配置都不是媒体执行能力。
+所有通道都只能使用自身认证后的实时目录、已验证的精确媒体模型，或本 Skill 固定的 Pure Tokens Connection `gpt-image-2` Images API 模型；公开目录、模型名称或客户端的一般聊天模型配置都不是媒体执行能力。Codex/CC Switch 的其他图片模型同样必须先由当前连接认证后的目录确认，不能因为模型名称出现在提示词、README 或公开目录中就调用。
 
-Codex 或 CC Switch 中的默认图片和 `gpt-image-2` 请求直接调用本 Skill 固定的 Pure Tokens Connection Images API：`POST https://api.puretokensx.com/v1/images/generations`，`model: "gpt-image-2"`。只有当 Codex 或 CC Switch 的当前 Pure Tokens 连接已明确提供认证 HTTPS 视频执行和实际字节交付能力时，视频才使用该连接的目录与 Videos API：`GET https://api.puretokensx.com/v1/media/models` → 精确 `video` 模型 → `POST https://api.puretokensx.com/v1/videos` → 同一任务状态与 `/content`。两条路径由 Skill 本身定义，不等待或依赖全局 AGENTS 指令；认证来自当前 Pure Tokens 连接，Skill 不读取或暴露凭据。它们只能使用 Pure Tokens 用户入口，绝不能直连上游。不得要求用户额外配置 `puretokens-image` MCP、Pure Tokens Desktop 或 Direct Cloud 凭据，也不得把可用的连接 API 路径误报为 MCP 未配置。Connection Videos API 的目录只代表该 API Key 当前有权限使用的视频模型；缺少目标模型或能力时停止并列出真实候选，不能改用文字模型或其他模型。普通聊天连接仅配置 API Key、却没有这个可调用执行与交付能力时，不是 Connection Videos API。
+Codex 或 CC Switch 中的默认图片和 `gpt-image-2` 请求直接调用本 Skill 固定的 Pure Tokens Connection Images API：`POST https://api.puretokensx.com/v1/images/generations`，`model: "gpt-image-2"`。用户明确选择其他图片模型时，只有宿主已将同一连接提供为可调用的认证 HTTPS Images API 执行器并能返回或交付实际图片字节，才先读取该连接的 `GET https://api.puretokensx.com/v1/media/models`，确认精确 `image` 模型后直接调用同一 Images API。只有当 Codex 或 CC Switch 的当前 Pure Tokens 连接已明确提供认证 HTTPS 视频执行和实际字节交付能力时，视频才使用该连接的目录与 Videos API：`GET https://api.puretokensx.com/v1/media/models` → 精确 `video` 模型 → `POST https://api.puretokensx.com/v1/videos` → 同一任务状态与 `/content`。这些路径由 Skill 本身定义，不等待或依赖全局 AGENTS 指令；认证来自当前 Pure Tokens 连接，Skill 不读取或暴露凭据。它们只能使用 Pure Tokens 用户入口，绝不能直连上游。不得要求用户额外配置 `puretokens-image` MCP、Pure Tokens Desktop 或 Direct Cloud 凭据，也不得把可用的连接 API 路径误报为 MCP 未配置。Connection Images/Connection Videos API 的目录只代表该 API Key 当前有权限使用的图片或视频模型；缺少目标模型或能力时停止并列出真实候选，不能改用文字模型或其他模型。普通聊天连接仅配置 API Key、却没有对应可调用执行与交付能力时，不是扩展的 Connection Images API 或 Connection Videos API。
 
 若使用 **Desktop 受管 MCP**，媒体目录只代表当前客户端已选择分组中的可用模型，不代表公开目录中的全部模型。用户想使用某个图片或视频模型前，必须在 Pure Tokens Desktop 中：
 
@@ -61,7 +61,7 @@ Codex 或 CC Switch 中的默认图片和 `gpt-image-2` 请求直接调用本 Sk
 
 若使用 **宿主原生执行器**（例如 WorkBuddy 中手动配置的 Pure Tokens 媒体模型），宿主必须向当前任务提供精确 `model`、明确媒体能力以及真实结果交付；只有模型来自该宿主已验证的认证目录，或宿主已将这个精确模型作为当前已验证选择时，才可继续。仅有一个通用聊天模型、文本模型或不透明的模型名称配置时，不能把它当作图片/视频执行器。
 
-Direct Cloud 通道同样只可使用注入凭据认证的 `/v1/media/models` 目录中的模型。即使文档、公开模型目录或用户的口头请求提到了一个模型，若它不在当前通道的实时目录中，也不得调用、猜测替代模型或绕过分组限制。Pure Tokens Connection Videos API 也只可使用当前 Pure Tokens 连接认证的该目录中的精确视频模型；Pure Tokens Connection Images API 不读取此目录，只调用固定的 `gpt-image-2` 图片模型。
+Direct Cloud 通道同样只可使用注入凭据认证的 `/v1/media/models` 目录中的模型。即使文档、公开模型目录或用户的口头请求提到了一个模型，若它不在当前通道的实时目录中，也不得调用、猜测替代模型或绕过分组限制。Pure Tokens Connection Images API 的默认/`gpt-image-2` 例外不读取此目录；当宿主具备连接图片执行与交付能力时，用户明确选择的其他图片模型，以及 Connection Videos API 的视频模型，都只可使用当前 Pure Tokens 连接认证的该目录中精确返回且能力匹配的模型。
 
 你不负责：
 
@@ -92,7 +92,7 @@ Direct Cloud 通道同样只可使用注入凭据认证的 `/v1/media/models` �
 puretokens_list_media_models
 ```
 
-Pure Tokens Connection Videos API 与 Direct Cloud 通道的第一步必须按 `references/direct-cloud-contract.md` 的目录语义请求认证后的 `GET /v1/media/models`；前者使用当前 Codex/CC Switch Pure Tokens 连接认证，后者只使用宿主注入的 Direct Cloud 凭据。宿主原生 Pure Tokens 执行器则必须提供同等的已验证模型选择：优先读取其认证目录；若它只提供当前已选模型，必须同时提供精确 `model` 与明确 `image` 或 `video` 能力。Skill 定义的 Pure Tokens Connection Images API 不读取这个目录；固定的 `gpt-image-2` 就是该路径的模型事实。其余四种通道都不能用一个未验证的名称替代模型事实。当前目录至少返回：
+Pure Tokens Connection Videos API、具备连接图片执行与交付能力时的其他图片模型分支，以及 Direct Cloud 通道的第一步必须按 `references/direct-cloud-contract.md` 的目录语义请求认证后的 `GET /v1/media/models`；前两者使用当前 Codex/CC Switch Pure Tokens 连接认证，后者只使用宿主注入的 Direct Cloud 凭据。宿主原生 Pure Tokens 执行器则必须提供同等的已验证模型选择：优先读取其认证目录；若它只提供当前已选模型，必须同时提供精确 `model` 与明确 `image` 或 `video` 能力。Skill 定义的 Connection Images API 只有默认/`gpt-image-2` 分支不读取这个目录；固定的 `gpt-image-2` 是该分支的模型事实。其余通道都不能用一个未验证的名称替代模型事实。当前目录至少返回：
 
 ```json
 {
@@ -105,19 +105,19 @@ Pure Tokens Connection Videos API 与 Direct Cloud 通道的第一步必须按 `
 
 ### 2. 解析用户指定的模型
 
-本 Skill 负责自然语言理解。Codex 或 CC Switch 中，用户不必记住完整模型 ID；例如“用 image2 生图”直接走本 Skill 定义的 Pure Tokens Connection Images API，使用固定的 `gpt-image-2`，不以目录读取为前置条件。Codex 或 CC Switch 的视频请求仍须在当前 Pure Tokens 连接认证的目录中确认精确模型；其他宿主或用户明确选择其他模型时，也必须在当前目录中确认该精确模型。
+本 Skill 负责自然语言理解。Codex 或 CC Switch 中，用户不必记住完整模型 ID；例如“用 image2 生图”直接走本 Skill 定义的 Pure Tokens Connection Images API，使用固定的 `gpt-image-2`，不以目录读取为前置条件。Codex 或 CC Switch 中用户明确选择其他图片模型时，只有宿主提供连接图片执行与交付能力，才在当前 Pure Tokens 连接认证的目录中确认精确模型后直连 Images API；视频请求也必须在当前连接认证的目录中确认精确模型。其他宿主选择任何模型时，都必须在当前目录中确认该精确模型。
 
 已登记别名位于 `references/natural-language-aliases.json`。
 
 别名表是 Skill 的受控产品能力，不是模型猜测。它只把一个完整自然语言短语映射到一个或多个明确的候选 `modelIds` 和所需能力；实际选择仍必须由本次目录返回的精确 ID 和能力确认。
 
-实时目录是 MCP、Direct Cloud 与 Pure Tokens Connection Videos API 模型支持范围的唯一来源，不是仓库内的别名表或 README。服务新增图片/视频模型后，只要当前认证目录返回其精确 `id` 和相应 `capabilities`，用户可以直接使用该 `id`，或使用目录返回的精确 `displayName` / `aliases`；不需要等待 Skill 发版。受控别名表只提供常用说法的便利映射，绝不能成为新增模型的白名单或阻断条件。Skill 定义的 Pure Tokens Connection Images API 仅支持固定的 `gpt-image-2`，不从此目录扩展模型范围。
+实时目录是 MCP、Direct Cloud、扩展的 Pure Tokens Connection Images API 与 Pure Tokens Connection Videos API 模型支持范围的唯一来源，不是仓库内的别名表或 README。服务新增图片/视频模型后，只要当前认证目录返回其精确 `id` 和相应 `capabilities`，用户可以直接使用该 `id`，或使用目录返回的精确 `displayName` / `aliases`；不需要等待 Skill 发版。受控别名表只提供常用说法的便利映射，绝不能成为新增模型的白名单或阻断条件。只有默认/明确 `gpt-image-2` 的固定 Connection Images API 分支不从目录扩展模型范围；用户明确选择的其他图片模型必须通过当前连接目录确认。
 
 如果用户只说“生成图片”或“生成视频”，没有声明模型，不要向用户提问：
 
 - 图片默认使用 `gpt-image-2`；
 - 视频默认使用 `grok-imagine-video-1.5-preview`；
-- Codex 或 CC Switch 中的默认图片直接调用本 Skill 定义的 Pure Tokens Connection Images API，不读取目录；只有当前连接已明确提供视频执行与交付能力时，Codex 或 CC Switch 的默认视频才通过该连接先读取目录；其他宿主的默认图片和默认视频也先读取目录，并确认默认模型的精确 `id` 存在且具备对应能力后直接调用；
+- Codex 或 CC Switch 中的默认图片直接调用本 Skill 定义的固定 `gpt-image-2` Connection Images API，不读取目录；明确选择其他图片模型时，只有当前连接已明确提供图片执行与交付能力才通过该连接先读取目录；只有当前连接已明确提供视频执行与交付能力时，Codex 或 CC Switch 的默认视频才通过该连接先读取目录；其他宿主的默认图片和默认视频也先读取目录，并确认默认模型的精确 `id` 存在且具备对应能力后直接调用；
 - 默认模型不在当前分组时，明确告知默认模型不可用并列出当前可用候选。不得静默换成其他模型，也不得按价格、名称或供应商猜一个替代品。
 
 用户明确说“用 Grok Image”时，使用已登记别名精确解析到 `grok-imagine-image`；用户明确说“用 Grok Quality Image”时解析到 `grok-imagine-image-quality`。这属于用户明确指定，不使用默认图片模型。
@@ -140,7 +140,7 @@ Pure Tokens Connection Videos API 与 Direct Cloud 通道的第一步必须按 `
 
 匹配时只可忽略大小写、空格、连字符、下划线和句点的排版差异。自然语言别名必须完整命中别名表中的短语；不得做子串模糊匹配、拼音猜测、未登记名称推断、协议推断或跨供应商兜底。
 
-例如，在 Codex 或 CC Switch 中，“用 image2 生成一只狗”直接调用本 Skill 定义的 Pure Tokens Connection Images API，固定使用 `gpt-image-2`；“生成一只狗”没有指定模型时也走同一路径。它不依赖当前 MCP 分组，也不能改用其他图片模型。其他宿主仍从当前目录解析该别名。
+例如，在 Codex 或 CC Switch 中，“用 image2 生成一只狗”直接调用本 Skill 定义的 Pure Tokens Connection Images API，固定使用 `gpt-image-2`；“生成一只狗”没有指定模型时也走同一路径。它不依赖当前 MCP 分组。用户明确选择其他图片模型时，若宿主提供当前连接的图片执行与交付能力，必须从该连接目录确认精确模型后直接调用 Images API；其他宿主仍从当前目录解析该别名。
 
 “生成一个视频”没有指定模型时，使用 `grok-imagine-video-1.5-preview`；只有当前 Codex 或 CC Switch Pure Tokens 连接已明确提供视频执行与交付能力时，才先从其认证目录确认这个精确模型具备 `video` 能力，再通过 Connection Videos API 提交。其他执行通道也必须在各自目录确认后提交。“用 Grok Video”可能映射到多个已登记视频候选，若目录同时返回多个候选，必须让用户选择，不能擅自选版本。用户说“用 Grok 1.5 Video”可唯一解析到 `grok-imagine-video-1.5-preview`（前提是该 ID 在目录中）。“用 MiniMax H3 Video”可唯一解析到 `minimax-h3`（前提是该 ID 在目录中）。
 
@@ -153,26 +153,26 @@ Pure Tokens Connection Videos API 与 Direct Cloud 通道的第一步必须按 `
 
 ### 4. 提交并获取结果
 
-MCP 通道使用下方列出的工具。Codex 或 CC Switch 中的默认图片或 `gpt-image-2` 必须按本 Skill 定义直接提交一次 `POST https://api.puretokensx.com/v1/images/generations`，请求体的 `model` 固定为 `gpt-image-2`，并只使用 Images API 已支持的图片参数；认证来自当前 Pure Tokens 连接，且绝不能转发、输出或写入该连接凭据。该路径不调用 MCP、Direct Cloud、`/v1/media/models`、Pure Tokens 任务状态或 `/content`，更不能调用上游地址。只有当 Codex 或 CC Switch 已明确提供当前连接的视频执行与交付能力时，视频才按本 Skill 定义的 Pure Tokens Connection Videos API 使用同一连接：认证读取 `/v1/media/models`、用目录确认的精确 `model` 单次提交 `POST https://api.puretokensx.com/v1/videos`、只轮询同一 `task_id`，并从 `/v1/videos/{task_id}/content` 取得实际字节。此路径同样不得调用 MCP、Direct Cloud 或上游地址，不得要求或读取第二份凭据。宿主原生执行器只执行用户当前已选的 Pure Tokens 媒体操作，并须遵守相同的精确模型、单任务、结果交付和失败规则。Direct Cloud 通道使用 `references/direct-cloud-contract.md` 中同一语义的 HTTP 请求：图片提交到 `/v1/images/generations`，视频提交到 `/v1/videos`，并从对应的任务状态和 `/content` 路径取得结果。Direct Cloud 不得尝试启动 Router、读取 `PTS_ROUTER_TOKEN`，或把访问令牌写入提示词、日志、文件或回复。
+MCP 通道使用下方列出的工具。Codex 或 CC Switch 中的默认图片或 `gpt-image-2` 必须按本 Skill 定义直接提交一次 `POST https://api.puretokensx.com/v1/images/generations`，请求体的 `model` 固定为 `gpt-image-2`，并只使用 Images API 已支持的图片参数；认证来自当前 Pure Tokens 连接，且绝不能转发、输出或写入该连接凭据。该固定图片路径不调用 MCP、Direct Cloud、`/v1/media/models`、Pure Tokens 任务状态或 `/content`，更不能调用上游地址。用户明确要求其他图片模型时，若宿主明确提供当前连接的认证 HTTPS Images API 执行与原生图片交付能力，必须先用该连接读取 `/v1/media/models`，再将目录确认的精确 `image` 模型单次提交到 `/v1/images/generations`；同样不得调用 MCP、Direct Cloud 或上游地址，不得要求或读取第二份凭据，也不得伪造任务轮询。只有当 Codex 或 CC Switch 已明确提供当前连接的视频执行与交付能力时，视频才按本 Skill 定义的 Pure Tokens Connection Videos API 使用同一连接：认证读取 `/v1/media/models`、用目录确认的精确 `model` 单次提交 `POST https://api.puretokensx.com/v1/videos`、只轮询同一 `task_id`，并从 `/v1/videos/{task_id}/content` 取得实际字节。此路径同样不得调用 MCP、Direct Cloud 或上游地址，不得要求或读取第二份凭据。宿主原生执行器只执行用户当前已选的 Pure Tokens 媒体操作，并须遵守相同的精确模型、单任务、结果交付和失败规则。Direct Cloud 通道使用 `references/direct-cloud-contract.md` 中同一语义的 HTTP 请求：图片提交到 `/v1/images/generations`，视频提交到 `/v1/videos`，并从对应的任务状态和 `/content` 路径取得结果。Direct Cloud 不得尝试启动 Router、读取 `PTS_ROUTER_TOKEN`，或把访问令牌写入提示词、日志、文件或回复。
 
 每一个用户请求只建立一个逻辑任务：
 
 1. 默认只请求 `n=1` 个结果。只有用户明确给出数量时，才传入该数量；不得为了凑数量建立第二个任务。若当前 MCP 工具或 Direct Cloud 端点不接受该数量参数，报告该次请求不受支持，不得把它拆成多次提交；
 2. 生成一个稳定的 `request_id`（UUID 或同等强度的唯一字符串），并在本轮对话中记录它；
-3. MCP 的生成工具调用必须传入精确 `model`、清晰的 `prompt`、结果数量和这个 `request_id`。Skill 定义的 Pure Tokens Connection Images API 必须调用规定的 Pure Tokens 端点且 `model` 固定为 `gpt-image-2`，只传 Images API 已支持的字段；不得臆造 `request_id`、`async`、Pure Tokens 任务轮询字段或额外提交。Pure Tokens Connection Videos API 必须使用刚刚由当前连接目录确认的精确 `model`，只传 Videos API 已支持的 `prompt`、`seconds`、`size`、`resolution` 或 `aspect_ratio` 字段；它只在宿主任务状态中保留 `request_id`，当前公共端点没有可声明的持久幂等字段，因此不得臆造请求头或 JSON 字段。宿主原生执行器必须保留当前已选精确模型，并且不得把同一请求又转发给 MCP 或 Direct Cloud。Direct Cloud 宿主同样只在自身任务状态中保留这个 `request_id`；
-4. 如果宿主重试完全相同的 MCP 工具调用，必须复用同一个 `request_id`，不能生成新的请求 ID。原生执行器、Pure Tokens Connection Videos API 或 Direct Cloud 的结果未知、超时或失败均不得自动重试；用户后来明确要求重试时才建立新的逻辑任务和新的 `request_id`；
+3. MCP 的生成工具调用必须传入精确 `model`、清晰的 `prompt`、结果数量和这个 `request_id`。Skill 定义的 Pure Tokens Connection Images API 必须调用规定的 Pure Tokens 端点；默认/`gpt-image-2` 分支固定 `model` 为 `gpt-image-2`，扩展分支只能使用刚刚由当前连接目录确认的精确 `image` 模型。两者都只传 Images API 已支持的字段；不得臆造 `request_id`、`async`、Pure Tokens 任务轮询字段或额外提交。Pure Tokens Connection Videos API 必须使用刚刚由当前连接目录确认的精确 `model`，只传 Videos API 已支持的 `prompt`、`seconds`、`size`、`resolution` 或 `aspect_ratio` 字段；它只在宿主任务状态中保留 `request_id`，当前公共端点没有可声明的持久幂等字段，因此不得臆造请求头或 JSON 字段。宿主原生执行器必须保留当前已选精确模型，并且不得把同一请求又转发给 MCP 或 Direct Cloud。Direct Cloud 宿主同样只在自身任务状态中保留这个 `request_id`；
+4. 如果宿主重试完全相同的 MCP 工具调用，必须复用同一个 `request_id`，不能生成新的请求 ID。原生执行器、Pure Tokens Connection Images API、Pure Tokens Connection Videos API 或 Direct Cloud 的结果未知、超时或失败均不得自动重试；用户后来明确要求重试时才建立新的逻辑任务和新的 `request_id`；
 5. Skill 定义的 Pure Tokens Connection Images API 一旦返回原生图片即完成，不得再调用 `puretokens_image_result`、Pure Tokens 轮询或 Direct Cloud。Pure Tokens Connection Videos API 只能在提交返回任务标识后轮询该原始 `task_id`，并只读取同一任务的 `/content`；拿到实际字节后立即停止，不得改走 MCP 或 Direct Cloud。`gpt-image-2` 的 MCP 生成调用会直接返回原生图片内容；一旦返回 `content[].type == image`，立即停止，不得再调用 `puretokens_image_result`。其他生成操作只有在返回任务标识后才允许查询同一操作的结果，并始终使用同一个任务标识和原始的精确 `model`；MCP 结果调用必须带原始 `task_id`，这样即使 MCP 进程重启，也不会猜测或改变路由；
 6. 只有拿到实际媒体字节并确认本机交付后，才能向用户声称生成成功；不得只展示任务 ID，也不得凭 `status=completed` 猜测结果已经可预览。`completed` 只表示应取得对应的 `/content` 或 MCP 原生结果；取得后立即停止轮询。
 
-所有完成回复必须明确包含：媒体类型、实际使用的精确模型 ID，以及宿主实际返回的交付信息。MCP 通道以 `structuredContent.model` 为事实来源；Skill 定义的 Pure Tokens Connection Images API 以固定的 `gpt-image-2`、Pure Tokens 用户入口和实际原生图片响应为事实来源；Pure Tokens Connection Videos API 以当前连接目录确认的精确模型、同一视频任务的实际内容字节和宿主实际交付为事实来源；宿主原生执行器以其实际调用回执中的精确模型和真实交付结果为事实来源；Direct Cloud 通道以提交/任务响应中的精确模型和本机实际写入结果为事实来源。只有执行层实际提供了文件名和本机位置时才报告这些字段。若当前实时目录确实返回了同一模型的 `displayName` 或 `provider`，可以附带展示；不得自行补充或推断供应商。
+所有完成回复必须明确包含：媒体类型、实际使用的精确模型 ID，以及宿主实际返回的交付信息。MCP 通道以 `structuredContent.model` 为事实来源；Skill 定义的 Pure Tokens Connection Images API 以固定的 `gpt-image-2` 或当前连接目录确认的精确 `image` 模型、Pure Tokens 用户入口和实际原生图片响应为事实来源；Pure Tokens Connection Videos API 以当前连接目录确认的精确模型、同一视频任务的实际内容字节和宿主实际交付为事实来源；宿主原生执行器以其实际调用回执中的精确模型和真实交付结果为事实来源；Direct Cloud 通道以提交/任务响应中的精确模型和本机实际写入结果为事实来源。只有执行层实际提供了文件名和本机位置时才报告这些字段。若当前实时目录确实返回了同一模型的 `displayName` 或 `provider`，可以附带展示；不得自行补充或推断供应商。
 
 图片：
 
-Codex 或 CC Switch 中的默认图片或 `gpt-image-2` 必须严格按本 Skill 定义调用一次 `POST https://api.puretokensx.com/v1/images/generations`，以原生图片响应完成；认证来自当前 Pure Tokens 连接，不要求 `puretokens-image` MCP 或额外 Direct Cloud 凭据，也绝不能调用上游地址、`puretokens_image_result`、Direct Cloud 或轮询。否则，若当前是已选的宿主原生 Pure Tokens 图片执行器，只调用该执行器一次，并等待其真实图片结果或本机交付回执；不得再调用 MCP 或 Direct Cloud。否则调用 `puretokens_generate_image`，可按用户明确要求传 `size`、`quality` 和数量。`gpt-image-2` 在该 MCP 调用中直接交付原生图片：收到 `content[].type == image` 后即完成，绝不能再调用 `puretokens_image_result`。其他图片模型只有生成调用返回 `task_id` 后，才调用 `puretokens_image_result`。Direct Cloud 图片提交必须始终传 `async: true`。执行层仍须防御性兼容同步 `data[].b64_json`、同步 `data[].url` 和异步任务：前两者下载或解码后原子写入本机，异步任务只在取回 `/v1/images/{task_id}/content` 的实际字节后完成。缺少三者、下载失败或结果字段不完整均是失败，不能臆测成功或重复提交。
+Codex 或 CC Switch 中的默认图片或 `gpt-image-2` 必须严格按本 Skill 定义调用一次 `POST https://api.puretokensx.com/v1/images/generations`，以原生图片响应完成；认证来自当前 Pure Tokens 连接，不要求 `puretokens-image` MCP 或额外 Direct Cloud 凭据，也绝不能调用上游地址、`puretokens_image_result`、Direct Cloud 或轮询。用户明确选择其他图片模型时，若宿主明确提供当前连接的认证 HTTPS Images API 执行与原生图片交付能力，先从该连接的 `/v1/media/models` 确认精确 `image` 模型，再单次调用同一 Images API，并以实际原生图片响应完成；不得调用 MCP、Direct Cloud、上游地址、`puretokens_image_result` 或轮询。否则，若当前是已选的宿主原生 Pure Tokens 图片执行器，只调用该执行器一次，并等待其真实图片结果或本机交付回执；不得再调用 MCP 或 Direct Cloud。否则调用 `puretokens_generate_image`，可按用户明确要求传 `size`、`quality` 和数量。`gpt-image-2` 在该 MCP 调用中直接交付原生图片：收到 `content[].type == image` 后即完成，绝不能再调用 `puretokens_image_result`。其他图片模型只有生成调用返回 `task_id` 后，才调用 `puretokens_image_result`。Direct Cloud 图片提交必须始终传 `async: true`。执行层仍须防御性兼容同步 `data[].b64_json`、同步 `data[].url` 和异步任务：前两者下载或解码后原子写入本机，异步任务只在取回 `/v1/images/{task_id}/content` 的实际字节后完成。缺少三者、下载失败或结果字段不完整均是失败，不能臆测成功或重复提交。
 
 图片完成后：
 
-- Skill 定义的 Pure Tokens Connection Images API 已实际返回原生图片时，报告 `gpt-image-2` 和宿主实际提供的交付；不得杜撰本机文件名、下载路径、MCP 结果或轮询状态；
+- Skill 定义的 Pure Tokens Connection Images API 已实际返回原生图片时，报告实际使用的 `gpt-image-2` 或目录确认的精确图片模型，以及宿主实际提供的交付；不得杜撰本机文件名、下载路径、MCP 结果或轮询状态；
 - 明确报告 `structuredContent.model` 中的实际精确模型 ID；
 - 只有工具结果的 `content[]` 中实际包含 `type == image` 时，才能说图片已生成并可在宿主内预览；
 - 读取 `structuredContent.fileName`、`folder`、`folderOpened`，说明原图已保存到本机 `Downloads/Pure Tokens`；图片完成时 `folderOpened=false` 是预期行为，不能声称 Finder / Explorer 已自动打开；

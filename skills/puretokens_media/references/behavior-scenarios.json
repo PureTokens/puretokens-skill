@@ -67,6 +67,18 @@
       "forbiddenTools": ["puretokens_list_media_models", "puretokens_generate_image", "puretokens_image_result", "direct_cloud_submission", "automatic_resubmission"]
     },
     {
+      "id": "skill-defined-connection-image-api",
+      "when": "A Codex or CC Switch host explicitly provides the active Pure Tokens connection as a callable authenticated HTTPS Images API executor with native-image byte delivery, and the user explicitly selects a non-gpt-image-2 image model.",
+      "expected": "read_the_active_connection_catalog_then_submit_one_exact_image_model_to_the_puretokens_user_images_endpoint_and_deliver_the_native_image_without_mcp_or_direct_cloud",
+      "forbiddenTools": ["puretokens_generate_image", "puretokens_image_result", "direct_cloud_submission", "automatic_model_switch", "automatic_resubmission"]
+    },
+    {
+      "id": "connection-image-api-not-executable",
+      "when": "A Codex or CC Switch chat connection has a configured API key or can read a catalog but the host does not prove callable authenticated HTTPS Images API execution and native-image delivery for an explicitly selected non-gpt-image-2 image model.",
+      "expected": "preserve_a_user_selected_native_executor_or_continue_to_mcp_or_direct_cloud_without_treating_the_chat_connection_as_an_image_executor",
+      "forbiddenTools": ["unverified_connection_image_submission", "credential_extraction", "automatic_resubmission"]
+    },
+    {
       "id": "skill-defined-connection-video-api",
       "when": "A Codex or CC Switch host explicitly provides the active Pure Tokens connection as a callable authenticated HTTPS video executor with real byte-delivery capability, and the user asks for a video.",
       "expected": "read_the_active_connection_catalog_then_submit_one_exact_video_model_to_the_puretokens_user_videos_endpoint_and_retrieve_the_same_task_content_without_mcp_or_direct_cloud",

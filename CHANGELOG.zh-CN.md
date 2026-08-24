@@ -6,6 +6,7 @@
 
 ## Unreleased
 
+- 新增受保护的 Codex/CC Switch Connection Images API 分支，用于用户明确选择的非 `gpt-image-2` 图片模型：只有宿主明确将当前 Pure Tokens 连接提供为可调用、已认证的 HTTPS Images API 执行器并能交付原生图片时，Skill 才读取该连接的 `/v1/media/models`、确认精确 `image` 模型，并单次提交到 `/v1/images/generations`，不使用 MCP、Direct Cloud 或第二份凭据。仅保存 API Key 或仅能读取目录不构成图片执行能力。
 - 新增物理图片尺寸的 fail-closed 规则：`200cm × 230cm` 等带物理单位的值既不是图片数量，也不是可传入的 `size` 参数；Skill 不提交、不猜测 DPI、不自动换算，并明确列出支持的 `1024x1024`、`1536x1024`、`1024x1536` 画布及可选 `1K`/`2K`/`4K` 输出分辨率。
 - 将 `puretokens_media` 限定为仅支持 Pure Tokens：当前连接、MCP 服务、原生媒体执行器或 Direct Cloud 凭据属于其他服务商、或无法确认归属时，Skill 会 fail-closed，不提交媒体请求，并明确告知用户本 Skill 仅支持 Pure Tokens，同时提供官网 `https://puretokensx.com/`。
 - 新增受保护的 Codex/CC Switch **Pure Tokens Connection Videos API** 路径：只有宿主明确把当前 Pure Tokens 连接提供为可调用、已认证的 HTTPS 视频执行器并可交付实际字节时，Skill 才读取该连接的 `/v1/media/models`，将精确 `video` 模型单次提交至 `/v1/videos`，再轮询并取回同一任务的 `/content`。它复用已配置连接，不要求 Desktop、MCP 或第二份 Direct Cloud 凭据；仅保存 API Key 的聊天连接绝不会被误认为具备视频执行能力。

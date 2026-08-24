@@ -54,6 +54,8 @@ test("media Skill publishes the complete MCP tool contract", async () => {
   assert.equal(manifest.rules.supportsDirectCloudWithoutDesktop, true);
   assert.equal(manifest.rules.supportsSkillDefinedImage2Api, true);
   assert.equal(manifest.rules.supportsSkillDefinedConnectionVideoApi, true);
+  assert.equal(manifest.rules.supportsCatalogVerifiedConnectionImageApi, true);
+  assert.equal(manifest.rules.connectionImageApiRequiresHostExecutionAndDelivery, true);
   assert.equal(manifest.rules.supportsPureTokensOnly, true);
   assert.equal(manifest.rules.nonPureTokensConnectionFailsClosed, true);
   assert.equal(manifest.rules.physicalImageDimensionsFailClosed, true);
@@ -88,6 +90,8 @@ test("media Skill publishes the complete MCP tool contract", async () => {
   assert.match(skillText, /不依赖系统、开发者或 AGENTS 指令/);
   assert.match(skillText, /Codex 或 CC Switch/);
   assert.match(skillText, /不要求 `puretokens-image` MCP 或额外的 Direct Cloud 凭据/);
+  assert.match(skillText, /可调用的认证 HTTPS Images API 执行器/);
+  assert.match(skillText, /能返回或交付实际原生图片字节/);
   assert.match(skillText, /可执行认证 HTTPS 视频请求并可交付实际视频字节/);
   assert.match(skillText, /普通聊天连接仅配置 API Key/);
   assert.match(skillText, /原生 Pure Tokens 媒体执行器/);
@@ -227,6 +231,8 @@ test("media Skill behavior scenarios cover ambiguity, empty catalog, unavailable
     "direct-cloud-no-media-model",
     "direct-cloud-missing-delivery-capability",
     "skill-defined-image2-api",
+    "skill-defined-connection-image-api",
+    "connection-image-api-not-executable",
     "skill-defined-connection-video-api",
     "connection-video-api-not-executable",
     "non-puretokens-provider",
@@ -250,6 +256,8 @@ test("media Skill behavior scenarios cover ambiguity, empty catalog, unavailable
   assert.equal(scenarios.find((scenario) => scenario.id === "direct-cloud-no-media-model")?.expected, "report_api_key_catalog_scope_without_desktop_group_instructions");
   assert.equal(scenarios.find((scenario) => scenario.id === "direct-cloud-missing-delivery-capability")?.expected, "report_missing_delivery_capability_without_submission");
   assert.equal(scenarios.find((scenario) => scenario.id === "skill-defined-image2-api")?.expected, "call_the_puretokens_connection_images_api_once_at_the_puretokens_user_endpoint_with_gpt_image_2_without_mcp_or_direct_cloud_fallback");
+  assert.equal(scenarios.find((scenario) => scenario.id === "skill-defined-connection-image-api")?.expected, "read_the_active_connection_catalog_then_submit_one_exact_image_model_to_the_puretokens_user_images_endpoint_and_deliver_the_native_image_without_mcp_or_direct_cloud");
+  assert.match(scenarios.find((scenario) => scenario.id === "connection-image-api-not-executable")?.expected || "", /continue_to_mcp_or_direct_cloud/);
   assert.equal(scenarios.find((scenario) => scenario.id === "skill-defined-connection-video-api")?.expected, "read_the_active_connection_catalog_then_submit_one_exact_video_model_to_the_puretokens_user_videos_endpoint_and_retrieve_the_same_task_content_without_mcp_or_direct_cloud");
   assert.match(scenarios.find((scenario) => scenario.id === "connection-video-api-not-executable")?.expected || "", /preserve_a_user_selected_native_executor_or_continue_to_mcp_or_direct_cloud/);
   assert.equal(scenarios.find((scenario) => scenario.id === "non-puretokens-provider")?.expected, "stop_without_submitting_and_tell_the_user_that_this_skill_supports_only_pure_tokens_with_https_puretokensx_com");
