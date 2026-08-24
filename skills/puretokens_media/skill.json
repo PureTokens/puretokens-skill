@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "name": "puretokens_media",
-  "version": "0.4.16",
+  "version": "0.4.17",
   "entry": "SKILL.md",
-  "displayName": "Pure Tokens Media",
-  "description": "Resolve and handle a Pure Tokens image or video request.",
+  "displayName": "Pure Tokens Media & Balance",
+  "description": "Resolve a Pure Tokens balance, image, or video request without exposing credentials.",
   "mcp": {
     "server": "puretokens-image",
     "tools": [
@@ -80,6 +80,11 @@
     "completedMediaReportsLocalDelivery": true,
     "completedVideoUsesBoundedNativeResource": true,
     "supportsDirectCloudWithoutDesktop": true,
+    "supportsHostExposedReadOnlyBalanceQuery": true,
+    "balanceQueryDoesNotUseMediaMcp": true,
+    "balanceQueryNeverEstimatesOrConvertsBalance": true,
+    "balanceQueryRequiresHostExposedCapability": true,
+    "balanceQueryFailureGuidesToCcSwitchUsageQuery": true,
     "supportsSkillDefinedImage2Api": true,
     "supportsSkillDefinedConnectionVideoApi": true,
     "supportsCatalogVerifiedConnectionImageApi": true,

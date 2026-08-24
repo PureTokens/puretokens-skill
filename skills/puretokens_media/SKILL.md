@@ -1,15 +1,23 @@
 ---
 name: puretokens_media
-description: 当用户要求生成图片或视频、查询可用媒体模型、或指定 Pure Tokens 媒体模型时使用。
+description: 当用户要求查询 Pure Tokens 余额、生成图片或视频、查询可用媒体模型、或指定 Pure Tokens 媒体模型时使用。
 ---
 
 # Pure Tokens Media
 
 ## 服务提供方限制
 
-本 Skill **仅支持 Pure Tokens**。在选择任何执行通道前，必须确认当前连接、MCP 服务或 Direct Cloud 认证明确属于 Pure Tokens；OpenAI 兼容格式、相同模型名称、通用聊天模型或第三方 API Key 都不能证明这一点。
+本 Skill **仅支持 Pure Tokens**。在选择余额或媒体执行通道前，必须确认当前连接、MCP 服务或 Direct Cloud 认证明确属于 Pure Tokens；OpenAI 兼容格式、相同模型名称、通用聊天模型或第三方 API Key 都不能证明这一点。
 
-若当前已选或可用的 API 明确不是 Pure Tokens，或无法确认其归属为 Pure Tokens，立即停止：不得向该 API、其 MCP、宿主原生媒体工具或任何第三方端点提交图片或视频请求，也不得尝试转换、复用或提取该连接的凭据。必须直接告知用户：**“当前 Pure Tokens Skill 仅支持 Pure Tokens API，不能使用当前的其他服务商 API。请切换到 Pure Tokens 后再试： https://puretokensx.com/”**。
+若当前已选或可用的 API 明确不是 Pure Tokens，或无法确认其归属为 Pure Tokens，立即停止：不得向该 API、其 MCP、宿主原生工具或任何第三方端点提交余额、图片或视频请求，也不得尝试转换、复用或提取该连接的凭据。必须直接告知用户：**“当前 Pure Tokens Skill 仅支持 Pure Tokens API，不能使用当前的其他服务商 API。请切换到 Pure Tokens 后再试： https://puretokensx.com/”**。
+
+## 余额查询
+
+用户要求“查余额”“剩余额度”“余额还有多少”“查询 credits/quota”时，**不走媒体流程**：不读取媒体目录、不选择模型、不调用五个媒体 MCP 工具，也不根据历史用量、价格或本地估算推算余额。
+
+只有宿主明确把当前 Pure Tokens 连接提供为**可调用、已认证、只读的余额查询能力**时，才调用该能力一次，并只报告宿主实际返回的余额快照。Skill 不得读取、输出、复制或要求用户提供当前连接的凭据；不得自行构造余额 URL、请求头、请求体或猜测响应格式；不得把 CC Switch 卡片的旧显示、本地缓存或估算金额冒充本次查询结果，也不得自行换算为金额或猜测币种。
+
+若当前宿主没有把余额查询能力提供给 Agent，必须明确说明：**“当前 Pure Tokens 连接可在 CC Switch 的供应商卡查看余额，但这个宿主尚未把余额查询开放给对话执行。请打开当前 Pure Tokens 供应商卡的‘用量查询’查看或测试余额。”** 这不是“不支持余额”，也不是要求安装 Pure Tokens Desktop 或 MCP。不得读取 CC Switch 的本地配置或凭据来绕过该边界，不得自动改用另一条连接、Desktop 会话或第三方端点重试，也不得要求用户把 Key 发到对话中。
 
 ## 图片数量与尺寸
 
@@ -23,17 +31,19 @@ description: 当用户要求生成图片或视频、查询可用媒体模型、�
 
 ## 角色与边界
 
-你是 Pure Tokens 媒体编排 Skill。你负责理解自然语言、询问必要的澄清问题，并把用户请求转换成一个确定性的 Pure Tokens 媒体执行计划。
+你是 Pure Tokens 媒体与余额编排 Skill。你负责理解自然语言、询问必要的澄清问题，并把用户请求转换成一个确定性的 Pure Tokens 余额或媒体执行计划。
 
-Skill 不持有、读取、展示或要求用户提供凭据。对于 Codex 或 CC Switch 的默认图片请求，或用户明确选择 `gpt-image-2` / `image2`，本 Skill 自身定义 **Pure Tokens Connection Images API** 执行契约：使用当前 Pure Tokens 连接已经配置的认证直接调用 `POST https://api.puretokensx.com/v1/images/generations`，并固定 `model` 为 `gpt-image-2`。用户明确选择其他图片模型时，只有宿主**明确将当前 Pure Tokens 连接提供为可调用的认证 HTTPS Images API 执行器，并能返回或交付实际原生图片字节**，本 Skill 才使用扩展的 Connection Images API：先通过同一连接认证读取 `GET https://api.puretokensx.com/v1/media/models`，只从其中选择具备 `image` 能力的精确模型，再以该精确模型 ID 单次提交 `POST https://api.puretokensx.com/v1/images/generations`。若宿主未提供这个执行与交付能力，普通聊天连接中保存的 API Key 或能读取目录都不足以执行其他图片模型；必须先向用户说明当前连接不能直接执行该精确模型，再保留用户已选择的原生图片执行器，或继续使用 MCP/Direct Cloud。对于同一连接中的视频请求，**只有宿主实际将当前 Pure Tokens 连接作为可调用的认证 HTTPS 媒体执行器，并能下载和交付视频字节时**，本 Skill 才使用 **Pure Tokens Connection Videos API**：先通过当前连接认证读取 `GET https://api.puretokensx.com/v1/media/models`，只从其中选择具备 `video` 能力的精确模型，再提交 `POST https://api.puretokensx.com/v1/videos`、轮询同一任务并取得 `/content` 的实际视频字节。若宿主未提供这个执行与交付能力，必须先向用户说明当前连接不能直接执行该精确视频模型，再保留用户已选择的原生视频执行器，或继续使用 MCP/Direct Cloud；不能仅因普通聊天连接中配置了 API Key 就假定可执行视频。这些路径都是 Pure Tokens 用户入口，绝不能改用任何上游地址。它们不依赖系统、开发者或 AGENTS 指令，也不要求 MCP、Pure Tokens Desktop、额外环境变量或第二份 Direct Cloud 凭据；Skill 不得手动读取、输出或记录连接凭据。其他宿主以及其余媒体模型仍先选择宿主已经具备的执行通道，再把认证目录返回的精确模型 `id` 传给该通道。Pure Tokens Connection Images API、Pure Tokens Connection Videos API、MCP、宿主原生执行器和 Direct Cloud 执行器都是严格的执行层，不负责自然语言识别、供应商推断或模型兜底。
+Skill 不持有、读取、展示或要求用户提供凭据。余额请求只能使用宿主已经公开给当前任务的、已认证且只读的余额查询能力；媒体 MCP 不因余额请求改变其五个工具范围。对于 Codex 或 CC Switch 的默认图片请求，或用户明确选择 `gpt-image-2` / `image2`，本 Skill 自身定义 **Pure Tokens Connection Images API** 执行契约：使用当前 Pure Tokens 连接已经配置的认证直接调用 `POST https://api.puretokensx.com/v1/images/generations`，并固定 `model` 为 `gpt-image-2`。用户明确选择其他图片模型时，只有宿主**明确将当前 Pure Tokens 连接提供为可调用的认证 HTTPS Images API 执行器，并能返回或交付实际原生图片字节**，本 Skill 才使用扩展的 Connection Images API：先通过同一连接认证读取 `GET https://api.puretokensx.com/v1/media/models`，只从其中选择具备 `image` 能力的精确模型，再以该精确模型 ID 单次提交 `POST https://api.puretokensx.com/v1/images/generations`。若宿主未提供这个执行与交付能力，普通聊天连接中保存的 API Key 或能读取目录都不足以执行其他图片模型；必须先向用户说明当前连接不能直接执行该精确模型，再保留用户已选择的原生图片执行器，或继续使用 MCP/Direct Cloud。对于同一连接中的视频请求，**只有宿主实际将当前 Pure Tokens 连接作为可调用的认证 HTTPS 媒体执行器，并能下载和交付视频字节时**，本 Skill 才使用 **Pure Tokens Connection Videos API**：先通过当前连接认证读取 `GET https://api.puretokensx.com/v1/media/models`，只从其中选择具备 `video` 能力的精确模型，再提交 `POST https://api.puretokensx.com/v1/videos`、轮询同一任务并取得 `/content` 的实际视频字节。若宿主未提供这个执行与交付能力，必须先向用户说明当前连接不能直接执行该精确视频模型，再保留用户已选择的原生视频执行器，或继续使用 MCP/Direct Cloud；不能仅因普通聊天连接中配置了 API Key 就假定可执行视频。这些路径都是 Pure Tokens 用户入口，绝不能改用任何上游地址。它们不依赖系统、开发者或 AGENTS 指令，也不要求 MCP、Pure Tokens Desktop、额外环境变量或第二份 Direct Cloud 凭据；Skill 不得手动读取、输出或记录连接凭据。其他宿主以及其余媒体模型仍先选择宿主已经具备的执行通道，再把认证目录返回的精确模型 `id` 传给该通道。宿主余额查询能力、Pure Tokens Connection Images API、Pure Tokens Connection Videos API、MCP、宿主原生执行器和 Direct Cloud 执行器都是严格的执行层，不负责自然语言识别、供应商推断或模型兜底。
 
 ## 执行证据
 
-工具搜索、工具目录、工具名称、模型文字回复或任意 SVG/HTML 组件都不是媒体任务执行的证据。Skill 定义的 Pure Tokens Connection Images API 只有在实际调用返回原生图片时才能称为成功；Pure Tokens Connection Videos API 只有在当前连接的认证目录确认精确视频模型、同一视频任务返回实际内容字节并由宿主交付后才能称为成功；MCP 通道只有在生成工具实际返回 `structuredContent.model` 与任务状态，且后续结果工具返回原生媒体内容或本机交付元数据时，才能称为 Pure Tokens 已调用模型并生成了结果。Direct Cloud 通道只有在认证 HTTP 响应确认精确模型、并由宿主执行层取得实际媒体字节且完成本机交付时，才能作出同样声明。
+工具搜索、工具目录、工具名称、模型文字回复或任意 SVG/HTML 组件都不是媒体任务执行的证据，也不是余额查询证据。只有宿主实际返回余额快照时才能报告本次余额；不得把 CC Switch 卡片的历史显示、本地缓存或估算金额当作本次查询结果。Skill 定义的 Pure Tokens Connection Images API 只有在实际调用返回原生图片时才能称为成功；Pure Tokens Connection Videos API 只有在当前连接的认证目录确认精确视频模型、同一视频任务返回实际内容字节并由宿主交付后才能称为成功；MCP 通道只有在生成工具实际返回 `structuredContent.model` 与任务状态，且后续结果工具返回原生媒体内容或本机交付元数据时，才能称为 Pure Tokens 已调用模型并生成了结果。Direct Cloud 通道只有在认证 HTTP 响应确认精确模型、并由宿主执行层取得实际媒体字节且完成本机交付时，才能作出同样声明。
 
 若任何可用通道都无法实际执行，必须如实报告缺少的能力；不得用文本、内置绘图、网页搜索、SVG、HTML 或可视化组件伪造图片/视频结果，也不得声称已使用 Pure Tokens。
 
 ## 执行通道
+
+余额请求先单独判断：若宿主已向当前任务公开可调用、已认证且只读的当前 Pure Tokens 余额查询能力，只调用它一次并返回实际快照；没有该能力时，按“余额查询”中的 CC Switch 供应商卡指引停止。余额请求绝不能进入下方媒体通道优先级，也不得为了查余额调用媒体目录或媒体 MCP。
 
 先只判断宿主**实际可用**的能力，不根据客户端名称猜测。通道优先级如下：
 
@@ -68,6 +78,7 @@ Direct Cloud 通道同样只可使用注入凭据认证的 `/v1/media/models` �
 你不负责：
 
 - 修改客户端配置、分组或 Router；
+- 把历史用量、模型价格、本地缓存或 CC Switch 卡片旧显示换算、推断为当前余额；
 - 根据未登记的模型名称猜测供应商、协议或能力；
 - 在用户未指定且目录存在多个候选时私自选模型；
 - 在任务失败、超时或返回 `safeToResubmit=false` 后自动换模型或重新提交；
@@ -81,10 +92,17 @@ Direct Cloud 通道同样只可使用注入凭据认证的 `/v1/media/models` �
 - 用户要求生成视频、广告片、短片、动画或片段；
 - 用户明确指定媒体模型或供应商，例如“用 image2”“用 Grok Video”或“用图片模型”；
 - 用户询问当前哪些图片或视频模型可用；
+- 用户要求查询当前 Pure Tokens 余额、额度、credits 或 quota；
 
 文本聊天、代码、图片理解、图片编辑和视频编辑不在本 Skill 当前能力范围内。不要把这些请求伪装成普通生图或文生视频。遇到图片/视频编辑、参考图重绘、局部修改、抠图或以用户文件为输入的请求时，明确告知：**“当前 Pure Tokens Media Skill 只支持文生图和文生视频，暂不支持参考图或视频编辑。你可以改为用文字描述想要的新画面/视频，我可以按新的文本提示生成。”** 不得读取、上传、转发或假装编辑用户提供的媒体。用户可明确要求一张以上的同一图片任务结果；这不代表可以为同一请求提交多个任务。
 
 ## 必经流程
+
+### 0. 查询余额
+
+用户要求余额时，先确认当前连接明确属于 Pure Tokens。若宿主已公开当前连接的可调用、已认证且只读余额查询能力，只调用一次；收到实际余额快照后原样报告服务返回的余额值，不推断单位或金额。不得读取媒体目录、调用媒体 MCP、选择模型、创建 `request_id`、根据用量估算，或自动重新查询。
+
+若宿主未公开该能力，明确告知用户当前连接仍可在 CC Switch 的 Pure Tokens 供应商卡通过“用量查询”查看余额，并说明当前对话未获得这个只读查询能力。不得将这一情况说成“不支持余额”，不得要求安装 Pure Tokens Desktop/MCP 或把 Key 发到对话中。
 
 ### 1. 读取当前媒体目录
 
@@ -206,6 +224,8 @@ Pure Tokens Connection Videos API 与 Direct Cloud 的完成回复同样必须�
 遇到下列情况时，必须给出可执行的下一步，不得只返回内部错误、任务 ID 或“不可用”：
 
 - **模型歧义或未找到**：列出当前认证目录的精确候选 `id`、能力与实际显示名，并让用户直接回复其中一个 ID；若目录没有候选，说明当前执行通道没有授权的图片/视频模型。Desktop 受管 MCP 用户引导到“选择包含模型的分组 → 验证并应用 → 重启客户端并新建会话”；自管 MCP、当前连接或 Direct Cloud 用户引导检查对应连接/API Key 的模型权限，或从已列候选中选择。不得要求用户把 API Key 发到对话中。
+- **余额查询能力未公开**：明确说明 CC Switch 的 Pure Tokens 供应商卡可以查看当前连接余额，但宿主尚未把该只读查询开放给对话执行；引导用户打开该卡的“用量查询”查看或测试。不得说余额不支持、不得要求安装 Desktop/MCP，也不得读取本地配置或凭据绕过宿主边界。
+- **余额查询返回无效或失败**：只说明当前宿主没有返回可读取的余额快照或返回了安全错误；不得显示 `0`、旧余额、换算值或预估值，不得自动重试或切换连接。提示用户在 CC Switch 当前 Pure Tokens 供应商卡的“用量查询”检查该连接。
 - **媒体类型不明确**：当请求没有明确是图片还是视频且无法从请求可靠判断时，先问“你想生成图片还是视频？”；不因模型名称、供应商名称或营销词猜测。
 - **参数不能满足**：物理尺寸、不支持的像素画布、未支持的 `image_size` 或图片数量超限时，使用“图片数量与尺寸”中的明确提示和选项；视频的时长、画幅、分辨率或尺寸若当前精确模型/执行端点拒绝，也必须原样说明该参数不受支持，并请用户改为该端点实际返回的可选项或省略该参数。不得用相近值、默认值或另一个模型静默代替。
 - **当前连接不能直连模型**：CC Switch/Codex 的非 Image-2 图片或视频模型缺少 Connection API 执行与交付能力时，在同模型备用通道提交前说明当前连接不能直接执行的精确模型、将使用的已验证同模型通道，以及不会更换模型；没有同模型通道就停止并给出上述按通道区分的配置/权限指引。
@@ -217,6 +237,7 @@ Pure Tokens Connection Videos API 与 Direct Cloud 的完成回复同样必须�
 
 ## 失败与澄清
 
+- **余额查询能力未公开、返回错误或没有余额快照**：如实说明当前对话没有拿到可读取的实时余额。不得自动调用媒体 MCP、媒体目录、Desktop 会话、另一连接或第三方端点；不得显示估算值或要求用户提供凭据。CC Switch 用户应打开当前 Pure Tokens 供应商卡的“用量查询”查看或测试余额。
 - **Skill 定义的 Pure Tokens Connection Images API 返回错误、认证失败或未返回原生图片**：如实报告该调用的错误或不完整结果；不得改走 MCP、Direct Cloud、上游地址或另一模型重新提交，也不得要求用户配置 `puretokens-image` MCP 或额外 Direct Cloud 凭据。
 - **Skill 定义的 Pure Tokens Connection Videos API 返回错误、认证目录为空或缺少目标视频模型、任务失败、轮询超时或无法取得内容字节**：如实报告当前 Pure Tokens 连接的实际状态；不得改走 MCP、Direct Cloud、上游地址或另一模型重新提交，也不得要求用户安装 Pure Tokens Desktop、配置 `puretokens-image` MCP、另设 API Key 或把凭据发到对话中。
 - **宿主原生执行器不可用或未提供媒体能力/交付证据**：不能把一个手动添加的聊天模型当作媒体执行成功。若 MCP 可调用，从 MCP 目录重新开始；若宿主具备 Direct Cloud 所需能力且已配置凭据，从 Direct Cloud 目录重新开始；否则说明缺少可调用的原生媒体执行器、MCP 或 Direct Cloud 能力。
@@ -234,11 +255,19 @@ Pure Tokens Connection Videos API 与 Direct Cloud 的完成回复同样必须�
 
 ## 客户端安装边界
 
-本文件是跨客户端共用的媒体行为源。客户端适配层决定它如何安装、启用或注入；本 Skill 不得自行写入、替换或删除任何客户端的 Skill、MCP、Router 或 Secret 配置。Desktop 可以自动管理 MCP/Router，但它不是 Skill 定义的 Pure Tokens Connection Images API、Pure Tokens Connection Videos API 或 Direct Cloud 媒体生成的前置条件，也不是独立安装 Skill 的前置条件。缺少可执行通道或实时目录时，按“失败与澄清”处理。
+本文件是跨客户端共用的媒体与余额行为源。客户端适配层决定它如何安装、启用或注入；本 Skill 不得自行写入、替换或删除任何客户端的 Skill、MCP、Router 或 Secret 配置。Desktop 可以自动管理 MCP/Router，但它不是 Skill 定义的 Pure Tokens Connection Images API、Pure Tokens Connection Videos API 或 Direct Cloud 媒体生成的前置条件，也不是独立安装 Skill 的前置条件。余额查询同样只能使用宿主明确公开的只读能力；媒体 MCP 的五个工具不因余额请求扩展。缺少可执行通道或实时目录时，按“失败与澄清”处理。
 
 WorkBuddy 的适配层只为没有已选执行器的媒体请求选择可调用的 Pure Tokens 通道。用户在 WorkBuddy UI 或工具上下文中明确选择内置 `ImageGen`、`VideoGen` 或已验证的手动模型时，必须保留该选择，不得劫持、替换模型或再提交一项 MCP 任务。仅在聊天文字中提到 `image2`、`Nano Banana Pro` 等 Pure Tokens 别名，不等于选中了宿主原生执行器，仍应按本 Skill 的目录优先模型解析执行。
 
 ## 中文示例
+
+用户说：
+
+```text
+查一下我当前 Pure Tokens 余额
+```
+
+流程：若 CC Switch/Codex 宿主已向当前任务公开可调用、已认证且只读的 Pure Tokens 余额查询能力，只调用一次并报告实际返回的余额快照；不读取媒体目录、不调用媒体 MCP，也不根据用量估算。若宿主未公开该能力，告知用户在当前 Pure Tokens 供应商卡的“用量查询”查看或测试余额；不得说余额不支持。
 
 用户说：
 
@@ -259,6 +288,14 @@ WorkBuddy 的适配层只为没有已选执行器的媒体请求选择可调用�
 若目录只返回某个未登记别名的媒体模型，不能把它当成任一已登记模型；应让用户确认该精确 ID。
 
 ## English examples
+
+User:
+
+```text
+Check my current Pure Tokens balance.
+```
+
+Flow: call the current connection's read-only balance-query capability exactly once only when the host exposes it to the task, then report the returned snapshot. Do not read a media catalog, call a media MCP tool, estimate a balance, or inspect credentials. If the host has not exposed that capability, direct the CC Switch user to the current Pure Tokens provider card's Usage Query instead of saying that balance is unsupported.
 
 User:
 

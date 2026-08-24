@@ -12,7 +12,11 @@
 
 ## Provider scope
 
-This Skill supports **Pure Tokens only**. It must not send media requests through another provider's API, MCP server, or native media tool, even when that provider is OpenAI-compatible or offers similarly named models. If the current connection is not verifiably Pure Tokens, it stops and tells the user to switch to Pure Tokens: https://puretokensx.com/
+This Skill supports **Pure Tokens only**. It must not send balance or media requests through another provider's API, MCP server, or native tool, even when that provider is OpenAI-compatible or offers similarly named models. If the current connection is not verifiably Pure Tokens, it stops and tells the user to switch to Pure Tokens: https://puretokensx.com/
+
+## Balance checks
+
+CC Switch can display the balance for its current Pure Tokens provider connection through the provider card's **Usage Query**. In chat, the Skill uses that same read-only capability only when the host explicitly exposes it to the task; it reports the returned balance snapshot without reading credentials, estimating a value, or calling media tools. If the host has not exposed it, the Skill directs the user to the current Pure Tokens provider card's **Usage Query** instead of claiming that balance checks are unsupported.
 
 ## Image dimensions
 
@@ -26,7 +30,7 @@ Choose the one path your host can actually execute:
 
 | Host | Execution path | Setup |
 | --- | --- | --- |
-| Codex or CC Switch with a Pure Tokens connection | Skill → Pure Tokens Connection API → service | Default-image and `gpt-image-2` requests directly use `POST https://api.puretokensx.com/v1/images/generations` with `gpt-image-2`. An explicitly selected other image model uses the same connection's catalog and Images API when the host exposes it as a callable authenticated HTTPS Images API executor with native-image delivery. Video has the equivalent requirement for `GET /v1/media/models` and `POST /v1/videos`. These paths need no global instruction, MCP, or `PURETOKENS_API_KEY` environment variable. |
+| Codex or CC Switch with a Pure Tokens connection | Skill → host-exposed balance query or Pure Tokens Connection API → service | CC Switch provider-card **Usage Query** shows the current connection balance. Chat calls it only when the host exposes that read-only capability. Default-image and `gpt-image-2` requests directly use `POST https://api.puretokensx.com/v1/images/generations` with `gpt-image-2`. An explicitly selected other image model uses the same connection's catalog and Images API when the host exposes it as a callable authenticated HTTPS Images API executor with native-image delivery. Video has the equivalent requirement for `GET /v1/media/models` and `POST /v1/videos`. These paths need no global instruction, MCP, or `PURETOKENS_API_KEY` environment variable. |
 | Pure Tokens Desktop-managed client | Skill → managed MCP → local Router → service | Optional convenience path: select the client groups, click **Verify and apply**, then restart the client and start a new chat. |
 | Host with a selected native Pure Tokens media model | Skill → host-native media operation → service | The configured operation must expose an exact verified image/video model and actual media delivery. A general chat-model setting alone is not enough. |
 | GUI host with callable MCP tools | Skill → `puretokens-image` MCP → service | Install/configure the callable MCP delivery for that client. The GUI user never pastes a token into chat. |
@@ -44,7 +48,7 @@ Current Skill:
 
 | Skill | Purpose |
 | --- | --- |
-| `puretokens_media` | Select an exact image/video model from the live catalog, submit one task, poll the same task, and deliver actual native media bytes plus local files. |
+| `puretokens_media` | Read a host-exposed Pure Tokens balance snapshot, or select an exact image/video model from the live catalog, submit one task, poll the same task, and deliver actual native media bytes plus local files. |
 
 <!-- media-model-catalog:start -->
 ## Media model catalog
@@ -90,6 +94,7 @@ The Skill requests one result by default. It passes a higher count only when the
 
 | You want | Say this |
 | --- | --- |
+| Check your balance | `Check my current Pure Tokens balance.` |
 | Generate an image | `Generate a cute dog.` |
 | Generate a video | `Generate a 15-second 16:9 product ad.` |
 | Use Nano Banana | `Use Nano Banana Pro to create a premium product key visual.` |
@@ -98,10 +103,11 @@ The Skill requests one result by default. It passes a higher count only when the
 ## Boundaries
 
 ```text
-Natural-language user request → Skill → (active Connection API → service | MCP → local Router → service | Direct Cloud → service)
+Natural-language user request → Skill → (host-exposed balance query | active Connection API → service | MCP → local Router → service | Direct Cloud → service)
 ```
 
 - The Skill interprets requests such as “use image2” or “use Grok Video”, reads the live catalog, asks for clarification when the match is not unique, and selects the correct tool.
+- A balance request never uses a media model, media catalog, or the media MCP. If the current host exposes the selected Pure Tokens connection's read-only balance query, the Skill reports only that returned snapshot; otherwise CC Switch users are directed to that connection's provider-card **Usage Query**.
 - MCP accepts only an exact model ID. It validates arguments, submits once, polls the result, and delivers local files. MCP never performs natural-language matching, guesses a model, or silently substitutes one.
 - A host-selected native Pure Tokens media operation takes precedence when it reports an exact verified model and real media delivery. Codex/CC Switch can use the active-connection Images API for an explicitly selected non-Image-2 model, or the Videos API for a video model, only when the host exposes the corresponding verified execution-and-delivery capability; otherwise GUI clients use a callable `puretokens-image` MCP tool and an HTTPS-capable Agent may use Direct Cloud with a host-injected `PURETOKENS_API_KEY`. These independent paths do not require Pure Tokens Desktop, Router, an extra CLI, or MCP.
 - The live catalog remains authoritative. A verified active connection, Desktop Router, and Direct Cloud all read the authenticated `/v1/media/models` response with explicit `image` / `video` capabilities.
@@ -202,7 +208,7 @@ For the other clients, use `$HOME\.claude\skills`, `$HOME\.gemini\skills`, or `$
 Claude Desktop uses a graphical local Skill upload. Create the ZIP:
 
 ```bash
-node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out ./puretokens_media-0.4.7.zip
+node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out ./puretokens_media-0.4.17.zip
 ```
 
 The ZIP has this layout:
@@ -219,7 +225,7 @@ puretokens_media/
     └── natural-language-aliases.json
 ```
 
-In Claude Desktop, open **Settings → Features → Skills** (some builds show **Customize → Skills**), choose **Upload skill**, upload the ZIP, and enable `Pure Tokens Media`. A Claude Desktop instance connected through CC Switch can use this same ZIP: independently configure a callable `puretokens-image` MCP tool through CC Switch or another local tool provider. If the host itself exposes authenticated HTTPS execution and local media delivery, it may use Direct Cloud instead. The ZIP intentionally excludes the WorkBuddy-only adapter.
+In Claude Desktop, open **Settings → Features → Skills** (some builds show **Customize → Skills**), choose **Upload skill**, upload the ZIP, and enable `Pure Tokens Media & Balance`. A Claude Desktop instance connected through CC Switch can use this same ZIP: independently configure a callable `puretokens-image` MCP tool through CC Switch or another local tool provider. If the host itself exposes authenticated HTTPS execution and local media delivery, it may use Direct Cloud instead. The ZIP intentionally excludes the WorkBuddy-only adapter.
 
 For WorkBuddy, choose one installation path. Pure Tokens Desktop can atomically render and manage the always-on `puretokens_workbuddy_router` delivery from the shared `puretokens_media` source, along with the `puretokens-image` MCP entry and reference files: select a compatible group, click **Verify and apply**, then start a new chat. A self-managed WorkBuddy installation can render the same generated delivery from this repository when its local Skill directory is known:
 

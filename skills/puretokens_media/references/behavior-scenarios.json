@@ -3,6 +3,18 @@
   "skill": "puretokens_media",
   "scenarios": [
     {
+      "id": "host-exposed-balance-query",
+      "when": "A user asks for the current balance and the host explicitly exposes the active Pure Tokens connection as a callable authenticated read-only balance-query capability.",
+      "expected": "call_the_host_exposed_balance_query_once_and_report_only_the_returned_balance_snapshot",
+      "forbiddenTools": ["puretokens_list_media_models", "puretokens_generate_image", "puretokens_generate_video", "balance_estimation", "automatic_retry"]
+    },
+    {
+      "id": "cc-switch-balance-query-not-exposed-to-chat",
+      "when": "A CC Switch user asks for the current Pure Tokens balance but the host has not exposed its provider-card Usage Query as a callable capability to the chat task.",
+      "expected": "explain_that_the_current_puretokens_provider_card_can_show_balance_and_direct_the_user_to_its_usage_query_without_claiming_balance_is_unsupported",
+      "forbiddenTools": ["puretokens_list_media_models", "puretokens_generate_image", "puretokens_generate_video", "local_configuration_read", "credential_extraction", "automatic_retry"]
+    },
+    {
       "id": "default-single-result",
       "when": "The user asks for an image or video without an explicit quantity.",
       "expected": "request_exactly_one_result_in_one_logical_task",

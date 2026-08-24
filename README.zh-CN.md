@@ -12,7 +12,11 @@
 
 ## 服务提供方范围
 
-本 Skill **仅支持 Pure Tokens**。即使其他服务商 API 兼容 OpenAI，或提供相似名称的模型，也不得通过其 API、MCP 服务或原生媒体工具提交媒体请求。若当前连接无法确认属于 Pure Tokens，Skill 会停止并提示用户切换到 Pure Tokens：https://puretokensx.com/
+本 Skill **仅支持 Pure Tokens**。即使其他服务商 API 兼容 OpenAI，或提供相似名称的模型，也不得通过其 API、MCP 服务或原生工具提交余额或媒体请求。若当前连接无法确认属于 Pure Tokens，Skill 会停止并提示用户切换到 Pure Tokens：https://puretokensx.com/
+
+## 余额查询
+
+CC Switch 可以通过当前 Pure Tokens 供应商卡的**用量查询**显示该连接余额。在对话中，只有宿主明确把这项只读能力开放给当前任务时，Skill 才调用它，并只报告实际返回的余额快照；不会读取凭据、估算余额或调用媒体工具。若宿主未开放该能力，Skill 会引导用户到当前 Pure Tokens 供应商卡的**用量查询**，而不是说余额不支持。
 
 ## 图片尺寸
 
@@ -26,7 +30,7 @@
 
 | 宿主 | 执行路径 | 配置方式 |
 | --- | --- | --- |
-| 已配置 Pure Tokens 连接的 Codex 或 CC Switch | Skill → Pure Tokens Connection API → 服务 | 默认图片和 `gpt-image-2` 请求直接调用 `POST https://api.puretokensx.com/v1/images/generations` 与 `gpt-image-2`。用户明确选择其他图片模型时，只要宿主把当前连接提供为可调用、已认证的 HTTPS Images API 执行器并能交付原生图片，就通过同一连接读取目录并调用 Images API。视频有对应的目录与执行/交付前提。上述路径都不依赖全局指令、MCP 或 `PURETOKENS_API_KEY` 环境变量。 |
+| 已配置 Pure Tokens 连接的 Codex 或 CC Switch | Skill → 宿主公开的余额查询或 Pure Tokens Connection API → 服务 | CC Switch 供应商卡的**用量查询**可显示当前连接余额；只有宿主将该只读能力开放给对话任务时才可直接查询。默认图片和 `gpt-image-2` 请求直接调用 `POST https://api.puretokensx.com/v1/images/generations` 与 `gpt-image-2`。用户明确选择其他图片模型时，只要宿主把当前连接提供为可调用、已认证的 HTTPS Images API 执行器并能交付原生图片，就通过同一连接读取目录并调用 Images API。视频有对应的目录与执行/交付前提。上述路径都不依赖全局指令、MCP 或 `PURETOKENS_API_KEY` 环境变量。 |
 | 由 Pure Tokens Desktop 受管的客户端 | Skill → 受管 MCP → 本地 Router → 服务 | 这是可选的便利路径：选择客户端分组，点击 **验证并应用**，重启客户端后新建会话。 |
 | 已选择原生 Pure Tokens 媒体模型的宿主 | Skill → 宿主原生媒体操作 → 服务 | 已配置操作必须提供精确、已验证的图片/视频模型和真实媒体交付；只配置通用聊天模型并不够。 |
 | 具备可调用 MCP 工具的 GUI 宿主 | Skill → `puretokens-image` MCP → 服务 | 为客户端安装或配置可调用的 MCP 交付；GUI 用户绝不把 Token 粘贴到对话中。 |
@@ -44,7 +48,7 @@
 
 | Skill | 用途 |
 | --- | --- |
-| `puretokens_media` | 按当前目录精确选择图片/视频模型，提交一次任务并轮询同一任务，再交付实际原生媒体字节和本地文件。 |
+| `puretokens_media` | 查询宿主公开的 Pure Tokens 余额快照，或按当前目录精确选择图片/视频模型，提交一次任务并轮询同一任务，再交付实际原生媒体字节和本地文件。 |
 
 <!-- media-model-catalog:start -->
 ## 媒体模型清单
@@ -90,6 +94,7 @@ README 只从基础目录中带有明确图片/视频能力的模型生成，不
 
 | 你想做什么 | 直接这样说 |
 | --- | --- |
+| 查询余额 | `查询我当前的 Pure Tokens 余额。` |
 | 生成图片 | `生成一只可爱的狗。` |
 | 生成视频 | `生成一条 15 秒、16:9 的产品广告。` |
 | 使用 Nano Banana | `使用 Nano Banana Pro 做一张高级产品主视觉。` |
@@ -98,10 +103,11 @@ README 只从基础目录中带有明确图片/视频能力的模型生成，不
 ## 设计边界
 
 ```text
-用户自然语言 → Skill →（当前 Connection API → 服务 | MCP → 本地 Router → 服务 | Direct Cloud → 服务）
+用户自然语言 → Skill →（宿主公开的余额查询 | 当前 Connection API → 服务 | MCP → 本地 Router → 服务 | Direct Cloud → 服务）
 ```
 
 - Skill 负责理解“用 image2”“用 Grok Video”等表达，先查询媒体目录，唯一匹配后选择工具，并在歧义时询问。
+- 余额请求不会读取媒体模型、媒体目录或调用媒体 MCP。只有当前宿主公开当前 Pure Tokens 连接的只读余额查询能力时，Skill 才报告该实际返回的快照；否则 CC Switch 用户应在该连接的供应商卡**用量查询**查看余额。
 - MCP 只接受精确模型 ID，执行参数校验、单次提交、结果轮询和本机交付；它不做自然语言识别、不猜模型、不静默换模型。
 - 宿主已选择的原生 Pure Tokens 媒体操作在能够报告精确已验证模型和真实媒体交付时优先；只有 Codex/CC Switch 宿主明确提供当前连接对应的执行与交付能力时，用户明确选择的非 Image-2 图片模型才可使用 Connection Images API，视频才可使用 Connection Videos API；否则 GUI 客户端优先使用可调用的 `puretokens-image` MCP 工具，具备 HTTPS 能力的 Agent 可以在宿主已注入 `PURETOKENS_API_KEY` 时使用 Direct Cloud。这些独立路径都不需要 Pure Tokens Desktop、Router、额外 CLI 或 MCP。
 - 实时目录仍是唯一事实来源：已验证的当前连接、Desktop Router 与 Direct Cloud 都读取认证后的 `/v1/media/models`，并使用明确的 `image` / `video` 能力。
@@ -202,7 +208,7 @@ node .\bin\puretokens-skill.js install puretokens_media --target $HOME\.claude\s
 Claude Desktop 使用图形界面上传本地 Skill 包。生成 ZIP：
 
 ```bash
-node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out ./puretokens_media-0.4.7.zip
+node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out ./puretokens_media-0.4.17.zip
 ```
 
 ZIP 内部结构为：
@@ -219,7 +225,7 @@ puretokens_media/
     └── natural-language-aliases.json
 ```
 
-在 Claude Desktop 中打开 **Settings → Features → Skills**（部分版本显示为 **Customize → Skills**），选择 **Upload skill**，上传 ZIP 并启用 `Pure Tokens Media`。通过 CC Switch 连接的 Claude Desktop 也可以使用同一个 ZIP：通过 CC Switch 或其他本机工具提供方独立配置可调用的 `puretokens-image` MCP。若宿主本身提供认证 HTTPS 执行和本机媒体交付能力，也可以改走 Direct Cloud。ZIP 会刻意排除仅供 WorkBuddy 使用的适配层。
+在 Claude Desktop 中打开 **Settings → Features → Skills**（部分版本显示为 **Customize → Skills**），选择 **Upload skill**，上传 ZIP 并启用 `Pure Tokens Media & Balance`。通过 CC Switch 连接的 Claude Desktop 也可以使用同一个 ZIP：通过 CC Switch 或其他本机工具提供方独立配置可调用的 `puretokens-image` MCP。若宿主本身提供认证 HTTPS 执行和本机媒体交付能力，也可以改走 Direct Cloud。ZIP 会刻意排除仅供 WorkBuddy 使用的适配层。
 
 WorkBuddy 有两种安装路径。Pure Tokens Desktop 可以从共享 `puretokens_media` 源原子化生成并受管常驻的 `puretokens_workbuddy_router` 交付载荷，以及 `puretokens-image` MCP 条目和引用资料：选择兼容分组，点击 **验证并应用**，然后新建会话。若已知本机 WorkBuddy Skill 目录，也可由本仓库生成同一份交付物：
 

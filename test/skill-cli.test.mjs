@@ -64,7 +64,7 @@ test("install, upgrade, and explicit uninstall only manage the named Skill direc
   await writeFile(path.join(skillDirectory, "SKILL.md"), "local modification\n");
   await runCli(["upgrade", "puretokens_media", "--target", temporaryRoot]);
   const upgraded = await readFile(path.join(skillDirectory, "SKILL.md"), "utf8");
-  assert.match(upgraded, /Pure Tokens 媒体编排 Skill/);
+  assert.match(upgraded, /Pure Tokens 媒体与余额编排 Skill/);
   await runCli(["uninstall", "puretokens_media", "--target", temporaryRoot, "--yes"]);
   await assert.rejects(readFile(path.join(skillDirectory, "SKILL.md")));
 });

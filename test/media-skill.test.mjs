@@ -52,6 +52,11 @@ test("media Skill publishes the complete MCP tool contract", async () => {
   assert.equal(manifest.rules.defaultResultCount, 1);
   assert.equal(manifest.rules.explicitCountRequiredForMultipleResults, true);
   assert.equal(manifest.rules.supportsDirectCloudWithoutDesktop, true);
+  assert.equal(manifest.rules.supportsHostExposedReadOnlyBalanceQuery, true);
+  assert.equal(manifest.rules.balanceQueryDoesNotUseMediaMcp, true);
+  assert.equal(manifest.rules.balanceQueryNeverEstimatesOrConvertsBalance, true);
+  assert.equal(manifest.rules.balanceQueryRequiresHostExposedCapability, true);
+  assert.equal(manifest.rules.balanceQueryFailureGuidesToCcSwitchUsageQuery, true);
   assert.equal(manifest.rules.supportsSkillDefinedImage2Api, true);
   assert.equal(manifest.rules.supportsSkillDefinedConnectionVideoApi, true);
   assert.equal(manifest.rules.supportsCatalogVerifiedConnectionImageApi, true);
@@ -85,6 +90,11 @@ test("media Skill publishes the complete MCP tool contract", async () => {
   assert.match(skillText, /本 Skill 定义的 Pure Tokens Connection Images API/);
   assert.match(skillText, /Pure Tokens Connection Videos API/);
   assert.match(skillText, /本 Skill \*\*仅支持 Pure Tokens\*\*/);
+  assert.match(skillText, /## 余额查询/);
+  assert.match(skillText, /可调用、已认证、只读的余额查询能力/);
+  assert.match(skillText, /不调用五个媒体 MCP 工具/);
+  assert.match(skillText, /供应商卡的“用量查询”/);
+  assert.match(skillText, /不得自行构造余额 URL、请求头、请求体或猜测响应格式/);
   assert.match(skillText, /不能使用当前的其他服务商 API/);
   assert.match(skillText, /https:\/\/puretokensx\.com\//);
   assert.match(skillText, /`200cm × 230cm`/);
@@ -234,6 +244,8 @@ test("media Skill behavior scenarios cover ambiguity, empty catalog, unavailable
   ]);
   const scenarios = JSON.parse(scenariosText).scenarios;
   assert.deepEqual(scenarios.map((scenario) => scenario.id), [
+    "host-exposed-balance-query",
+    "cc-switch-balance-query-not-exposed-to-chat",
     "default-single-result",
     "explicit-multiple-results",
     "invalid-image-count",
@@ -261,6 +273,8 @@ test("media Skill behavior scenarios cover ambiguity, empty catalog, unavailable
     "task-timeout",
     "content-delivery-failure"
   ]);
+  assert.equal(scenarios.find((scenario) => scenario.id === "host-exposed-balance-query")?.expected, "call_the_host_exposed_balance_query_once_and_report_only_the_returned_balance_snapshot");
+  assert.equal(scenarios.find((scenario) => scenario.id === "cc-switch-balance-query-not-exposed-to-chat")?.expected, "explain_that_the_current_puretokens_provider_card_can_show_balance_and_direct_the_user_to_its_usage_query_without_claiming_balance_is_unsupported");
   assert.equal(scenarios.find((scenario) => scenario.id === "ambiguous-model")?.firstTool, "puretokens_list_media_models");
   assert.match(skillText, /模型不存在或匹配多个/);
   assert.match(skillText, /目录为空/);
@@ -323,6 +337,6 @@ test("the shared media source has target-specific Claude and WorkBuddy deliverie
   assert.equal(manifest.rules.hostNativeExecutionRequiresVerifiedMediaCapability, true);
   assert.equal(manifest.rules.hostNativeExecutionAvoidsDuplicateSubmission, true);
   assert.equal(manifest.supportedClients.includes("grok-build"), false);
-  assert.match(skillText, /跨客户端共用的媒体行为源/);
+  assert.match(skillText, /跨客户端共用的媒体与余额行为源/);
   assert.match(skillText, /不得自行写入、替换或删除任何客户端的 Skill、MCP、Router 或 Secret 配置/);
 });
