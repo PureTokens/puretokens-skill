@@ -6,6 +6,7 @@
 
 ## Unreleased
 
+- 将 `puretokens_media` 限定为仅支持 Pure Tokens：当前连接、MCP 服务、原生媒体执行器或 Direct Cloud 凭据属于其他服务商、或无法确认归属时，Skill 会 fail-closed，不提交媒体请求，并明确告知用户本 Skill 仅支持 Pure Tokens，同时提供官网 `https://puretokensx.com/`。
 - 新增受保护的 Codex/CC Switch **Pure Tokens Connection Videos API** 路径：只有宿主明确把当前 Pure Tokens 连接提供为可调用、已认证的 HTTPS 视频执行器并可交付实际字节时，Skill 才读取该连接的 `/v1/media/models`，将精确 `video` 模型单次提交至 `/v1/videos`，再轮询并取回同一任务的 `/content`。它复用已配置连接，不要求 Desktop、MCP 或第二份 Direct Cloud 凭据；仅保存 API Key 的聊天连接绝不会被误认为具备视频执行能力。
 - 纠正 Codex/CC Switch 的 Image-2 路由为面向用户的 Pure Tokens 连接：默认生图和明确 `gpt-image-2` / `image2` 调用 `POST https://api.puretokensx.com/v1/images/generations` 并传入 `model: "gpt-image-2"`。Skill 绝不调用上游地址，不依赖全局宿主指令或 MCP，且该 API 路径失败后绝不回退到 MCP 或 Direct Cloud。
 - 修复 `gpt-image-2` 的 MCP 分支：生成调用一旦已返回原生图片就结束，WorkBuddy 不会在已完成的 Image-2 响应后错误继续调用 `puretokens_image_result`。

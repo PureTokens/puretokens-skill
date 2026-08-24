@@ -10,6 +10,10 @@
 
 `puretokens-skill` 是 Pure Tokens Skill 的源仓库。它管理 Skill 指令、版本、兼容性声明、各客户端安装说明和校验工具；不保存用户凭据、Router 配置或模型路由逻辑。
 
+## 服务提供方范围
+
+本 Skill **仅支持 Pure Tokens**。即使其他服务商 API 兼容 OpenAI，或提供相似名称的模型，也不得通过其 API、MCP 服务或原生媒体工具提交媒体请求。若当前连接无法确认属于 Pure Tokens，Skill 会停止并提示用户切换到 Pure Tokens：https://puretokensx.com/
+
 ## 快速开始
 
 只选择当前宿主实际能够执行的一条路径：

@@ -10,6 +10,10 @@
 
 `puretokens-skill` is the source repository for Pure Tokens Skills. It owns Skill instructions, versions, compatibility declarations, client installation instructions, and validation tools. It does not contain user credentials, Router configuration, or model-routing logic.
 
+## Provider scope
+
+This Skill supports **Pure Tokens only**. It must not send media requests through another provider's API, MCP server, or native media tool, even when that provider is OpenAI-compatible or offers similarly named models. If the current connection is not verifiably Pure Tokens, it stops and tells the user to switch to Pure Tokens: https://puretokensx.com/
+
 ## Quick start
 
 Choose the one path your host can actually execute:
