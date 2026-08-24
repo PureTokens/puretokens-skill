@@ -2,7 +2,6 @@
 
 import { randomUUID } from "node:crypto";
 import { cp, mkdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import process from "node:process";
 import { collectSkillRecords, repositoryRoot, skillsRoot, validateRepository } from "../scripts/skill-registry.mjs";
@@ -119,12 +118,19 @@ async function bundleSkill(args) {
   }
   const source = await resolveSkillSource(options.name);
   const manifest = JSON.parse(await readFile(path.join(source, "skill.json"), "utf8"));
-  const files = mediaSkillSourceFiles.filter((relativePath) => relativePath !== "agents/openai.yaml");
+  const files = mediaSkillSourceFiles.filter((relativePath) => (
+    relativePath !== "agents/openai.yaml" && !relativePath.startsWith("adapters/")
+  ));
   const entries = [];
   for (const relativePath of files) {
     const absolutePath = path.join(source, relativePath);
     if (!(await exists(absolutePath))) throw new Error(`Skill bundle file is missing: ${relativePath}`);
-    entries.push({ path: relativePath, data: await readFile(absolutePath) });
+    entries.push({
+      path: relativePath,
+      data: relativePath === "skill.json"
+        ? `${JSON.stringify(createClaudeDesktopManifest(manifest), null, 2)}\n`
+        : await readFile(absolutePath)
+    });
   }
   entries.push({
     path: "source-delivery.json",
@@ -137,6 +143,16 @@ async function bundleSkill(args) {
   await mkdir(path.dirname(output), { recursive: true });
   await writeFile(output, createZip(entries));
   process.stdout.write(`Created Claude Desktop Skill bundle at ${output}\n`);
+}
+
+function createClaudeDesktopManifest(sourceManifest) {
+  const { workBuddyAdapter, distribution, supportedClients, ...sharedManifest } = sourceManifest;
+  const { claudeDesktop } = distribution;
+  return {
+    ...sharedManifest,
+    distribution: { claudeDesktop },
+    supportedClients: supportedClients.filter((client) => client !== "codex" && client !== "workbuddy")
+  };
 }
 
 async function validate() {
@@ -156,7 +172,10 @@ async function resolveSkillSource(name) {
 }
 
 function resolveInstallRoot(target) {
-  return target ? path.resolve(target) : path.join(os.homedir(), ".codex", "skills");
+  if (!target) {
+    throw new Error("A --target directory is required; this CLI never selects a client install location automatically");
+  }
+  return path.resolve(target);
 }
 
 function parseSkillOptions(args, commandName, allowed) {
@@ -299,5 +318,5 @@ function crc32(buffer) {
 }
 
 function printHelp() {
-  process.stdout.write(`Pure Tokens Skill Manager\n\nUsage:\n  puretokens-skill list\n  puretokens-skill validate\n  puretokens-skill install <skill-name> [--target <directory>]\n  puretokens-skill upgrade <skill-name> [--target <directory>]\n  puretokens-skill uninstall <skill-name> [--target <directory>] --yes\n  puretokens-skill bundle <skill-name> --format claude-desktop [--out <zip-file>] [--force]\n\nThe default install target is the Codex skill directory. Claude Desktop requires the generated ZIP to be uploaded and enabled in its Skills settings.\n\nRepository: ${repositoryRoot}\n`);
+  process.stdout.write(`Pure Tokens Skill Manager\n\nUsage:\n  puretokens-skill list\n  puretokens-skill validate\n  puretokens-skill install <skill-name> --target <directory>\n  puretokens-skill upgrade <skill-name> --target <directory>\n  puretokens-skill uninstall <skill-name> --target <directory> --yes\n  puretokens-skill bundle <skill-name> --format claude-desktop [--out <zip-file>] [--force]\n\nEvery install target is explicit. Pure Tokens Desktop can also apply managed Codex and WorkBuddy deliveries; Claude Desktop requires the generated ZIP to be uploaded and enabled in its Skills settings.\n\nRepository: ${repositoryRoot}\n`);
 }

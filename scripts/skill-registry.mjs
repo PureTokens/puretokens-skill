@@ -83,7 +83,8 @@ export async function validateRepository() {
     }
     const workbuddy = manifest?.distribution?.workbuddy;
     if (workbuddy) {
-      if (workbuddy.managedByDesktop !== true) errors.push(`${directory}: WorkBuddy delivery must be managed by Desktop`);
+      if (workbuddy.managedByDesktop !== true) errors.push(`${directory}: WorkBuddy must expose a Desktop-managed delivery`);
+      if (workbuddy.manualInstallationSupported !== true) errors.push(`${directory}: WorkBuddy must support independently rendered delivery`);
       if (workbuddy.generatedSkillName !== "puretokens_workbuddy_router") {
         errors.push(`${directory}: WorkBuddy generated Skill name must be puretokens_workbuddy_router`);
       }
@@ -91,7 +92,8 @@ export async function validateRepository() {
     }
     const codex = manifest?.distribution?.codex;
     if (codex) {
-      if (codex.managedByDesktop !== true) errors.push(`${directory}: Codex delivery must be managed by Desktop`);
+      if (codex.managedByDesktop !== true) errors.push(`${directory}: Codex must expose a Desktop-managed delivery`);
+      if (codex.manualInstallationSupported !== true) errors.push(`${directory}: Codex must support independent installation`);
       if (codex.managedSkillDirectory !== "~/.codex/skills/puretokens_media") {
         errors.push(`${directory}: Codex managed Skill directory must be ~/.codex/skills/puretokens_media`);
       }

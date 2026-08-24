@@ -6,6 +6,17 @@
 
 ## Unreleased
 
+- 修复 `gpt-image-2` 的 MCP 分支：生成调用一旦已返回原生图片就结束，WorkBuddy 不会在已完成的 Image-2 响应后错误继续调用 `puretokens_image_result`。
+- 重建中英文 README 的媒体模型清单：它现在从全局基础模型目录生成，不再读取本机路由缓存或某个 API Key 范围内的响应。`npm run docs:sync-media-models-from-base-catalog` 只接受明确的图片/视频能力，并将每个已配置模型 ID 写入发布清单；执行时仍以 `GET /v1/media/models` 的认证结果为准。
+
+## 0.4.6 — 2026-08-20
+
+- 保留 Pure Tokens Desktop 作为 Codex 和 WorkBuddy 的可选受管交付，同时恢复独立安装 Skill 与 Direct Cloud 执行路径。
+- 明确手动配置 Pure Tokens 媒体模型时的第三种宿主原生执行情形：只有宿主能证明精确媒体能力和真实交付时才保留 UI/工具上下文中的显式选择；否则回到正常 MCP 或 Direct Cloud 决策树，且不得重复提交。
+- 保持新增媒体模型只要出现在认证后的实时目录即可直接使用、无需等待 Skill 更新，同时发布已登记模型清单和便利别名，让用户能发现 Skill 的能力范围。
+- 明确 Direct Cloud 的交付能力前置检查、API Key 范围内的缺模型恢复、仅宿主保存的请求 ID，以及多图通过零基 `/content?index=N` 取回的语义。
+- WorkBuddy 生成改为原子替换受管交付，避免已删除源文件留下旧行为；同时保留用户显式选择的内置或手动配置模型，并修正官方仓库地址。
+
 ## 0.4.5 — 2026-08-20
 
 - 恢复 Direct Cloud 图片提交策略：图片请求始终传 `async: true`。执行层仍会防御性兼容服务返回的同步 `b64_json` 或 `url`，但 Skill 不会主动请求同步图片生成。

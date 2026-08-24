@@ -48,10 +48,11 @@ capability.
 ## Submit and poll
 
 Use one stable request ID for one user media request and retain it in the host
-task state. The gateway does not currently provide a durable task idempotency
-fence for these public media endpoints, so the host must make exactly one
-submission and must never automatically retry an unknown outcome. A later
-user-approved retry is a new logical task with a new request ID.
+task state. The gateway does not currently provide a documented durable task
+idempotency field for these public media endpoints: do not invent a request
+header or JSON field for it. The host must make exactly one submission and must
+never automatically retry an unknown outcome. A later user-approved retry is a
+new logical task with a new request ID.
 
 ```text
 POST /v1/images/generations
@@ -59,6 +60,12 @@ POST /v1/videos
 Authorization: Bearer $PURETOKENS_API_KEY
 Content-Type: application/json
 ```
+
+Before a submission, the host must be able to decode or download the returned
+bytes and atomically write them locally. HTTPS and a credential alone are
+insufficient when the host cannot provide that delivery path; report the missing
+capability without submitting a billable media task. A native preview can
+supplement local delivery; it never replaces it.
 
 Image bodies use the selected exact `model`, `prompt`, optional `size` and
 `quality`, and always set `async: true`. The execution layer still classifies
@@ -69,6 +76,15 @@ explicitly asks for a different number of results. Pass that explicit count
 only when the selected endpoint accepts it; do not turn one request into
 multiple submits.
 
+```json
+{
+  "model": "exact-model-id",
+  "prompt": "user-approved prompt",
+  "async": true,
+  "n": 1
+}
+```
+
 An image generation response has exactly one of these successful result paths:
 
 1. Every requested result is present in `data[]` with `b64_json`: decode the
@@ -76,12 +92,14 @@ An image generation response has exactly one of these successful result paths:
 2. Every requested result is present in `data[]` with `url`: download those
    exact returned URLs, atomically write each local file, and never expose the
    URLs in logs or user-facing output.
-3. The response provides a task ID: poll `GET /v1/images/{task_id}`. After the
-   service reports completion, retrieve `GET /v1/images/{task_id}/content` and
-   atomically write the returned media bytes. When the completed task declares
-   more than one `content_urls` entry, retrieve the first result from `/content`
-   and every later result from `/content?index=N` in its declared order. Do not
-   infer a count from the request alone, and do not retry a missing index.
+3. The response provides a task ID: poll `GET /v1/images/{task_id}`. A completed
+   image task exposes an ordered `content_urls` array only as opaque result-count
+   metadata; never show or download those URLs directly. Retrieve bytes from the
+   same documented content endpoint: `GET /v1/images/{task_id}/content` is index
+   `0`, and `GET /v1/images/{task_id}/content?index=N` is the optional zero-based
+   `index` query for each later declared result. Request exactly every index from
+   `0` through `content_urls.length - 1` in order. Do not infer a count from the
+   request alone, use an out-of-range index, or retry a missing index.
 
 An empty `data[]`, an entry without either supported synchronous result field,
 an unknown task state, a missing task ID, a failed download, or an incomplete
@@ -100,8 +118,8 @@ second submission.
 
 The host's Direct Cloud execution layer writes completed bytes atomically to
 `Downloads/Pure Tokens` and reports each saved filename and directory. The
-Skill only interprets that execution evidence. It may present an in-chat
-preview only when the host actually supports that media type, and may offer an
+Skill only interprets that execution evidence. It may present an in-chat preview
+only when the host actually supports that media type, and may offer an
 open-file/open-folder control only when the host provides a real local entry.
 It must never disclose an upstream signed URL or treat a task ID, status, HTML,
 SVG, or text placeholder as a completed result.

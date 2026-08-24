@@ -12,8 +12,11 @@ const execFileAsync = promisify(execFile);
 const cli = path.join(repositoryRoot, "bin", "puretokens-skill.js");
 const sourceRoot = path.join(repositoryRoot, "skills", "puretokens_media");
 
-async function runCli(args) {
-  return execFileAsync(process.execPath, [cli, ...args], { cwd: repositoryRoot });
+async function runCli(args, env = {}) {
+  return execFileAsync(process.execPath, [cli, ...args], {
+    cwd: repositoryRoot,
+    env: { ...process.env, ...env }
+  });
 }
 
 test("Claude Desktop bundle includes the skill root and required files", async (t) => {
@@ -24,7 +27,6 @@ test("Claude Desktop bundle includes the skill root and required files", async (
   const entries = readStoredZipEntries(await readFile(output));
   assert.deepEqual([...entries.keys()].sort(), [
     "puretokens_media/SKILL.md",
-    "puretokens_media/adapters/workbuddy-execution.md",
     "puretokens_media/references/behavior-scenarios.json",
     "puretokens_media/references/direct-cloud-contract.md",
     "puretokens_media/references/model-catalog-contract.md",
@@ -32,9 +34,19 @@ test("Claude Desktop bundle includes the skill root and required files", async (
     "puretokens_media/skill.json",
     "puretokens_media/source-delivery.json"
   ]);
-  for (const relativePath of mediaSkillSourceFiles.filter((file) => file !== "agents/openai.yaml")) {
+  for (const relativePath of mediaSkillSourceFiles.filter((file) => (
+    file !== "agents/openai.yaml" && !file.startsWith("adapters/") && file !== "skill.json"
+  ))) {
     assert.deepEqual(entries.get(`puretokens_media/${relativePath}`), await readFile(path.join(sourceRoot, relativePath)), relativePath);
   }
+  const sourceManifest = JSON.parse(await readFile(path.join(sourceRoot, "skill.json"), "utf8"));
+  const bundleManifest = JSON.parse(entries.get("puretokens_media/skill.json").toString("utf8"));
+  assert.equal(bundleManifest.version, sourceManifest.version);
+  assert.equal(bundleManifest.workBuddyAdapter, undefined);
+  assert.equal(bundleManifest.distribution.workbuddy, undefined);
+  assert.equal(bundleManifest.distribution.codex, undefined);
+  assert.equal(bundleManifest.supportedClients.includes("workbuddy"), false);
+  assert.equal(bundleManifest.supportedClients.includes("codex"), false);
   const provenance = await getMediaSkillProvenance();
   assert.deepEqual(JSON.parse(entries.get("puretokens_media/source-delivery.json").toString("utf8")), {
     delivery: "claude-desktop",
@@ -55,6 +67,21 @@ test("install, upgrade, and explicit uninstall only manage the named Skill direc
   assert.match(upgraded, /Pure Tokens 媒体编排 Skill/);
   await runCli(["uninstall", "puretokens_media", "--target", temporaryRoot, "--yes"]);
   await assert.rejects(readFile(path.join(skillDirectory, "SKILL.md")));
+});
+
+test("the CLI requires an explicit target directory", async () => {
+  await assertCliFailure(
+    ["install", "puretokens_media"],
+    /A --target directory is required/
+  );
+});
+
+test("the CLI allows a standalone Codex Skill target", async (t) => {
+  const home = await mkdtemp(path.join(os.tmpdir(), "puretokens-codex-home-"));
+  t.after(() => rm(home, { recursive: true, force: true }));
+  const target = path.join(home, ".codex", "skills");
+  await runCli(["install", "puretokens_media", "--target", target], { HOME: home });
+  await readFile(path.join(target, "puretokens_media", "SKILL.md"), "utf8");
 });
 
 function readStoredZipEntries(bundle) {
@@ -84,7 +111,20 @@ test("agent installation instructions fail closed in ordinary ChatGPT chats", as
   ]);
 
   assert.match(english, /normal ChatGPT conversation/);
-  assert.match(english, /Do not identify it as Codex merely because/);
+  assert.match(english, /Codex, Claude Code, Gemini CLI, or OpenCode/);
+  assert.match(english, /https:\/\/github\.com\/PureTokens\/puretokens-skill/);
+  assert.doesNotMatch(english, /yanyansay\/puretokens-skill/);
+  assert.match(english, /install puretokens_media --target ~\/\.codex\/skills/);
   assert.match(chinese, /普通 ChatGPT 对话/);
-  assert.match(chinese, /不能只因模型或运行时标签显示 Codex/);
+  assert.match(chinese, /Codex、Claude Code、Gemini CLI 或 OpenCode/);
+  assert.match(chinese, /https:\/\/github\.com\/PureTokens\/puretokens-skill/);
+  assert.doesNotMatch(chinese, /yanyansay\/puretokens-skill/);
+  assert.match(chinese, /install puretokens_media --target ~\/\.codex\/skills/);
 });
+
+async function assertCliFailure(args, pattern) {
+  await assert.rejects(runCli(args), (error) => {
+    assert.match(error.stderr, pattern);
+    return true;
+  });
+}

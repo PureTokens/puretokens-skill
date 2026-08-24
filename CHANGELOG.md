@@ -6,6 +6,17 @@
 
 ## Unreleased
 
+- Fixed the `gpt-image-2` MCP branch: its generation call now terminates on native image content, so WorkBuddy does not make a spurious `puretokens_image_result` poll after a completed Image-2 response.
+- Rebuilt the bilingual README media catalog from the global base model catalog rather than a local routing cache or an API-key-scoped response. `npm run docs:sync-media-models-from-base-catalog` accepts only explicit image/video capabilities, carries every configured model ID into the published list, and `GET /v1/media/models` remains the execution-time authorization check.
+
+## 0.4.6 — 2026-08-20
+
+- Kept Pure Tokens Desktop as an optional managed delivery for Codex and WorkBuddy while restoring independent Skill installation and Direct Cloud execution paths.
+- Defined the third, host-native execution case for manually configured Pure Tokens media models: it preserves an explicit UI/tool selection only when the host proves the exact media capability and real delivery, otherwise falls back to the normal MCP or Direct Cloud decision tree without duplicate submission.
+- Kept newly added media models immediately usable from the authenticated live catalog without waiting for a Skill update, while publishing the registered model catalog and convenience aliases so users can discover the Skill's capabilities.
+- Defined Direct Cloud preflight delivery capability, API-key-scoped missing-model recovery, host-only request-ID handling, and zero-based multi-image `/content?index=N` retrieval.
+- Made WorkBuddy rendering replace the managed delivery atomically so removed source files cannot leave stale behavior behind, preserved users' explicit built-in or manually configured model choices, and corrected the canonical repository URL.
+
 ## 0.4.5 — 2026-08-20
 
 - Restored the Direct Cloud image-submit policy: image requests always send `async: true`. The execution layer still accepts a compatible synchronous `b64_json` or `url` response defensively, but the Skill never requests synchronous image generation.

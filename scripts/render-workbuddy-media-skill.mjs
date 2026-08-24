@@ -1,5 +1,5 @@
-import { createHash } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { createHash, randomUUID } from "node:crypto";
+import { mkdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { repositoryRoot } from "./skill-registry.mjs";
@@ -23,7 +23,7 @@ export async function renderWorkBuddyMediaSkill() {
   ]);
   const sourceManifest = JSON.parse(manifestText);
   const body = [workBuddyExecutionRules.trim(), stripFrontmatter(sourceSkill)].join("\n\n");
-  const entry = `---\nname: ${workBuddySkillName}\ndescription: Always route eligible WorkBuddy image and video requests through the shared Pure Tokens Media Skill before built-in media tools.\nalwaysApply: true\n---\n\n${body}`;
+  const entry = `---\nname: ${workBuddySkillName}\ndescription: Apply the shared Pure Tokens Media policy to eligible WorkBuddy image and video requests while preserving an explicit built-in or manually configured model choice.\nalwaysApply: true\n---\n\n${body}`;
   const manifest = {
     schemaVersion: 1,
     name: workBuddySkillName,
@@ -32,7 +32,7 @@ export async function renderWorkBuddyMediaSkill() {
     sourceSha256: sha256(entry),
     derivedFrom,
     displayName: "Pure Tokens Media",
-    description: "Desktop-managed WorkBuddy delivery of the shared Pure Tokens media behavior.",
+    description: "Generated WorkBuddy delivery of the shared Pure Tokens media behavior.",
     mcp: sourceManifest.mcp,
     rules: sourceManifest.rules,
     supportedClients: ["workbuddy"],
@@ -40,6 +40,7 @@ export async function renderWorkBuddyMediaSkill() {
     distribution: {
       workbuddy: {
         managedByDesktop: true,
+        manualInstallationSupported: true,
         alwaysApply: true,
         installRoot: "~/.workbuddy/skills"
       }
@@ -58,12 +59,43 @@ export async function renderWorkBuddyMediaSkill() {
 export async function writeWorkBuddyMediaSkill(outputRoot) {
   const { files, manifest } = await renderWorkBuddyMediaSkill();
   const destination = path.resolve(outputRoot);
-  for (const [relativePath, contents] of files) {
-    const filePath = path.join(destination, relativePath);
-    await mkdir(path.dirname(filePath), { recursive: true });
-    await writeFile(filePath, contents);
+  const parent = path.dirname(destination);
+  const name = path.basename(destination);
+  const staging = path.join(parent, `.${name}.staging-${randomUUID()}`);
+  const backup = path.join(parent, `.${name}.backup-${randomUUID()}`);
+  await mkdir(parent, { recursive: true });
+  try {
+    for (const [relativePath, contents] of files) {
+      const filePath = path.join(staging, relativePath);
+      await mkdir(path.dirname(filePath), { recursive: true });
+      await writeFile(filePath, contents);
+    }
+    if (await exists(destination)) {
+      await rename(destination, backup);
+      try {
+        await rename(staging, destination);
+      } catch (error) {
+        await rename(backup, destination).catch(() => undefined);
+        throw error;
+      }
+      await rm(backup, { recursive: true, force: false });
+    } else {
+      await rename(staging, destination);
+    }
+  } catch (error) {
+    await rm(staging, { recursive: true, force: true }).catch(() => undefined);
+    throw error;
   }
   return manifest;
+}
+
+async function exists(value) {
+  try {
+    await stat(value);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function stripFrontmatter(skillText) {

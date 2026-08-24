@@ -29,5 +29,5 @@ Update `CHANGELOG.md` with the user-visible behavior change.
 
 - This repository does not publish an npm package.
 - This repository does not use GitHub Actions for automatic Skill publication.
-- Claude Desktop and WorkBuddy Skills are distributed only when a maintainer explicitly creates a bundle and the user uploads and enables it in the client.
+- Claude Desktop uses a maintainer-built ZIP that the user uploads and enables. Codex can install the shared source directly; WorkBuddy uses the generated adapter when its host needs one. Pure Tokens Desktop can atomically manage Codex and WorkBuddy as a convenience path. Do not hand-maintain generated deliveries.
 - Do not put API keys, cookies, passwords, Router tokens, or local authorization URLs in the repository or a Skill bundle.

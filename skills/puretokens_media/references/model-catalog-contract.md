@@ -28,8 +28,8 @@ To support a stable natural-language skill without embedding a model-name table 
 
 ```json
 {
-  "id": "grok-imagine-video-1.5",
-  "displayName": "Grok Imagine Video 1.5",
+  "id": "grok-imagine-video-1.5-preview",
+  "displayName": "Grok Imagine Video 1.5 Preview",
   "aliases": ["grok video", "grok 1.5 video"],
   "provider": "xAI",
   "kind": "video",

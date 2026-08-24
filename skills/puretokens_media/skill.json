@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "name": "puretokens_media",
-  "version": "0.4.5",
+  "version": "0.4.7",
   "entry": "SKILL.md",
   "displayName": "Pure Tokens Media",
   "description": "Resolve and handle a Pure Tokens image or video request.",
@@ -32,11 +32,14 @@
     },
     "workbuddy": {
       "managedByDesktop": true,
+      "manualInstallationSupported": true,
       "generatedSkillName": "puretokens_workbuddy_router",
-      "alwaysApply": true
+      "alwaysApply": true,
+      "preservesExplicitHostModelChoice": true
     },
     "codex": {
       "managedByDesktop": true,
+      "manualInstallationSupported": true,
       "managedSkillDirectory": "~/.codex/skills/puretokens_media",
       "requiresPluginFeature": false,
       "supportsDirectCloud": true,
@@ -49,7 +52,6 @@
     "codex",
     "workbuddy",
     "gemini-cli",
-    "grok-build",
     "opencode"
   ],
   "excludedClients": [
@@ -57,6 +59,8 @@
   ],
   "rules": {
     "requiresExactModelId": true,
+    "liveCatalogDefinesSupportedModels": true,
+    "registeredAliasesAreConvenienceOnly": true,
     "naturalLanguageResolutionBelongsToSkill": true,
     "usesCuratedNaturalLanguageAliasRegistry": true,
     "usesDeterministicMediaDefaults": true,
@@ -71,13 +75,21 @@
     "successRequiresNativeMediaResult": true,
     "completedMediaRequiresLocalFileDelivery": true,
     "completedImageRequiresNativeImageContent": true,
+    "image2ReturnsNativeImageWithoutResultPolling": true,
     "completedMediaReportsExactModel": true,
     "completedMediaReportsLocalDelivery": true,
     "completedVideoUsesBoundedNativeResource": true,
     "supportsDirectCloudWithoutDesktop": true,
+    "desktopManagedDeliveryIsOptional": true,
+    "preservesExplicitHostModelChoice": true,
+    "supportsVerifiedHostNativeMediaExecution": true,
+    "hostNativeExecutionRequiresVerifiedMediaCapability": true,
+    "hostNativeExecutionAvoidsDuplicateSubmission": true,
     "directCloudRequiresHostInjectedCredentials": true,
     "directCloudUsesExplicitGatewayEndpointCapabilities": true,
     "directCloudImagesAlwaysAsync": true,
+    "directCloudRequiresDeliveryCapability": true,
+    "directCloudUsesZeroBasedContentIndexForMultipleImages": true,
     "directCloudDeliversSynchronousImageBytes": true,
     "directCloudDeliversAsyncContentBytes": true
   }
