@@ -1,7 +1,0 @@
-interface:
-  display_name: "Pure Tokens Media & Balance"
-  short_description: "Route a Pure Tokens balance, image, or video request to its focused rule set."
-  default_prompt: "Use $puretokens_media to check my Pure Tokens balance, generate an image, or generate a video through Pure Tokens."
-
-policy:
-  allow_implicit_invocation: true

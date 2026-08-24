@@ -3,27 +3,9 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { repositoryRoot } from "./skill-registry.mjs";
 
-export const mediaSkillName = "puretokens_media";
-
-export const mediaSkillSourceFiles = [
-  "SKILL.md",
-  "skill.json",
-  "agents/openai.yaml",
-  "adapters/workbuddy-execution.md",
-  "references/behavior-scenarios.json",
-  "references/balance.md",
-  "references/direct-cloud-contract.md",
-  "references/image.md",
-  "references/model-catalog-contract.md",
-  "references/natural-language-aliases.json",
-  "references/video.md"
-];
-
-const sourceFilesBySkill = new Map([[mediaSkillName, mediaSkillSourceFiles]]);
+export const managedSkillNames = ["puretokens_balance", "puretokens_image", "puretokens_video"];
 
 export async function getSkillSourceFiles(skillName) {
-  const explicitFiles = sourceFilesBySkill.get(skillName);
-  if (explicitFiles) return explicitFiles;
   const files = [];
   await collectFiles(path.join(repositoryRoot, "skills", skillName), "", files);
   return files.sort();
@@ -51,8 +33,8 @@ export async function getSkillProvenance(skillName) {
   };
 }
 
-export async function getMediaSkillProvenance() {
-  return getSkillProvenance(mediaSkillName);
+export async function getManagedSkillProvenances() {
+  return Promise.all(managedSkillNames.map(getSkillProvenance));
 }
 
 async function collectFiles(root, relativePath, files) {

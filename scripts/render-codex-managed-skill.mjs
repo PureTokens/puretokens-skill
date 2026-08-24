@@ -2,12 +2,13 @@ import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { repositoryRoot } from "./skill-registry.mjs";
-import { getSkillProvenance, getSkillSourceFiles, mediaSkillName } from "./media-skill-provenance.mjs";
+import { getSkillProvenance, getSkillSourceFiles, managedSkillNames } from "./media-skill-provenance.mjs";
 
-const managedSkillRoot = path.join(repositoryRoot, "dist", "codex", mediaSkillName);
-export const codexManagedSkillNames = [mediaSkillName];
+const managedSkillRoot = path.join(repositoryRoot, "dist", "codex");
+export const codexManagedSkillNames = managedSkillNames;
 
-export async function renderCodexManagedSkill(skillName = mediaSkillName) {
+export async function renderCodexManagedSkill(skillName) {
+  if (!codexManagedSkillNames.includes(skillName)) throw new Error(`Unknown managed Skill: ${skillName}`);
   const sourceRoot = path.join(repositoryRoot, "skills", skillName);
   const sourceFiles = await getSkillSourceFiles(skillName);
   const derivedFrom = await getSkillProvenance(skillName);
@@ -22,9 +23,9 @@ export async function renderCodexManagedSkill(skillName = mediaSkillName) {
   return { files, derivedFrom };
 }
 
-export async function writeCodexManagedSkill(outputRoot = managedSkillRoot) {
+export async function writeCodexManagedSkill(skillName, outputRoot = path.join(managedSkillRoot, skillName)) {
   const destination = path.resolve(outputRoot);
-  const { files, derivedFrom } = await renderCodexManagedSkill();
+  const { files, derivedFrom } = await renderCodexManagedSkill(skillName);
   await rm(destination, { recursive: true, force: true });
   for (const [relativePath, contents] of files) {
     const target = path.join(destination, relativePath);
@@ -32,6 +33,12 @@ export async function writeCodexManagedSkill(outputRoot = managedSkillRoot) {
     await writeFile(target, contents);
   }
   return derivedFrom;
+}
+
+export async function writeCodexManagedSkills(outputRoot = managedSkillRoot) {
+  const root = path.resolve(outputRoot);
+  await rm(root, { recursive: true, force: true });
+  return Promise.all(codexManagedSkillNames.map((name) => writeCodexManagedSkill(name, path.join(root, name))));
 }
 
 export async function renderCodexManagedSkills(skillNames = codexManagedSkillNames) {
@@ -47,6 +54,6 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   if (outputIndex >= 0 && (!outputRoot || outputRoot.startsWith("--"))) {
     throw new Error("--out requires a directory");
   }
-  const provenance = await writeCodexManagedSkill(outputRoot);
-  process.stdout.write(`Rendered ${mediaSkillName} ${provenance.version} to ${path.resolve(outputRoot || managedSkillRoot)}\n`);
+  await writeCodexManagedSkills(outputRoot);
+  process.stdout.write(`Rendered managed Codex Skills to ${path.resolve(outputRoot || managedSkillRoot)}\n`);
 }

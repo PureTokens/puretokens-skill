@@ -5,10 +5,8 @@ import { repositoryRoot } from "./skill-registry.mjs";
 
 const catalogPath = path.join(
   repositoryRoot,
-  "skills",
-  "puretokens_media",
   "references",
-  "published-model-catalog.json"
+  "media-model-catalog.json"
 );
 
 const readmes = [

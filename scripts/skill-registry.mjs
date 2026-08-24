@@ -70,8 +70,6 @@ export async function validateRepository() {
     }
     if (manifest?.behaviorTests) await verifyFile(errors, manifest.behaviorTests);
     if (manifest?.naturalLanguageAliases) await verifyFile(errors, manifest.naturalLanguageAliases);
-    if (manifest?.directCloudContract) await verifyFile(errors, manifest.directCloudContract);
-    if (manifest?.workBuddyAdapter) await verifyFile(errors, manifest.workBuddyAdapter);
     const claudeDesktop = manifest?.distribution?.claudeDesktop;
     if (claudeDesktop) {
       if (claudeDesktop.format !== "zip") errors.push(`${directory}: Claude Desktop distribution must use zip format`);
@@ -103,6 +101,11 @@ export async function validateRepository() {
     if (forbiddenPattern.test(skillText) || forbiddenPattern.test(JSON.stringify(manifest))) {
       errors.push(`${directory}: skill content contains a forbidden credential or local-runtime marker`);
     }
+  }
+
+  const expected = ["puretokens_balance", "puretokens_image", "puretokens_video"];
+  if (registry.skills.length !== expected.length || expected.some((name, index) => registry.skills[index]?.name !== name)) {
+    errors.push("skills/index.json must list the three specialist Skills in order");
   }
 
   for (const entry of registry.skills) {
