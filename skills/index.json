@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "skills": [
-    {"name":"puretokens_balance","version":"0.6.0","entry":"skills/puretokens_balance/SKILL.md","manifest":"skills/puretokens_balance/skill.json","summary":"Read a balance from the current Pure Tokens connection.","distribution":"cross-client-source"},
-    {"name":"puretokens_image","version":"0.6.0","entry":"skills/puretokens_image/SKILL.md","manifest":"skills/puretokens_image/skill.json","summary":"Generate images through the current configured Images API.","distribution":"cross-client-source"},
-    {"name":"puretokens_video","version":"0.6.0","entry":"skills/puretokens_video/SKILL.md","manifest":"skills/puretokens_video/skill.json","summary":"Generate videos through the current configured Videos API.","distribution":"cross-client-source"}
+    {"name":"puretokens_balance","version":"0.7.0","entry":"skills/puretokens_balance/SKILL.md","manifest":"skills/puretokens_balance/skill.json","summary":"Read a balance from the current configured connection.","distribution":"cross-client-source"},
+    {"name":"puretokens_image","version":"0.7.0","entry":"skills/puretokens_image/SKILL.md","manifest":"skills/puretokens_image/skill.json","summary":"Generate images through the current configured Images API.","distribution":"cross-client-source"},
+    {"name":"puretokens_video","version":"0.7.0","entry":"skills/puretokens_video/SKILL.md","manifest":"skills/puretokens_video/skill.json","summary":"Generate videos through the current configured Videos API.","distribution":"cross-client-source"}
   ]
 }

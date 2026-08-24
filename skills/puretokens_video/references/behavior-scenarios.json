@@ -1,0 +1,16 @@
+{
+  "$schema": "https://puretokensx.com/schemas/media-behavior-scenarios.schema.json",
+  "schemaVersion": 1,
+  "kind": "video",
+  "scenarios": [
+    { "id": "video-model-alias-ambiguous", "when": "an alias resolves to multiple exact model IDs", "then": "ask the user to choose an exact ID; do not submit" },
+    { "id": "video-model-unavailable", "when": "the authenticated catalog lacks the exact video ID or capability", "then": "state that the model is unavailable or unauthorized and list catalog candidates; do not submit" },
+    { "id": "video-execution-unavailable", "when": "the current connection cannot execute the request or deliver native video bytes", "then": "stop before submission and ask the user to check the existing connection configuration" },
+    { "id": "video-parameter-unsupported", "when": "a requested duration, aspect ratio, resolution, or size is rejected or unsupported", "then": "report the unsupported parameter and ask the user for a supported value; do not alter it silently" },
+    { "id": "video-input-media", "when": "the user asks for image-to-video, video editing, audio input, or uploads media", "then": "explain that only text-to-video is supported and ask for a text description; do not upload media" },
+    { "id": "video-task-pending", "when": "the same task is pending or running", "then": "report the current state and continue reading only that task" },
+    { "id": "video-task-terminal-failure", "when": "the same task reports failure, cancellation, or expiry", "then": "report the returned failure and require an explicit new request before another submission" },
+    { "id": "video-task-timeout-or-unknown", "when": "the status request times out or the submission outcome is unknown", "then": "report the uncertainty, offer to continue querying the same task if an ID exists, and never auto-resubmit" },
+    { "id": "video-content-delivery-failure", "when": "a task is complete but native content cannot be delivered", "then": "report the delivery failure and offer only a same-task content retry; do not claim success" }
+  ]
+}

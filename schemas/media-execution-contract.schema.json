@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://puretokensx.com/schemas/media-execution-contract.schema.json",
+  "title": "Pure Tokens specialist execution contract",
+  "type": "object",
+  "required": ["schemaVersion", "kind", "transport", "result"],
+  "properties": {
+    "$schema": { "const": "https://puretokensx.com/schemas/media-execution-contract.schema.json" },
+    "schemaVersion": { "const": 1 },
+    "kind": { "enum": ["balance", "image", "video"] },
+    "transport": {
+      "type": "object",
+      "required": ["usesCurrentConfiguredConnection", "doesNotInspectConnectionIdentity"],
+      "properties": {
+        "usesCurrentConfiguredConnection": { "const": true },
+        "usesRelativePathsOnly": { "const": true },
+        "doesNotInspectConnectionIdentity": { "const": true },
+        "requiresNativeMediaByteDelivery": { "const": true },
+        "requiresHostExposedReadOnlyBalanceCapability": { "const": true }
+      },
+      "additionalProperties": true
+    },
+    "operations": {
+      "type": "object",
+      "properties": {
+        "catalog": { "$ref": "#/$defs/request" },
+        "submit": { "$ref": "#/$defs/request" },
+        "status": { "$ref": "#/$defs/request" },
+        "content": { "$ref": "#/$defs/request" }
+      },
+      "additionalProperties": false
+    },
+    "result": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": true
+    },
+    "unsupportedInput": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "kind": { "const": "image" } } },
+      "then": {
+        "required": ["operations", "unsupportedInput"],
+        "properties": {
+          "operations": {
+            "required": ["submit", "status", "content"],
+            "properties": {
+              "submit": {
+                "required": ["method", "path", "requiredBodyFields", "fixedBody"],
+                "properties": {
+                  "method": { "const": "POST" },
+                  "path": { "const": "/v1/images/generations" },
+                  "requiredBodyFields": { "allOf": [{ "$ref": "#/$defs/stringArray" }, { "contains": { "const": "model" } }, { "contains": { "const": "prompt" } }, { "contains": { "const": "async" } }] },
+                  "fixedBody": { "type": "object", "required": ["async"], "properties": { "async": { "const": true } } }
+                }
+              },
+              "status": { "properties": { "method": { "const": "GET" }, "pathTemplate": { "const": "/v1/images/{task_id}" } } },
+              "content": { "properties": { "method": { "const": "GET" }, "pathTemplate": { "const": "/v1/images/{task_id}/content?index={index}" } } }
+            }
+          },
+          "result": { "required": ["successRequires", "sameTaskOnly", "neverAutoResubmit"], "properties": { "successRequires": { "const": "native_image_bytes" }, "sameTaskOnly": { "const": true }, "neverAutoResubmit": { "const": true } } }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "kind": { "const": "video" } } },
+      "then": {
+        "required": ["operations", "unsupportedInput"],
+        "properties": {
+          "operations": {
+            "required": ["catalog", "submit", "status", "content"],
+            "properties": {
+              "catalog": { "properties": { "method": { "const": "GET" }, "path": { "const": "/v1/media/models" } } },
+              "submit": {
+                "required": ["method", "path", "requiredBodyFields"],
+                "properties": {
+                  "method": { "const": "POST" },
+                  "path": { "const": "/v1/videos" },
+                  "requiredBodyFields": { "allOf": [{ "$ref": "#/$defs/stringArray" }, { "contains": { "const": "model" } }, { "contains": { "const": "prompt" } }] }
+                }
+              },
+              "status": { "properties": { "method": { "const": "GET" }, "pathTemplate": { "const": "/v1/videos/{task_id}" } } },
+              "content": { "properties": { "method": { "const": "GET" }, "pathTemplate": { "const": "/v1/videos/{task_id}/content" } } }
+            }
+          },
+          "result": { "required": ["successRequires", "sameTaskOnly", "neverAutoResubmit"], "properties": { "successRequires": { "const": "native_video_bytes" }, "sameTaskOnly": { "const": true }, "neverAutoResubmit": { "const": true } } }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "kind": { "const": "balance" } } },
+      "then": {
+        "properties": {
+          "transport": { "required": ["requiresHostExposedReadOnlyBalanceCapability"] },
+          "result": { "required": ["reportOnlyReturnedFields", "neverEstimate", "neverRetry"] }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "stringArray": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+    "request": {
+      "type": "object",
+      "required": ["method"],
+      "properties": {
+        "method": { "enum": ["GET", "POST"] },
+        "path": { "type": "string", "pattern": "^/v1/" },
+        "pathTemplate": { "type": "string", "pattern": "^/v1/" },
+        "requiredBodyFields": { "$ref": "#/$defs/stringArray" },
+        "fixedBody": { "type": "object" },
+        "conditionalBodyFields": { "type": ["object", "array"] }
+      },
+      "oneOf": [{ "required": ["path"] }, { "required": ["pathTemplate"] }],
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

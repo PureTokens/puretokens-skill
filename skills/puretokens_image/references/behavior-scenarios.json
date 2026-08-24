@@ -1,0 +1,18 @@
+{
+  "$schema": "https://puretokensx.com/schemas/media-behavior-scenarios.schema.json",
+  "schemaVersion": 1,
+  "kind": "image",
+  "scenarios": [
+    { "id": "image-model-alias-ambiguous", "when": "an alias resolves to multiple exact model IDs", "then": "ask the user to choose an exact ID; do not submit" },
+    { "id": "image-model-unavailable", "when": "the authenticated catalog lacks the exact image ID or capability", "then": "state that the model is unavailable or unauthorized and list catalog candidates; do not submit" },
+    { "id": "image-execution-unavailable", "when": "the current connection cannot execute the request or deliver native image bytes", "then": "stop before submission and ask the user to check the existing connection configuration" },
+    { "id": "image-count-invalid", "when": "n is not an explicit integer from 1 through 6", "then": "explain the one-task limit and ask for a supported count; do not submit" },
+    { "id": "image-pixel-size-invalid", "when": "a requested pixel canvas or image_size is unsupported", "then": "list the supported canvas and image_size values; do not submit" },
+    { "id": "image-physical-size", "when": "the request uses a physical dimension such as 200cm x 230cm", "then": "explain that physical dimensions cannot be guaranteed and ask for a supported pixel canvas; do not submit" },
+    { "id": "image-edit-input", "when": "the user asks to edit, mask, upload, or use a reference image", "then": "explain that only text-to-image is supported and ask for a text description; do not upload media" },
+    { "id": "image-task-pending", "when": "the same task is pending or running", "then": "report the current state and continue reading only that task" },
+    { "id": "image-task-terminal-failure", "when": "the same task reports failure, cancellation, or expiry", "then": "report the returned failure and require an explicit new request before another submission" },
+    { "id": "image-task-timeout-or-unknown", "when": "the status request times out or the submission outcome is unknown", "then": "report the uncertainty, offer to continue querying the same task if an ID exists, and never auto-resubmit" },
+    { "id": "image-content-delivery-failure", "when": "a task is complete but native content cannot be delivered", "then": "report the delivery failure and offer only a same-task content retry; do not claim success" }
+  ]
+}

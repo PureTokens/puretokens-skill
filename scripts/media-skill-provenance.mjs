@@ -3,8 +3,6 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { repositoryRoot } from "./skill-registry.mjs";
 
-export const managedSkillNames = ["puretokens_balance", "puretokens_image", "puretokens_video"];
-
 export async function getSkillSourceFiles(skillName) {
   const files = [];
   await collectFiles(path.join(repositoryRoot, "skills", skillName), "", files);

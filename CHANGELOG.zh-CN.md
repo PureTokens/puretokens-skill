@@ -6,17 +6,20 @@
 
 ## Unreleased
 
-- 将较重的 `puretokens_media` 策略拆为轻量意图路由和独立的余额、生图、生视频规则文件。客户端仍只安装 `puretokens_media`，因此不会产生相互竞争的隐式 Skill；每次请求只加载相关规则。生成的 Codex、Claude Desktop 与 WorkBuddy 交付均包含三份专项规则，来源哈希也覆盖这些文件。
-- 新增独立且 fail-closed 的余额查询策略。CC Switch 用户仍可在供应商卡的“用量查询”查看当前 Pure Tokens 余额；只有宿主明确把该只读能力开放给对话任务时，Skill 才会调用它。Skill 绝不会将媒体 MCP、用量估算、缓存值或凭据当作余额查询；未开放给对话时会给出供应商卡的下一步指引。
-- 补全特殊媒体请求的面向用户提示与下一步指引：不支持的像素画布/分辨率或数量、模型歧义或无权限、连接执行不可用、本机交付能力缺失、任务错误、超时和交付失败都会列出安全可选项，并区分 Desktop 受管与自管通道；Skill 不会静默替换模型或重试付费任务。参考图和视频编辑现在会 fail-closed，并明确提示用户改用文字描述生成新媒体。
-- 补充 CC Switch/Codex 的 Connection Images API 缺失能力提示：用户明确选择非 `gpt-image-2` 图片模型，而当前连接不能直连执行时，Skill 必须在转用原生执行器、MCP 或 Direct Cloud 前告知用户该连接不能直接执行这个精确模型，并说明已验证的同模型备用通道。没有同模型备用通道就停止，绝不静默换模型。
-- 新增受保护的 Codex/CC Switch Connection Images API 分支，用于用户明确选择的非 `gpt-image-2` 图片模型：只有宿主明确将当前 Pure Tokens 连接提供为可调用、已认证的 HTTPS Images API 执行器并能交付原生图片时，Skill 才读取该连接的 `/v1/media/models`、确认精确 `image` 模型，并单次提交到 `/v1/images/generations`，不使用 MCP、Direct Cloud 或第二份凭据。仅保存 API Key 或仅能读取目录不构成图片执行能力。
-- 新增物理图片尺寸的 fail-closed 规则：`200cm × 230cm` 等带物理单位的值既不是图片数量，也不是可传入的 `size` 参数；Skill 不提交、不猜测 DPI、不自动换算，并明确列出支持的 `1024x1024`、`1536x1024`、`1024x1536` 画布及可选 `1K`/`2K`/`4K` 输出分辨率。
-- 将 `puretokens_media` 限定为仅支持 Pure Tokens：当前连接、MCP 服务、原生媒体执行器或 Direct Cloud 凭据属于其他服务商、或无法确认归属时，Skill 会 fail-closed，不提交媒体请求，并明确告知用户本 Skill 仅支持 Pure Tokens，同时提供官网 `https://puretokensx.com/`。
-- 新增受保护的 Codex/CC Switch **Pure Tokens Connection Videos API** 路径：只有宿主明确把当前 Pure Tokens 连接提供为可调用、已认证的 HTTPS 视频执行器并可交付实际字节时，Skill 才读取该连接的 `/v1/media/models`，将精确 `video` 模型单次提交至 `/v1/videos`，再轮询并取回同一任务的 `/content`。它复用已配置连接，不要求 Desktop、MCP 或第二份 Direct Cloud 凭据；仅保存 API Key 的聊天连接绝不会被误认为具备视频执行能力。
-- 纠正 Codex/CC Switch 的 Image-2 路由为面向用户的 Pure Tokens 连接：默认生图和明确 `gpt-image-2` / `image2` 调用 `POST https://api.puretokensx.com/v1/images/generations` 并传入 `model: "gpt-image-2"`。Skill 绝不调用上游地址，不依赖全局宿主指令或 MCP，且该 API 路径失败后绝不回退到 MCP 或 Direct Cloud。
-- 修复 `gpt-image-2` 的 MCP 分支：生成调用一旦已返回原生图片就结束，WorkBuddy 不会在已完成的 Image-2 响应后错误继续调用 `puretokens_image_result`。
-- 重建中英文 README 的媒体模型清单：它现在从全局基础模型目录生成，不再读取本机路由缓存或某个 API Key 范围内的响应。`npm run docs:sync-media-models-from-base-catalog` 只接受明确的图片/视频能力，并将每个已配置模型 ID 写入发布清单；执行时仍以 `GET /v1/media/models` 的认证结果为准。
+## 0.7.0 — 2026-08-24
+
+- 为余额、图片和视频加入随 Skill 安装的版本化执行契约与面向用户的行为场景，覆盖别名歧义、目录授权、请求边界、不支持的媒体输入、任务状态、未知提交、超时和原生内容交付，且绝不自动重提。
+- 将公开模型目录收敛为唯一别名来源；按图片/视频能力生成的模型选择引用会随对应 Skill 安装，并与双语 README 一起校验。
+- 发布诚实的宿主支持矩阵，并移除旧的 WorkBuddy 合并 always-apply 媒体渲染器。Desktop Router Adapter 与专项 Skill 交付现在明确是两个独立问题。
+
+## 0.6.1 — 2026-08-24
+
+- 将 `puretokens_balance`、`puretokens_image`、`puretokens_video` 收敛到当前已配置连接：宿主负责 Base URL、认证、路由、HTTP 执行与原生媒体交付；Skill 只使用相对 API 路径，绝不检查凭据、Base URL、provider 标签或服务归属。
+- 移除过时的连接归属拒绝与官网跳转。已配置连接要么执行 Images/Videos API 请求并交付原生字节，要么在计费提交前停止；不切换执行路径，也不做回退。
+
+## 已被 API-first 契约取代的历史记录
+
+以下记录仅描述过去版本。其中出现的 `puretokens_media`、MCP、Direct Cloud、Desktop 受管 Codex 路径、旧环境变量或 WorkBuddy 路由，均不属于当前专项 Skill 的执行契约。
 
 ## 0.4.6 — 2026-08-20
 

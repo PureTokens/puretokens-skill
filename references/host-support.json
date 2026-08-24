@@ -1,0 +1,47 @@
+{
+  "$schema": "https://puretokensx.com/schemas/host-support.schema.json",
+  "schemaVersion": 1,
+  "supported": [
+    {
+      "id": "codex",
+      "delivery": "manual-source",
+      "globalSkillDirectory": "~/.agents/skills",
+      "guidance": "Install each specialist Skill into ~/.agents/skills with the explicit --target command."
+    },
+    {
+      "id": "claude-code",
+      "delivery": "manual-source",
+      "globalSkillDirectory": "~/.claude/skills",
+      "guidance": "Install each specialist Skill into ~/.claude/skills with the explicit --target command."
+    },
+    {
+      "id": "claude-desktop",
+      "delivery": "bundle",
+      "guidance": "Bundle the required specialist Skill and upload it through Claude Desktop's Skills settings."
+    },
+    {
+      "id": "gemini-cli",
+      "delivery": "manual-source",
+      "globalSkillDirectory": "~/.gemini/skills",
+      "guidance": "Install each specialist Skill into ~/.gemini/skills with the explicit --target command."
+    }
+  ],
+  "notDistributed": [
+    {
+      "id": "workbuddy",
+      "reason": "No lightweight specialist-Skill delivery is currently shipped; the legacy combined always-apply media router is retired."
+    },
+    {
+      "id": "grok-build",
+      "reason": "The desktop Router adapter does not imply a verified specialist-Skill distribution."
+    },
+    {
+      "id": "opencode",
+      "reason": "No compatible specialist-Skill delivery is currently shipped."
+    },
+    {
+      "id": "trae",
+      "reason": "Trae remains a manual connection-configuration path, not a specialist-Skill distribution target."
+    }
+  ]
+}

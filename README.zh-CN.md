@@ -8,23 +8,48 @@
 | `puretokens_image` | 通过当前已配置的 Pure Tokens Images API 生成图片。 |
 | `puretokens_video` | 通过当前已配置的 Pure Tokens Videos API 生成视频。 |
 
-按需安装到宿主的 Skill 目录：
+按需安装到受支持宿主已声明的全局 Skill 目录：
 
 ```bash
-node bin/puretokens-skill.js install puretokens_balance --target ~/.codex/skills
-node bin/puretokens-skill.js install puretokens_image --target ~/.codex/skills
-node bin/puretokens-skill.js install puretokens_video --target ~/.codex/skills
+# Codex
+node bin/puretokens-skill.js install puretokens_balance --target ~/.agents/skills
+node bin/puretokens-skill.js install puretokens_image --target ~/.agents/skills
+node bin/puretokens-skill.js install puretokens_video --target ~/.agents/skills
+
+# Claude Code
+node bin/puretokens-skill.js install puretokens_balance --target ~/.claude/skills
+node bin/puretokens-skill.js install puretokens_image --target ~/.claude/skills
+node bin/puretokens-skill.js install puretokens_video --target ~/.claude/skills
+
+# Gemini CLI
+node bin/puretokens-skill.js install puretokens_balance --target ~/.gemini/skills
+node bin/puretokens-skill.js install puretokens_image --target ~/.gemini/skills
+node bin/puretokens-skill.js install puretokens_video --target ~/.gemini/skills
 ```
+
+## 宿主支持
+
+CC Switch 是连接配置工具，不是 Skill 宿主。受支持的宿主会使用 CC Switch、Pure Tokens Desktop 或用户已经配置好的当前连接。
+
+| 宿主 | 当前专项 Skill 交付方式 | 用户操作 |
+| --- | --- | --- |
+| Codex | 手动安装源文件 | 将所需 Skill 安装到 `~/.agents/skills`。 |
+| Claude Code | 手动安装源文件 | 将所需 Skill 安装到 `~/.claude/skills`。 |
+| Claude Desktop | ZIP 包 | 打包所需专项 Skill，在 Claude Desktop 的 Skills 设置中上传并启用。 |
+| Gemini CLI | 手动安装源文件 | 将所需 Skill 安装到 `~/.gemini/skills`。 |
+| WorkBuddy、Grok Build、OpenCode、Trae | 当前不提供交付 | 它们的 Desktop Router/连接配置 Adapter 不代表已提供兼容的专项 Skill 交付。 |
+
+唯一事实来源是 `references/host-support.json`。CLI 刻意不会猜测宿主目录。
 
 ## 连接契约
 
-宿主当前已配置的 Pure Tokens 连接负责 Base URL、认证和路由。CC Switch、Pure Tokens Desktop 或用户手动配置的宿主连接都可以提供该连接。Skill 不会读取、扫描、索取、打印或保存凭据和宿主配置。
+宿主当前已配置的连接负责 Base URL、认证和路由。CC Switch、Pure Tokens Desktop 或用户手动配置的宿主连接都可以提供该连接。Skill 不会读取、扫描、索取、打印或保存凭据和宿主配置，也不检查 provider 标签、Base URL 或服务归属。
 
 `puretokens_image` 使用 `POST /v1/images/generations`；默认模型为 `gpt-image-2`，每次图片请求都传 `async: true`。选择其他图片模型时，先通过 `GET /v1/media/models` 验证精确 ID 和 `image` capability。
 
 `puretokens_video` 先使用 `GET /v1/media/models`，验证精确 `video` 模型 ID，再使用 `POST /v1/videos`。默认模型为 `grok-imagine-video-1.5-preview`；只轮询并交付同一任务的原生字节。
 
-当前连接必须能执行这些请求并交付原生图片或视频字节。不能时，Skill 会在付费提交前停止，并提示用户检查已有 Pure Tokens Base URL、认证和路由配置；不会切换到其他提供方或执行路径。当前连接不是 Pure Tokens 时，请使用 https://puretokensx.com/。
+当前连接必须能执行这些请求并交付原生图片或视频字节。不能时，Skill 会在付费提交前停止，并提示用户检查已有 Pure Tokens Base URL、认证和路由配置；不会切换到其他执行路径，也不识别或分支处理其他中转服务。
 
 ## 图片尺寸和数量
 
@@ -32,9 +57,16 @@ node bin/puretokens-skill.js install puretokens_video --target ~/.codex/skills
 
 `200cm × 230cm` 这类物理尺寸无法精确保证，也绝不会传给 `n` 或 `size`。Skill 会说明限制并请用户选择支持规格。
 
+## 使用示例
+
+- 生图：`使用 gpt-image-2 生成一张 1024x1024 的雪后黎明小镇插画。`
+- 其他图片模型：`用 nano banana pro 生成一张简洁的产品海报。` Skill 只会解析唯一的已安装别名，再在当前认证目录中确认精确 ID 和图片 capability。
+- 生视频：`用 grok 1.5 video 生成一段六秒钟的电影感海上日出。`
+- 继续已有任务：`继续查询任务 <task_id>。` Skill 只读取该任务，绝不会自动提交替代任务。
+
 ## 模型发现
 
-README 仅用于发现能力。实际执行时，当前认证后的 `GET /v1/media/models` 仍是非默认图片和所有视频的唯一事实来源。模型能力只来自基础模型目录明确声明的图片/视频能力，绝不通过名称推断。
+README 仅用于发现能力。实际执行时，当前认证后的 `GET /v1/media/models` 仍是非默认图片和所有视频的唯一事实来源。模型能力只来自基础模型目录明确声明的图片/视频能力，绝不通过名称推断。每个安装后的图片/视频 Skill 都携带从同一目录生成的、按能力拆分的 `references/model-selection.json`；别名只有唯一对应一个精确模型 ID 时才可使用。
 
 <!-- media-model-catalog:start -->
 ## 媒体模型清单
@@ -79,7 +111,7 @@ README 只从基础目录中带有明确图片/视频能力的模型生成，不
 拉取最新仓库后，分别升级已经安装的 Skill：
 
 ```bash
-node bin/puretokens-skill.js upgrade puretokens_image --target ~/.codex/skills
+node bin/puretokens-skill.js upgrade puretokens_image --target ~/.agents/skills
 ```
 
 Claude Desktop 需要打包并上传对应的专项 Skill：

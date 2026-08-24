@@ -1,0 +1,57 @@
+{
+  "$schema": "https://puretokensx.com/schemas/model-selection.schema.json",
+  "schemaVersion": 1,
+  "capability": "image",
+  "catalogUpdatedAt": "2026-08-21",
+  "catalogCapturedAt": "2026-08-21T02:46:19.421Z",
+  "models": [
+    {
+      "id": "gpt-image-2",
+      "aliases": [
+        "image2"
+      ]
+    },
+    {
+      "id": "grok-imagine-image",
+      "aliases": [
+        "grok image"
+      ]
+    },
+    {
+      "id": "grok-imagine-image-quality",
+      "aliases": []
+    },
+    {
+      "id": "nano-banana-2",
+      "aliases": [
+        "nano banana 2"
+      ]
+    },
+    {
+      "id": "nano-banana-pro",
+      "aliases": [
+        "nano banana pro"
+      ]
+    },
+    {
+      "id": "qwen-image-2.0",
+      "aliases": []
+    },
+    {
+      "id": "qwen-image-2.0-pro",
+      "aliases": []
+    },
+    {
+      "id": "seedream-5.0-pro",
+      "aliases": []
+    },
+    {
+      "id": "wan2.7-image",
+      "aliases": []
+    },
+    {
+      "id": "wan2.7-image-pro",
+      "aliases": []
+    }
+  ]
+}

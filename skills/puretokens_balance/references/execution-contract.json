@@ -1,0 +1,15 @@
+{
+  "$schema": "https://puretokensx.com/schemas/media-execution-contract.schema.json",
+  "schemaVersion": 1,
+  "kind": "balance",
+  "transport": {
+    "usesCurrentConfiguredConnection": true,
+    "doesNotInspectConnectionIdentity": true,
+    "requiresHostExposedReadOnlyBalanceCapability": true
+  },
+  "result": {
+    "reportOnlyReturnedFields": true,
+    "neverEstimate": true,
+    "neverRetry": true
+  }
+}

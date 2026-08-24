@@ -8,23 +8,48 @@ This repository provides three independent Skills:
 | `puretokens_image` | Generates images through the current configured Pure Tokens Images API. |
 | `puretokens_video` | Generates videos through the current configured Pure Tokens Videos API. |
 
-Install the Skills you need into the host's Skill directory:
+Install the Skills you need into the supported host's documented global Skill directory:
 
 ```bash
-node bin/puretokens-skill.js install puretokens_balance --target ~/.codex/skills
-node bin/puretokens-skill.js install puretokens_image --target ~/.codex/skills
-node bin/puretokens-skill.js install puretokens_video --target ~/.codex/skills
+# Codex
+node bin/puretokens-skill.js install puretokens_balance --target ~/.agents/skills
+node bin/puretokens-skill.js install puretokens_image --target ~/.agents/skills
+node bin/puretokens-skill.js install puretokens_video --target ~/.agents/skills
+
+# Claude Code
+node bin/puretokens-skill.js install puretokens_balance --target ~/.claude/skills
+node bin/puretokens-skill.js install puretokens_image --target ~/.claude/skills
+node bin/puretokens-skill.js install puretokens_video --target ~/.claude/skills
+
+# Gemini CLI
+node bin/puretokens-skill.js install puretokens_balance --target ~/.gemini/skills
+node bin/puretokens-skill.js install puretokens_image --target ~/.gemini/skills
+node bin/puretokens-skill.js install puretokens_video --target ~/.gemini/skills
 ```
+
+## Host support
+
+CC Switch is a connection-configuration tool, not a Skill host. A supported host uses whichever current connection CC Switch, Pure Tokens Desktop, or the user has already configured.
+
+| Host | Current specialist-Skill delivery | What the user does |
+| --- | --- | --- |
+| Codex | Manual source install | Install the required Skill into `~/.agents/skills`. |
+| Claude Code | Manual source install | Install the required Skill into `~/.claude/skills`. |
+| Claude Desktop | ZIP bundle | Bundle the required specialist Skill and upload/enable it in Claude Desktop Skills settings. |
+| Gemini CLI | Manual source install | Install the required Skill into `~/.gemini/skills`. |
+| WorkBuddy, Grok Build, OpenCode, Trae | Not currently distributed | Their Desktop Router/configuration adapters do not imply a compatible specialist-Skill delivery. |
+
+The canonical matrix is `references/host-support.json`. The CLI intentionally never guesses a host directory.
 
 ## Connection contract
 
-The host's current Pure Tokens connection owns the Base URL, authentication, and routing. CC Switch, Pure Tokens Desktop, or a manually configured host connection can provide it. The Skills do not read, scan, ask for, print, or store credentials or host configuration.
+The host's current configured connection owns the Base URL, authentication, and routing. CC Switch, Pure Tokens Desktop, or a manually configured host connection can provide it. The Skills do not read, scan, ask for, print, or store credentials or host configuration; they do not inspect a provider label, Base URL, or service attribution.
 
 `puretokens_image` uses `POST /v1/images/generations`; the default is `gpt-image-2`, and every image request sends `async: true`. For another image model, it first verifies the exact ID and `image` capability with `GET /v1/media/models`.
 
 `puretokens_video` first uses `GET /v1/media/models`, verifies an exact `video` model ID, then uses `POST /v1/videos`. Its default is `grok-imagine-video-1.5-preview`; it polls and delivers only the same task's native bytes.
 
-The active connection must execute those requests and deliver native image or video bytes. If it cannot, the Skill stops before a billable submission and tells the user to check the existing Pure Tokens Base URL, authentication, and routing configuration. It never falls back to another provider or execution path. If the connection is not Pure Tokens, use https://puretokensx.com/.
+The active connection must execute those requests and deliver native image or video bytes. If it cannot, the Skill stops before a billable submission and tells the user to check the existing Pure Tokens Base URL, authentication, and routing configuration. It never falls back to another execution path and does not identify or branch on other relay services.
 
 ## Image sizes and count
 
@@ -32,9 +57,16 @@ Images default to one result. An explicit `n` must be an integer from 1 through 
 
 Physical dimensions such as `200cm × 230cm` cannot be guaranteed and are never passed as `n` or `size`. The Skill explains the limitation and asks the user to choose one of the supported options.
 
+## Usage examples
+
+- Image: `Use gpt-image-2 to generate a 1024x1024 illustration of a snowy village at dawn.`
+- Another image model: `Use nano banana pro to generate a clean product poster.` The Skill resolves a unique installed alias, then confirms the exact ID and image capability in the current authenticated catalog.
+- Video: `Use grok 1.5 video to generate a six-second cinematic sunrise over the ocean.`
+- Existing task only: `Continue querying task <task_id>.` The Skill only reads that task; it never submits a replacement task automatically.
+
 ## Model discovery
 
-The README is for discovery only. At execution time, the current authenticated `GET /v1/media/models` response remains authoritative for non-default images and all videos. Capabilities are taken only from the base model catalog's explicit image/video declarations, never inferred from a model name.
+The README is for discovery only. At execution time, the current authenticated `GET /v1/media/models` response remains authoritative for non-default images and all videos. Capabilities are taken only from the base model catalog's explicit image/video declarations, never inferred from a model name. Each installed image/video Skill includes its capability-specific `references/model-selection.json`, generated from this same catalog; an alias is usable only when it resolves to one exact model ID.
 
 <!-- media-model-catalog:start -->
 ## Media model catalog
@@ -79,7 +111,7 @@ README is generated only from base-catalog models with explicit image/video capa
 Pull the current repository and run the matching command for each installed Skill:
 
 ```bash
-node bin/puretokens-skill.js upgrade puretokens_image --target ~/.codex/skills
+node bin/puretokens-skill.js upgrade puretokens_image --target ~/.agents/skills
 ```
 
 For Claude Desktop, bundle and upload the required specialist Skill:

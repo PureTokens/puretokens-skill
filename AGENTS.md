@@ -16,11 +16,13 @@ scripts/                                  # repository validation helpers
 
 ## Product boundary
 
-- A **Skill** interprets the user's natural-language balance or media request. A balance request uses only a host-exposed, authenticated, read-only capability and never infers a value; a media request resolves an explicit model selection through an authenticated media catalog and asks a clarification question when the request is ambiguous. It selects an execution branch but does not itself hold credentials or execute HTTP.
-- The **Pure Tokens MCP** exposes strict typed tools, accepts only an exact model ID, submits and polls tasks, and never performs natural-language matching or silent model fallback. It is required only for hosts without native Shell/HTTPS tool execution.
-- The **Pure Tokens API** remains authoritative for API-key group access and endpoint capabilities. The **Desktop Router** remains authoritative for Desktop-managed profile access and `openai_images` / `openai_video` routing. A skill must never infer either from a model name.
+- A **Skill** interprets the user's natural-language balance or media request. A balance request uses only a host-exposed, authenticated, read-only capability and never infers a value. A media request resolves an explicit model selection through the current configured connection's authenticated media catalog, requests only relative API paths and JSON bodies, and asks a clarification question when the request is ambiguous.
+- The host owns the configured Base URL, authentication, routing, HTTP execution, and native-media delivery. The Skill never holds, reads, scans, asks for, displays, or stores credentials or host configuration.
+- The **Pure Tokens API** remains authoritative for API-key group access and endpoint capabilities. The **Desktop Router** remains authoritative for Desktop-managed profile access and `openai_images` / `openai_video` routing. A Skill must never infer either from a model name.
 
-The media skill supports a capability branch: use the registered `puretokens-image` MCP tools when available; otherwise an Agent with HTTPS execution and a host-injected `PURETOKENS_API_KEY` may use the documented Direct Cloud contract. Do not embed a Router token, a cloud API key, a localhost URL, or a sidecar binary in this repository.
+Skills do not inspect or validate a connection's Base URL, provider label, service attribution, or credentials. They make no compatibility or fallback branch for another relay: they use the current configured connection's relative API paths once, or stop before a billable submission when that connection cannot execute the request or deliver native media bytes. Do not embed a Router token, cloud API key, localhost URL, or sidecar binary in this repository.
+
+`references/media-model-catalog.json` is the sole source for published model aliases. `npm run docs:sync-media-models` derives the capability-specific `references/model-selection.json` files installed with image/video Skills and synchronizes both READMEs. Every specialist Skill includes an installed execution contract and behavior-scenario reference; update and test them with its `SKILL.md` in the same change. Do not create a combined always-apply media Skill for a host.
 
 ## Conventions
 
@@ -35,7 +37,7 @@ The media skill supports a capability branch: use the registered `puretokens-ima
 ```bash
 npm run check
 node bin/puretokens-skill.js list
-node bin/puretokens-skill.js install puretokens_media --target /private/tmp/puretokens-skill-test
+node bin/puretokens-skill.js install puretokens_image --target /private/tmp/puretokens-skill-test
 ```
 
 Before committing, also run:

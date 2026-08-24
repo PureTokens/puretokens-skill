@@ -1,0 +1,33 @@
+{
+  "$schema": "https://puretokensx.com/schemas/media-execution-contract.schema.json",
+  "schemaVersion": 1,
+  "kind": "image",
+  "transport": {
+    "usesCurrentConfiguredConnection": true,
+    "usesRelativePathsOnly": true,
+    "doesNotInspectConnectionIdentity": true,
+    "requiresNativeMediaByteDelivery": true
+  },
+  "operations": {
+    "submit": {
+      "method": "POST",
+      "path": "/v1/images/generations",
+      "requiredBodyFields": ["model", "prompt", "async"],
+      "fixedBody": { "async": true },
+      "conditionalBodyFields": {
+        "n": { "onlyWhenExplicit": true, "integerRange": [1, 6] },
+        "size": { "onlyWhenExplicit": true, "allowed": ["1024x1024", "1536x1024", "1024x1536"] },
+        "image_size": { "onlyWhenExplicit": true, "allowed": ["1K", "2K", "4K"] }
+      }
+    },
+    "status": { "method": "GET", "pathTemplate": "/v1/images/{task_id}" },
+    "content": { "method": "GET", "pathTemplate": "/v1/images/{task_id}/content?index={index}" }
+  },
+  "result": {
+    "successRequires": "native_image_bytes",
+    "notSuccess": ["task_id", "status_text", "html", "svg", "component", "remote_url"],
+    "sameTaskOnly": true,
+    "neverAutoResubmit": true
+  },
+  "unsupportedInput": ["reference_image", "image_edit", "mask", "user_media_upload"]
+}

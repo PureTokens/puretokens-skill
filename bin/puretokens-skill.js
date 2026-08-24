@@ -144,12 +144,12 @@ async function bundleSkill(args) {
 }
 
 function createClaudeDesktopManifest(sourceManifest) {
-  const { workBuddyAdapter, distribution, supportedClients, ...sharedManifest } = sourceManifest;
+  const { distribution, supportedClients, ...sharedManifest } = sourceManifest;
   const { claudeDesktop } = distribution;
   return {
     ...sharedManifest,
     distribution: { claudeDesktop },
-    supportedClients: supportedClients.filter((client) => client !== "codex" && client !== "workbuddy")
+    supportedClients: supportedClients.filter((client) => client !== "codex")
   };
 }
 
@@ -323,5 +323,5 @@ function crc32(buffer) {
 }
 
 function printHelp() {
-  process.stdout.write(`Pure Tokens Skill Manager\n\nUsage:\n  puretokens-skill list\n  puretokens-skill validate\n  puretokens-skill install <skill-name> --target <directory>\n  puretokens-skill upgrade <skill-name> --target <directory>\n  puretokens-skill uninstall <skill-name> --target <directory> --yes\n  puretokens-skill bundle <skill-name> --format claude-desktop [--out <zip-file>] [--force]\n\nEvery install target is explicit. Pure Tokens Desktop can also apply managed Codex and WorkBuddy deliveries; Claude Desktop requires the generated ZIP to be uploaded and enabled in its Skills settings.\n\nRepository: ${repositoryRoot}\n`);
+  process.stdout.write(`Pure Tokens Skill Manager\n\nUsage:\n  puretokens-skill list\n  puretokens-skill validate\n  puretokens-skill install <skill-name> --target <directory>\n  puretokens-skill upgrade <skill-name> --target <directory>\n  puretokens-skill uninstall <skill-name> --target <directory> --yes\n  puretokens-skill bundle <skill-name> --format claude-desktop [--out <zip-file>] [--force]\n\nEvery install target is explicit. Use the supported host directories in README.md; Claude Desktop requires the generated ZIP to be uploaded and enabled in its Skills settings.\n\nRepository: ${repositoryRoot}\n`);
 }

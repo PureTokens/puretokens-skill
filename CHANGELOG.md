@@ -6,17 +6,20 @@
 
 ## Unreleased
 
-- Split the large `puretokens_media` policy into a lightweight intent router plus isolated balance, image, and video rule files. Clients still install only `puretokens_media`, so the split does not create competing implicit Skills; each request now loads only its relevant policy. Generated Codex, Claude Desktop, and WorkBuddy deliveries include all three rule files and provenance covers them.
-- Added a separate, fail-closed balance-query policy. CC Switch users can continue to see their current Pure Tokens balance in the provider card's Usage Query; a chat task calls that read-only query only when its host explicitly exposes the capability. The Skill never treats media MCP tools, usage estimates, cached values, or credentials as a balance query, and it gives the provider-card next step when the capability is not exposed to chat.
-- Added user-facing next-step guidance for special media cases: unsupported pixel canvas/resolution or image count, ambiguous or unauthorized models, unavailable connection execution, missing delivery capability, task errors, timeouts, and failed delivery. The Skill now lists safe choices, distinguishes Desktop-managed from self-managed paths, and never silently substitutes a model or retries a billable task. Reference-image and video editing now fail closed with a clear text-to-media alternative.
-- Made CC Switch/Codex fallback explicit for an unavailable Connection Images API. Before a selected non-`gpt-image-2` image model can move to a native executor, MCP, or Direct Cloud, the Skill tells the user that the active connection cannot directly execute that exact model and identifies the verified same-model fallback. It stops when no same-model fallback exists; it never silently changes models.
-- Added the guarded Codex/CC Switch Connection Images API branch for explicitly selected non-`gpt-image-2` image models. When the host explicitly exposes the active Pure Tokens connection as a callable authenticated HTTPS Images API executor with native-image delivery, the Skill reads that connection's `/v1/media/models`, verifies the exact `image` model, and submits it once to `/v1/images/generations` without MCP, Direct Cloud, or a second credential. A saved API key or catalog access alone is not treated as image execution capability.
-- Added fail-closed physical-image-size handling. Values with physical units such as `200cm x 230cm` are neither image counts nor valid `size` parameters: the Skill makes no submission, does not guess DPI or convert automatically, and lists the supported canvases `1024x1024`, `1536x1024`, `1024x1536` plus optional `1K`/`2K`/`4K` output resolution.
-- Restricted `puretokens_media` to Pure Tokens. A non-Pure Tokens or unverifiable connection, MCP server, native media executor, or Direct Cloud credential now fails closed without a media submission and tells the user that this Skill supports only Pure Tokens, with the official site `https://puretokensx.com/`.
-- Added the guarded Codex/CC Switch **Pure Tokens Connection Videos API** path. When the host explicitly exposes the current Pure Tokens connection as a callable authenticated HTTPS video executor with actual byte delivery, the Skill reads that connection's `/v1/media/models`, submits the exact `video` model once to `/v1/videos`, then polls and retrieves the same task's `/content`. It reuses the configured connection without Desktop, MCP, or a second Direct Cloud credential; a chat connection that merely stores an API key never pretends to provide this execution capability.
-- Corrected the Codex/CC Switch Image-2 route to the user-facing Pure Tokens connection: default and explicit `gpt-image-2` / `image2` calls use `POST https://api.puretokensx.com/v1/images/generations` with `model: "gpt-image-2"`. The Skill never calls an upstream URL, never depends on a global host instruction or MCP, and never falls back to MCP or Direct Cloud after an API-path failure.
-- Fixed the `gpt-image-2` MCP branch: its generation call now terminates on native image content, so WorkBuddy does not make a spurious `puretokens_image_result` poll after a completed Image-2 response.
-- Rebuilt the bilingual README media catalog from the global base model catalog rather than a local routing cache or an API-key-scoped response. `npm run docs:sync-media-models-from-base-catalog` accepts only explicit image/video capabilities, carries every configured model ID into the published list, and `GET /v1/media/models` remains the execution-time authorization check.
+## 0.7.0 — 2026-08-24
+
+- Added installed, versioned execution contracts and user-facing behavior scenarios for balance, image, and video. They cover alias ambiguity, catalog authorization, request bounds, unsupported input media, task state, uncertain submission, timeout, and native-content delivery without automatic resubmission.
+- Made the published model catalog the single alias source. Capability-specific model-selection references are generated into installed image/video Skills and verified alongside the bilingual README.
+- Published an honest host-support matrix and retired the legacy combined always-apply WorkBuddy media renderer. Desktop Router adapters and specialist-Skill distribution are now documented as separate concerns.
+
+## 0.6.1 — 2026-08-24
+
+- Converged `puretokens_balance`, `puretokens_image`, and `puretokens_video` on the current configured connection: the host owns Base URL, authentication, routing, HTTP execution, and native-media delivery; Skills use only relative API paths and never inspect credentials, the Base URL, provider labels, or service attribution.
+- Removed the obsolete connection-origin rejection and website redirect. A configured connection either executes the requested Images/Videos API call and delivers native bytes, or the Skill stops before a billable submission without an alternate execution or fallback path.
+
+## Historical entries superseded by the API-first contract
+
+Entries below document past releases. They may mention `puretokens_media`, MCP, Direct Cloud, Desktop-managed Codex paths, legacy environment variables, or WorkBuddy routing; none of those are part of the current specialist-Skill execution contract.
 
 ## 0.4.6 — 2026-08-20
 

@@ -8,11 +8,6 @@ const catalogPath = path.join(
   "references",
   "media-model-catalog.json"
 );
-const aliasesPath = path.join(
-  repositoryRoot,
-  "references",
-  "media-model-aliases.json"
-);
 
 const supportedCapabilities = new Set(["image", "video"]);
 const imageEndpointTypes = new Set(["image-generation", "image_generation"]);
@@ -126,23 +121,8 @@ function genericCopy(id, capabilities) {
   };
 }
 
-function aliasesByModel(aliasCatalog) {
-  const aliases = new Map();
-  for (const entry of aliasCatalog?.aliases || []) {
-    const phrases = Array.isArray(entry?.phrases) ? entry.phrases.map(text).filter(Boolean) : [];
-    for (const modelId of Array.isArray(entry?.modelIds) ? entry.modelIds : []) {
-      const id = text(modelId);
-      if (!id) continue;
-      const existing = aliases.get(id) || [];
-      aliases.set(id, [...new Set([...existing, ...phrases])]);
-    }
-  }
-  return aliases;
-}
-
-function buildPublishedCatalog(previous, aliasCatalog, models, args) {
+function buildPublishedCatalog(previous, models, args) {
   const previousById = new Map((Array.isArray(previous?.models) ? previous.models : []).map((model) => [model.id, model]));
-  const aliases = aliasesByModel(aliasCatalog);
   const normalized = models.map((model) => {
     if (!model.provider || !Number.isInteger(model.vendorId)) {
       throw new Error(`${model.id}: base model catalog must provide provider and vendor ID`);
@@ -154,7 +134,7 @@ function buildPublishedCatalog(previous, aliasCatalog, models, args) {
       provider: model.provider,
       vendorId: model.vendorId,
       capabilities: model.capabilities,
-      aliases: aliases.get(model.id) || editorial.aliases || [],
+      aliases: editorial.aliases || [],
       goodFor: editorial.goodFor || genericCopy(model.id, model.capabilities).goodFor,
       example: editorial.example || genericCopy(model.id, model.capabilities).example
     };
@@ -182,12 +162,11 @@ function serialized(value) {
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
-  const [previous, aliasCatalog, payload] = await Promise.all([
+  const [previous, payload] = await Promise.all([
     readFile(catalogPath, "utf8").then(JSON.parse),
-    readFile(aliasesPath, "utf8").then(JSON.parse),
     readCatalogSource(args)
   ]);
-  const next = buildPublishedCatalog(previous, aliasCatalog, sourceRows(payload), {
+  const next = buildPublishedCatalog(previous, sourceRows(payload), {
     ...args,
     capturedAt: previous?.serviceCatalog?.capturedAt
   });
@@ -197,7 +176,7 @@ async function main() {
   if (args.check) {
     throw new Error("published media model catalog is out of sync with the base model catalog; run npm run docs:sync-media-models-from-service");
   }
-  const refreshed = buildPublishedCatalog(previous, aliasCatalog, sourceRows(payload), {
+  const refreshed = buildPublishedCatalog(previous, sourceRows(payload), {
     ...args,
     capturedAt: new Date().toISOString()
   });

@@ -1,0 +1,43 @@
+{
+  "$schema": "https://puretokensx.com/schemas/model-selection.schema.json",
+  "schemaVersion": 1,
+  "capability": "video",
+  "catalogUpdatedAt": "2026-08-21",
+  "catalogCapturedAt": "2026-08-21T02:46:19.421Z",
+  "models": [
+    {
+      "id": "grok-imagine-video",
+      "aliases": [
+        "grok video"
+      ]
+    },
+    {
+      "id": "grok-imagine-video-1.5-preview",
+      "aliases": [
+        "grok 1.5 video"
+      ]
+    },
+    {
+      "id": "minimax-h3",
+      "aliases": [
+        "minimax h3"
+      ]
+    },
+    {
+      "id": "seedance-2.0",
+      "aliases": []
+    },
+    {
+      "id": "seedance-2.0-fast",
+      "aliases": []
+    },
+    {
+      "id": "seedance-2.0-mini",
+      "aliases": []
+    },
+    {
+      "id": "seedance-2.5",
+      "aliases": []
+    }
+  ]
+}
