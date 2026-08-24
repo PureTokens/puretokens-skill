@@ -57,6 +57,11 @@ test("media Skill publishes the complete MCP tool contract", async () => {
   assert.equal(manifest.rules.supportsCatalogVerifiedConnectionImageApi, true);
   assert.equal(manifest.rules.connectionImageApiRequiresHostExecutionAndDelivery, true);
   assert.equal(manifest.rules.connectionImageFallbackIsDisclosedBeforeSubmission, true);
+  assert.equal(manifest.rules.connectionVideoFallbackIsDisclosedBeforeSubmission, true);
+  assert.equal(manifest.rules.specialCasesRequireUserFacingNextSteps, true);
+  assert.equal(manifest.rules.unsupportedPixelCanvasesFailClosed, true);
+  assert.equal(manifest.rules.imageCountIsOneThroughSix, true);
+  assert.equal(manifest.rules.mediaEditingFailsClosedWithTextPromptGuidance, true);
   assert.equal(manifest.rules.supportsPureTokensOnly, true);
   assert.equal(manifest.rules.nonPureTokensConnectionFailsClosed, true);
   assert.equal(manifest.rules.physicalImageDimensionsFailClosed, true);
@@ -95,6 +100,11 @@ test("media Skill publishes the complete MCP tool contract", async () => {
   assert.match(skillText, /能返回或交付实际原生图片字节/);
   assert.match(skillText, /在任何备用通道提交前向用户说明/);
   assert.match(skillText, /没有可用的同模型备用通道/);
+  assert.match(skillText, /当前图片 API 不支持 `<用户给出的像素尺寸>`/);
+  assert.match(skillText, /当前单任务最多支持 `6` 张/);
+  assert.match(skillText, /暂不支持参考图或视频编辑/);
+  assert.match(skillText, /面向用户的特殊情况提示/);
+  assert.match(skillText, /继续查询/);
   assert.match(skillText, /可执行认证 HTTPS 视频请求并可交付实际视频字节/);
   assert.match(skillText, /普通聊天连接仅配置 API Key/);
   assert.match(skillText, /原生 Pure Tokens 媒体执行器/);
@@ -226,6 +236,7 @@ test("media Skill behavior scenarios cover ambiguity, empty catalog, unavailable
   assert.deepEqual(scenarios.map((scenario) => scenario.id), [
     "default-single-result",
     "explicit-multiple-results",
+    "invalid-image-count",
     "direct-cloud-image-delivery",
     "direct-cloud-multiple-image-content",
     "ambiguous-model",
@@ -240,6 +251,9 @@ test("media Skill behavior scenarios cover ambiguity, empty catalog, unavailable
     "connection-video-api-not-executable",
     "non-puretokens-provider",
     "physical-image-size-not-supported",
+    "unsupported-image-canvas-or-resolution",
+    "media-editing-not-supported",
+    "catalog-selection-guidance",
     "workbuddy-explicit-host-model",
     "host-native-model-not-verified-for-media",
     "mcp-unavailable",
@@ -258,14 +272,21 @@ test("media Skill behavior scenarios cover ambiguity, empty catalog, unavailable
   assert.equal(scenarios.find((scenario) => scenario.id === "direct-cloud-multiple-image-content")?.expected, "retrieve_zero_based_content_indexes_in_declared_order");
   assert.equal(scenarios.find((scenario) => scenario.id === "direct-cloud-no-media-model")?.expected, "report_api_key_catalog_scope_without_desktop_group_instructions");
   assert.equal(scenarios.find((scenario) => scenario.id === "direct-cloud-missing-delivery-capability")?.expected, "report_missing_delivery_capability_without_submission");
+  assert.equal(scenarios.find((scenario) => scenario.id === "invalid-image-count")?.expected, "stop_and_request_an_integer_count_from_one_through_six_without_split_submission");
   assert.equal(scenarios.find((scenario) => scenario.id === "skill-defined-image2-api")?.expected, "call_the_puretokens_connection_images_api_once_at_the_puretokens_user_endpoint_with_gpt_image_2_without_mcp_or_direct_cloud_fallback");
   assert.equal(scenarios.find((scenario) => scenario.id === "skill-defined-connection-image-api")?.expected, "read_the_active_connection_catalog_then_submit_one_exact_image_model_to_the_puretokens_user_images_endpoint_and_deliver_the_native_image_without_mcp_or_direct_cloud");
   assert.match(scenarios.find((scenario) => scenario.id === "connection-image-api-not-executable")?.expected || "", /before_any_fallback_submission_tell_the_user/);
   assert.deepEqual(scenarios.find((scenario) => scenario.id === "connection-image-api-not-executable")?.forbiddenTools, ["unverified_connection_image_submission", "silent_fallback", "automatic_model_switch", "credential_extraction", "automatic_resubmission"]);
   assert.equal(scenarios.find((scenario) => scenario.id === "skill-defined-connection-video-api")?.expected, "read_the_active_connection_catalog_then_submit_one_exact_video_model_to_the_puretokens_user_videos_endpoint_and_retrieve_the_same_task_content_without_mcp_or_direct_cloud");
-  assert.match(scenarios.find((scenario) => scenario.id === "connection-video-api-not-executable")?.expected || "", /preserve_a_user_selected_native_executor_or_continue_to_mcp_or_direct_cloud/);
+  assert.match(scenarios.find((scenario) => scenario.id === "connection-video-api-not-executable")?.expected || "", /before_any_fallback_submission_tell_the_user/);
   assert.equal(scenarios.find((scenario) => scenario.id === "non-puretokens-provider")?.expected, "stop_without_submitting_and_tell_the_user_that_this_skill_supports_only_pure_tokens_with_https_puretokensx_com");
   assert.match(scenarios.find((scenario) => scenario.id === "physical-image-size-not-supported")?.expected || "", /report_the_exact_supported_pixel_canvases_1024x1024_1536x1024_1024x1536_and_optional_1K_2K_4K_resolution/);
+  assert.equal(scenarios.find((scenario) => scenario.id === "unsupported-image-canvas-or-resolution")?.expected, "stop_and_list_supported_image_canvases_and_image_size_options_without_nearest_match");
+  assert.equal(scenarios.find((scenario) => scenario.id === "media-editing-not-supported")?.expected, "explain_text_to_media_only_and_offer_text_prompt_generation_without_accessing_user_media");
+  assert.equal(scenarios.find((scenario) => scenario.id === "catalog-selection-guidance")?.expected, "list_exact_candidates_and_give_route_specific_next_steps_without_auto_selection");
+  assert.equal(scenarios.find((scenario) => scenario.id === "task-failure")?.expected, "report_safe_error_and_require_explicit_user_retry_without_fallback_or_resubmit");
+  assert.equal(scenarios.find((scenario) => scenario.id === "task-timeout")?.expected, "report_pending_or_unknown_and_offer_same_task_check_without_resubmit");
+  assert.equal(scenarios.find((scenario) => scenario.id === "content-delivery-failure")?.expected, "report_no_delivery_and_offer_same_task_result_check_or_explicit_new_task_without_success_claim");
   assert.equal(scenarios.find((scenario) => scenario.id === "new-live-catalog-model")?.expected, "use_the_exact_catalog_model_with_its_declared_capability_without_waiting_for_a_skill_release");
   assert.equal(scenarios.find((scenario) => scenario.id === "workbuddy-explicit-host-model")?.expected, "preserve_explicit_host_model_choice_without_mcp_reroute_or_duplicate_submission");
   assert.match(scenarios.find((scenario) => scenario.id === "host-native-model-not-verified-for-media")?.expected || "", /do_not_treat_host_model_configuration_as_media_execution/);

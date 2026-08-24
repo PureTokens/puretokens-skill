@@ -18,7 +18,7 @@
 
 `n` 仅用于“生成 3 张图”这类明确的图片数量。`200cm × 230cm` 是物理尺寸，绝不会被当作图片数量，也不能原样传给 `size`。
 
-当前支持的图片像素画布为 `1024x1024`、`1536x1024`、`1024x1536`。用户可明确指定 `image_size` 为 `1K`、`2K` 或 `4K`；这是输出分辨率选项，不代表可保证的物理印刷尺寸。用户要求厘米、毫米、米或英寸时，Skill 不提交请求、不猜测 DPI、不自动换算、不擅自选择最接近画布，而是明确告知无法保证该物理尺寸，并列出当前支持的像素画布供用户选择。
+当前支持的图片像素画布为 `1024x1024`、`1536x1024`、`1024x1536`。用户可明确指定 `image_size` 为 `1K`、`2K` 或 `4K`；这是输出分辨率选项，不代表可保证的物理印刷尺寸。厘米、毫米、米、英寸或未支持的像素尺寸都不会被换算或近似处理：Skill 会停止并列出这些可选规格。图片数量只能是 `1` 至 `6` 的整数；不支持的数量不会被拆成多次付费提交。
 
 ## 快速开始
 
@@ -33,6 +33,8 @@
 | 具备 HTTPS 能力的 Agent | Skill → Direct Cloud → 服务 | 安装 Skill，并通过宿主的 Secret/环境机制注入 `PURETOKENS_API_KEY`。只有确实能执行 HTTPS 并在本机交付媒体字节的 CC Switch 连接宿主才可走此路径；不需要 Desktop、Router、CLI Sidecar 或 MCP。 |
 
 然后新建会话。直接说“生成一只可爱的狗”即可使用默认图片模型；也可以说“使用 Nano Banana Pro 生成……”。
+
+当前 Skill 只支持文生图和文生视频，不支持编辑参考图、用户上传图片或视频；请改为用文字描述希望生成的新画面或视频。
 
 对于 Codex 或 CC Switch，Skill 自身定义默认的 Image-2 图片执行路径：默认生图，或明确要求 `gpt-image-2` / `image2` 时，通过当前 Pure Tokens 连接直接调用 `POST https://api.puretokensx.com/v1/images/generations`，并传入 `model: "gpt-image-2"`。用户明确选择其他图片模型时，只有宿主明确把当前连接提供为可调用、已认证的 HTTPS Images API 执行器并能返回或交付原生图片字节，才先读取 `GET https://api.puretokensx.com/v1/media/models`、确认精确 `image` 模型，再将该精确模型提交到 `POST https://api.puretokensx.com/v1/images/generations`。若该能力缺失，Skill 必须在备用通道提交前告知用户当前连接不能直接执行该精确模型，并说明将使用已验证的同模型原生执行器、MCP 或 Direct Cloud；没有同模型备用通道就停止，绝不静默换模型。视频有等价的受保护路径。这些路径不依赖系统、开发者或 AGENTS 指令，也不依赖 `puretokens-image` MCP 或第二份 `PURETOKENS_API_KEY` 环境变量。这是 Pure Tokens 用户入口，绝不能调用上游地址。
 

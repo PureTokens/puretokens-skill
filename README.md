@@ -18,7 +18,7 @@ This Skill supports **Pure Tokens only**. It must not send media requests throug
 
 `n` is only for an explicit image count, such as “generate 3 images.” A physical dimension such as `200cm x 230cm` is never an image count and cannot be passed directly to `size`.
 
-The currently supported image canvases are `1024x1024`, `1536x1024`, and `1024x1536`. An explicit `image_size` may be `1K`, `2K`, or `4K`; it is an output-resolution option, not a guaranteed physical print size. If a user requests centimetres, millimetres, metres, or inches, the Skill does not submit a request, guess DPI, convert it automatically, or choose a closest canvas. It clearly reports that the physical size cannot be guaranteed and lists the supported pixel canvases for the user to choose from.
+The currently supported image canvases are `1024x1024`, `1536x1024`, and `1024x1536`. An explicit `image_size` may be `1K`, `2K`, or `4K`; it is an output-resolution option, not a guaranteed physical print size. Unsupported physical or pixel dimensions are not converted or approximated: the Skill stops and lists these choices. Image count must be an integer from `1` through `6`; an unsupported count is not split across billable requests.
 
 ## Quick start
 
@@ -33,6 +33,8 @@ Choose the one path your host can actually execute:
 | HTTPS-capable Agent | Skill → Direct Cloud → service | Install the Skill and inject `PURETOKENS_API_KEY` through the host's Secret/environment mechanism. A CC Switch-connected host can use this path only when it can actually execute HTTPS and deliver media bytes locally. No Desktop, Router, CLI sidecar, or MCP is required. |
 
 Then start a new chat. Say `Generate a cute dog` for the default image model, or name a model such as `Use Nano Banana Pro to generate ...`.
+
+The current Skill supports text-to-image and text-to-video only. It does not edit reference images, uploaded assets, or videos; describe the desired new result in text instead.
 
 For Codex or CC Switch, the Skill itself defines the default Image-2 execution path: a default-image request or an explicit `gpt-image-2` / `image2` request calls `POST https://api.puretokensx.com/v1/images/generations` with `model: "gpt-image-2"` through the active Pure Tokens connection. For an explicitly selected other image model, the same connection first reads `GET https://api.puretokensx.com/v1/media/models`, verifies the exact returned `image` model, then submits that exact model to `POST https://api.puretokensx.com/v1/images/generations`—but only when the host explicitly exposes the connection as a callable authenticated HTTPS Images API executor that returns or delivers native image bytes. If that capability is absent, the Skill tells the user before any fallback submission that the connection cannot directly execute the exact model and identifies the verified same-model native/MCP/Direct Cloud path it will use; if none exists, it stops rather than switching models. Video has the equivalent guarded path. These paths do not depend on a system/developer/AGENTS instruction, `puretokens-image` MCP, or a second `PURETOKENS_API_KEY` environment variable. They are Pure Tokens user endpoints, never upstream endpoints.
 
