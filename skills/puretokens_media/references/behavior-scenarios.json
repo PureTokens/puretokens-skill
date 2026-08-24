@@ -61,6 +61,12 @@
       "forbiddenTools": ["puretokens_generate_image", "puretokens_generate_video", "automatic_resubmission"]
     },
     {
+      "id": "host-declared-image2-api",
+      "when": "The active host system, developer, or AGENTS instructions declare an authenticated Image-2 Images API for image generation.",
+      "expected": "call_the_host_declared_images_api_once_with_its_required_image2_model_without_mcp_or_direct_cloud_fallback",
+      "forbiddenTools": ["puretokens_list_media_models", "puretokens_generate_image", "puretokens_image_result", "direct_cloud_submission", "automatic_resubmission"]
+    },
+    {
       "id": "workbuddy-explicit-host-model",
       "when": "A WorkBuddy user explicitly selects ImageGen, VideoGen, or a manually configured model, including a manually configured Pure Tokens model.",
       "firstTool": "selected_host_native_media_tool",

@@ -16,12 +16,15 @@ Choose the one path your host can actually execute:
 
 | Host | Execution path | Setup |
 | --- | --- | --- |
+| Codex / CC Switch host with an active Image-2 API instruction | Skill → host Images API → service | The host instruction supplies the authenticated Images API and exact model. Image requests use that path directly; no MCP or `PURETOKENS_API_KEY` setup is required. |
 | Pure Tokens Desktop-managed client | Skill → managed MCP → local Router → service | Optional convenience path: select the client groups, click **Verify and apply**, then restart the client and start a new chat. |
 | Host with a selected native Pure Tokens media model | Skill → host-native media operation → service | The configured operation must expose an exact verified image/video model and actual media delivery. A general chat-model setting alone is not enough. |
 | GUI host with callable MCP tools | Skill → `puretokens-image` MCP → service | Install/configure the callable MCP delivery for that client. The GUI user never pastes a token into chat. |
 | HTTPS-capable Agent | Skill → Direct Cloud → service | Install the Skill and inject `PURETOKENS_API_KEY` through the host's Secret/environment mechanism. A CC Switch-connected host can use this path only when it can actually execute HTTPS and deliver media bytes locally. No Desktop, Router, CLI sidecar, or MCP is required. |
 
 Then start a new chat. Say `Generate a cute dog` for the default image model, or name a model such as `Use Nano Banana Pro to generate ...`.
+
+When a Codex or CC Switch host has an active system/developer/AGENTS instruction that defines an authenticated Image-2 Images API, that host instruction is the image execution path: `gpt-image-2` is called directly and the Skill must not stop merely because `puretokens-image` MCP or `PURETOKENS_API_KEY` is absent. This host-defined path is image-only; video still requires a native video executor, MCP, or Direct Cloud.
 
 > **Before using a specific model:** the exact model must appear in the authenticated `GET /v1/media/models` catalog for the selected execution path. Desktop-managed MCP uses only the selected client groups. Direct Cloud uses only the API key's permissions. Neither path can use every model mentioned in a public catalog.
 

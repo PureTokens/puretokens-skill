@@ -16,12 +16,15 @@
 
 | 宿主 | 执行路径 | 配置方式 |
 | --- | --- | --- |
+| 已启用 Image-2 API 指令的 Codex / CC Switch 宿主 | Skill → 宿主 Images API → 服务 | 宿主指令提供已认证的 Images API 和精确模型。图片直接走此路径，不需要 MCP 或 `PURETOKENS_API_KEY`。 |
 | 由 Pure Tokens Desktop 受管的客户端 | Skill → 受管 MCP → 本地 Router → 服务 | 这是可选的便利路径：选择客户端分组，点击 **验证并应用**，重启客户端后新建会话。 |
 | 已选择原生 Pure Tokens 媒体模型的宿主 | Skill → 宿主原生媒体操作 → 服务 | 已配置操作必须提供精确、已验证的图片/视频模型和真实媒体交付；只配置通用聊天模型并不够。 |
 | 具备可调用 MCP 工具的 GUI 宿主 | Skill → `puretokens-image` MCP → 服务 | 为客户端安装或配置可调用的 MCP 交付；GUI 用户绝不把 Token 粘贴到对话中。 |
 | 具备 HTTPS 能力的 Agent | Skill → Direct Cloud → 服务 | 安装 Skill，并通过宿主的 Secret/环境机制注入 `PURETOKENS_API_KEY`。只有确实能执行 HTTPS 并在本机交付媒体字节的 CC Switch 连接宿主才可走此路径；不需要 Desktop、Router、CLI Sidecar 或 MCP。 |
 
 然后新建会话。直接说“生成一只可爱的狗”即可使用默认图片模型；也可以说“使用 Nano Banana Pro 生成……”。
+
+当 Codex 或 CC Switch 宿主已启用声明已认证 Image-2 Images API 的系统、开发者或 AGENTS 指令时，该指令就是图片执行路径：直接调用 `gpt-image-2`；即使没有 `puretokens-image` MCP 或 `PURETOKENS_API_KEY`，Skill 也不得停止。该宿主定义路径仅覆盖图片；视频仍需要原生视频执行器、MCP 或 Direct Cloud。
 
 > **使用指定模型前请先确认：** 精确模型必须存在于当前执行路径认证后的 `GET /v1/media/models` 实时目录。Desktop 受管 MCP 只使用当前客户端已选分组；Direct Cloud 只使用 API Key 权限。两条路径都不能调用公开目录里提到的全部模型。
 
