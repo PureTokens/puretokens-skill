@@ -8,7 +8,7 @@
   },
   "continuation": {
     "requiredFields": ["exact_model_id", "task_id", "returned_state", "requested_count", "requested_size_or_parameters", "next_action"],
-    "nextAction": "State whether the same task remains pending, needs another same-task read, or has terminally failed."
+    "nextAction": "State whether the same task remains pending, the exact wait before its next same-task read, whether automatic polling has reached its deadline, or whether it has terminally failed."
   },
   "completion": {
     "requiredFields": ["exact_model_id", "task_id", "returned_state", "requested_count", "requested_size_or_parameters", "delivered_count", "next_action"],

@@ -61,13 +61,27 @@
         "partialOrMissingContent": { "const": "report_delivered_and_missing_indexes_without_resubmission" }
       },
       "additionalProperties": false
+    },
+    "polling": {
+      "type": "object",
+      "required": ["serverDelay", "fallbackDelaysSeconds", "steadyDelaySeconds", "automaticDeadlineSeconds", "afterDeadline"],
+      "properties": {
+        "serverDelay": { "const": "honor_valid_retry_after_before_fallback" },
+        "fallbackDelaysSeconds": {
+          "const": [2, 3, 5, 8]
+        },
+        "steadyDelaySeconds": { "const": 15 },
+        "automaticDeadlineSeconds": { "enum": [120, 300] },
+        "afterDeadline": { "const": "report_pending_and_require_explicit_same_task_continuation" }
+      },
+      "additionalProperties": false
     }
   },
   "allOf": [
     {
       "if": { "properties": { "kind": { "const": "image" } } },
       "then": {
-        "required": ["operations", "unsupportedInput", "parameterValidation", "contentRetrieval"],
+        "required": ["operations", "unsupportedInput", "parameterValidation", "contentRetrieval", "polling"],
         "properties": {
           "operations": {
             "required": ["submit", "status", "content"],
@@ -94,6 +108,11 @@
               "nonDefaultModelOptionalParametersRequire": { "const": "authenticated_live_catalog_input_schema" },
               "whenProfileIsMissing": { "const": "do_not_submit_requested_optional_parameters" }
             }
+          },
+          "polling": {
+            "properties": {
+              "automaticDeadlineSeconds": { "const": 120 }
+            }
           }
         }
       }
@@ -101,7 +120,7 @@
     {
       "if": { "properties": { "kind": { "const": "video" } } },
       "then": {
-        "required": ["operations", "unsupportedInput", "parameterValidation"],
+        "required": ["operations", "unsupportedInput", "parameterValidation", "polling"],
         "properties": {
           "operations": {
             "required": ["catalog", "submit", "status", "content"],
@@ -126,6 +145,11 @@
               "allModelsOptionalParametersRequire": { "const": "authenticated_live_catalog_input_schema" },
               "promptAllowedWithoutProfile": { "const": true },
               "whenProfileIsMissing": { "const": "do_not_submit_requested_optional_parameters" }
+            }
+          },
+          "polling": {
+            "properties": {
+              "automaticDeadlineSeconds": { "const": 300 }
             }
           }
         }

@@ -31,5 +31,12 @@
     "promptAllowedWithoutProfile": true,
     "whenProfileIsMissing": "do_not_submit_requested_optional_parameters"
   },
+  "polling": {
+    "serverDelay": "honor_valid_retry_after_before_fallback",
+    "fallbackDelaysSeconds": [2, 3, 5, 8],
+    "steadyDelaySeconds": 15,
+    "automaticDeadlineSeconds": 300,
+    "afterDeadline": "report_pending_and_require_explicit_same_task_continuation"
+  },
   "unsupportedInput": ["reference_image", "reference_video", "video_edit", "audio_input", "user_media_upload"]
 }

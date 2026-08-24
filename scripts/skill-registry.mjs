@@ -357,6 +357,7 @@ function validateExecutionContract(errors, directory, contract) {
       errors.push(`${label} must retrieve every zero-based requested image content index before success`);
     }
     if (contract.result?.successRequires !== "native_image_bytes") errors.push(`${label} must require native image bytes for success`);
+    validatePolling(errors, `${label} polling`, contract.polling, 120);
   } else {
     validateRequest(errors, `${label} catalog`, operations.catalog, "GET", "/v1/media/models");
     validateRequest(errors, `${label} submit`, operations.submit, "POST", "/v1/videos");
@@ -369,11 +370,21 @@ function validateExecutionContract(errors, directory, contract) {
       errors.push(`${label} must fail closed for video optional parameters without a live profile`);
     }
     if (contract.result?.successRequires !== "native_video_bytes") errors.push(`${label} must require native video bytes for success`);
+    validatePolling(errors, `${label} polling`, contract.polling, 300);
   }
   if (contract.result?.sameTaskOnly !== true || contract.result?.neverAutoResubmit !== true) {
     errors.push(`${label} must stay on the same task without automatic resubmission`);
   }
   if (!Array.isArray(contract.unsupportedInput) || !contract.unsupportedInput.length) errors.push(`${label} must declare unsupported media input`);
+}
+
+function validatePolling(errors, label, polling, deadlineSeconds) {
+  if (!polling || polling.serverDelay !== "honor_valid_retry_after_before_fallback" ||
+    !sameArray(polling.fallbackDelaysSeconds, [2, 3, 5, 8]) || polling.steadyDelaySeconds !== 15 ||
+    polling.automaticDeadlineSeconds !== deadlineSeconds ||
+    polling.afterDeadline !== "report_pending_and_require_explicit_same_task_continuation") {
+    errors.push(`${label} must honor valid Retry-After, then wait 2/3/5/8 seconds and 15 seconds thereafter, with the ${deadlineSeconds}-second same-task deadline`);
+  }
 }
 
 function validateRequest(errors, label, request, method, expectedPath, usesTemplate = false) {

@@ -16,7 +16,7 @@ test("registry exposes exactly the three specialist Skills", async () => {
   const { registry, records } = await collectSkillRecords();
   assert.deepEqual(registry.skills.map((skill) => skill.name), names);
   assert.equal(records.length, 3);
-  assert.deepEqual([...new Set(records.map((record) => record.manifest.version))], ["0.8.0"]);
+  assert.deepEqual([...new Set(records.map((record) => record.manifest.version))], ["0.8.1"]);
   assert.deepEqual(await validateRepository(), []);
 });
 
@@ -58,8 +58,8 @@ test("installed model selections are generated from the published media catalog"
 test("installed contracts cover bounded requests, task recovery, and user-facing failure guidance", async () => {
   const requiredScenarios = {
     puretokens_balance: ["balance-account-session-unavailable", "balance-response"],
-    puretokens_image: ["image-model-alias-ambiguous", "image-model-unavailable", "image-model-parameter-profile-unavailable", "image-model-parameter-unsupported", "image-execution-unavailable", "image-count-invalid", "image-pixel-size-invalid", "image-physical-size", "image-edit-input", "image-task-pending", "image-task-terminal-failure", "image-task-timeout-or-unknown", "image-content-delivery-failure", "image-content-index-missing"],
-    puretokens_video: ["video-model-alias-ambiguous", "video-model-unavailable", "video-model-parameter-profile-unavailable", "video-model-parameter-unsupported", "video-execution-unavailable", "video-parameter-unsupported", "video-input-media", "video-task-pending", "video-task-terminal-failure", "video-task-timeout-or-unknown", "video-content-delivery-failure"]
+    puretokens_image: ["image-model-alias-ambiguous", "image-model-unavailable", "image-model-parameter-profile-unavailable", "image-model-parameter-unsupported", "image-execution-unavailable", "image-count-invalid", "image-pixel-size-invalid", "image-physical-size", "image-edit-input", "image-task-pending", "image-task-poll-delay", "image-task-polling-deadline", "image-task-terminal-failure", "image-task-timeout-or-unknown", "image-content-delivery-failure", "image-content-index-missing"],
+    puretokens_video: ["video-model-alias-ambiguous", "video-model-unavailable", "video-model-parameter-profile-unavailable", "video-model-parameter-unsupported", "video-execution-unavailable", "video-parameter-unsupported", "video-input-media", "video-task-pending", "video-task-poll-delay", "video-task-polling-deadline", "video-task-terminal-failure", "video-task-timeout-or-unknown", "video-content-delivery-failure"]
   };
   for (const name of names) {
     const root = path.join(repositoryRoot, "skills", name, "references");
@@ -84,12 +84,22 @@ test("installed contracts cover bounded requests, task recovery, and user-facing
   assert.equal(image.contentRetrieval.indexBase, 0);
   assert.equal(image.contentRetrieval.allowedIndexes, "0..requestedCount-1");
   assert.equal(image.contentRetrieval.completeDeliveryRequiresEveryRequestedIndex, true);
+  assert.deepEqual(image.polling.fallbackDelaysSeconds, [2, 3, 5, 8]);
+  assert.equal(image.polling.serverDelay, "honor_valid_retry_after_before_fallback");
+  assert.equal(image.polling.steadyDelaySeconds, 15);
+  assert.equal(image.polling.automaticDeadlineSeconds, 120);
+  assert.equal(image.polling.afterDeadline, "report_pending_and_require_explicit_same_task_continuation");
   const video = JSON.parse(await readFile(path.join(repositoryRoot, "skills", "puretokens_video", "references", "execution-contract.json"), "utf8"));
   assert.equal(video.operations.catalog.path, "/v1/media/models");
   assert.equal(video.operations.submit.path, "/v1/videos");
   assert.equal(video.result.sameTaskOnly, true);
   assert.equal(video.result.neverAutoResubmit, true);
   assert.equal(video.parameterValidation.allModelsOptionalParametersRequire, "authenticated_live_catalog_input_schema");
+  assert.deepEqual(video.polling.fallbackDelaysSeconds, [2, 3, 5, 8]);
+  assert.equal(video.polling.serverDelay, "honor_valid_retry_after_before_fallback");
+  assert.equal(video.polling.steadyDelaySeconds, 15);
+  assert.equal(video.polling.automaticDeadlineSeconds, 300);
+  assert.equal(video.polling.afterDeadline, "report_pending_and_require_explicit_same_task_continuation");
 
   const balance = JSON.parse(await readFile(path.join(repositoryRoot, "skills", "puretokens_balance", "references", "execution-contract.json"), "utf8"));
   assert.equal(balance.operations.read.path, "/api/product/desktop/account/balance");

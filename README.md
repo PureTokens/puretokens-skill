@@ -71,6 +71,10 @@ The default `gpt-image-2` uses the count and size values declared above. For ano
 
 On submit, continuation, completion, and failure, media Skills return a consistent receipt: exact model ID when returned, task ID when returned, current state, requested count, requested size/parameters, delivered count on completion, and the next action. Missing task metadata is reported as not returned, never guessed.
 
+## Asynchronous polling
+
+Media polling begins only after submission returns a `task_id`. If a task-status response includes a valid HTTP `Retry-After` delay, the Skill uses it. Otherwise it waits 2, 3, 5, and 8 seconds for the first four same-task status reads, then 15 seconds between subsequent reads. Automatic polling lasts at most 120 seconds for images and 300 seconds for videos, measured from the submission response. A still-pending task is reported as pending at that deadline; the user can explicitly ask to continue the same task, but the Skill never treats the deadline as failure or submits a replacement task.
+
 ## Usage examples
 
 - Image: `Use gpt-image-2 to generate a 1024x1024 illustration of a snowy village at dawn.`

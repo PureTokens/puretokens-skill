@@ -6,6 +6,10 @@
 
 ## Unreleased
 
+## 0.8.1 — 2026-08-24
+
+- Defined bounded asynchronous polling for media tasks: honor a valid `Retry-After`, otherwise wait 2, 3, 5, 8, then 15 seconds between same-task status reads. Image polling stops after 120 seconds and video polling after 300 seconds with an explicit same-task continuation prompt; neither deadline is treated as a failure or a reason to resubmit.
+
 ## 0.8.0 — 2026-08-24
 
 - Made multi-image delivery deterministic: a request for `n` images retrieves only the zero-based content indexes `0..n-1`, succeeds only after every requested native byte stream arrives, and reports delivered/missing indexes without resubmitting.

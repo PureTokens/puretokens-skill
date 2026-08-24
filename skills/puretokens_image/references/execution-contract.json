@@ -43,5 +43,12 @@
     "completeDeliveryRequiresEveryRequestedIndex": true,
     "partialOrMissingContent": "report_delivered_and_missing_indexes_without_resubmission"
   },
+  "polling": {
+    "serverDelay": "honor_valid_retry_after_before_fallback",
+    "fallbackDelaysSeconds": [2, 3, 5, 8],
+    "steadyDelaySeconds": 15,
+    "automaticDeadlineSeconds": 120,
+    "afterDeadline": "report_pending_and_require_explicit_same_task_continuation"
+  },
   "unsupportedInput": ["reference_image", "image_edit", "mask", "user_media_upload"]
 }
