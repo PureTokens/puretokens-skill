@@ -16,7 +16,7 @@ scripts/                                  # repository validation helpers
 
 ## Product boundary
 
-- A **Skill** interprets the user's natural-language request, resolves an explicit model selection through an authenticated media catalog, and asks a clarification question when the request is ambiguous. It selects an execution branch but does not itself hold credentials or execute HTTP.
+- A **Skill** interprets the user's natural-language balance or media request. A balance request uses only a host-exposed, authenticated, read-only capability and never infers a value; a media request resolves an explicit model selection through an authenticated media catalog and asks a clarification question when the request is ambiguous. It selects an execution branch but does not itself hold credentials or execute HTTP.
 - The **Pure Tokens MCP** exposes strict typed tools, accepts only an exact model ID, submits and polls tasks, and never performs natural-language matching or silent model fallback. It is required only for hosts without native Shell/HTTPS tool execution.
 - The **Pure Tokens API** remains authoritative for API-key group access and endpoint capabilities. The **Desktop Router** remains authoritative for Desktop-managed profile access and `openai_images` / `openai_video` routing. A skill must never infer either from a model name.
 
