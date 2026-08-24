@@ -1,7 +1,7 @@
 interface:
   display_name: "Pure Tokens Media & Balance"
-  short_description: "Check a host-exposed Pure Tokens balance, or generate images and videos with available Pure Tokens models."
-  default_prompt: "Use $puretokens_media to check my Pure Tokens balance or generate an image or video through Pure Tokens."
+  short_description: "Route a Pure Tokens balance, image, or video request to its focused rule set."
+  default_prompt: "Use $puretokens_media to check my Pure Tokens balance, generate an image, or generate a video through Pure Tokens."
 
 policy:
   allow_implicit_invocation: true

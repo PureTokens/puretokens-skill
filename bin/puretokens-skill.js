@@ -5,7 +5,7 @@ import { cp, mkdir, readFile, rename, rm, stat, writeFile } from "node:fs/promis
 import path from "node:path";
 import process from "node:process";
 import { collectSkillRecords, repositoryRoot, skillsRoot, validateRepository } from "../scripts/skill-registry.mjs";
-import { getMediaSkillProvenance, mediaSkillSourceFiles } from "../scripts/media-skill-provenance.mjs";
+import { getSkillProvenance, getSkillSourceFiles } from "../scripts/media-skill-provenance.mjs";
 
 const [command, ...argumentsList] = process.argv.slice(2);
 
@@ -118,9 +118,7 @@ async function bundleSkill(args) {
   }
   const source = await resolveSkillSource(options.name);
   const manifest = JSON.parse(await readFile(path.join(source, "skill.json"), "utf8"));
-  const files = mediaSkillSourceFiles.filter((relativePath) => (
-    relativePath !== "agents/openai.yaml" && !relativePath.startsWith("adapters/")
-  ));
+  const files = await collectClaudeBundleFiles(manifest.name);
   const entries = [];
   for (const relativePath of files) {
     const absolutePath = path.join(source, relativePath);
@@ -134,14 +132,14 @@ async function bundleSkill(args) {
   }
   entries.push({
     path: "source-delivery.json",
-    data: `${JSON.stringify({ delivery: "claude-desktop", derivedFrom: await getMediaSkillProvenance() }, null, 2)}\n`
+    data: `${JSON.stringify({ delivery: "claude-desktop", derivedFrom: await getSkillProvenance(manifest.name) }, null, 2)}\n`
   });
   const output = path.resolve(options.out || `${options.name}-${manifest.version}-claude-desktop.zip`);
   if (await exists(output) && !options.force) {
     throw new Error(`Refusing to overwrite existing bundle: ${output} (pass --force to replace it)`);
   }
   await mkdir(path.dirname(output), { recursive: true });
-  await writeFile(output, createZip(entries));
+  await writeFile(output, createZip(options.name, entries));
   process.stdout.write(`Created Claude Desktop Skill bundle at ${output}\n`);
 }
 
@@ -153,6 +151,13 @@ function createClaudeDesktopManifest(sourceManifest) {
     distribution: { claudeDesktop },
     supportedClients: supportedClients.filter((client) => client !== "codex" && client !== "workbuddy")
   };
+}
+
+async function collectClaudeBundleFiles(skillName) {
+  const files = await getSkillSourceFiles(skillName);
+  return files.filter((relativePath) => (
+    relativePath !== "agents/openai.yaml" && !relativePath.startsWith("adapters/")
+  ));
 }
 
 async function validate() {
@@ -252,12 +257,12 @@ async function existsDirectory(value) {
   }
 }
 
-function createZip(entries) {
+function createZip(archiveRoot, entries) {
   const localParts = [];
   const centralParts = [];
   let offset = 0;
   for (const entry of entries) {
-    const name = Buffer.from(`puretokens_media/${entry.path}`, "utf8");
+    const name = Buffer.from(`${archiveRoot}/${entry.path}`, "utf8");
     const data = Buffer.isBuffer(entry.data) ? entry.data : Buffer.from(entry.data);
     const crc = crc32(data);
     const localHeader = Buffer.alloc(30);

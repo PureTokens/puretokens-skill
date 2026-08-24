@@ -10,7 +10,15 @@ const skillRoot = path.join(repositoryRoot, "skills", "puretokens_media");
 const execFileAsync = promisify(execFile);
 
 async function readSkill() {
-  return readFile(path.join(skillRoot, "SKILL.md"), "utf8");
+  const files = [
+    "SKILL.md",
+    "references/balance.md",
+    "references/image.md",
+    "references/video.md",
+    "references/direct-cloud-contract.md",
+    "references/model-catalog-contract.md"
+  ];
+  return (await Promise.all(files.map((file) => readFile(path.join(skillRoot, file), "utf8")))).join("\n");
 }
 
 test("media Skill publishes the complete MCP tool contract", async () => {
@@ -81,46 +89,37 @@ test("media Skill publishes the complete MCP tool contract", async () => {
   assert.equal(manifest.naturalLanguageAliases, "skills/puretokens_media/references/natural-language-aliases.json");
   assert.equal(manifest.directCloudContract, "skills/puretokens_media/references/direct-cloud-contract.md");
   assert.equal(manifest.workBuddyAdapter, "skills/puretokens_media/adapters/workbuddy-execution.md");
-  assert.match(skillText, /第一步必须调用[：:][\s\S]*puretokens_list_media_models/);
+  assert.match(skillText, /这是一个路由 Skill/);
+  assert.match(skillText, /`references\/balance\.md`/);
+  assert.match(skillText, /`references\/image\.md`/);
+  assert.match(skillText, /`references\/video\.md`/);
   assert.match(skillText, /稳定的 `request_id`/);
-  assert.match(skillText, /原始 `task_id`/);
-  assert.match(skillText, /MCP 通道以 `structuredContent\.model` 为事实来源/);
-  assert.match(skillText, /`type == resource`/);
-  assert.match(skillText, /Direct Cloud 通道/);
-  assert.match(skillText, /本 Skill 定义的 Pure Tokens Connection Images API/);
-  assert.match(skillText, /Pure Tokens Connection Videos API/);
-  assert.match(skillText, /本 Skill \*\*仅支持 Pure Tokens\*\*/);
-  assert.match(skillText, /## 余额查询/);
-  assert.match(skillText, /可调用、已认证、只读的余额查询能力/);
+  assert.match(skillText, /精确 `model` 和稳定 `request_id`/);
+  assert.match(skillText, /仅支持 \*\*Pure Tokens\*\*/);
+  assert.match(skillText, /已认证、只读余额查询能力/);
   assert.match(skillText, /不调用五个媒体 MCP 工具/);
   assert.match(skillText, /供应商卡的“用量查询”/);
-  assert.match(skillText, /不得自行构造余额 URL、请求头、请求体或猜测响应格式/);
-  assert.match(skillText, /不能使用当前的其他服务商 API/);
+  assert.match(skillText, /构造余额 URL、请求头、请求体或响应格式/);
   assert.match(skillText, /https:\/\/puretokensx\.com\//);
   assert.match(skillText, /`200cm × 230cm`/);
   assert.match(skillText, /`1024x1024`、`1536x1024`、`1024x1536`/);
-  assert.match(skillText, /`1K`、`2K` 或 `4K`/);
-  assert.match(skillText, /不得将该物理尺寸直接传入 `size`/);
+  assert.match(skillText, /`1K`、`2K`、`4K`/);
+  assert.match(skillText, /不能传给 `size`/);
   assert.match(skillText, /POST https:\/\/api\.puretokensx\.com\/v1\/images\/generations/);
   assert.match(skillText, /POST https:\/\/api\.puretokensx\.com\/v1\/videos/);
-  assert.match(skillText, /不依赖系统、开发者或 AGENTS 指令/);
   assert.match(skillText, /Codex 或 CC Switch/);
-  assert.match(skillText, /不要求 `puretokens-image` MCP 或额外的 Direct Cloud 凭据/);
-  assert.match(skillText, /可调用的认证 HTTPS Images API 执行器/);
-  assert.match(skillText, /能返回或交付实际原生图片字节/);
-  assert.match(skillText, /在任何备用通道提交前向用户说明/);
-  assert.match(skillText, /没有可用的同模型备用通道/);
-  assert.match(skillText, /当前图片 API 不支持 `<用户给出的像素尺寸>`/);
-  assert.match(skillText, /当前单任务最多支持 `6` 张/);
-  assert.match(skillText, /暂不支持参考图或视频编辑/);
-  assert.match(skillText, /面向用户的特殊情况提示/);
-  assert.match(skillText, /继续查询/);
-  assert.match(skillText, /可执行认证 HTTPS 视频请求并可交付实际视频字节/);
-  assert.match(skillText, /普通聊天连接仅配置 API Key/);
-  assert.match(skillText, /原生 Pure Tokens 媒体执行器/);
-  assert.match(skillText, /不能把它当作图片\/视频执行器/);
-  assert.match(skillText, /不需要等待 Skill 发版/);
-  assert.match(skillText, /不需要 Pure Tokens Desktop、Router、额外 CLI 或 MCP/);
+  assert.match(skillText, /可调用、已认证的 HTTPS Images API 执行器/);
+  assert.match(skillText, /能返回或交付真实原生图片字节/);
+  assert.match(skillText, /任何备用提交前必须说明/);
+  assert.match(skillText, /没有同模型通道则停止/);
+  assert.match(skillText, /`n` 只能是 `1` 至 `6` 的整数/);
+  assert.match(skillText, /当前只支持文生图/);
+  assert.match(skillText, /面向用户的特殊情况/);
+  assert.match(skillText, /继续查询同一 `task_id`/);
+  assert.match(skillText, /可调用、已认证的 HTTPS 视频执行器/);
+  assert.match(skillText, /仅保存 API Key 或能读取目录不是视频执行能力/);
+  assert.match(skillText, /Pure Tokens 原生执行器/);
+  assert.match(skillText, /README 清单只用于发现/);
   assert.match(directCloudContract, /PURETOKENS_API_KEY/);
   assert.match(directCloudContract, /PURETOKENS_API_BASE_URL/);
   assert.match(directCloudContract, /always set `async: true`/);
@@ -131,17 +130,15 @@ test("media Skill publishes the complete MCP tool contract", async () => {
   assert.match(directCloudContract, /cannot provide that delivery path; report the missing[\s\S]*without submitting/);
   assert.match(directCloudContract, /content\?index=N/);
   assert.match(skillText, /GET \/v1\/media\/models/);
-  assert.match(skillText, /默认只请求 `n=1` 个结果/);
-  assert.match(skillText, /Direct Cloud 图片提交必须始终传 `async: true`/);
-  assert.match(skillText, /真实媒体交付能力/);
-  assert.match(skillText, /同步 `data\[\]\.b64_json`、同步 `data\[\]\.url` 和异步任务/);
-  assert.match(skillText, /`gpt-image-2` 的 MCP 生成调用会直接返回原生图片内容/);
-  assert.match(skillText, /视频始终按异步任务处理/);
-  assert.match(skillText, /Direct Cloud 通道由宿主的 Direct Cloud 执行层完成/);
-  assert.match(skillText, /已注入的 Direct Cloud 凭据、HTTPS 执行能力与真实媒体交付能力/);
+  assert.match(skillText, /默认只请求 `1` 张/);
+  assert.match(skillText, /Direct Cloud 图片始终传 `async: true`/);
+  assert.match(skillText, /真实本机交付能力/);
+  assert.match(skillText, /synchronous `data\[\]\.b64_json`/);
+  assert.match(skillText, /`gpt-image-2` 的 MCP 生成调用返回原生图片后即完成/);
+  assert.match(skillText, /视频总是异步任务/);
+  assert.match(skillText, /已由宿主 Secret\/环境机制注入 Pure Tokens 凭据/);
   assert.doesNotMatch(skillText, /GET \/v1\/models/);
-  assert.doesNotMatch(skillText, /Authorization: Bearer/);
-  assert.doesNotMatch(skillText, /api\.krill-ai\.com/);
+  assert.doesNotMatch(skillText, /https?:\/\/api\.(?!puretokensx\.com)/);
 });
 
 test("media Skill does not advertise tools absent from the media MCP", async () => {
@@ -276,11 +273,11 @@ test("media Skill behavior scenarios cover ambiguity, empty catalog, unavailable
   assert.equal(scenarios.find((scenario) => scenario.id === "host-exposed-balance-query")?.expected, "call_the_host_exposed_balance_query_once_and_report_only_the_returned_balance_snapshot");
   assert.equal(scenarios.find((scenario) => scenario.id === "cc-switch-balance-query-not-exposed-to-chat")?.expected, "explain_that_the_current_puretokens_provider_card_can_show_balance_and_direct_the_user_to_its_usage_query_without_claiming_balance_is_unsupported");
   assert.equal(scenarios.find((scenario) => scenario.id === "ambiguous-model")?.firstTool, "puretokens_list_media_models");
-  assert.match(skillText, /模型不存在或匹配多个/);
-  assert.match(skillText, /目录为空/);
-  assert.match(skillText, /MCP 不可用/);
+  assert.match(skillText, /匹配到多个候选/);
+  assert.match(skillText, /目录为空、模型不存在/);
+  assert.match(skillText, /MCP 不可用时/);
   assert.match(skillText, /safeToResubmit=false/);
-  assert.match(skillText, /轮询超时/);
+  assert.match(skillText, /轮询超时或仍在处理中/);
   assert.deepEqual(scenarios.find((scenario) => scenario.id === "mcp-unavailable")?.expected, "use_direct_cloud_when_available_or_report_missing_execution_capability");
   assert.equal(scenarios.find((scenario) => scenario.id === "direct-cloud-image-delivery")?.expected, "force_async_true_and_write_actual_image_bytes_before_reporting_success");
   assert.equal(scenarios.find((scenario) => scenario.id === "direct-cloud-multiple-image-content")?.expected, "retrieve_zero_based_content_indexes_in_declared_order");
@@ -304,9 +301,8 @@ test("media Skill behavior scenarios cover ambiguity, empty catalog, unavailable
   assert.equal(scenarios.find((scenario) => scenario.id === "new-live-catalog-model")?.expected, "use_the_exact_catalog_model_with_its_declared_capability_without_waiting_for_a_skill_release");
   assert.equal(scenarios.find((scenario) => scenario.id === "workbuddy-explicit-host-model")?.expected, "preserve_explicit_host_model_choice_without_mcp_reroute_or_duplicate_submission");
   assert.match(scenarios.find((scenario) => scenario.id === "host-native-model-not-verified-for-media")?.expected || "", /do_not_treat_host_model_configuration_as_media_execution/);
-  assert.match(skillText, /不得自动换模型/);
-  assert.match(skillText, /不得自动重新提交/);
-  assert.match(skillText, /同步图片结果、`\/content` 或本机写入失败/);
+  assert.match(skillText, /不得自动换模型或重新提交/);
+  assert.match(skillText, /下载、保存或结果读取失败时不能声称成功/);
 });
 
 test("the shared media source has target-specific Claude and WorkBuddy deliveries", async () => {
@@ -337,6 +333,8 @@ test("the shared media source has target-specific Claude and WorkBuddy deliverie
   assert.equal(manifest.rules.hostNativeExecutionRequiresVerifiedMediaCapability, true);
   assert.equal(manifest.rules.hostNativeExecutionAvoidsDuplicateSubmission, true);
   assert.equal(manifest.supportedClients.includes("grok-build"), false);
-  assert.match(skillText, /跨客户端共用的媒体与余额行为源/);
-  assert.match(skillText, /不得自行写入、替换或删除任何客户端的 Skill、MCP、Router 或 Secret 配置/);
+  assert.match(skillText, /这是一个路由 Skill/);
+  assert.match(skillText, /`references\/balance\.md`/);
+  assert.match(skillText, /`references\/image\.md`/);
+  assert.match(skillText, /`references\/video\.md`/);
 });

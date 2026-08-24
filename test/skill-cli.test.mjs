@@ -27,10 +27,13 @@ test("Claude Desktop bundle includes the skill root and required files", async (
   const entries = readStoredZipEntries(await readFile(output));
   assert.deepEqual([...entries.keys()].sort(), [
     "puretokens_media/SKILL.md",
+    "puretokens_media/references/balance.md",
     "puretokens_media/references/behavior-scenarios.json",
     "puretokens_media/references/direct-cloud-contract.md",
+    "puretokens_media/references/image.md",
     "puretokens_media/references/model-catalog-contract.md",
     "puretokens_media/references/natural-language-aliases.json",
+    "puretokens_media/references/video.md",
     "puretokens_media/skill.json",
     "puretokens_media/source-delivery.json"
   ]);
@@ -64,7 +67,10 @@ test("install, upgrade, and explicit uninstall only manage the named Skill direc
   await writeFile(path.join(skillDirectory, "SKILL.md"), "local modification\n");
   await runCli(["upgrade", "puretokens_media", "--target", temporaryRoot]);
   const upgraded = await readFile(path.join(skillDirectory, "SKILL.md"), "utf8");
-  assert.match(upgraded, /Pure Tokens 媒体与余额编排 Skill/);
+  assert.match(upgraded, /这是一个路由 Skill/);
+  assert.match(upgraded, /`references\/balance\.md`/);
+  assert.match(upgraded, /`references\/image\.md`/);
+  assert.match(upgraded, /`references\/video\.md`/);
   await runCli(["uninstall", "puretokens_media", "--target", temporaryRoot, "--yes"]);
   await assert.rejects(readFile(path.join(skillDirectory, "SKILL.md")));
 });

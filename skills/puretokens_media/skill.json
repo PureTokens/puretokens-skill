@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "name": "puretokens_media",
-  "version": "0.4.17",
+  "version": "0.5.0",
   "entry": "SKILL.md",
   "displayName": "Pure Tokens Media & Balance",
   "description": "Resolve a Pure Tokens balance, image, or video request without exposing credentials.",

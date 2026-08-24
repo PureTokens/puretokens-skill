@@ -13,7 +13,10 @@ const workBuddyReferenceFiles = [
   "references/model-catalog-contract.md",
   "references/direct-cloud-contract.md",
   "references/behavior-scenarios.json",
-  "references/natural-language-aliases.json"
+  "references/natural-language-aliases.json",
+  "references/balance.md",
+  "references/image.md",
+  "references/video.md"
 ];
 
 test("WorkBuddy output is generated from the shared media source", async () => {
@@ -28,7 +31,10 @@ test("WorkBuddy output is generated from the shared media source", async () => {
   assert.match(entry, /ToolSearch only discovers the deferred MCP tools/);
   assert.match(entry, /DeferExecuteTool/);
   assert.match(entry, /Do not use `show_widget`/);
-  assert.match(entry, /稳定的 `request_id`/);
+  assert.match(entry, /这是一个路由 Skill/);
+  assert.match(entry, /`references\/balance\.md`/);
+  assert.match(entry, /`references\/image\.md`/);
+  assert.match(entry, /`references\/video\.md`/);
   assert.deepEqual(manifest.derivedFrom, sourceProvenance);
   assert.equal(manifest.sourceSha256, createHash("sha256").update(entry).digest("hex"));
   assert.equal(manifest.mcp.server, "puretokens-image");
@@ -39,9 +45,12 @@ test("WorkBuddy output is generated from the shared media source", async () => {
     "puretokens_generate_video",
     "puretokens_video_result"
   ]);
-  assert.equal(files.size, 6);
+  assert.equal(files.size, 9);
   assert.ok(files.has("references/direct-cloud-contract.md"));
   assert.ok(files.has("references/natural-language-aliases.json"));
+  assert.ok(files.has("references/balance.md"));
+  assert.ok(files.has("references/image.md"));
+  assert.ok(files.has("references/video.md"));
   const sourceSkill = await readFile(path.join(sourceRoot, "SKILL.md"), "utf8");
   const sharedBody = sourceSkill.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n\s*/, "");
   assert.ok(entry.endsWith(sharedBody));

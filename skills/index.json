@@ -3,7 +3,7 @@
   "skills": [
     {
       "name": "puretokens_media",
-      "version": "0.4.17",
+      "version": "0.5.0",
       "entry": "skills/puretokens_media/SKILL.md",
       "manifest": "skills/puretokens_media/skill.json",
       "summary": "Shared source for host-exposed Pure Tokens balance checks plus exact media selection, Direct Cloud or MCP execution, safe polling, native result delivery, and optional Desktop-managed Codex and WorkBuddy deliveries.",

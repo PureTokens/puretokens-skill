@@ -48,7 +48,7 @@ Current Skill:
 
 | Skill | Purpose |
 | --- | --- |
-| `puretokens_media` | Read a host-exposed Pure Tokens balance snapshot, or select an exact image/video model from the live catalog, submit one task, poll the same task, and deliver actual native media bytes plus local files. |
+| `puretokens_media` | Lightweight router for a host-exposed Pure Tokens balance snapshot, image generation, or video generation. It loads only the matching balance, image, or video rule set before selecting an exact model, submitting once, polling the same task, and delivering actual native media bytes plus local files. |
 
 <!-- media-model-catalog:start -->
 ## Media model catalog
@@ -127,7 +127,7 @@ For a host-native manually configured Pure Tokens model, the selected operation 
 
 ## Install and update from GitHub
 
-`puretokens_media` is the single behavior source for every supported client. Claude Desktop receives an uploadable ZIP; Codex can install the shared source directly; WorkBuddy uses a generated adapter when needed. Pure Tokens Desktop can manage Codex and WorkBuddy as an optional convenience path. Always use this repository for the current shared-Skill installation instructions and files.
+`puretokens_media` is the single behavior source for every supported client. Its entry is deliberately lightweight: `references/balance.md`, `references/image.md`, and `references/video.md` contain the respective specialized rules, so one request does not load unrelated media policy. Claude Desktop receives an uploadable ZIP; Codex can install the shared source directly; WorkBuddy uses a generated adapter when needed. Pure Tokens Desktop can manage Codex and WorkBuddy as an optional convenience path. Always use this repository for the current shared-Skill installation instructions and files.
 
 ### Codex
 
@@ -208,7 +208,7 @@ For the other clients, use `$HOME\.claude\skills`, `$HOME\.gemini\skills`, or `$
 Claude Desktop uses a graphical local Skill upload. Create the ZIP:
 
 ```bash
-node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out ./puretokens_media-0.4.17.zip
+node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out ./puretokens_media-0.5.0.zip
 ```
 
 The ZIP has this layout:
@@ -220,9 +220,12 @@ puretokens_media/
 ├── source-delivery.json
 └── references/
     ├── behavior-scenarios.json
+    ├── balance.md
     ├── direct-cloud-contract.md
+    ├── image.md
     ├── model-catalog-contract.md
-    └── natural-language-aliases.json
+    ├── natural-language-aliases.json
+    └── video.md
 ```
 
 In Claude Desktop, open **Settings → Features → Skills** (some builds show **Customize → Skills**), choose **Upload skill**, upload the ZIP, and enable `Pure Tokens Media & Balance`. A Claude Desktop instance connected through CC Switch can use this same ZIP: independently configure a callable `puretokens-image` MCP tool through CC Switch or another local tool provider. If the host itself exposes authenticated HTTPS execution and local media delivery, it may use Direct Cloud instead. The ZIP intentionally excludes the WorkBuddy-only adapter.

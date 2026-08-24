@@ -94,8 +94,8 @@ export async function validateRepository() {
     if (codex) {
       if (codex.managedByDesktop !== true) errors.push(`${directory}: Codex must expose a Desktop-managed delivery`);
       if (codex.manualInstallationSupported !== true) errors.push(`${directory}: Codex must support independent installation`);
-      if (codex.managedSkillDirectory !== "~/.codex/skills/puretokens_media") {
-        errors.push(`${directory}: Codex managed Skill directory must be ~/.codex/skills/puretokens_media`);
+      if (codex.managedSkillDirectory !== `~/.codex/skills/${name}`) {
+        errors.push(`${directory}: Codex managed Skill directory must be ~/.codex/skills/${name}`);
       }
       if (codex.requiresPluginFeature !== false) errors.push(`${directory}: Codex delivery must not require the Plugin feature`);
       if (Object.hasOwn(codex, "plugin")) errors.push(`${directory}: Codex delivery must not declare a Plugin`);

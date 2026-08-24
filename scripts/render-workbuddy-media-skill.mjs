@@ -10,7 +10,10 @@ const referenceFiles = [
   "references/model-catalog-contract.md",
   "references/direct-cloud-contract.md",
   "references/behavior-scenarios.json",
-  "references/natural-language-aliases.json"
+  "references/natural-language-aliases.json",
+  "references/balance.md",
+  "references/image.md",
+  "references/video.md"
 ];
 
 export async function renderWorkBuddyMediaSkill() {

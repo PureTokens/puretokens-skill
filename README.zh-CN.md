@@ -48,7 +48,7 @@ CC Switch 可以通过当前 Pure Tokens 供应商卡的**用量查询**显示�
 
 | Skill | 用途 |
 | --- | --- |
-| `puretokens_media` | 查询宿主公开的 Pure Tokens 余额快照，或按当前目录精确选择图片/视频模型，提交一次任务并轮询同一任务，再交付实际原生媒体字节和本地文件。 |
+| `puretokens_media` | 轻量路由入口：将 Pure Tokens 余额、图片或视频请求加载到对应专项规则，再按当前目录精确选择模型、单次提交、轮询同一任务，并交付实际原生媒体字节和本地文件。 |
 
 <!-- media-model-catalog:start -->
 ## 媒体模型清单
@@ -127,7 +127,7 @@ README 只从基础目录中带有明确图片/视频能力的模型生成，不
 
 ## 从 GitHub 安装和更新
 
-`puretokens_media` 是所有支持客户端共用的唯一媒体行为源。Claude Desktop 通过可上传 ZIP 使用它；Codex 可以直接安装共享源；WorkBuddy 在需要时使用生成的适配层。Pure Tokens Desktop 可以作为可选的便利路径受管 Codex 和 WorkBuddy。共享 Skill 的最新安装说明和文件仍以本仓库为准。
+`puretokens_media` 是所有支持客户端共用的唯一媒体行为源。其入口刻意保持轻量：`references/balance.md`、`references/image.md`、`references/video.md` 分别承载对应专项规则，使一次请求不加载无关媒体策略。Claude Desktop 通过可上传 ZIP 使用它；Codex 可以直接安装共享源；WorkBuddy 在需要时使用生成的适配层。Pure Tokens Desktop 可以作为可选的便利路径受管 Codex 和 WorkBuddy。共享 Skill 的最新安装说明和文件仍以本仓库为准。
 
 ### Codex
 
@@ -208,7 +208,7 @@ node .\bin\puretokens-skill.js install puretokens_media --target $HOME\.claude\s
 Claude Desktop 使用图形界面上传本地 Skill 包。生成 ZIP：
 
 ```bash
-node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out ./puretokens_media-0.4.17.zip
+node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out ./puretokens_media-0.5.0.zip
 ```
 
 ZIP 内部结构为：
@@ -220,9 +220,12 @@ puretokens_media/
 ├── source-delivery.json
 └── references/
     ├── behavior-scenarios.json
+    ├── balance.md
     ├── direct-cloud-contract.md
+    ├── image.md
     ├── model-catalog-contract.md
-    └── natural-language-aliases.json
+    ├── natural-language-aliases.json
+    └── video.md
 ```
 
 在 Claude Desktop 中打开 **Settings → Features → Skills**（部分版本显示为 **Customize → Skills**），选择 **Upload skill**，上传 ZIP 并启用 `Pure Tokens Media & Balance`。通过 CC Switch 连接的 Claude Desktop 也可以使用同一个 ZIP：通过 CC Switch 或其他本机工具提供方独立配置可调用的 `puretokens-image` MCP。若宿主本身提供认证 HTTPS 执行和本机媒体交付能力，也可以改走 Direct Cloud。ZIP 会刻意排除仅供 WorkBuddy 使用的适配层。

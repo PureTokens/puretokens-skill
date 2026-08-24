@@ -2,15 +2,17 @@ import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { repositoryRoot } from "./skill-registry.mjs";
-import { getMediaSkillProvenance, mediaSkillName, mediaSkillSourceFiles } from "./media-skill-provenance.mjs";
+import { getSkillProvenance, getSkillSourceFiles, mediaSkillName } from "./media-skill-provenance.mjs";
 
 const managedSkillRoot = path.join(repositoryRoot, "dist", "codex", mediaSkillName);
+export const codexManagedSkillNames = [mediaSkillName];
 
-export async function renderCodexManagedSkill() {
-  const sourceRoot = path.join(repositoryRoot, "skills", mediaSkillName);
-  const derivedFrom = await getMediaSkillProvenance();
+export async function renderCodexManagedSkill(skillName = mediaSkillName) {
+  const sourceRoot = path.join(repositoryRoot, "skills", skillName);
+  const sourceFiles = await getSkillSourceFiles(skillName);
+  const derivedFrom = await getSkillProvenance(skillName);
   const files = new Map();
-  for (const relativePath of mediaSkillSourceFiles) {
+  for (const relativePath of sourceFiles) {
     files.set(relativePath, await readFile(path.join(sourceRoot, relativePath)));
   }
   files.set(
@@ -30,6 +32,13 @@ export async function writeCodexManagedSkill(outputRoot = managedSkillRoot) {
     await writeFile(target, contents);
   }
   return derivedFrom;
+}
+
+export async function renderCodexManagedSkills(skillNames = codexManagedSkillNames) {
+  return new Map(await Promise.all(skillNames.map(async (skillName) => [
+    skillName,
+    await renderCodexManagedSkill(skillName)
+  ])));
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
