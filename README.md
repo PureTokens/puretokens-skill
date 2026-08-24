@@ -49,13 +49,27 @@ The host's current configured connection owns the Base URL, authentication, and 
 
 `puretokens_video` first uses `GET /v1/media/models`, verifies an exact `video` model ID, then uses `POST /v1/videos`. Its default is `grok-imagine-video-1.5-preview`; it polls and delivers only the same task's native bytes.
 
+Every supported host is held to the same native-execution contract: authenticated relative-path HTTP, JSON task responses, native media-byte delivery, and continuation by the same task ID. The acceptance matrix is `references/host-native-execution-contract.json`; it does not grant the Skill access to a Base URL, API key, or host configuration.
+
 The active connection must execute those requests and deliver native image or video bytes. If it cannot, the Skill stops before a billable submission and tells the user to check the existing Pure Tokens Base URL, authentication, and routing configuration. It never falls back to another execution path and does not identify or branch on other relay services.
+
+## Balance
+
+`puretokens_balance` makes exactly one read-only `GET /api/product/desktop/account/balance` request only when the host exposes the current connection's existing authenticated account session. It reports only returned fields. If that session is not exposed, it directs the user to the current connection's client balance view; it never guesses a balance, tries another endpoint, or asks for credentials.
 
 ## Image sizes and count
 
 Images default to one result. An explicit `n` must be an integer from 1 through 6; a request is never split into several paid submissions. Supported `size` values are `1024x1024`, `1536x1024`, and `1024x1536`; supported `image_size` values are `1K`, `2K`, and `4K`.
 
 Physical dimensions such as `200cm × 230cm` cannot be guaranteed and are never passed as `n` or `size`. The Skill explains the limitation and asks the user to choose one of the supported options.
+
+For `n` images, delivery reads exactly the zero-based indexes `0` through `n-1` from the same task. A request is successful only when native bytes arrive for every requested index. A partial result names both delivered and missing indexes, then permits only another read of the missing content from that same task.
+
+## Model parameter profiles and receipts
+
+The default `gpt-image-2` uses the count and size values declared above. For another image model, a requested optional field such as `n`, `size`, or `image_size` must be present with a supported value in that model's authenticated live `input_schema`; prompt-only image requests do not need a profile. For video, every optional duration, aspect ratio, resolution, size, or other field likewise requires the selected model's live `input_schema`; prompt-only video requests remain valid without one. A missing or incompatible profile stops before submission and asks the user to remove the option or choose a model with a published profile.
+
+On submit, continuation, completion, and failure, media Skills return a consistent receipt: exact model ID when returned, task ID when returned, current state, requested count, requested size/parameters, delivered count on completion, and the next action. Missing task metadata is reported as not returned, never guessed.
 
 ## Usage examples
 
@@ -75,7 +89,7 @@ Synchronized with the base model catalog: 2026-08-21T02:46:19.421Z.
 
 This list is generated from Pure Tokens' base model catalog using explicit image/video capabilities. At execution time, the exact model and required capability must still appear in the current authenticated GET /v1/media/models response.
 
-README is generated only from base-catalog models with explicit image/video capabilities; it never infers capability from a model name. Before release, run `npm run docs:sync-media-models-from-service` against the controlled base catalog; execution still uses the authenticated `GET /v1/media/models` response.
+README is generated only from base-catalog models with explicit image/video capabilities; it never infers capability from a model name. The current catalog snapshot is discovery-only; the authenticated live model and its `input_schema` win at execution time. Before release, refresh from the controlled base catalog and run `npm run release:validate`; the release gate fails when the snapshot is over seven days old.
 
 ### Image models
 
@@ -118,4 +132,11 @@ For Claude Desktop, bundle and upload the required specialist Skill:
 
 ```bash
 node bin/puretokens-skill.js bundle puretokens_image --format claude-desktop --out ./puretokens_image.zip
+```
+
+Before publishing a release:
+
+```bash
+npm run docs:sync-media-models-from-service
+npm run release:validate
 ```

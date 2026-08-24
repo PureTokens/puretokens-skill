@@ -6,7 +6,8 @@
     "usesCurrentConfiguredConnection": true,
     "usesRelativePathsOnly": true,
     "doesNotInspectConnectionIdentity": true,
-    "requiresNativeMediaByteDelivery": true
+    "requiresNativeMediaByteDelivery": true,
+    "requiredHostCapabilities": ["authenticated_relative_http", "json_task_response", "native_media_byte_delivery", "same_task_continuation"]
   },
   "operations": {
     "submit": {
@@ -28,6 +29,19 @@
     "notSuccess": ["task_id", "status_text", "html", "svg", "component", "remote_url"],
     "sameTaskOnly": true,
     "neverAutoResubmit": true
+  },
+  "parameterValidation": {
+    "defaultModel": "gpt-image-2",
+    "defaultModelUsesDeclaredContractOptions": true,
+    "nonDefaultModelOptionalParametersRequire": "authenticated_live_catalog_input_schema",
+    "whenProfileIsMissing": "do_not_submit_requested_optional_parameters"
+  },
+  "contentRetrieval": {
+    "indexBase": 0,
+    "requestedCount": "explicit_n_or_default_1",
+    "allowedIndexes": "0..requestedCount-1",
+    "completeDeliveryRequiresEveryRequestedIndex": true,
+    "partialOrMissingContent": "report_delivered_and_missing_indexes_without_resubmission"
   },
   "unsupportedInput": ["reference_image", "image_edit", "mask", "user_media_upload"]
 }

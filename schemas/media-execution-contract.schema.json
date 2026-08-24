@@ -16,7 +16,12 @@
         "usesRelativePathsOnly": { "const": true },
         "doesNotInspectConnectionIdentity": { "const": true },
         "requiresNativeMediaByteDelivery": { "const": true },
-        "requiresHostExposedReadOnlyBalanceCapability": { "const": true }
+        "requiresHostExposedReadOnlyBalanceCapability": { "const": true },
+        "requiredHostCapabilities": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "enum": ["authenticated_relative_http", "json_task_response", "native_media_byte_delivery", "same_task_continuation"] }
+        }
       },
       "additionalProperties": true
     },
@@ -26,7 +31,8 @@
         "catalog": { "$ref": "#/$defs/request" },
         "submit": { "$ref": "#/$defs/request" },
         "status": { "$ref": "#/$defs/request" },
-        "content": { "$ref": "#/$defs/request" }
+        "content": { "$ref": "#/$defs/request" },
+        "read": { "$ref": "#/$defs/accountReadRequest" }
       },
       "additionalProperties": false
     },
@@ -39,13 +45,29 @@
       "type": "array",
       "uniqueItems": true,
       "items": { "type": "string", "minLength": 1 }
+    },
+    "parameterValidation": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "contentRetrieval": {
+      "type": "object",
+      "required": ["indexBase", "requestedCount", "allowedIndexes", "completeDeliveryRequiresEveryRequestedIndex", "partialOrMissingContent"],
+      "properties": {
+        "indexBase": { "const": 0 },
+        "requestedCount": { "const": "explicit_n_or_default_1" },
+        "allowedIndexes": { "const": "0..requestedCount-1" },
+        "completeDeliveryRequiresEveryRequestedIndex": { "const": true },
+        "partialOrMissingContent": { "const": "report_delivered_and_missing_indexes_without_resubmission" }
+      },
+      "additionalProperties": false
     }
   },
   "allOf": [
     {
       "if": { "properties": { "kind": { "const": "image" } } },
       "then": {
-        "required": ["operations", "unsupportedInput"],
+        "required": ["operations", "unsupportedInput", "parameterValidation", "contentRetrieval"],
         "properties": {
           "operations": {
             "required": ["submit", "status", "content"],
@@ -63,14 +85,23 @@
               "content": { "properties": { "method": { "const": "GET" }, "pathTemplate": { "const": "/v1/images/{task_id}/content?index={index}" } } }
             }
           },
-          "result": { "required": ["successRequires", "sameTaskOnly", "neverAutoResubmit"], "properties": { "successRequires": { "const": "native_image_bytes" }, "sameTaskOnly": { "const": true }, "neverAutoResubmit": { "const": true } } }
+          "result": { "required": ["successRequires", "sameTaskOnly", "neverAutoResubmit"], "properties": { "successRequires": { "const": "native_image_bytes" }, "sameTaskOnly": { "const": true }, "neverAutoResubmit": { "const": true } } },
+          "parameterValidation": {
+            "required": ["defaultModel", "defaultModelUsesDeclaredContractOptions", "nonDefaultModelOptionalParametersRequire", "whenProfileIsMissing"],
+            "properties": {
+              "defaultModel": { "const": "gpt-image-2" },
+              "defaultModelUsesDeclaredContractOptions": { "const": true },
+              "nonDefaultModelOptionalParametersRequire": { "const": "authenticated_live_catalog_input_schema" },
+              "whenProfileIsMissing": { "const": "do_not_submit_requested_optional_parameters" }
+            }
+          }
         }
       }
     },
     {
       "if": { "properties": { "kind": { "const": "video" } } },
       "then": {
-        "required": ["operations", "unsupportedInput"],
+        "required": ["operations", "unsupportedInput", "parameterValidation"],
         "properties": {
           "operations": {
             "required": ["catalog", "submit", "status", "content"],
@@ -88,7 +119,15 @@
               "content": { "properties": { "method": { "const": "GET" }, "pathTemplate": { "const": "/v1/videos/{task_id}/content" } } }
             }
           },
-          "result": { "required": ["successRequires", "sameTaskOnly", "neverAutoResubmit"], "properties": { "successRequires": { "const": "native_video_bytes" }, "sameTaskOnly": { "const": true }, "neverAutoResubmit": { "const": true } } }
+          "result": { "required": ["successRequires", "sameTaskOnly", "neverAutoResubmit"], "properties": { "successRequires": { "const": "native_video_bytes" }, "sameTaskOnly": { "const": true }, "neverAutoResubmit": { "const": true } } },
+          "parameterValidation": {
+            "required": ["allModelsOptionalParametersRequire", "promptAllowedWithoutProfile", "whenProfileIsMissing"],
+            "properties": {
+              "allModelsOptionalParametersRequire": { "const": "authenticated_live_catalog_input_schema" },
+              "promptAllowedWithoutProfile": { "const": true },
+              "whenProfileIsMissing": { "const": "do_not_submit_requested_optional_parameters" }
+            }
+          }
         }
       }
     },
@@ -96,8 +135,22 @@
       "if": { "properties": { "kind": { "const": "balance" } } },
       "then": {
         "properties": {
-          "transport": { "required": ["requiresHostExposedReadOnlyBalanceCapability"] },
-          "result": { "required": ["reportOnlyReturnedFields", "neverEstimate", "neverRetry"] }
+          "transport": { "required": ["usesRelativePathsOnly", "requiresHostExposedReadOnlyBalanceCapability", "requiredHostCapabilities"] },
+          "operations": {
+            "required": ["read"],
+            "properties": {
+              "read": {
+                "required": ["method", "path", "requiresExistingAuthenticatedAccountSession", "responseSchema"],
+                "properties": {
+                  "method": { "const": "GET" },
+                  "path": { "const": "/api/product/desktop/account/balance" },
+                  "requiresExistingAuthenticatedAccountSession": { "const": true },
+                  "responseSchema": { "const": "https://puretokensx.com/schemas/balance-snapshot.schema.json" }
+                }
+              }
+            }
+          },
+          "result": { "required": ["reportOnlyReturnedFields", "neverEstimate", "neverRetry", "fallbackWhenAccountSessionUnavailable"] }
         }
       }
     }
@@ -117,6 +170,17 @@
       },
       "oneOf": [{ "required": ["path"] }, { "required": ["pathTemplate"] }],
       "additionalProperties": true
+    },
+    "accountReadRequest": {
+      "type": "object",
+      "required": ["method", "path", "requiresExistingAuthenticatedAccountSession", "responseSchema"],
+      "properties": {
+        "method": { "const": "GET" },
+        "path": { "const": "/api/product/desktop/account/balance" },
+        "requiresExistingAuthenticatedAccountSession": { "const": true },
+        "responseSchema": { "const": "https://puretokensx.com/schemas/balance-snapshot.schema.json" }
+      },
+      "additionalProperties": false
     }
   },
   "additionalProperties": true

@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://puretokensx.com/schemas/host-native-execution-contract.schema.json",
+  "title": "Pure Tokens host-native API execution contract",
+  "type": "object",
+  "required": ["schemaVersion", "transport", "requiredCapabilities", "acceptanceScenarios", "balance"],
+  "properties": {
+    "$schema": { "const": "https://puretokensx.com/schemas/host-native-execution-contract.schema.json" },
+    "schemaVersion": { "const": 1 },
+    "transport": {
+      "type": "object",
+      "required": ["usesCurrentConfiguredConnection", "usesRelativeApiPathsOnly", "doesNotReadCredentialsOrHostConfiguration", "doesNotInspectConnectionIdentity"],
+      "properties": {
+        "usesCurrentConfiguredConnection": { "const": true },
+        "usesRelativeApiPathsOnly": { "const": true },
+        "doesNotReadCredentialsOrHostConfiguration": { "const": true },
+        "doesNotInspectConnectionIdentity": { "const": true }
+      },
+      "additionalProperties": false
+    },
+    "requiredCapabilities": {
+      "type": "array",
+      "uniqueItems": true,
+      "contains": { "const": "authenticated_relative_http" },
+      "items": { "enum": ["authenticated_relative_http", "json_task_response", "native_media_byte_delivery", "same_task_continuation"] }
+    },
+    "acceptanceScenarios": {
+      "type": "array",
+      "minItems": 4,
+      "items": {
+        "type": "object",
+        "required": ["id", "request", "expect"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+          "request": { "type": "string", "minLength": 1 },
+          "expect": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "balance": {
+      "type": "object",
+      "required": ["path", "method", "requiresExistingAuthenticatedAccountSession", "responseSchema", "fallback"],
+      "properties": {
+        "path": { "const": "/api/product/desktop/account/balance" },
+        "method": { "const": "GET" },
+        "requiresExistingAuthenticatedAccountSession": { "const": true },
+        "responseSchema": { "const": "schemas/balance-snapshot.schema.json" },
+        "fallback": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

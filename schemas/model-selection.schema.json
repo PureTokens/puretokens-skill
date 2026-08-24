@@ -22,6 +22,9 @@
             "type": "array",
             "uniqueItems": true,
             "items": { "type": "string", "minLength": 1, "maxLength": 160 }
+          },
+          "parameterSchema": {
+            "type": "object"
           }
         },
         "additionalProperties": false

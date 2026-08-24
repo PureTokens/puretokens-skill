@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://puretokensx.com/schemas/task-receipt.schema.json",
+  "title": "Pure Tokens media task user receipt",
+  "type": "object",
+  "required": ["schemaVersion", "kind", "submission", "continuation", "completion", "failure"],
+  "properties": {
+    "$schema": { "const": "https://puretokensx.com/schemas/task-receipt.schema.json" },
+    "schemaVersion": { "const": 1 },
+    "kind": { "enum": ["image", "video"] },
+    "submission": { "$ref": "#/$defs/receipt" },
+    "continuation": { "$ref": "#/$defs/receipt" },
+    "completion": { "$ref": "#/$defs/receipt" },
+    "failure": { "$ref": "#/$defs/receipt" }
+  },
+  "$defs": {
+    "receipt": {
+      "type": "object",
+      "required": ["requiredFields", "nextAction"],
+      "properties": {
+        "requiredFields": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "enum": ["exact_model_id", "task_id", "returned_state", "requested_count", "requested_size_or_parameters", "delivered_count", "next_action"] }
+        },
+        "nextAction": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

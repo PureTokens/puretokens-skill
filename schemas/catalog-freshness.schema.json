@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://puretokensx.com/schemas/catalog-freshness.schema.json",
+  "title": "Pure Tokens media catalog release freshness policy",
+  "type": "object",
+  "required": ["schemaVersion", "maxAgeDays", "releaseCommand", "message"],
+  "properties": {
+    "$schema": { "const": "https://puretokensx.com/schemas/catalog-freshness.schema.json" },
+    "schemaVersion": { "const": 1 },
+    "maxAgeDays": { "type": "integer", "minimum": 1, "maximum": 31 },
+    "releaseCommand": { "const": "npm run release:validate" },
+    "message": { "type": "string", "minLength": 1 }
+  },
+  "additionalProperties": false
+}

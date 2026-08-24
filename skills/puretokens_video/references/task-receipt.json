@@ -1,0 +1,21 @@
+{
+  "$schema": "https://puretokensx.com/schemas/task-receipt.schema.json",
+  "schemaVersion": 1,
+  "kind": "video",
+  "submission": {
+    "requiredFields": ["exact_model_id", "task_id", "returned_state", "requested_count", "requested_size_or_parameters", "next_action"],
+    "nextAction": "Explain that the task will be read only by its task_id; do not promise video delivery until native bytes arrive."
+  },
+  "continuation": {
+    "requiredFields": ["exact_model_id", "task_id", "returned_state", "requested_count", "requested_size_or_parameters", "next_action"],
+    "nextAction": "State whether the same task remains pending, needs another same-task read, or has terminally failed."
+  },
+  "completion": {
+    "requiredFields": ["exact_model_id", "task_id", "returned_state", "requested_count", "requested_size_or_parameters", "delivered_count", "next_action"],
+    "nextAction": "State the delivered native video count and whether any same-task content read remains necessary."
+  },
+  "failure": {
+    "requiredFields": ["exact_model_id", "task_id", "returned_state", "requested_count", "requested_size_or_parameters", "next_action"],
+    "nextAction": "Offer only an explicit new request or a same-task status/content read, according to the returned state."
+  }
+}

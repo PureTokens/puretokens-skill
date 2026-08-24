@@ -1,5 +1,6 @@
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { repositoryRoot } from "./skill-registry.mjs";
 
@@ -16,7 +17,7 @@ function parseMode() {
   return { write, check };
 }
 
-function buildSelection(catalog, capability) {
+export function buildSelection(catalog, capability) {
   if (catalog?.schemaVersion !== 2 || !Array.isArray(catalog.models)) {
     throw new Error("media-model-catalog.json must be a schemaVersion=2 model catalog");
   }
@@ -28,7 +29,11 @@ function buildSelection(catalog, capability) {
     catalogCapturedAt: catalog.serviceCatalog?.capturedAt,
     models: catalog.models
       .filter((model) => model.capabilities?.includes(capability))
-      .map((model) => ({ id: model.id, aliases: model.aliases || [] }))
+      .map((model) => ({
+        id: model.id,
+        aliases: model.aliases || [],
+        ...(model.parameterSchema ? { parameterSchema: model.parameterSchema } : {})
+      }))
   };
 }
 
@@ -57,4 +62,4 @@ async function main() {
   if (check && changed) process.exitCode = 1;
 }
 
-await main();
+if (process.argv[1] === fileURLToPath(import.meta.url)) await main();

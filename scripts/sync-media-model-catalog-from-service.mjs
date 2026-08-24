@@ -1,5 +1,6 @@
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { repositoryRoot } from "./skill-registry.mjs";
 
@@ -91,7 +92,16 @@ function explicitCapabilities(model) {
   return [...capabilities].sort();
 }
 
-function sourceRows(payload) {
+function explicitParameterSchema(model) {
+  const candidate = model?.input_schema
+    ?? model?.inputSchema
+    ?? model?.media_parameters
+    ?? model?.mediaParameters;
+  if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) return undefined;
+  return candidate;
+}
+
+export function sourceRows(payload) {
   if (!Array.isArray(payload?.data)) throw new Error("base model catalog response is invalid");
   const vendors = new Map(
     (Array.isArray(payload?.vendors) ? payload.vendors : [])
@@ -102,7 +112,13 @@ function sourceRows(payload) {
     const id = text(row?.model_name ?? row?.id);
     const vendorId = Number(row?.vendor_id ?? row?.vendorId);
     const provider = text(row?.provider ?? row?.owned_by ?? row?.ownedBy) || vendors.get(text(vendorId)) || "";
-    return { id, provider, vendorId, capabilities: explicitCapabilities(row) };
+    return {
+      id,
+      provider,
+      vendorId,
+      capabilities: explicitCapabilities(row),
+      parameterSchema: explicitParameterSchema(row)
+    };
   }).filter((model) => model.id && model.capabilities.length);
 }
 
@@ -121,7 +137,7 @@ function genericCopy(id, capabilities) {
   };
 }
 
-function buildPublishedCatalog(previous, models, args) {
+export function buildPublishedCatalog(previous, models, args) {
   const previousById = new Map((Array.isArray(previous?.models) ? previous.models : []).map((model) => [model.id, model]));
   const normalized = models.map((model) => {
     if (!model.provider || !Number.isInteger(model.vendorId)) {
@@ -136,7 +152,8 @@ function buildPublishedCatalog(previous, models, args) {
       capabilities: model.capabilities,
       aliases: editorial.aliases || [],
       goodFor: editorial.goodFor || genericCopy(model.id, model.capabilities).goodFor,
-      example: editorial.example || genericCopy(model.id, model.capabilities).example
+      example: editorial.example || genericCopy(model.id, model.capabilities).example,
+      ...(model.parameterSchema ? { parameterSchema: model.parameterSchema } : {})
     };
   }).sort((left, right) => left.id.localeCompare(right.id, "en", { numeric: true }));
   const capturedAt = args.capturedAt || new Date().toISOString();
@@ -184,4 +201,4 @@ async function main() {
   process.stdout.write(`Published ${refreshed.models.length} base media models.\n`);
 }
 
-await main();
+if (process.argv[1] === fileURLToPath(import.meta.url)) await main();

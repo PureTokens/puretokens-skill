@@ -7,6 +7,10 @@ export const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.met
 export const skillsRoot = path.join(repositoryRoot, "skills");
 
 const forbiddenPattern = /(BEGIN [A-Z ]*PRIVATE|api[_-]?key|authorization:|bearer\s+|pts-router-token|127\.0\.0\.1:|\/Users\/)/i;
+const nativeMediaCapabilities = ["authenticated_relative_http", "json_task_response", "native_media_byte_delivery", "same_task_continuation"];
+const balanceCapabilities = ["authenticated_relative_http", "json_task_response"];
+const hostAcceptanceScenarioIds = ["catalog-read", "media-submit", "same-task-status", "native-media-delivery"];
+const receiptCoreFields = ["exact_model_id", "task_id", "returned_state", "requested_count", "requested_size_or_parameters", "next_action"];
 
 export async function readSkillRegistry() {
   const registryPath = path.join(skillsRoot, "index.json");
@@ -40,8 +44,16 @@ export async function collectSkillRecords() {
 export async function validateRepository() {
   const errors = [];
   const { registry, records } = await collectSkillRecords();
-  const hostSupport = await readHostSupport(errors);
+  const packageManifest = JSON.parse(await readFile(path.join(repositoryRoot, "package.json"), "utf8"));
+  if (!/^\d+\.\d+\.\d+$/.test(packageManifest?.version || "")) {
+    errors.push("package.json must contain a semver version");
+  }
   await validateSchemaDocuments(errors);
+  const hostSupport = await readHostSupport(errors);
+  const hostNativeExecutionContract = await readHostNativeExecutionContract(errors);
+  await validateCatalogFreshnessPolicy(errors);
+  validateHostNativeExecutionContract(errors, hostNativeExecutionContract);
+  validateHostExecutionMatrix(errors, hostSupport, hostNativeExecutionContract);
   const seen = new Set();
   const registryByName = new Map(registry.skills.map((skill) => [skill?.name, skill]));
 
@@ -54,6 +66,7 @@ export async function validateRepository() {
     if (frontmatter.name !== name) errors.push(`${directory}: SKILL.md frontmatter name must match manifest`);
     if (!frontmatter.description) errors.push(`${directory}: SKILL.md needs a non-empty frontmatter description`);
     if (!manifest?.version || !/^\d+\.\d+\.\d+$/.test(manifest.version)) errors.push(`${directory}: manifest version must be semver`);
+    if (manifest?.version !== packageManifest?.version) errors.push(`${directory}: manifest version must match package.json`);
     if (manifest?.sourceSha256 !== undefined) {
       const sourceSha256 = String(manifest.sourceSha256);
       const actualSourceSha256 = createHash("sha256").update(skillText).digest("hex");
@@ -126,6 +139,9 @@ async function readHostSupport(errors) {
       errors.push("references/host-support.json must be schemaVersion=1 with supported and notDistributed arrays");
       return { supported: [], notDistributed: [] };
     }
+    if (support.nativeExecutionContract !== "references/host-native-execution-contract.json") {
+      errors.push("references/host-support.json must reference the host-native execution contract");
+    }
     const records = [...support.supported, ...support.notDistributed];
     const ids = records.map((host) => host?.id).filter((id) => typeof id === "string" && /^[a-z][a-z0-9-]*$/.test(id));
     if (ids.length !== records.length || new Set(ids).size !== ids.length) {
@@ -142,6 +158,10 @@ async function readHostSupport(errors) {
       } else if (host?.delivery !== "bundle") {
         errors.push(`references/host-support.json: ${host?.id || "unnamed host"} has an unsupported delivery type`);
       }
+      if (!sameObjectKeys(host?.nativeExecution, ["authenticatedRelativeHttp", "jsonTaskResponse", "nativeMediaByteDelivery", "sameTaskContinuation"]) ||
+        Object.values(host.nativeExecution || {}).some((value) => value !== true)) {
+        errors.push(`references/host-support.json: ${host?.id || "unnamed host"} must declare all four verified native execution capabilities`);
+      }
     }
     for (const host of support.notDistributed) {
       if (!host || typeof host.reason !== "string" || !host.reason) {
@@ -155,10 +175,70 @@ async function readHostSupport(errors) {
   }
 }
 
+async function readHostNativeExecutionContract(errors) {
+  const file = path.join(repositoryRoot, "references", "host-native-execution-contract.json");
+  try {
+    return JSON.parse(await readFile(file, "utf8"));
+  } catch {
+    errors.push("references/host-native-execution-contract.json is missing or invalid JSON");
+    return undefined;
+  }
+}
+
+async function validateCatalogFreshnessPolicy(errors) {
+  const file = path.join(repositoryRoot, "references", "catalog-freshness.json");
+  try {
+    const policy = JSON.parse(await readFile(file, "utf8"));
+    if (policy?.$schema !== "https://puretokensx.com/schemas/catalog-freshness.schema.json" || policy?.schemaVersion !== 1 ||
+      !Number.isInteger(policy?.maxAgeDays) || policy.maxAgeDays < 1 || policy.maxAgeDays > 31 ||
+      policy.releaseCommand !== "npm run release:validate" || typeof policy.message !== "string" || !policy.message) {
+      errors.push("references/catalog-freshness.json must declare a valid release freshness policy");
+    }
+  } catch {
+    errors.push("references/catalog-freshness.json is missing or invalid JSON");
+  }
+}
+
+function validateHostNativeExecutionContract(errors, contract) {
+  const label = "references/host-native-execution-contract.json";
+  if (!contract || typeof contract !== "object") return;
+  if (contract.$schema !== "https://puretokensx.com/schemas/host-native-execution-contract.schema.json" || contract.schemaVersion !== 1) {
+    errors.push(`${label} must declare schemaVersion=1 host-native execution contract`);
+  }
+  const transport = contract.transport;
+  if (!transport || transport.usesCurrentConfiguredConnection !== true || transport.usesRelativeApiPathsOnly !== true ||
+    transport.doesNotReadCredentialsOrHostConfiguration !== true || transport.doesNotInspectConnectionIdentity !== true) {
+    errors.push(`${label} must use the current connection, relative paths, and no credential/configuration inspection`);
+  }
+  if (!sameArray(contract.requiredCapabilities, nativeMediaCapabilities)) {
+    errors.push(`${label} must require authenticated relative HTTP, JSON task responses, native media bytes, and same-task continuation`);
+  }
+  if (!Array.isArray(contract.acceptanceScenarios) || !sameArray(contract.acceptanceScenarios.map((scenario) => scenario?.id), hostAcceptanceScenarioIds)) {
+    errors.push(`${label} must define the four ordered native-host acceptance scenarios`);
+  }
+  const balance = contract.balance;
+  if (!balance || balance.method !== "GET" || balance.path !== "/api/product/desktop/account/balance" ||
+    balance.requiresExistingAuthenticatedAccountSession !== true || balance.responseSchema !== "schemas/balance-snapshot.schema.json" ||
+    typeof balance.fallback !== "string" || !balance.fallback) {
+    errors.push(`${label} must define the authenticated balance endpoint and fallback`);
+  }
+}
+
+function validateHostExecutionMatrix(errors, hostSupport, hostNativeExecutionContract) {
+  if (!hostNativeExecutionContract) return;
+  for (const host of hostSupport.supported) {
+    const nativeExecution = host?.nativeExecution;
+    if (!nativeExecution || nativeExecution.authenticatedRelativeHttp !== true || nativeExecution.jsonTaskResponse !== true ||
+      nativeExecution.nativeMediaByteDelivery !== true || nativeExecution.sameTaskContinuation !== true) {
+      errors.push(`references/host-support.json: ${host?.id || "unnamed host"} does not meet the host-native execution contract`);
+    }
+  }
+}
+
 async function validateSpecialistReferences(errors, record) {
   const { directory, skillDir, manifest } = record;
   const required = ["executionContract", "behaviorScenarios"];
-  if (directory === "puretokens_image" || directory === "puretokens_video") required.unshift("modelSelection");
+  if (directory === "puretokens_image" || directory === "puretokens_video") required.unshift("modelSelection", "taskReceipt");
   const references = {};
   for (const field of required) {
     const relativePath = manifest?.[field];
@@ -178,6 +258,7 @@ async function validateSpecialistReferences(errors, record) {
   validateExecutionContract(errors, directory, references.executionContract);
   validateBehaviorScenarios(errors, directory, references.behaviorScenarios);
   if (references.modelSelection) validateModelSelection(errors, directory, references.modelSelection);
+  if (references.taskReceipt) validateTaskReceipt(errors, directory, references.taskReceipt);
 }
 
 function validateHostDistributions(errors, directory, manifest, hostSupport) {
@@ -229,14 +310,25 @@ function validateExecutionContract(errors, directory, contract) {
     errors.push(`${label} must use the current connection without identity inspection`);
   }
   if (kind === "balance") {
-    if (transport?.requiresHostExposedReadOnlyBalanceCapability !== true) errors.push(`${label} must require a host-exposed balance capability`);
-    if (contract.result?.reportOnlyReturnedFields !== true || contract.result?.neverEstimate !== true || contract.result?.neverRetry !== true) {
-      errors.push(`${label} must report only returned balance fields without estimation or retry`);
+    if (transport?.usesRelativePathsOnly !== true || transport?.requiresHostExposedReadOnlyBalanceCapability !== true || !sameArray(transport?.requiredHostCapabilities, balanceCapabilities)) {
+      errors.push(`${label} must require authenticated relative HTTP and JSON balance response capabilities`);
+    }
+    validateRequest(errors, `${label} read`, contract.operations?.read, "GET", "/api/product/desktop/account/balance");
+    if (contract.operations?.read?.requiresExistingAuthenticatedAccountSession !== true ||
+      contract.operations?.read?.responseSchema !== "https://puretokensx.com/schemas/balance-snapshot.schema.json") {
+      errors.push(`${label} read must require an existing account session and the balance snapshot schema`);
+    }
+    if (contract.result?.reportOnlyReturnedFields !== true || contract.result?.neverEstimate !== true || contract.result?.neverRetry !== true ||
+      contract.result?.fallbackWhenAccountSessionUnavailable !== "direct_user_to_current_connection_client_balance_view") {
+      errors.push(`${label} must report only returned balance fields and use the account-session fallback`);
     }
     return;
   }
   if (transport?.usesRelativePathsOnly !== true || transport?.requiresNativeMediaByteDelivery !== true) {
     errors.push(`${label} must use relative API paths and require native media bytes`);
+  }
+  if (!sameArray(transport?.requiredHostCapabilities, nativeMediaCapabilities)) {
+    errors.push(`${label} must require all four host-native media capabilities`);
   }
   const operations = contract.operations;
   if (!operations || typeof operations !== "object") {
@@ -253,6 +345,17 @@ function validateExecutionContract(errors, directory, contract) {
     if (!conditional || !sameArray(conditional.n?.integerRange, [1, 6])) errors.push(`${label} must bound n to integers 1 through 6`);
     if (!sameArray(conditional?.size?.allowed, ["1024x1024", "1536x1024", "1024x1536"])) errors.push(`${label} must declare the supported size values`);
     if (!sameArray(conditional?.image_size?.allowed, ["1K", "2K", "4K"])) errors.push(`${label} must declare the supported image_size values`);
+    if (contract.parameterValidation?.defaultModel !== "gpt-image-2" || contract.parameterValidation?.defaultModelUsesDeclaredContractOptions !== true ||
+      contract.parameterValidation?.nonDefaultModelOptionalParametersRequire !== "authenticated_live_catalog_input_schema" ||
+      contract.parameterValidation?.whenProfileIsMissing !== "do_not_submit_requested_optional_parameters") {
+      errors.push(`${label} must fail closed for non-default model optional parameters without a live profile`);
+    }
+    const retrieval = contract.contentRetrieval;
+    if (!retrieval || retrieval.indexBase !== 0 || retrieval.requestedCount !== "explicit_n_or_default_1" ||
+      retrieval.allowedIndexes !== "0..requestedCount-1" || retrieval.completeDeliveryRequiresEveryRequestedIndex !== true ||
+      retrieval.partialOrMissingContent !== "report_delivered_and_missing_indexes_without_resubmission") {
+      errors.push(`${label} must retrieve every zero-based requested image content index before success`);
+    }
     if (contract.result?.successRequires !== "native_image_bytes") errors.push(`${label} must require native image bytes for success`);
   } else {
     validateRequest(errors, `${label} catalog`, operations.catalog, "GET", "/v1/media/models");
@@ -260,6 +363,11 @@ function validateExecutionContract(errors, directory, contract) {
     validateRequiredBodyFields(errors, `${label} submit`, operations.submit, ["model", "prompt"]);
     validateRequest(errors, `${label} status`, operations.status, "GET", "/v1/videos/{task_id}", true);
     validateRequest(errors, `${label} content`, operations.content, "GET", "/v1/videos/{task_id}/content", true);
+    if (contract.parameterValidation?.allModelsOptionalParametersRequire !== "authenticated_live_catalog_input_schema" ||
+      contract.parameterValidation?.promptAllowedWithoutProfile !== true ||
+      contract.parameterValidation?.whenProfileIsMissing !== "do_not_submit_requested_optional_parameters") {
+      errors.push(`${label} must fail closed for video optional parameters without a live profile`);
+    }
     if (contract.result?.successRequires !== "native_video_bytes") errors.push(`${label} must require native video bytes for success`);
   }
   if (contract.result?.sameTaskOnly !== true || contract.result?.neverAutoResubmit !== true) {
@@ -317,6 +425,28 @@ function validateModelSelection(errors, directory, selection) {
     if (ids.has(model.id)) errors.push(`${label} duplicate model id ${model.id}`);
     ids.add(model.id);
     if (new Set(model.aliases).size !== model.aliases.length) errors.push(`${label} duplicate aliases for ${model.id}`);
+    if (Object.hasOwn(model, "parameterSchema") && (!model.parameterSchema || typeof model.parameterSchema !== "object" || Array.isArray(model.parameterSchema))) {
+      errors.push(`${label} parameterSchema for ${model.id} must be an object`);
+    }
+  }
+}
+
+function validateTaskReceipt(errors, directory, receipt) {
+  const label = `${directory}: taskReceipt`;
+  if (!receipt || typeof receipt !== "object") return;
+  const kind = skillKind(directory);
+  if (receipt.$schema !== "https://puretokensx.com/schemas/task-receipt.schema.json" || receipt.schemaVersion !== 1 || receipt.kind !== kind) {
+    errors.push(`${label} must be a schemaVersion=1 ${kind} task receipt`);
+    return;
+  }
+  for (const phase of ["submission", "continuation", "completion", "failure"]) {
+    const fields = receipt[phase]?.requiredFields;
+    if (!Array.isArray(fields) || receiptCoreFields.some((field) => !fields.includes(field)) || typeof receipt[phase]?.nextAction !== "string" || !receipt[phase].nextAction) {
+      errors.push(`${label} ${phase} must include the core user-visible receipt fields`);
+    }
+    if (phase === "completion" && !fields?.includes("delivered_count")) {
+      errors.push(`${label} completion must include delivered_count`);
+    }
   }
 }
 
@@ -328,12 +458,20 @@ function sameArray(actual, expected) {
   return Array.isArray(actual) && actual.length === expected.length && actual.every((value, index) => value === expected[index]);
 }
 
+function sameObjectKeys(actual, expected) {
+  return !!actual && typeof actual === "object" && !Array.isArray(actual) && sameArray(Object.keys(actual).sort(), [...expected].sort());
+}
+
 async function validateSchemaDocuments(errors) {
   const schemas = [
     "schemas/media-execution-contract.schema.json",
     "schemas/media-behavior-scenarios.schema.json",
     "schemas/model-selection.schema.json",
-    "schemas/host-support.schema.json"
+    "schemas/host-support.schema.json",
+    "schemas/host-native-execution-contract.schema.json",
+    "schemas/catalog-freshness.schema.json",
+    "schemas/balance-snapshot.schema.json",
+    "schemas/task-receipt.schema.json"
   ];
   for (const schema of schemas) await verifyJsonFile(errors, schema, `schema ${schema}`);
 }

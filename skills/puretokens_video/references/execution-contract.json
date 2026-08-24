@@ -6,7 +6,8 @@
     "usesCurrentConfiguredConnection": true,
     "usesRelativePathsOnly": true,
     "doesNotInspectConnectionIdentity": true,
-    "requiresNativeMediaByteDelivery": true
+    "requiresNativeMediaByteDelivery": true,
+    "requiredHostCapabilities": ["authenticated_relative_http", "json_task_response", "native_media_byte_delivery", "same_task_continuation"]
   },
   "operations": {
     "catalog": { "method": "GET", "path": "/v1/media/models" },
@@ -24,6 +25,11 @@
     "notSuccess": ["task_id", "status_text", "html", "svg", "component", "remote_url"],
     "sameTaskOnly": true,
     "neverAutoResubmit": true
+  },
+  "parameterValidation": {
+    "allModelsOptionalParametersRequire": "authenticated_live_catalog_input_schema",
+    "promptAllowedWithoutProfile": true,
+    "whenProfileIsMissing": "do_not_submit_requested_optional_parameters"
   },
   "unsupportedInput": ["reference_image", "reference_video", "video_edit", "audio_input", "user_media_upload"]
 }

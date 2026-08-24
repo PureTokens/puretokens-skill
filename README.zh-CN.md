@@ -49,13 +49,27 @@ CC Switch 是连接配置工具，不是 Skill 宿主。受支持的宿主会使
 
 `puretokens_video` 先使用 `GET /v1/media/models`，验证精确 `video` 模型 ID，再使用 `POST /v1/videos`。默认模型为 `grok-imagine-video-1.5-preview`；只轮询并交付同一任务的原生字节。
 
+每个已支持宿主都必须满足同一份原生执行契约：已认证的相对路径 HTTP、JSON 任务响应、原生媒体字节交付、按同一任务 ID 继续查询。验收矩阵在 `references/host-native-execution-contract.json`；它不会让 Skill 获取 Base URL、API Key 或宿主配置。
+
 当前连接必须能执行这些请求并交付原生图片或视频字节。不能时，Skill 会在付费提交前停止，并提示用户检查已有 Pure Tokens Base URL、认证和路由配置；不会切换到其他执行路径，也不识别或分支处理其他中转服务。
+
+## 余额
+
+只有宿主能复用当前连接中已存在的已认证账户会话时，`puretokens_balance` 才会执行一次只读 `GET /api/product/desktop/account/balance`。它只报告接口返回的字段。若该会话未被宿主公开，Skill 会引导用户到当前连接的客户端余额入口；绝不会猜余额、尝试其他路径或索取凭据。
 
 ## 图片尺寸和数量
 
 默认生成一张图片。明确的 `n` 必须是 1 到 6 的整数；一个请求绝不会拆成多次付费提交。支持的 `size` 为 `1024x1024`、`1536x1024`、`1024x1536`；支持的 `image_size` 为 `1K`、`2K`、`4K`。
 
 `200cm × 230cm` 这类物理尺寸无法精确保证，也绝不会传给 `n` 或 `size`。Skill 会说明限制并请用户选择支持规格。
+
+请求 `n` 张图时，交付会从同一任务严格读取零基索引 `0` 到 `n-1`。只有每个请求索引都拿到原生字节才算成功。部分结果会明确列出已交付和缺失索引，并且只允许继续读取该任务缺失的内容。
+
+## 模型参数资料与任务回执
+
+默认 `gpt-image-2` 使用上述数量和尺寸取值。其他图片模型若要求 `n`、`size`、`image_size` 等可选字段，必须由该精确模型当前认证目录中的 `input_schema` 明确声明字段和值；只给文字提示词的生图不需要参数资料。视频的时长、画幅、分辨率、尺寸及其他可选字段同样必须由所选模型的实时 `input_schema` 明确声明；只给文字提示词的生视频在没有资料时仍可请求。资料缺失或值不兼容时，Skill 会在提交前请用户移除该选项或选择已发布参数资料的模型。
+
+媒体 Skill 在提交、继续查询、完成和失败时统一返回回执：已返回的精确模型 ID、已返回的任务 ID、当前状态、请求数量、尺寸/参数、完成时的已交付数量和下一步。任务元数据未返回时会明确写“未返回”，绝不猜测。
 
 ## 使用示例
 
@@ -75,7 +89,7 @@ README 仅用于发现能力。实际执行时，当前认证后的 `GET /v1/med
 
 这份清单由 Pure Tokens 基础模型目录中的明确图片/视频能力生成。实际执行时，精确模型和所需能力仍必须出现在当前认证后的 GET /v1/media/models 响应中。
 
-README 只从基础目录中带有明确图片/视频能力的模型生成，不通过模型名称推断。发布前运行 `npm run docs:sync-media-models-from-service`，从受控基础模型目录刷新清单；执行时仍以认证后的 `GET /v1/media/models` 为准。
+README 只从基础目录中带有明确图片/视频能力的模型生成，不通过模型名称推断。当前目录快照只用于发现能力；实际执行时以认证后的实时模型和其 `input_schema` 为准。发布前从受控基础目录刷新，并运行 `npm run release:validate`；当快照超过七天时发布校验会失败。
 
 ### 图片模型
 
@@ -118,4 +132,11 @@ Claude Desktop 需要打包并上传对应的专项 Skill：
 
 ```bash
 node bin/puretokens-skill.js bundle puretokens_image --format claude-desktop --out ./puretokens_image.zip
+```
+
+发布前运行：
+
+```bash
+npm run docs:sync-media-models-from-service
+npm run release:validate
 ```

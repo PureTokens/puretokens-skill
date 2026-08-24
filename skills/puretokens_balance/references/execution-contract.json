@@ -4,12 +4,23 @@
   "kind": "balance",
   "transport": {
     "usesCurrentConfiguredConnection": true,
+    "usesRelativePathsOnly": true,
     "doesNotInspectConnectionIdentity": true,
-    "requiresHostExposedReadOnlyBalanceCapability": true
+    "requiresHostExposedReadOnlyBalanceCapability": true,
+    "requiredHostCapabilities": ["authenticated_relative_http", "json_task_response"]
+  },
+  "operations": {
+    "read": {
+      "method": "GET",
+      "path": "/api/product/desktop/account/balance",
+      "requiresExistingAuthenticatedAccountSession": true,
+      "responseSchema": "https://puretokensx.com/schemas/balance-snapshot.schema.json"
+    }
   },
   "result": {
     "reportOnlyReturnedFields": true,
     "neverEstimate": true,
-    "neverRetry": true
+    "neverRetry": true,
+    "fallbackWhenAccountSessionUnavailable": "direct_user_to_current_connection_client_balance_view"
   }
 }

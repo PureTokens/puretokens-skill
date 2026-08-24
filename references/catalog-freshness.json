@@ -1,0 +1,7 @@
+{
+  "$schema": "https://puretokensx.com/schemas/catalog-freshness.schema.json",
+  "schemaVersion": 1,
+  "maxAgeDays": 7,
+  "releaseCommand": "npm run release:validate",
+  "message": "Refresh the controlled base media catalog before release when this limit is exceeded; the authenticated live media catalog remains authoritative at execution time."
+}

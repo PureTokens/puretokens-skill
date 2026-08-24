@@ -51,6 +51,18 @@
           },
           "kind": {
             "enum": ["image", "video", "mixed"]
+          },
+          "input_schema": {
+            "type": "object"
+          },
+          "inputSchema": {
+            "type": "object"
+          },
+          "media_parameters": {
+            "type": "object"
+          },
+          "mediaParameters": {
+            "type": "object"
           }
         },
         "additionalProperties": true

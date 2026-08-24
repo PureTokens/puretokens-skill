@@ -1,0 +1,45 @@
+{
+  "$schema": "https://puretokensx.com/schemas/host-native-execution-contract.schema.json",
+  "schemaVersion": 1,
+  "transport": {
+    "usesCurrentConfiguredConnection": true,
+    "usesRelativeApiPathsOnly": true,
+    "doesNotReadCredentialsOrHostConfiguration": true,
+    "doesNotInspectConnectionIdentity": true
+  },
+  "requiredCapabilities": [
+    "authenticated_relative_http",
+    "json_task_response",
+    "native_media_byte_delivery",
+    "same_task_continuation"
+  ],
+  "acceptanceScenarios": [
+    {
+      "id": "catalog-read",
+      "request": "GET /v1/media/models",
+      "expect": "the host uses the current connection and returns authenticated JSON without exposing credentials"
+    },
+    {
+      "id": "media-submit",
+      "request": "POST /v1/images/generations or POST /v1/videos",
+      "expect": "the host sends the relative path and JSON body once without changing model or parameters"
+    },
+    {
+      "id": "same-task-status",
+      "request": "GET a submitted task's status and content paths",
+      "expect": "the host continues only the supplied task_id and never submits a replacement task"
+    },
+    {
+      "id": "native-media-delivery",
+      "request": "GET a completed task's content path",
+      "expect": "the host returns or attaches native media bytes; URLs, HTML, SVG, task IDs, and status text are not a completed delivery"
+    }
+  ],
+  "balance": {
+    "path": "/api/product/desktop/account/balance",
+    "method": "GET",
+    "requiresExistingAuthenticatedAccountSession": true,
+    "responseSchema": "schemas/balance-snapshot.schema.json",
+    "fallback": "If the current host does not expose this authenticated account read, tell the user to use that connection's client balance view; do not estimate or ask for credentials."
+  }
+}

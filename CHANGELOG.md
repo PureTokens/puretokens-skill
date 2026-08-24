@@ -6,6 +6,14 @@
 
 ## Unreleased
 
+## 0.8.0 — 2026-08-24
+
+- Made multi-image delivery deterministic: a request for `n` images retrieves only the zero-based content indexes `0..n-1`, succeeds only after every requested native byte stream arrives, and reports delivered/missing indexes without resubmitting.
+- Added per-model parameter-profile rules. Non-default image parameters and all optional video parameters now require the exact authenticated live model `input_schema`; prompt-only requests remain available where the contract permits, and missing profiles fail before billing rather than guessing.
+- Added a host-native execution contract and acceptance matrix for authenticated relative HTTP, JSON task responses, native media bytes, and same-task continuation across every supported host.
+- Gave balance a concrete read-only contract: `GET /api/product/desktop/account/balance` with an existing authenticated account session, returned-field-only reporting, and a client-view fallback when that session is unavailable.
+- Added structured media task receipts, a seven-day model-catalog freshness release gate, schema validation, and tests for the new contracts. Bumped all specialist Skills to 0.8.0.
+
 ## 0.7.0 — 2026-08-24
 
 - Added installed, versioned execution contracts and user-facing behavior scenarios for balance, image, and video. They cover alias ambiguity, catalog authorization, request bounds, unsupported input media, task state, uncertain submission, timeout, and native-content delivery without automatic resubmission.

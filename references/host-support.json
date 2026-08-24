@@ -1,29 +1,54 @@
 {
   "$schema": "https://puretokensx.com/schemas/host-support.schema.json",
   "schemaVersion": 1,
+  "nativeExecutionContract": "references/host-native-execution-contract.json",
   "supported": [
     {
       "id": "codex",
       "delivery": "manual-source",
       "globalSkillDirectory": "~/.agents/skills",
-      "guidance": "Install each specialist Skill into ~/.agents/skills with the explicit --target command."
+      "guidance": "Install each specialist Skill into ~/.agents/skills with the explicit --target command.",
+      "nativeExecution": {
+        "authenticatedRelativeHttp": true,
+        "jsonTaskResponse": true,
+        "nativeMediaByteDelivery": true,
+        "sameTaskContinuation": true
+      }
     },
     {
       "id": "claude-code",
       "delivery": "manual-source",
       "globalSkillDirectory": "~/.claude/skills",
-      "guidance": "Install each specialist Skill into ~/.claude/skills with the explicit --target command."
+      "guidance": "Install each specialist Skill into ~/.claude/skills with the explicit --target command.",
+      "nativeExecution": {
+        "authenticatedRelativeHttp": true,
+        "jsonTaskResponse": true,
+        "nativeMediaByteDelivery": true,
+        "sameTaskContinuation": true
+      }
     },
     {
       "id": "claude-desktop",
       "delivery": "bundle",
-      "guidance": "Bundle the required specialist Skill and upload it through Claude Desktop's Skills settings."
+      "guidance": "Bundle the required specialist Skill and upload it through Claude Desktop's Skills settings.",
+      "nativeExecution": {
+        "authenticatedRelativeHttp": true,
+        "jsonTaskResponse": true,
+        "nativeMediaByteDelivery": true,
+        "sameTaskContinuation": true
+      }
     },
     {
       "id": "gemini-cli",
       "delivery": "manual-source",
       "globalSkillDirectory": "~/.gemini/skills",
-      "guidance": "Install each specialist Skill into ~/.gemini/skills with the explicit --target command."
+      "guidance": "Install each specialist Skill into ~/.gemini/skills with the explicit --target command.",
+      "nativeExecution": {
+        "authenticatedRelativeHttp": true,
+        "jsonTaskResponse": true,
+        "nativeMediaByteDelivery": true,
+        "sameTaskContinuation": true
+      }
     }
   ],
   "notDistributed": [

@@ -5,6 +5,8 @@
   "scenarios": [
     { "id": "video-model-alias-ambiguous", "when": "an alias resolves to multiple exact model IDs", "then": "ask the user to choose an exact ID; do not submit" },
     { "id": "video-model-unavailable", "when": "the authenticated catalog lacks the exact video ID or capability", "then": "state that the model is unavailable or unauthorized and list catalog candidates; do not submit" },
+    { "id": "video-model-parameter-profile-unavailable", "when": "the authenticated live catalog has no input schema for a requested duration, aspect ratio, resolution, size, or other optional parameter", "then": "explain that the model parameter profile is not published, ask the user to remove that option or choose a model with an explicit profile, and do not submit" },
+    { "id": "video-model-parameter-unsupported", "when": "a requested optional parameter is absent from the authenticated live input schema or its value violates the declared enum or range", "then": "list the profile-supported values and ask the user to choose one; do not submit" },
     { "id": "video-execution-unavailable", "when": "the current connection cannot execute the request or deliver native video bytes", "then": "stop before submission and ask the user to check the existing connection configuration" },
     { "id": "video-parameter-unsupported", "when": "a requested duration, aspect ratio, resolution, or size is rejected or unsupported", "then": "report the unsupported parameter and ask the user for a supported value; do not alter it silently" },
     { "id": "video-input-media", "when": "the user asks for image-to-video, video editing, audio input, or uploads media", "then": "explain that only text-to-video is supported and ask for a text description; do not upload media" },
