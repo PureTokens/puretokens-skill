@@ -1,16 +1,16 @@
 {
   "schemaVersion": 1,
-  "name": "puretokens_balance",
+  "name": "puretokens_update",
   "version": "0.11.0",
   "entry": "SKILL.md",
-  "displayName": "Pure Tokens Balance",
-  "description": "Read a balance through the fixed Pure Tokens API.",
+  "displayName": "Pure Tokens Update",
+  "description": "Install or safely upgrade local official Pure Tokens Skills.",
   "executionContract": "references/execution-contract.json",
   "behaviorScenarios": "references/behavior-scenarios.json",
   "distribution": {
     "claudeDesktop": {
       "format": "zip",
-      "archiveRoot": "puretokens_balance",
+      "archiveRoot": "puretokens_update",
       "requiredFiles": [
         "SKILL.md",
         "skill.json",
@@ -47,12 +47,14 @@
     "workbuddy"
   ],
   "rules": {
-    "usesFixedPureTokensApiOrigin": true,
-    "usesFullApiUrls": true,
-    "usesRuntimeManagedAuthentication": true,
+    "usesOfficialMainBranch": true,
+    "usesManagedSkillSync": true,
+    "installsMissingOfficialSkills": true,
+    "neverOverwritesUnmanagedDirectories": true,
+    "requiresPreflightValidation": true,
     "doesNotReadCredentialsOrHostConfiguration": true,
-    "balanceQueryDoesNotEstimateOrRetry": true,
-    "balanceRequiresExistingAccountSession": true,
-    "doesNotUseMcpOrFallbackTransport": true
+    "doesNotCallMediaOrAccountApis": true,
+    "doesNotUseMcpOrFallbackTransport": true,
+    "requiresNewHostConversationAfterUpdate": true
   }
 }

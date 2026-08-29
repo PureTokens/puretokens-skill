@@ -6,13 +6,16 @@
 
 ## Unreleased
 
-- Replaced the relative-path, host-capability media contract with a fixed direct API contract. Every specialist Skill now calls full `https://api.puretokensx.com` URLs; it does not depend on MCP, a local proxy, a sidecar, a configured Base URL, or a host-specific relative-path executor.
+- Added `puretokens_update` and the `puretokens-skill sync --target <directory>` command. Explicit update requests now validate a fresh official `main` checkout, install missing official Skills, and atomically upgrade only matching managed Skills; an unmanaged same-name directory stops the sync before any target changes.
+- Added dedicated update behavior scenarios, a local-update execution contract, Claude Desktop bundle guidance, and coverage for successful sync and conflict-safe refusal.
+
+- Replaced the relative-path, host-capability media contract with a fixed direct API contract. Every API-facing specialist Skill now calls full `https://api.puretokensx.com` URLs; it does not depend on MCP, a local proxy, a sidecar, a configured Base URL, or a host-specific relative-path executor.
 - Direct authentication remains runtime-managed. Skills never read, scan, display, copy, request, store, or construct API keys, Base URLs, authentication headers, or client configuration.
 - Moved image, video, model discovery, connection identity, and balance reads to the same fixed API origin. Image and video task status/content retrieval now also use full fixed URLs; profile-declared multipart operation paths are resolved only against that origin.
 - Replaced the legacy host-native execution matrix with `references/direct-api-execution-contract.json` and updated validation, manifests, behavior scenarios, bilingual README guidance, and tests.
 
 - Restored the tracked official Skills hero image at the top of both README files.
-- Rewrote the client-download Agent-installation prompt as a concise, line-broken execution checklist: it detects the current supported host, chooses its directory, installs or upgrades the five Skills, verifies the result, and retains the established safety boundary.
+- Rewrote the client-download Agent-installation prompt as a concise, line-broken execution checklist: it detects the current supported host, chooses its directory, synchronizes the six Skills, verifies the result, and retains the established safety boundary.
 - Synchronized the published media catalog with the current 18-model base catalog, including `grok-imagine-image-2.0`, `grok-imagine-video-1.5`, `wan3.0-video`, and `wan3.0-video-prime`. Added unambiguous Wan3 aliases while retaining exact-ID selection where a Grok 1.5 name is ambiguous.
 - Bounded media resource use: polling is limited to the submission turn or a user-explicit same-task continuation turn, with one in-flight status read, no background timer or queue, adaptive capped backoff, and immediate stop on rate limits, server errors, transport errors, or timeouts. A pending task can open another bounded window only when the user explicitly continues that same task ID. Content delivery is terminal-success-only, one-at-a-time, sequential for multi-image output, and never prefetched, duplicated, or stored in Skill state or logs.
 - Video resolution now honors the live profile's `resolution_by_mode` constraint, and the image-edit example uses a model that currently declares `image_edit`.

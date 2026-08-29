@@ -4,7 +4,7 @@
 
 # Pure Tokens Skills
 
-This repository provides five independent Skills:
+This repository provides six independent Skills:
 
 | Skill | What it does |
 | --- | --- |
@@ -13,6 +13,7 @@ This repository provides five independent Skills:
 | `puretokens_models` | Reads the fixed API's authenticated media catalog and explains declared model capabilities, parameters, and media operations. |
 | `puretokens_image` | Generates images and performs profile-gated image edits through the fixed Pure Tokens Images API. |
 | `puretokens_video` | Generates videos and performs profile-gated image, video, or audio reference generation and video edits through the fixed Pure Tokens Videos API. |
+| `puretokens_update` | Installs or safely upgrades local official Pure Tokens Skills. |
 
 Install the Skills you need into the supported host's documented global Skill directory:
 
@@ -23,6 +24,7 @@ node bin/puretokens-skill.js install puretokens_connection --target ~/.agents/sk
 node bin/puretokens-skill.js install puretokens_models --target ~/.agents/skills
 node bin/puretokens-skill.js install puretokens_image --target ~/.agents/skills
 node bin/puretokens-skill.js install puretokens_video --target ~/.agents/skills
+node bin/puretokens-skill.js install puretokens_update --target ~/.agents/skills
 
 # Claude Code
 node bin/puretokens-skill.js install puretokens_balance --target ~/.claude/skills
@@ -30,6 +32,7 @@ node bin/puretokens-skill.js install puretokens_connection --target ~/.claude/sk
 node bin/puretokens-skill.js install puretokens_models --target ~/.claude/skills
 node bin/puretokens-skill.js install puretokens_image --target ~/.claude/skills
 node bin/puretokens-skill.js install puretokens_video --target ~/.claude/skills
+node bin/puretokens-skill.js install puretokens_update --target ~/.claude/skills
 
 # Gemini CLI
 node bin/puretokens-skill.js install puretokens_balance --target ~/.gemini/skills
@@ -37,6 +40,7 @@ node bin/puretokens-skill.js install puretokens_connection --target ~/.gemini/sk
 node bin/puretokens-skill.js install puretokens_models --target ~/.gemini/skills
 node bin/puretokens-skill.js install puretokens_image --target ~/.gemini/skills
 node bin/puretokens-skill.js install puretokens_video --target ~/.gemini/skills
+node bin/puretokens-skill.js install puretokens_update --target ~/.gemini/skills
 ```
 
 ## Agent-assisted installation
@@ -58,10 +62,7 @@ Install or update the official Pure Tokens Skills for this local agent host. Do 
 
 3. If `npm run check` fails, report the failure and stop. Do not change any Skill directory.
 
-4. For each of these five Skills — `puretokens_balance`, `puretokens_connection`, `puretokens_models`, `puretokens_image`, `puretokens_video` — install or update it in the selected installation root:
-   - Destination missing: run `node bin/puretokens-skill.js install <skill-name> --target <installation-root>`.
-   - Destination is the same managed Skill (has `SKILL.md`, `skill.json`, and matching manifest name): run `node bin/puretokens-skill.js upgrade <skill-name> --target <installation-root>`.
-   - Any other existing destination: leave it unchanged and report the conflict.
+4. Sync all six Skills — `puretokens_balance`, `puretokens_connection`, `puretokens_models`, `puretokens_image`, `puretokens_video`, `puretokens_update` — in the selected installation root with `node bin/puretokens-skill.js sync --target <installation-root>`. It installs missing official Skills and upgrades only matching managed Skills. If any same-name existing destination is not a managed Skill, it must stop before changing anything, leave the conflict untouched, and report it.
 
 5. Run `npm run check` again. Verify every requested destination has `SKILL.md` and `skill.json`, and each manifest name matches its directory name. Report installed or upgraded paths and any conflicts. Tell me to start a new host conversation before testing.
 
@@ -86,7 +87,7 @@ The canonical matrix is `references/host-support.json`. The CLI intentionally ne
 
 ## Direct API contract
 
-Every specialist Skill calls the fixed public API origin `https://api.puretokensx.com`. It uses full URLs, never a configured Base URL or a relative-path host executor. The active runtime supplies its existing Pure Tokens request authentication automatically; Skills never read, scan, ask for, print, copy, or store API keys, Base URLs, authentication files, provider labels, or client configuration. They never construct an authorization header, use MCP, a local proxy, a sidecar, or another endpoint.
+The API-facing Skills call the fixed public API origin `https://api.puretokensx.com`. They use full URLs, never a configured Base URL or a relative-path host executor. The active runtime supplies its existing Pure Tokens request authentication automatically; Skills never read, scan, ask for, print, copy, or store API keys, Base URLs, authentication files, provider labels, or client configuration. They never construct an authorization header, use MCP, a local proxy, a sidecar, or another endpoint. `puretokens_update` is local-only and does not call API endpoints.
 
 `puretokens_connection` makes exactly one read-only `GET https://api.puretokensx.com/v1` request. It confirms the fixed API only when that endpoint declares `status: "ok"`, `name: "Pure Tokens API"`, and `base_url: "/v1"`. This does not reveal or validate the user's configured Base URL, and it is not cryptographic anti-spoof verification.
 
@@ -101,6 +102,10 @@ The full direct-API contract is `references/direct-api-execution-contract.json`.
 ## Balance
 
 `puretokens_balance` makes exactly one read-only `GET https://api.puretokensx.com/api/product/desktop/account/balance` request with the active runtime's existing Pure Tokens account authentication. It reports only returned fields. If the direct request is not authenticated or fails, it reports the returned result and directs the user to the Pure Tokens client balance view; it never guesses a balance, tries another endpoint, or asks for credentials.
+
+## Skill updates
+
+`puretokens_update` handles explicit requests to install, update, or synchronize local official Skills. On Codex, Claude Code, and Gemini CLI it validates a fresh `main` checkout, then runs `node bin/puretokens-skill.js sync --target <installation-root>`. The command installs missing official Skills and upgrades only managed matching Skill directories; an unmanaged same-name directory stops the whole sync before any target is changed. On Claude Desktop it builds new ZIP bundles and guides the user through uploading and enabling them. It never reads connection settings or credentials, and it never runs automatically during media work.
 
 ## Image sizes and count
 
@@ -138,6 +143,7 @@ Media bytes are not cached in Skill state, prompts, or logs. Content is read onl
 - Reference audio: `Use minimax h3 to create a video from my attached audio.` The Skill uses it only if the authenticated profile publishes `reference_audio`.
 - Video edit: `Edit my attached video: turn daylight into night.` The Skill submits to `/v1/videos/edits` only if the authenticated profile publishes `video_edit`.
 - Existing task only: `Continue querying task <task_id>.` The Skill only reads that task; it never submits a replacement task automatically.
+- Update: `Upgrade my Pure Tokens Skills.` The update Skill validates the official `main` checkout and safely synchronizes the local Skill directory.
 
 ## Model discovery
 

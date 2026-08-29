@@ -20,6 +20,9 @@ try {
     case "upgrade":
       await upgradeSkill(argumentsList);
       break;
+    case "sync":
+      await syncSkills(argumentsList);
+      break;
     case "uninstall":
       await uninstallSkill(argumentsList);
       break;
@@ -77,23 +80,41 @@ async function upgradeSkill(args) {
     throw new Error(`Cannot upgrade missing or unmanaged skill: ${destination}`);
   }
 
-  const staging = path.join(root, `.${options.name}.upgrade-${randomUUID()}`);
-  const backup = path.join(root, `.${options.name}.backup-${randomUUID()}`);
-  await cp(source, staging, { recursive: true, errorOnExist: true, force: false });
-  try {
-    await rename(destination, backup);
-    try {
-      await rename(staging, destination);
-    } catch (error) {
-      await rename(backup, destination).catch(() => undefined);
-      throw error;
-    }
-    await rm(backup, { recursive: true, force: false });
-  } catch (error) {
-    await rm(staging, { recursive: true, force: true }).catch(() => undefined);
-    throw error;
-  }
+  await replaceManagedSkill(source, root, destination, options.name);
   process.stdout.write(`Upgraded ${options.name} at ${destination}\n`);
+}
+
+async function syncSkills(args) {
+  const options = parseSyncOptions(args);
+  const root = resolveInstallRoot(options.target);
+  const { registry } = await collectSkillRecords();
+  const errors = await validateRepository();
+  if (errors.length) throw new Error(`Repository validation failed:\n${errors.map((error) => `- ${error}`).join("\n")}`);
+
+  const plan = [];
+  for (const entry of registry.skills) {
+    const source = path.join(skillsRoot, entry.name);
+    const destination = path.join(root, entry.name);
+    ensureChildPath(root, destination);
+    if (!(await exists(destination))) {
+      plan.push({ action: "install", name: entry.name, source, destination });
+    } else if (await isManagedSkill(destination, entry.name)) {
+      plan.push({ action: "upgrade", name: entry.name, source, destination });
+    } else {
+      throw new Error(`Refusing to sync because an unmanaged Skill conflicts: ${destination}`);
+    }
+  }
+
+  await mkdir(root, { recursive: true });
+  for (const item of plan) {
+    if (item.action === "install") {
+      await cp(item.source, item.destination, { recursive: true, errorOnExist: true, force: false });
+      process.stdout.write(`Installed ${item.name} to ${item.destination}\n`);
+    } else {
+      await replaceManagedSkill(item.source, root, item.destination, item.name);
+      process.stdout.write(`Upgraded ${item.name} at ${item.destination}\n`);
+    }
+  }
 }
 
 async function uninstallSkill(args) {
@@ -208,6 +229,14 @@ function parseSkillOptions(args, commandName, allowed) {
   return options;
 }
 
+function parseSyncOptions(args) {
+  if (args.length !== 2 || args[0] !== "--target") {
+    throw new Error("Usage: puretokens-skill sync --target <directory>");
+  }
+  if (!args[1] || args[1].startsWith("--")) throw new Error("--target requires a value");
+  return { target: args[1] };
+}
+
 function requireOptionValue(args, index, flag) {
   const value = args[index + 1];
   if (!value || value.startsWith("--")) throw new Error(`${flag} requires a value`);
@@ -231,6 +260,25 @@ async function isManagedSkill(directory, name) {
     return manifest?.name === name && (await exists(path.join(directory, "SKILL.md")));
   } catch {
     return false;
+  }
+}
+
+async function replaceManagedSkill(source, root, destination, name) {
+  const staging = path.join(root, `.${name}.upgrade-${randomUUID()}`);
+  const backup = path.join(root, `.${name}.backup-${randomUUID()}`);
+  await cp(source, staging, { recursive: true, errorOnExist: true, force: false });
+  try {
+    await rename(destination, backup);
+    try {
+      await rename(staging, destination);
+    } catch (error) {
+      await rename(backup, destination).catch(() => undefined);
+      throw error;
+    }
+    await rm(backup, { recursive: true, force: false });
+  } catch (error) {
+    await rm(staging, { recursive: true, force: true }).catch(() => undefined);
+    throw error;
   }
 }
 
@@ -323,5 +371,5 @@ function crc32(buffer) {
 }
 
 function printHelp() {
-  process.stdout.write(`Pure Tokens Skill Manager\n\nUsage:\n  puretokens-skill list\n  puretokens-skill validate\n  puretokens-skill install <skill-name> --target <directory>\n  puretokens-skill upgrade <skill-name> --target <directory>\n  puretokens-skill uninstall <skill-name> --target <directory> --yes\n  puretokens-skill bundle <skill-name> --format claude-desktop [--out <zip-file>] [--force]\n\nEvery install target is explicit. Use the supported host directories in README.md; Claude Desktop requires the generated ZIP to be uploaded and enabled in its Skills settings.\n\nRepository: ${repositoryRoot}\n`);
+  process.stdout.write(`Pure Tokens Skill Manager\n\nUsage:\n  puretokens-skill list\n  puretokens-skill validate\n  puretokens-skill install <skill-name> --target <directory>\n  puretokens-skill upgrade <skill-name> --target <directory>\n  puretokens-skill sync --target <directory>\n  puretokens-skill uninstall <skill-name> --target <directory> --yes\n  puretokens-skill bundle <skill-name> --format claude-desktop [--out <zip-file>] [--force]\n\nSync installs missing official Skills and upgrades only managed matching Skills. It refuses before changing anything when an unmanaged directory conflicts. Every install target is explicit. Use the supported host directories in README.md; Claude Desktop requires the generated ZIP to be uploaded and enabled in its Skills settings.\n\nRepository: ${repositoryRoot}\n`);
 }

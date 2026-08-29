@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -10,13 +10,13 @@ import { collectSkillRecords, repositoryRoot, validateRepository } from "../scri
 import { sourceRows, buildPublishedCatalog } from "../scripts/sync-media-model-catalog-from-service.mjs";
 import { buildSelection } from "../scripts/sync-skill-model-selection.mjs";
 
-const names = ["puretokens_balance", "puretokens_connection", "puretokens_models", "puretokens_image", "puretokens_video"];
+const names = ["puretokens_balance", "puretokens_connection", "puretokens_models", "puretokens_image", "puretokens_video", "puretokens_update"];
 
-test("registry exposes exactly the five specialist Skills", async () => {
+test("registry exposes exactly the six specialist Skills", async () => {
   const { registry, records } = await collectSkillRecords();
   assert.deepEqual(registry.skills.map((skill) => skill.name), names);
-  assert.equal(records.length, 5);
-  assert.deepEqual([...new Set(records.map((record) => record.manifest.version))], ["0.10.0"]);
+  assert.equal(records.length, 6);
+  assert.deepEqual([...new Set(records.map((record) => record.manifest.version))], ["0.11.0"]);
   assert.deepEqual(await validateRepository(), []);
 });
 
@@ -59,7 +59,9 @@ test("bilingual READMEs include safe copyable Agent installation prompts", async
   assert.match(english, /Run `npm run check` again\. Verify every requested destination has `SKILL\.md` and `skill\.json`/);
   assert.match(english, /Advance one verifiable step per reply/);
   assert.match(english, /Do not use third-party package mirrors or delete files/);
-  assert.match(english, /leave it unchanged and report the conflict/);
+  assert.match(english, /leave the conflict untouched, and report it/);
+  assert.match(english, /Sync all six Skills/);
+  assert.match(english, /puretokens_update/);
   assert.match(english, /never read, display, copy, change, or ask for API keys, Base URLs, authentication files, model settings, MCP settings/);
   assert.match(chinese, /## 让 Agent 协助安装/);
   assert.match(chinese, /^### 直接复制给具备本机终端的 Agent\n\n```text$/m);
@@ -78,18 +80,26 @@ test("bilingual READMEs include safe copyable Agent installation prompts", async
   assert.match(chinese, /再执行一次 `npm run check`。验证每个目标目录都有 `SKILL\.md` 和 `skill\.json`/);
   assert.match(chinese, /每轮只推进一个可验证步骤/);
   assert.match(chinese, /不得使用第三方包镜像或删除文件/);
-  assert.match(chinese, /保持不变并报告冲突/);
+  assert.match(chinese, /保持冲突目录不变并报告/);
+  assert.match(chinese, /同步全部六个 Skill/);
+  assert.match(chinese, /puretokens_update/);
   assert.match(chinese, /不得读取、展示、复制、修改或索取 API Key、Base URL、认证文件、模型配置、MCP 配置/);
 });
 
 test("specialist manifests use the fixed direct API without credential inspection", async () => {
   for (const name of names) {
     const manifest = JSON.parse(await readFile(path.join(repositoryRoot, "skills", name, "skill.json"), "utf8"));
-    assert.equal(manifest.rules.usesFixedPureTokensApiOrigin, true);
-    assert.equal(manifest.rules.usesFullApiUrls, true);
-    assert.equal(manifest.rules.usesRuntimeManagedAuthentication, true);
     assert.equal(manifest.rules.doesNotReadCredentialsOrHostConfiguration, true);
     assert.equal(manifest.rules.doesNotUseMcpOrFallbackTransport, true);
+    if (name === "puretokens_update") {
+      assert.equal(manifest.rules.usesOfficialMainBranch, true);
+      assert.equal(manifest.rules.usesManagedSkillSync, true);
+      assert.equal(manifest.rules.neverOverwritesUnmanagedDirectories, true);
+    } else {
+      assert.equal(manifest.rules.usesFixedPureTokensApiOrigin, true);
+      assert.equal(manifest.rules.usesFullApiUrls, true);
+      assert.equal(manifest.rules.usesRuntimeManagedAuthentication, true);
+    }
   }
 });
 
@@ -114,7 +124,8 @@ test("installed contracts cover bounded requests, task recovery, and user-facing
     puretokens_connection: ["connection-identity-confirmed", "connection-identity-unconfirmed", "connection-identity-unavailable", "connection-base-url-request", "connection-identity-assurance"],
     puretokens_models: ["models-catalog-unavailable", "models-catalog-empty", "models-exact-id-unavailable", "models-capability-filter-empty", "models-parameter-profile-absent", "models-operation-profile-absent", "models-requirement-ambiguous", "models-catalog-response"],
     puretokens_image: ["image-model-alias-ambiguous", "image-model-unavailable", "image-model-parameter-profile-unavailable", "image-model-parameter-unsupported", "image-execution-unavailable", "image-count-invalid", "image-pixel-size-invalid", "image-physical-size", "image-edit-profile-unavailable", "image-public-url-reference-profile-unavailable", "image-public-url-reference-invalid", "image-public-url-reference-ambiguous", "image-edit-attachment-unavailable", "image-edit-input-unsupported", "image-task-pending", "image-task-poll-delay", "image-task-poll-resource-bound", "image-task-polling-deadline", "image-task-explicit-continuation", "image-task-terminal-failure", "image-task-timeout-or-unknown", "image-content-delivery-failure", "image-content-index-missing", "image-content-resource-bound"],
-    puretokens_video: ["video-model-alias-ambiguous", "video-model-unavailable", "video-model-parameter-profile-unavailable", "video-model-parameter-unsupported", "video-execution-unavailable", "video-parameter-unsupported", "video-resolution-mode-unsupported", "video-image-operation-profile-unavailable", "video-media-operation-profile-unavailable", "video-image-transport-unavailable", "video-public-url-reference-profile-unavailable", "video-public-url-reference-invalid", "video-public-url-reference-ambiguous", "video-prompt-requirement", "video-image-count-unsupported", "video-media-combination-unsupported", "video-input-media-unsupported", "video-task-pending", "video-task-poll-delay", "video-task-poll-resource-bound", "video-task-polling-deadline", "video-task-explicit-continuation", "video-task-terminal-failure", "video-task-timeout-or-unknown", "video-content-delivery-failure", "video-content-resource-bound"]
+    puretokens_video: ["video-model-alias-ambiguous", "video-model-unavailable", "video-model-parameter-profile-unavailable", "video-model-parameter-unsupported", "video-execution-unavailable", "video-parameter-unsupported", "video-resolution-mode-unsupported", "video-image-operation-profile-unavailable", "video-media-operation-profile-unavailable", "video-image-transport-unavailable", "video-public-url-reference-profile-unavailable", "video-public-url-reference-invalid", "video-public-url-reference-ambiguous", "video-prompt-requirement", "video-image-count-unsupported", "video-media-combination-unsupported", "video-input-media-unsupported", "video-task-pending", "video-task-poll-delay", "video-task-poll-resource-bound", "video-task-polling-deadline", "video-task-explicit-continuation", "video-task-terminal-failure", "video-task-timeout-or-unknown", "video-content-delivery-failure", "video-content-resource-bound"],
+    puretokens_update: ["update-host-unknown", "update-terminal-unavailable", "update-validation-failed", "update-unmanaged-conflict", "update-managed-sync", "update-claude-desktop-bundle"]
   };
   for (const name of names) {
     const root = path.join(repositoryRoot, "skills", name, "references");
@@ -243,6 +254,12 @@ test("installed contracts cover bounded requests, task recovery, and user-facing
   assert.equal(models.result.neverRetry, true);
   assert.equal(models.result.noStaticCatalogFallback, true);
   assert.equal(models.result.compatibilityShortlistsRequireDeclaredCapabilityAndInputSchema, true);
+
+  const update = JSON.parse(await readFile(path.join(repositoryRoot, "skills", "puretokens_update", "references", "execution-contract.json"), "utf8"));
+  assert.equal(update.kind, "update");
+  assert.equal(update.operations.sync.commandTemplate, "node bin/puretokens-skill.js sync --target <installation-root>");
+  assert.equal(update.operations.sync.sourceBranch, "main");
+  assert.equal(update.result.neverOverwritesUnmanagedDirectories, true);
 });
 
 test("distribution matrix and fixed direct API contract match every specialist manifest", async () => {
@@ -339,6 +356,25 @@ test("CLI installs each specialist Skill", async (t) => {
       assert.equal(manifest.taskReceipt, "references/task-receipt.json");
       assert.equal(JSON.parse(await readFile(path.join(target, name, manifest.taskReceipt), "utf8")).kind, name.replace("puretokens_", ""));
     }
+  }
+});
+
+test("CLI sync installs missing Skills and refuses unmanaged conflicts before writing", async (t) => {
+  const target = await mkdtemp(path.join(os.tmpdir(), "puretokens-skill-sync-"));
+  t.after(() => rm(target, { recursive: true, force: true }));
+  const run = promisify(execFile);
+  const conflict = path.join(target, "puretokens_image");
+  await mkdir(conflict);
+  await writeFile(path.join(conflict, "SKILL.md"), "unmanaged\n");
+  await assert.rejects(
+    run(process.execPath, [path.join(repositoryRoot, "bin", "puretokens-skill.js"), "sync", "--target", target], { cwd: repositoryRoot }),
+    /unmanaged Skill conflicts/
+  );
+  await assert.rejects(readFile(path.join(target, "puretokens_balance", "skill.json"), "utf8"));
+  await rm(conflict, { recursive: true, force: true });
+  await run(process.execPath, [path.join(repositoryRoot, "bin", "puretokens-skill.js"), "sync", "--target", target], { cwd: repositoryRoot });
+  for (const name of names) {
+    assert.equal(JSON.parse(await readFile(path.join(target, name, "skill.json"), "utf8")).name, name);
   }
 });
 

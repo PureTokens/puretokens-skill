@@ -4,7 +4,7 @@
 
 # Pure Tokens Skills
 
-本仓库提供五个独立 Skill：
+本仓库提供六个独立 Skill：
 
 | Skill | 用途 |
 | --- | --- |
@@ -13,6 +13,7 @@
 | `puretokens_models` | 查询固定 API 的认证模型目录，并说明已声明的模型能力、参数和媒体操作。 |
 | `puretokens_image` | 通过固定的 Pure Tokens Images API 生图，并按 profile 支持图片编辑。 |
 | `puretokens_video` | 通过固定的 Pure Tokens Videos API 生视频，并按 profile 支持图生视频、参考图/视频/音频视频和视频编辑。 |
+| `puretokens_update` | 安装或安全升级本机官方 Pure Tokens Skills。 |
 
 按需安装到受支持宿主已声明的全局 Skill 目录：
 
@@ -23,6 +24,7 @@ node bin/puretokens-skill.js install puretokens_connection --target ~/.agents/sk
 node bin/puretokens-skill.js install puretokens_models --target ~/.agents/skills
 node bin/puretokens-skill.js install puretokens_image --target ~/.agents/skills
 node bin/puretokens-skill.js install puretokens_video --target ~/.agents/skills
+node bin/puretokens-skill.js install puretokens_update --target ~/.agents/skills
 
 # Claude Code
 node bin/puretokens-skill.js install puretokens_balance --target ~/.claude/skills
@@ -30,6 +32,7 @@ node bin/puretokens-skill.js install puretokens_connection --target ~/.claude/sk
 node bin/puretokens-skill.js install puretokens_models --target ~/.claude/skills
 node bin/puretokens-skill.js install puretokens_image --target ~/.claude/skills
 node bin/puretokens-skill.js install puretokens_video --target ~/.claude/skills
+node bin/puretokens-skill.js install puretokens_update --target ~/.claude/skills
 
 # Gemini CLI
 node bin/puretokens-skill.js install puretokens_balance --target ~/.gemini/skills
@@ -37,6 +40,7 @@ node bin/puretokens-skill.js install puretokens_connection --target ~/.gemini/sk
 node bin/puretokens-skill.js install puretokens_models --target ~/.gemini/skills
 node bin/puretokens-skill.js install puretokens_image --target ~/.gemini/skills
 node bin/puretokens-skill.js install puretokens_video --target ~/.gemini/skills
+node bin/puretokens-skill.js install puretokens_update --target ~/.gemini/skills
 ```
 
 ## 让 Agent 协助安装
@@ -58,10 +62,7 @@ node bin/puretokens-skill.js install puretokens_video --target ~/.gemini/skills
 
 3. 如果 `npm run check` 失败，报告失败并停止；不得改动任何 Skill 目录。
 
-4. 对以下五个 Skill 逐一在选定安装根目录中安装或更新：`puretokens_balance`、`puretokens_connection`、`puretokens_models`、`puretokens_image`、`puretokens_video`。
-   - 目标目录不存在：执行 `node bin/puretokens-skill.js install <skill-name> --target <installation-root>`。
-   - 目标是同名受管 Skill（含 `SKILL.md`、`skill.json`，且 manifest 名称一致）：执行 `node bin/puretokens-skill.js upgrade <skill-name> --target <installation-root>`。
-   - 已有其他目录：保持不变并报告冲突。
+4. 使用 `node bin/puretokens-skill.js sync --target <installation-root>` 在选定安装根目录中同步全部六个 Skill：`puretokens_balance`、`puretokens_connection`、`puretokens_models`、`puretokens_image`、`puretokens_video`、`puretokens_update`。它会安装缺失的官方 Skill，只升级同名受管 Skill；只要存在任一同名但非受管目录，就必须在改动前停止、保持冲突目录不变并报告。
 
 5. 再执行一次 `npm run check`。验证每个目标目录都有 `SKILL.md` 和 `skill.json`，且 manifest 名称与目录名一致。报告已安装或升级的路径和全部冲突；提醒我新开对应宿主会话再测试。
 
@@ -86,7 +87,7 @@ CC Switch 是连接配置工具，不是 Skill 宿主。CC Switch、Pure Tokens 
 
 ## 直连 API 契约
 
-所有专项 Skill 都调用固定的公开 API origin：`https://api.puretokensx.com`。请求使用完整 URL，不使用用户配置的 Base URL，也不依赖相对路径宿主执行器。当前运行环境会为已有的 Pure Tokens 请求认证自动附带认证；Skill 绝不读取、扫描、索取、打印、复制或保存 API Key、Base URL、认证文件、provider 标签或客户端配置，也不构造认证头，不使用 MCP、本地代理、sidecar 或其他 endpoint。
+面向 API 的 Skill 都调用固定的公开 API origin：`https://api.puretokensx.com`。请求使用完整 URL，不使用用户配置的 Base URL，也不依赖相对路径宿主执行器。当前运行环境会为已有的 Pure Tokens 请求认证自动附带认证；Skill 绝不读取、扫描、索取、打印、复制或保存 API Key、Base URL、认证文件、provider 标签或客户端配置，也不构造认证头，不使用 MCP、本地代理、sidecar 或其他 endpoint。`puretokens_update` 只处理本机更新，不调用 API endpoint。
 
 `puretokens_connection` 只调用一次 `GET https://api.puretokensx.com/v1`。只有固定端点明确返回 `status: "ok"`、`name: "Pure Tokens API"` 与 `base_url: "/v1"` 时，才确认该固定 API 的标识。它不会读取或验证用户实际配置的 Base URL；这只是端点公开声明检查，不是密码学防伪证明。
 
@@ -101,6 +102,10 @@ CC Switch 是连接配置工具，不是 Skill 宿主。CC Switch、Pure Tokens 
 ## 余额
 
 `puretokens_balance` 只执行一次 `GET https://api.puretokensx.com/api/product/desktop/account/balance`，使用当前运行环境已有的 Pure Tokens 账户认证。它只报告接口返回的字段。若直连请求未获认证或失败，会报告实际返回的结果并引导用户到 Pure Tokens 客户端余额入口；绝不会猜余额、尝试其他路径或索取凭据。
+
+## Skill 升级
+
+`puretokens_update` 专门处理用户明确提出的安装、更新或同步本机官方 Skills 的请求。对于 Codex、Claude Code 和 Gemini CLI，它会先校验新克隆的官方 `main`，再执行 `node bin/puretokens-skill.js sync --target <installation-root>`。该命令会安装缺失官方 Skill，只升级受管且同名的 Skill 目录；只要遇到非受管同名目录，整个同步会在改动前停止。对于 Claude Desktop，它会生成新 ZIP 包并引导用户在设置中上传、启用。它绝不读取连接设置或凭据，也绝不会在媒体任务中自行运行。
 
 ## 图片尺寸和数量
 
@@ -138,6 +143,7 @@ CC Switch 是连接配置工具，不是 Skill 宿主。CC Switch、Pure Tokens 
 - 参考音频：`用 minimax h3 根据我附上的音频生成一段视频。` 只有认证目录发布 `reference_audio` 时才会提交。
 - 视频编辑：`编辑我附上的视频：将白天改为夜景。` 只有认证目录发布 `video_edit` 时，才会向 `https://api.puretokensx.com/v1/videos/edits` 提交。
 - 继续已有任务：`继续查询任务 <task_id>。` Skill 只读取该任务，绝不会自动提交替代任务。
+- 升级：`升级我的 Pure Tokens Skills。` 更新 Skill 会校验官方 `main`，并安全同步本机 Skill 目录。
 
 ## 模型发现
 

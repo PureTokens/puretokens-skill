@@ -7,8 +7,8 @@
   "properties": {
     "$schema": { "const": "https://puretokensx.com/schemas/media-execution-contract.schema.json" },
     "schemaVersion": { "const": 1 },
-    "kind": { "enum": ["balance", "connection", "models", "image", "video"] },
-    "transport": { "$ref": "#/$defs/directTransport" },
+    "kind": { "enum": ["balance", "connection", "models", "image", "video", "update"] },
+    "transport": { "oneOf": [{ "$ref": "#/$defs/directTransport" }, { "$ref": "#/$defs/updateTransport" }] },
     "operations": {
       "type": "object",
       "properties": {
@@ -18,7 +18,8 @@
         "status": { "$ref": "#/$defs/request" },
         "content": { "$ref": "#/$defs/request" },
         "identity": { "$ref": "#/$defs/request" },
-        "read": { "$ref": "#/$defs/request" }
+        "read": { "$ref": "#/$defs/request" },
+        "sync": { "$ref": "#/$defs/syncOperation" }
       },
       "additionalProperties": false
     },
@@ -100,6 +101,37 @@
           }
         }
       }
+    },
+    {
+      "if": { "properties": { "kind": { "const": "update" } } },
+      "then": {
+        "required": ["operations"],
+        "properties": {
+          "operations": {
+            "required": ["sync"],
+            "properties": {
+              "sync": {
+                "required": ["commandTemplate", "sourceRepository", "sourceBranch", "validationCommand"],
+                "properties": {
+                  "commandTemplate": { "const": "node bin/puretokens-skill.js sync --target <installation-root>" },
+                  "sourceRepository": { "const": "https://github.com/PureTokens/puretokens-skill.git" },
+                  "sourceBranch": { "const": "main" },
+                  "validationCommand": { "const": "npm run check" }
+                }
+              }
+            }
+          },
+          "result": {
+            "required": ["installsMissingOfficialSkills", "upgradesOnlyManagedMatchingSkills", "neverOverwritesUnmanagedDirectories", "requiresNewHostConversationAfterSuccess"],
+            "properties": {
+              "installsMissingOfficialSkills": { "const": true },
+              "upgradesOnlyManagedMatchingSkills": { "const": true },
+              "neverOverwritesUnmanagedDirectories": { "const": true },
+              "requiresNewHostConversationAfterSuccess": { "const": true }
+            }
+          }
+        }
+      }
     }
   ],
   "$defs": {
@@ -113,6 +145,17 @@
         "doesNotReadCredentialsOrHostConfiguration": { "const": true },
         "doesNotUseMcpOrFallbackTransport": { "const": true },
         "requiresNativeMediaByteDelivery": { "const": true }
+      },
+      "additionalProperties": false
+    },
+    "updateTransport": {
+      "type": "object",
+      "required": ["localSkillManager", "usesOfficialMainBranch", "doesNotReadCredentialsOrHostConfiguration", "doesNotUseMediaApiOrMcp"],
+      "properties": {
+        "localSkillManager": { "const": true },
+        "usesOfficialMainBranch": { "const": true },
+        "doesNotReadCredentialsOrHostConfiguration": { "const": true },
+        "doesNotUseMediaApiOrMcp": { "const": true }
       },
       "additionalProperties": false
     },
@@ -136,6 +179,17 @@
         "responseSchema": { "type": "string" }
       },
       "oneOf": [{ "required": ["url"] }, { "required": ["urlTemplate"] }, { "required": ["allowedPaths"] }],
+      "additionalProperties": false
+    },
+    "syncOperation": {
+      "type": "object",
+      "required": ["commandTemplate", "sourceRepository", "sourceBranch", "validationCommand"],
+      "properties": {
+        "commandTemplate": { "const": "node bin/puretokens-skill.js sync --target <installation-root>" },
+        "sourceRepository": { "const": "https://github.com/PureTokens/puretokens-skill.git" },
+        "sourceBranch": { "const": "main" },
+        "validationCommand": { "const": "npm run check" }
+      },
       "additionalProperties": false
     }
   },

@@ -7,7 +7,7 @@
   "properties": {
     "$schema": { "const": "https://puretokensx.com/schemas/media-behavior-scenarios.schema.json" },
     "schemaVersion": { "const": 1 },
-    "kind": { "enum": ["balance", "connection", "models", "image", "video"] },
+    "kind": { "enum": ["balance", "connection", "models", "image", "video", "update"] },
     "scenarios": {
       "type": "array",
       "minItems": 1,

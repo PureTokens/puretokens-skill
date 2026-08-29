@@ -6,13 +6,16 @@
 
 ## Unreleased
 
-- 移除相对路径和宿主能力前置契约，改为固定直连 API 契约。所有专项 Skill 现在都调用完整的 `https://api.puretokensx.com` URL；不依赖 MCP、本地代理、sidecar、用户配置的 Base URL 或宿主专用的相对路径执行器。
+- 新增 `puretokens_update` 与 `puretokens-skill sync --target <directory>` 命令。用户明确要求更新时会先校验新克隆的官方 `main`，安装缺失的官方 Skill，只原子升级同名受管 Skill；任一非受管同名目录都会让同步在改动前停止。
+- 增加独立的更新行为场景、本机更新执行契约、Claude Desktop 打包引导，以及同步成功和冲突安全拒绝的测试覆盖。
+
+- 移除相对路径和宿主能力前置契约，改为固定直连 API 契约。所有面向 API 的专项 Skill 现在都调用完整的 `https://api.puretokensx.com` URL；不依赖 MCP、本地代理、sidecar、用户配置的 Base URL 或宿主专用的相对路径执行器。
 - 认证仍由当前运行环境管理。Skill 绝不读取、扫描、展示、复制、索取、保存或构造 API Key、Base URL、认证头或客户端配置。
 - 生图、生视频、模型查询、API 身份检查和余额查询统一改为固定 API origin；图片和视频的状态/内容读取也使用完整固定 URL，profile 声明的 multipart operation 路径只会与该 origin 组合。
 - 用 `references/direct-api-execution-contract.json` 替代旧的宿主原生执行矩阵，并同步更新校验、manifest、行为场景、双语 README 与测试。
 
 - 已在两份 README 顶部恢复仓库内受版本控制的官方 Skills Hero 图。
-- 将客户端下载页的 Agent 安装提示词重写为简洁、分行的执行清单：自动识别当前受支持宿主、选择目录、安装或升级五个 Skill、复验结果，同时保留既有安全边界。
+- 将客户端下载页的 Agent 安装提示词重写为简洁、分行的执行清单：自动识别当前受支持宿主、选择目录、同步六个 Skill、复验结果，同时保留既有安全边界。
 - 已将公开媒体目录同步到当前包含 18 个模型的基础目录，新增 `grok-imagine-image-2.0`、`grok-imagine-video-1.5`、`wan3.0-video`、`wan3.0-video-prime`。为 Wan3 增加了无歧义别名；可能混淆的 Grok 1.5 名称仍要求精确 ID。
 - 已收紧媒体资源使用：轮询只在提交所在回合或用户明确继续同一任务的回合内进行，同一任务只有一个状态请求在途，不创建后台计时器或队列，使用有上限的自适应退避，并在限流、服务端错误、传输错误或超时时立即停止。任务仍在处理时，只有用户明确继续同一 `task_id` 才会开启下一轮有界轮询。内容交付只在终态成功后进行，一次一个，多图按索引顺序读取，不预取、不重复读取，也不写入 Skill 状态或日志。
 - 视频分辨率会遵循实时 profile 的 `resolution_by_mode`；图片编辑示例改为当前实际声明 `image_edit` 的模型。

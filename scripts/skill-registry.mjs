@@ -111,9 +111,9 @@ export async function validateRepository() {
     }
   }
 
-  const expected = ["puretokens_balance", "puretokens_connection", "puretokens_models", "puretokens_image", "puretokens_video"];
+  const expected = ["puretokens_balance", "puretokens_connection", "puretokens_models", "puretokens_image", "puretokens_video", "puretokens_update"];
   if (registry.skills.length !== expected.length || expected.some((name, index) => registry.skills[index]?.name !== name)) {
-    errors.push("skills/index.json must list the five specialist Skills in order");
+    errors.push("skills/index.json must list the six specialist Skills in order");
   }
 
   for (const entry of registry.skills) {
@@ -308,6 +308,10 @@ function validateExecutionContract(errors, directory, contract) {
   if (contract.$schema !== "https://puretokensx.com/schemas/media-execution-contract.schema.json") errors.push(`${label} must declare the execution-contract schema`);
   const kind = skillKind(directory);
   if (contract.schemaVersion !== 1 || contract.kind !== kind) errors.push(`${label} must be schemaVersion=1 for ${kind}`);
+  if (kind === "update") {
+    validateUpdateContract(errors, label, contract);
+    return;
+  }
   validateDirectTransport(errors, label, contract.transport, kind === "image" || kind === "video");
   const operations = contract.operations;
   if (!operations || typeof operations !== "object") {
@@ -389,6 +393,24 @@ function validateExecutionContract(errors, directory, contract) {
   }
   if (contract.result?.sameTaskOnly !== true || contract.result?.neverAutoResubmit !== true || !Array.isArray(contract.unsupportedInput) || !contract.unsupportedInput.length) {
     errors.push(`${label} must stay on the same task without automatic resubmission and declare unsupported input`);
+  }
+}
+
+function validateUpdateContract(errors, label, contract) {
+  const transport = contract.transport;
+  if (!transport || transport.localSkillManager !== true || transport.usesOfficialMainBranch !== true ||
+    transport.doesNotReadCredentialsOrHostConfiguration !== true || transport.doesNotUseMediaApiOrMcp !== true) {
+    errors.push(`${label} must use the local official Skill manager without credentials, media APIs, or MCP`);
+  }
+  const sync = contract.operations?.sync;
+  if (!sync || sync.commandTemplate !== "node bin/puretokens-skill.js sync --target <installation-root>" ||
+    sync.sourceRepository !== "https://github.com/PureTokens/puretokens-skill.git" || sync.sourceBranch !== "main" || sync.validationCommand !== "npm run check") {
+    errors.push(`${label} must define the validated official-main sync operation`);
+  }
+  const result = contract.result;
+  if (!result || result.installsMissingOfficialSkills !== true || result.upgradesOnlyManagedMatchingSkills !== true ||
+    result.neverOverwritesUnmanagedDirectories !== true || result.requiresNewHostConversationAfterSuccess !== true) {
+    errors.push(`${label} must preserve unmanaged directories and report a new-conversation requirement`);
   }
 }
 
