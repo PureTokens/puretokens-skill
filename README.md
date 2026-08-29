@@ -41,47 +41,23 @@ node bin/puretokens-skill.js install puretokens_video --target ~/.gemini/skills
 
 ## Agent-assisted installation
 
-Paste the matching prompt below into an Agent with local file-write access. It uses the same terminal-execution contract as the Pure Tokens client download page: an available terminal tool must be used before replying; an absent Skill is an installation state rather than a terminal-tool failure; and tools stop only when execution itself is unavailable or denied. The Agent may update only the five named Pure Tokens Skill directories; it must not read, print, or alter API keys, Base URLs, model configuration, or MCP settings.
+The client download page reads the single bounded prompt below from this README. Keep its start/end markers, heading, and one `text` code block stable; do not make the page infer an installation prompt from surrounding prose.
 
-### Codex on Windows — current `develop` test build
-
+<!-- agent-install-prompt:start -->
 ```text
-Install or upgrade the current `develop` Pure Tokens Skills for Codex on this Windows machine. Perform the work; do not merely describe commands.
+Install or upgrade the current stable Pure Tokens Skills from the main branch for the supported host I name: Codex, Claude Code, or Gemini CLI. Perform the work; do not merely describe commands. If I have not named one of those hosts, ask me which one before making changes.
 
-If this conversation provides a terminal, PowerShell, exec, or shell tool, call an available tool before replying; do not merely say that you cannot execute commands. Create a new temporary working directory without deleting an existing directory, clone https://github.com/PureTokens/puretokens-skill.git on branch `develop`, enter that repository, and run this exact source-validation command:
+If this conversation provides a terminal, PowerShell, exec, or shell tool, call an available tool before replying; do not merely say that you cannot execute commands. Create a new temporary working directory without deleting an existing directory, clone https://github.com/PureTokens/puretokens-skill.git on branch main, enter that repository, and run `npm run check`. A failed source-validation command means the downloaded source is not ready to install: report that result and stop without changing any Skill directory. It is not a terminal-tool failure.
 
-npm run check
+Use exactly one installation root for the named host: Codex uses $env:USERPROFILE\.agents\skills on Windows PowerShell or ~/.agents/skills on macOS/Linux; Claude Code uses ~/.claude/skills; Gemini CLI uses ~/.gemini/skills. Process only puretokens_balance, puretokens_connection, puretokens_models, puretokens_image, and puretokens_video. For each exact destination, inspect only that Skill directory: it is a managed same-name Skill only when it contains SKILL.md and skill.json and the manifest name equals that Skill name. A missing destination is an installation-state result, not a terminal-tool failure: run `node bin/puretokens-skill.js install <skill-name> --target <installation-root>`. For a managed same-name destination, run `node bin/puretokens-skill.js upgrade <skill-name> --target <installation-root>`. If an existing destination is not a managed same-name Skill, do not overwrite, move, or delete it; report that exact conflict and continue only with safe, non-conflicting Skill directories.
 
-A failed source-validation command means the downloaded source is not ready to install: report that result and stop without changing any Skill directory. It is not a terminal-tool failure.
+After the installation work, run `npm run check` again. Then verify each requested destination contains SKILL.md and skill.json and that every manifest name matches its directory name; report every installed or upgraded Skill name and path, plus every conflict. Do not claim installation success for a directory that fails this verification.
 
-Use $env:USERPROFILE\.agents\skills as the only installation root. Process only puretokens_balance, puretokens_connection, puretokens_models, puretokens_image, and puretokens_video. For each exact destination, inspect only that Skill directory: it is a managed same-name Skill only when it contains both SKILL.md and skill.json and the manifest name equals that Skill name. A missing destination is an installation-state result, not a terminal-tool failure: run `node bin/puretokens-skill.js install <skill-name> --target $env:USERPROFILE\.agents\skills`. For a managed same-name destination, run `node bin/puretokens-skill.js upgrade <skill-name> --target $env:USERPROFILE\.agents\skills`. If an existing destination is not a managed same-name Skill, do not overwrite, move, or delete it; report that exact conflict and continue only with safe, non-conflicting Skill directories.
-
-After the installation work, run `npm run check` again. Then verify each requested destination contains SKILL.md and skill.json and that each manifest name matches its directory name; report every installed or upgraded Skill name and path, plus every conflict. Do not claim installation success for a directory that fails this verification.
-
-Stop using tools only when the tool itself is unavailable, the host rejects the call, or the tool interface explicitly says execution is forbidden or unavailable. In that case, state that the terminal tool is unavailable or denied, provide only the next copyable group of official commands suitable for Windows PowerShell, and wait for my output. Check or ask me to install Node.js LTS only because the official `npm run check` or Node-based installer actually requires it; do not treat Node.js as a universal prerequisite. If an official command is incompatible with this operating system or terminal, consult the repository's official README and provide the compatible official command before continuing. Advance only one verifiable step per reply; do not repeat environment probes or provide lengthy reasoning.
-
-Do not read, display, copy, modify, or ask for any API Key, Base URL, authentication file, model configuration, or MCP configuration. Do not change AI-client configuration, Pure Tokens connection configuration, environment variables, shell profiles, or system proxies. Do not use third-party package mirrors or delete files. When finished, tell me to open a new Codex conversation before testing.
-```
-
-### Claude Code or Gemini CLI
-
-```text
-Install or upgrade the current `develop` Pure Tokens Skills for this host. Perform the work; do not merely describe commands.
-
-If this conversation provides a terminal, PowerShell, exec, or shell tool, call an available tool before replying; do not merely say that you cannot execute commands. Create a new temporary working directory without deleting an existing directory, clone https://github.com/PureTokens/puretokens-skill.git on branch `develop`, enter that repository, and run this exact source-validation command:
-
-npm run check
-
-A failed source-validation command means the downloaded source is not ready to install: report that result and stop without changing any Skill directory. It is not a terminal-tool failure.
-
-Use only ~/.claude/skills for Claude Code or ~/.gemini/skills for Gemini CLI as the installation root. Process only puretokens_balance, puretokens_connection, puretokens_models, puretokens_image, and puretokens_video. For each exact destination, inspect only that Skill directory: it is a managed same-name Skill only when it contains both SKILL.md and skill.json and the manifest name equals that Skill name. A missing destination is an installation-state result, not a terminal-tool failure: run `node bin/puretokens-skill.js install <skill-name> --target <installation-root>`. For a managed same-name destination, run `node bin/puretokens-skill.js upgrade <skill-name> --target <installation-root>`. If an existing destination is not a managed same-name Skill, do not overwrite, move, or delete it; report that exact conflict and continue only with safe, non-conflicting Skill directories.
-
-After the installation work, run `npm run check` again. Then verify each requested destination contains SKILL.md and skill.json and that each manifest name matches its directory name; report every installed or upgraded Skill name and path, plus every conflict. Do not claim installation success for a directory that fails this verification.
-
-Stop using tools only when the tool itself is unavailable, the host rejects the call, or the tool interface explicitly says execution is forbidden or unavailable. In that case, state that the terminal tool is unavailable or denied, provide only the next copyable group of official commands suitable for my operating system and terminal, and wait for my output. Check or ask me to install Node.js LTS only because the official `npm run check` or Node-based installer actually requires it; do not treat Node.js as a universal prerequisite. If an official command is incompatible with this operating system or terminal, consult the repository's official README and provide the compatible official command before continuing. Advance only one verifiable step per reply; do not repeat environment probes or provide lengthy reasoning.
+Stop using tools only when the tool itself is unavailable, the host rejects the call, or the tool interface explicitly says execution is forbidden or unavailable. In that case, state that the terminal tool is unavailable or denied, provide only the next copyable group of official commands suitable for my operating system and terminal, and wait for my output. Check or ask me to install Node.js LTS only because `npm run check` or the Node-based installer actually requires it; do not treat Node.js as a universal prerequisite. If an official command is incompatible with this operating system or terminal, consult this repository's README and provide the compatible official command before continuing. Advance only one verifiable step per reply; do not repeat environment probes or provide lengthy reasoning.
 
 Do not read, display, copy, modify, or ask for any API Key, Base URL, authentication file, model configuration, or MCP configuration. Do not change AI-client configuration, Pure Tokens connection configuration, environment variables, shell profiles, or system proxies. Do not use third-party package mirrors or delete files. When finished, tell me to open a new host conversation before testing.
 ```
+<!-- agent-install-prompt:end -->
 
 ## Host support
 

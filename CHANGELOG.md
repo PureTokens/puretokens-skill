@@ -7,7 +7,7 @@
 ## Unreleased
 
 - Restored the tracked official Skills hero image at the top of both README files.
-- Aligned the copyable Agent Skill-installation prompts with the client download page's terminal-execution contract: use an available tool before replying, treat an absent Skill as installation state, stop only when execution is unavailable or denied, re-validate after installation, and preserve credential and host-configuration boundaries.
+- Restored a single machine-readable Agent-installation prompt for the client download page: bounded by stable README markers, sourced from `main` rather than a test branch, and applicable to Codex on Windows/macOS/Linux, Claude Code, and Gemini CLI.
 - Synchronized the published media catalog with the current 18-model base catalog, including `grok-imagine-image-2.0`, `grok-imagine-video-1.5`, `wan3.0-video`, and `wan3.0-video-prime`. Added unambiguous Wan3 aliases while retaining exact-ID selection where a Grok 1.5 name is ambiguous.
 - Bounded media resource use: polling is limited to the submission turn or a user-explicit same-task continuation turn, with one in-flight status read, no background timer or queue, adaptive capped backoff, and immediate stop on rate limits, server errors, transport errors, or timeouts. A pending task can open another bounded window only when the user explicitly continues that same task ID. Content delivery is terminal-success-only, one-at-a-time, sequential for multi-image output, and never prefetched, duplicated, or stored in Skill state or logs.
 - Video resolution now honors the live profile's `resolution_by_mode` constraint, and the image-edit example uses a model that currently declares `image_edit`.
