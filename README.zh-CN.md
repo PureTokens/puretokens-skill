@@ -41,9 +41,10 @@ node bin/puretokens-skill.js install puretokens_video --target ~/.gemini/skills
 
 ## 让 Agent 协助安装
 
-客户端下载页从本 README 读取下方唯一、边界明确的提示词。必须保持开始/结束标记、标题和唯一的 `text` 代码块稳定；页面不得从周边说明文字猜测安装提示词。
+客户端下载页会提取下方固定标题下的第一个代码块。必须保持该标题和唯一的 `text` 代码块稳定；本节不得放入其他代码块。
 
-<!-- agent-install-prompt:start -->
+### 直接复制给具备本机终端的 Agent
+
 ```text
 请为我明确指定的受支持宿主安装或升级 main 分支上的稳定版 Pure Tokens Skills。受支持宿主只有 Codex、Claude Code、Gemini CLI。请直接完成操作，不要只描述命令；如果我尚未明确指定其中一个宿主，请先问我使用哪一个，再进行任何改动。
 
@@ -57,7 +58,6 @@ node bin/puretokens-skill.js install puretokens_video --target ~/.gemini/skills
 
 不得读取、展示、复制、修改或索取任何 API Key、Base URL、认证文件、模型配置或 MCP 配置。不得修改 AI 客户端配置、Pure Tokens 连接配置、环境变量、Shell 配置或系统代理；不得使用第三方包镜像或删除文件。完成后提醒我新开一个对应宿主会话再测试。
 ```
-<!-- agent-install-prompt:end -->
 
 ## 宿主支持
 

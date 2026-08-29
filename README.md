@@ -41,9 +41,10 @@ node bin/puretokens-skill.js install puretokens_video --target ~/.gemini/skills
 
 ## Agent-assisted installation
 
-The client download page reads the single bounded prompt below from this README. Keep its start/end markers, heading, and one `text` code block stable; do not make the page infer an installation prompt from surrounding prose.
+The client download page extracts the first fenced block under the fixed heading below. Keep that heading and its one `text` block stable; do not place another fenced block in this section.
 
-<!-- agent-install-prompt:start -->
+### Copy this to a terminal-capable local agent
+
 ```text
 Install or upgrade the current stable Pure Tokens Skills from the main branch for the supported host I name: Codex, Claude Code, or Gemini CLI. Perform the work; do not merely describe commands. If I have not named one of those hosts, ask me which one before making changes.
 
@@ -57,7 +58,6 @@ Stop using tools only when the tool itself is unavailable, the host rejects the 
 
 Do not read, display, copy, modify, or ask for any API Key, Base URL, authentication file, model configuration, or MCP configuration. Do not change AI-client configuration, Pure Tokens connection configuration, environment variables, shell profiles, or system proxies. Do not use third-party package mirrors or delete files. When finished, tell me to open a new host conversation before testing.
 ```
-<!-- agent-install-prompt:end -->
 
 ## Host support
 
