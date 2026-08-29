@@ -41,31 +41,46 @@ node bin/puretokens-skill.js install puretokens_video --target ~/.gemini/skills
 
 ## 让 Agent 协助安装
 
-如果 Agent 具备终端和本机文件写入能力，可复制对应提示词给它。Agent 只能更新下列五个 Pure Tokens Skill 目录；不得读取、打印或修改 API Key、Base URL、模型配置或 MCP 配置。
+可将对应提示词复制给具备本机文件写入能力的 Agent。它与 Pure Tokens 客户端下载页使用相同的终端执行契约：有可用终端工具时必须先调用；缺少 Skill 属于安装状态，不是终端工具失败；只有执行本身不可用或被拒绝时才停止调用工具。Agent 只能更新下列五个 Pure Tokens Skill 目录；不得读取、打印或修改 API Key、Base URL、模型配置或 MCP 配置。
 
 ### Windows 上的 Codex：当前 `develop` 测试版本
 
 ```text
-请在这台 Windows 机器上为 Codex 安装或升级当前的 Pure Tokens Skills。请直接完成操作，不要只告诉我命令。
+请在这台 Windows 机器上为 Codex 安装或升级当前 `develop` 的 Pure Tokens Skills。请直接完成操作，不要只描述命令。
 
-1. 在新建的临时工作目录中克隆 https://github.com/PureTokens/puretokens-skill.git 的 develop 分支，然后进入该仓库。
-2. 执行 npm run check；如失败，立即停止并报告错误。
-3. 只使用 $env:USERPROFILE\.agents\skills 作为安装根目录。
-4. 依次处理 puretokens_balance、puretokens_connection、puretokens_models、puretokens_image、puretokens_video：若目标目录已经是同名的受管 Pure Tokens Skill，就执行对应的 upgrade；若目录不存在，就执行 install。若已有目录不是同名受管 Skill，绝不覆盖，报告冲突。
-5. 不得读取、展示、复制、修改或索取任何 API Key、Base URL、认证文件、模型配置或 MCP 配置。
-6. 报告已安装的 Skill 名称和路径，并提醒我新开一个 Codex 会话后再测试。
+如果当前会话提供终端、PowerShell、exec 或 shell 工具，必须在回复前先调用一个可用工具；不要只说“无法执行命令”。新建临时工作目录，但不得删除已有目录；克隆 https://github.com/PureTokens/puretokens-skill.git 的 `develop` 分支，进入仓库后直接执行这条精确的源代码校验命令：
+
+npm run check
+
+源代码校验失败说明下载的源代码还不能安装：报告该结果，并在不改动任何 Skill 目录的前提下停止。它不是终端工具失败。
+
+只使用 $env:USERPROFILE\.agents\skills 作为安装根目录。只处理 puretokens_balance、puretokens_connection、puretokens_models、puretokens_image、puretokens_video。逐个精确检查目标目录，且只检查该 Skill 目录：只有同时含有 SKILL.md、skill.json，且 manifest 的 name 等于该 Skill 名称时，才是同名受管 Skill。目标目录不存在是安装状态，不是终端工具失败：执行 `node bin/puretokens-skill.js install <skill-name> --target $env:USERPROFILE\.agents\skills`。目标为同名受管 Skill 时，执行 `node bin/puretokens-skill.js upgrade <skill-name> --target $env:USERPROFILE\.agents\skills`。若已有目录不是同名受管 Skill，不得覆盖、移动或删除；报告该精确冲突，只继续处理安全且无冲突的 Skill 目录。
+
+安装操作完成后，再执行一次 `npm run check`。然后验证每个目标目录都包含 SKILL.md 和 skill.json，且每份 manifest 的 name 与目录名一致；报告全部已安装或升级的 Skill 名称和路径，以及全部冲突。目录未通过此校验时，不得宣称安装成功。
+
+只有工具本身不存在、宿主拒绝调用，或工具接口明确报“禁止执行／不可用”时，才停止使用工具。此时必须说明“终端工具不可用或被拒绝”，只给出适用于 Windows PowerShell 的下一组可复制官方命令，并等待我返回输出。仅因官方 `npm run check` 或 Node 安装器确实需要时，才检查或引导安装 Node.js LTS；不要将 Node.js 视为通用前置条件。如果官方命令不适用于当前操作系统或终端，请查阅仓库官方 README，并先提供适配的官方命令再继续。每轮只推进一个可验证步骤；不要重复环境探测或输出长篇推理。
+
+不得读取、展示、复制、修改或索取任何 API Key、Base URL、认证文件、模型配置或 MCP 配置。不得修改 AI 客户端配置、Pure Tokens 连接配置、环境变量、Shell 配置或系统代理；不得使用第三方包镜像或删除文件。完成后提醒我新开一个 Codex 会话再测试。
 ```
 
 ### Claude Code 或 Gemini CLI
 
 ```text
-请为当前宿主安装或升级 Pure Tokens Skills。请直接完成操作，不要只告诉我命令。
+请为当前宿主安装或升级当前 `develop` 的 Pure Tokens Skills。请直接完成操作，不要只描述命令。
 
-1. 在临时工作目录中克隆或更新 https://github.com/PureTokens/puretokens-skill.git 的 develop 分支，进入仓库后执行 npm run check；如校验失败，立即停止并报告错误。
-2. Claude Code 只使用 ~/.claude/skills；Gemini CLI 只使用 ~/.gemini/skills 作为安装根目录。
-3. 只安装或升级 puretokens_balance、puretokens_connection、puretokens_models、puretokens_image、puretokens_video。除非现有目录是同名受管 Skill，否则绝不覆盖；出现冲突时报告即可。
-4. 不得读取、展示、复制、修改或索取任何 API Key、Base URL、认证文件、模型配置或 MCP 配置。
-5. 报告已安装的 Skill 名称和路径，并提醒我新开一个宿主会话后再测试。
+如果当前会话提供终端、PowerShell、exec 或 shell 工具，必须在回复前先调用一个可用工具；不要只说“无法执行命令”。新建临时工作目录，但不得删除已有目录；克隆 https://github.com/PureTokens/puretokens-skill.git 的 `develop` 分支，进入仓库后直接执行这条精确的源代码校验命令：
+
+npm run check
+
+源代码校验失败说明下载的源代码还不能安装：报告该结果，并在不改动任何 Skill 目录的前提下停止。它不是终端工具失败。
+
+Claude Code 只使用 ~/.claude/skills；Gemini CLI 只使用 ~/.gemini/skills 作为安装根目录。只处理 puretokens_balance、puretokens_connection、puretokens_models、puretokens_image、puretokens_video。逐个精确检查目标目录，且只检查该 Skill 目录：只有同时含有 SKILL.md、skill.json，且 manifest 的 name 等于该 Skill 名称时，才是同名受管 Skill。目标目录不存在是安装状态，不是终端工具失败：执行 `node bin/puretokens-skill.js install <skill-name> --target <installation-root>`。目标为同名受管 Skill 时，执行 `node bin/puretokens-skill.js upgrade <skill-name> --target <installation-root>`。若已有目录不是同名受管 Skill，不得覆盖、移动或删除；报告该精确冲突，只继续处理安全且无冲突的 Skill 目录。
+
+安装操作完成后，再执行一次 `npm run check`。然后验证每个目标目录都包含 SKILL.md 和 skill.json，且每份 manifest 的 name 与目录名一致；报告全部已安装或升级的 Skill 名称和路径，以及全部冲突。目录未通过此校验时，不得宣称安装成功。
+
+只有工具本身不存在、宿主拒绝调用，或工具接口明确报“禁止执行／不可用”时，才停止使用工具。此时必须说明“终端工具不可用或被拒绝”，只给出适用于当前操作系统和终端的下一组可复制官方命令，并等待我返回输出。仅因官方 `npm run check` 或 Node 安装器确实需要时，才检查或引导安装 Node.js LTS；不要将 Node.js 视为通用前置条件。如果官方命令不适用于当前操作系统或终端，请查阅仓库官方 README，并先提供适配的官方命令再继续。每轮只推进一个可验证步骤；不要重复环境探测或输出长篇推理。
+
+不得读取、展示、复制、修改或索取任何 API Key、Base URL、认证文件、模型配置或 MCP 配置。不得修改 AI 客户端配置、Pure Tokens 连接配置、环境变量、Shell 配置或系统代理；不得使用第三方包镜像或删除文件。完成后提醒我新开一个宿主会话再测试。
 ```
 
 ## 宿主支持
