@@ -46,17 +46,28 @@ The client download page extracts the first fenced block under the fixed heading
 ### Copy this to a terminal-capable local agent
 
 ```text
-Install or upgrade the current stable Pure Tokens Skills from the main branch for the supported host I name: Codex, Claude Code, or Gemini CLI. Perform the work; do not merely describe commands. If I have not named one of those hosts, ask me which one before making changes.
+Install or update the official Pure Tokens Skills for this local agent host. Do the work; do not only describe it.
 
-If this conversation provides a terminal, PowerShell, exec, or shell tool, call an available tool before replying; do not merely say that you cannot execute commands. Create a new temporary working directory without deleting an existing directory, clone https://github.com/PureTokens/puretokens-skill.git on branch main, enter that repository, and run `npm run check`. A failed source-validation command means the downloaded source is not ready to install: report that result and stop without changing any Skill directory. It is not a terminal-tool failure.
+1. Identify the current host from this runtime:
+   - Codex: `$env:USERPROFILE\.agents\skills` on Windows PowerShell; `~/.agents/skills` on macOS/Linux.
+   - Claude Code: `~/.claude/skills`.
+   - Gemini CLI: `~/.gemini/skills`.
+   If the current host is not one of these or cannot be identified, ask me which host I use before changing files.
 
-Use exactly one installation root for the named host: Codex uses $env:USERPROFILE\.agents\skills on Windows PowerShell or ~/.agents/skills on macOS/Linux; Claude Code uses ~/.claude/skills; Gemini CLI uses ~/.gemini/skills. Process only puretokens_balance, puretokens_connection, puretokens_models, puretokens_image, and puretokens_video. For each exact destination, inspect only that Skill directory: it is a managed same-name Skill only when it contains SKILL.md and skill.json and the manifest name equals that Skill name. A missing destination is an installation-state result, not a terminal-tool failure: run `node bin/puretokens-skill.js install <skill-name> --target <installation-root>`. For a managed same-name destination, run `node bin/puretokens-skill.js upgrade <skill-name> --target <installation-root>`. If an existing destination is not a managed same-name Skill, do not overwrite, move, or delete it; report that exact conflict and continue only with safe, non-conflicting Skill directories.
+2. If a terminal, PowerShell, exec, or shell tool is available, use it before replying. Create a new temporary working directory without deleting an existing directory. Clone `https://github.com/PureTokens/puretokens-skill.git` from branch `main`, enter it, and run `npm run check`.
 
-After the installation work, run `npm run check` again. Then verify each requested destination contains SKILL.md and skill.json and that every manifest name matches its directory name; report every installed or upgraded Skill name and path, plus every conflict. Do not claim installation success for a directory that fails this verification.
+3. If `npm run check` fails, report the failure and stop. Do not change any Skill directory.
 
-Stop using tools only when the tool itself is unavailable, the host rejects the call, or the tool interface explicitly says execution is forbidden or unavailable. In that case, state that the terminal tool is unavailable or denied, provide only the next copyable group of official commands suitable for my operating system and terminal, and wait for my output. Check or ask me to install Node.js LTS only because `npm run check` or the Node-based installer actually requires it; do not treat Node.js as a universal prerequisite. If an official command is incompatible with this operating system or terminal, consult this repository's README and provide the compatible official command before continuing. Advance only one verifiable step per reply; do not repeat environment probes or provide lengthy reasoning.
+4. For each of these five Skills — `puretokens_balance`, `puretokens_connection`, `puretokens_models`, `puretokens_image`, `puretokens_video` — install or update it in the selected installation root:
+   - Destination missing: run `node bin/puretokens-skill.js install <skill-name> --target <installation-root>`.
+   - Destination is the same managed Skill (has `SKILL.md`, `skill.json`, and matching manifest name): run `node bin/puretokens-skill.js upgrade <skill-name> --target <installation-root>`.
+   - Any other existing destination: leave it unchanged and report the conflict.
 
-Do not read, display, copy, modify, or ask for any API Key, Base URL, authentication file, model configuration, or MCP configuration. Do not change AI-client configuration, Pure Tokens connection configuration, environment variables, shell profiles, or system proxies. Do not use third-party package mirrors or delete files. When finished, tell me to open a new host conversation before testing.
+5. Run `npm run check` again. Verify every requested destination has `SKILL.md` and `skill.json`, and each manifest name matches its directory name. Report installed or upgraded paths and any conflicts. Tell me to start a new host conversation before testing.
+
+Safety: never read, display, copy, change, or ask for API keys, Base URLs, authentication files, model settings, MCP settings, AI-client configuration, Pure Tokens connection configuration, environment variables, shell profiles, or system proxies. Do not use third-party package mirrors or delete files.
+
+If terminal execution is unavailable or denied, say so and provide the next copyable official command for my operating system and terminal. Only check for Node.js LTS if `npm run check` or the installer actually requires it. Advance one verifiable step per reply.
 ```
 
 ## Host support
