@@ -1,1 +1,76 @@
-{"schemaVersion":1,"name":"puretokens_image","version":"0.8.1","entry":"SKILL.md","displayName":"Pure Tokens Image","description":"Generate images through the current configured Images API.","modelSelection":"references/model-selection.json","executionContract":"references/execution-contract.json","taskReceipt":"references/task-receipt.json","behaviorScenarios":"references/behavior-scenarios.json","distribution":{"claudeDesktop":{"format":"zip","archiveRoot":"puretokens_image","requiredFiles":["SKILL.md","skill.json","references/model-selection.json","references/execution-contract.json","references/task-receipt.json","references/behavior-scenarios.json"],"importPath":"Settings > Features > Skills > Upload skill","enableAfterImport":true},"codex":{"manualInstallationSupported":true,"globalSkillDirectory":"~/.agents/skills","requiresPluginFeature":false},"claudeCode":{"manualInstallationSupported":true,"globalSkillDirectory":"~/.claude/skills"},"geminiCli":{"manualInstallationSupported":true,"globalSkillDirectory":"~/.gemini/skills"}},"supportedClients":["claude-code","claude-desktop","codex","gemini-cli"],"excludedClients":["grok-build","opencode","trae","workbuddy"],"rules":{"usesCurrentConfiguredConnection":true,"usesRelativeApiPathsOnly":true,"doesNotInspectConnectionIdentity":true,"doesNotReadCredentialsOrHostConfiguration":true,"defaultModel":"gpt-image-2","imagesAlwaysAsync":true,"nonDefaultModelRequiresExactLiveCatalogId":true,"nonDefaultOptionalParametersRequireLiveInputSchema":true,"aliasSelectionRequiresUniqueMatch":true,"physicalImageDimensionsFailClosed":true,"textToImageOnly":true,"neverAutoResubmitAfterError":true,"neverAutoSwitchModelAfterError":true,"successRequiresNativeMediaResult":true,"multiImageContentIndexesAreZeroBased":true,"usesTaskReceipt":true,"usesBoundedSameTaskPolling":true}}
+{
+  "schemaVersion": 1,
+  "name": "puretokens_image",
+  "version": "0.9.0",
+  "entry": "SKILL.md",
+  "displayName": "Pure Tokens Image",
+  "description": "Generate and profile-gated edit images through the current configured Images API.",
+  "modelSelection": "references/model-selection.json",
+  "executionContract": "references/execution-contract.json",
+  "taskReceipt": "references/task-receipt.json",
+  "behaviorScenarios": "references/behavior-scenarios.json",
+  "distribution": {
+    "claudeDesktop": {
+      "format": "zip",
+      "archiveRoot": "puretokens_image",
+      "requiredFiles": [
+        "SKILL.md",
+        "skill.json",
+        "references/model-selection.json",
+        "references/execution-contract.json",
+        "references/task-receipt.json",
+        "references/behavior-scenarios.json"
+      ],
+      "importPath": "Settings > Features > Skills > Upload skill",
+      "enableAfterImport": true
+    },
+    "codex": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.agents/skills",
+      "requiresPluginFeature": false
+    },
+    "claudeCode": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.claude/skills"
+    },
+    "geminiCli": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.gemini/skills"
+    }
+  },
+  "supportedClients": [
+    "claude-code",
+    "claude-desktop",
+    "codex",
+    "gemini-cli"
+  ],
+  "excludedClients": [
+    "grok-build",
+    "opencode",
+    "trae",
+    "workbuddy"
+  ],
+  "rules": {
+    "usesCurrentConfiguredConnection": true,
+    "usesRelativeApiPathsOnly": true,
+    "doesNotInspectConnectionIdentity": true,
+    "doesNotReadCredentialsOrHostConfiguration": true,
+    "defaultModel": "gpt-image-2",
+    "imagesAlwaysAsync": true,
+    "nonDefaultModelRequiresExactLiveCatalogId": true,
+    "nonDefaultOptionalParametersRequireLiveInputSchema": true,
+    "aliasSelectionRequiresUniqueMatch": true,
+    "physicalImageDimensionsFailClosed": true,
+    "profiledPublicUrlReferenceSupported": true,
+    "profiledImageEditSupported": true,
+    "neverAutoResubmitAfterError": true,
+    "neverAutoSwitchModelAfterError": true,
+    "successRequiresNativeMediaResult": true,
+    "multiImageContentIndexesAreZeroBased": true,
+    "usesTaskReceipt": true,
+    "usesBoundedSameTaskPolling": true,
+    "usesResourceBoundedPolling": true,
+    "doesNotCreateBackgroundMediaWork": true,
+    "usesSequentialNativeContentDelivery": true
+  }
+}

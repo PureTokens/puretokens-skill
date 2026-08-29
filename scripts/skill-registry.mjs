@@ -9,8 +9,9 @@ export const skillsRoot = path.join(repositoryRoot, "skills");
 const forbiddenPattern = /(BEGIN [A-Z ]*PRIVATE|api[_-]?key|authorization:|bearer\s+|pts-router-token|127\.0\.0\.1:|\/Users\/)/i;
 const nativeMediaCapabilities = ["authenticated_relative_http", "json_task_response", "native_media_byte_delivery", "same_task_continuation"];
 const balanceCapabilities = ["authenticated_relative_http", "json_task_response"];
-const hostAcceptanceScenarioIds = ["catalog-read", "media-submit", "same-task-status", "native-media-delivery"];
-const receiptCoreFields = ["exact_model_id", "task_id", "returned_state", "requested_count", "requested_size_or_parameters", "next_action"];
+const modelCatalogCapabilities = ["authenticated_relative_http", "json_task_response"];
+const hostAcceptanceScenarioIds = ["connection-identity-read", "catalog-read", "media-submit", "same-task-status", "native-media-delivery"];
+const receiptCoreFields = ["exact_model_id", "task_id", "returned_state", "requested_operation", "requested_count", "requested_size_or_parameters", "next_action"];
 
 export async function readSkillRegistry() {
   const registryPath = path.join(skillsRoot, "index.json");
@@ -113,9 +114,9 @@ export async function validateRepository() {
     }
   }
 
-  const expected = ["puretokens_balance", "puretokens_image", "puretokens_video"];
+  const expected = ["puretokens_balance", "puretokens_connection", "puretokens_models", "puretokens_image", "puretokens_video"];
   if (registry.skills.length !== expected.length || expected.some((name, index) => registry.skills[index]?.name !== name)) {
-    errors.push("skills/index.json must list the three specialist Skills in order");
+    errors.push("skills/index.json must list the five specialist Skills in order");
   }
 
   for (const entry of registry.skills) {
@@ -222,6 +223,27 @@ function validateHostNativeExecutionContract(errors, contract) {
     typeof balance.fallback !== "string" || !balance.fallback) {
     errors.push(`${label} must define the authenticated balance endpoint and fallback`);
   }
+  const userMediaInput = contract.userMediaInput;
+  if (!userMediaInput || userMediaInput.onlyCurrentUserExplicitMedia !== true ||
+    userMediaInput.requiresProfileDeclaredTransport !== true ||
+    userMediaInput.requiresHostToExposeExactAttachmentRepresentation !== true ||
+    userMediaInput.skillNeverDownloadsOrRehosts !== true ||
+    userMediaInput.pureTokensGatewayStagesMultipartAttachments !== true ||
+    typeof userMediaInput.fallback !== "string" || !userMediaInput.fallback) {
+    errors.push(`${label} must define the fail-closed user-media input contract`);
+  }
+  const mediaDeliveryResourceBounds = contract.mediaDeliveryResourceBounds;
+  if (!mediaDeliveryResourceBounds || mediaDeliveryResourceBounds.oneInFlightStatusReadPerTask !== true ||
+    mediaDeliveryResourceBounds.noBackgroundPollingOrQueue !== true ||
+    mediaDeliveryResourceBounds.readContentOnlyAfterTerminalSuccess !== true ||
+    mediaDeliveryResourceBounds.oneInFlightContentReadPerTask !== true ||
+    mediaDeliveryResourceBounds.sequentialImageContentIndexes !== true ||
+    mediaDeliveryResourceBounds.neverPrefetchOrRefetchDeliveredContent !== true ||
+    mediaDeliveryResourceBounds.handoffNativeBytesBeforeNextRead !== true ||
+    mediaDeliveryResourceBounds.doesNotPersistMediaBytesInSkillStateOrLogs !== true ||
+    typeof mediaDeliveryResourceBounds.fallback !== "string" || !mediaDeliveryResourceBounds.fallback) {
+    errors.push(`${label} must define bounded same-task polling and native-media delivery without skill-state or log persistence`);
+  }
 }
 
 function validateHostExecutionMatrix(errors, hostSupport, hostNativeExecutionContract) {
@@ -324,6 +346,31 @@ function validateExecutionContract(errors, directory, contract) {
     }
     return;
   }
+  if (kind === "connection") {
+    if (transport?.usesRelativePathsOnly !== true || !sameArray(transport?.requiredHostCapabilities, modelCatalogCapabilities)) {
+      errors.push(`${label} must require authenticated relative HTTP and JSON identity response capabilities`);
+    }
+    validateRequest(errors, `${label} identity`, contract.operations?.identity, "GET", "/v1");
+    if (contract.result?.identitySource !== "api_declared_public_health" || contract.result?.expectedStatus !== "ok" ||
+      contract.result?.expectedName !== "Pure Tokens API" || contract.result?.expectedBasePath !== "/v1" ||
+      contract.result?.neverRetry !== true || contract.result?.doesNotExposeHostConfiguration !== true ||
+      contract.result?.unconfirmedDoesNotProveOtherService !== true) {
+      errors.push(`${label} must verify only the declared /v1 API identity without retrying, exposing host configuration, or inferring another service`);
+    }
+    return;
+  }
+  if (kind === "models") {
+    if (transport?.usesRelativePathsOnly !== true || !sameArray(transport?.requiredHostCapabilities, modelCatalogCapabilities)) {
+      errors.push(`${label} must require authenticated relative HTTP and JSON catalog response capabilities`);
+    }
+    validateRequest(errors, `${label} catalog`, contract.operations?.catalog, "GET", "/v1/media/models");
+    if (contract.result?.reportOnlyAuthenticatedCatalog !== true || contract.result?.doesNotSubmitMediaTasks !== true ||
+      contract.result?.neverRetry !== true || contract.result?.noStaticCatalogFallback !== true ||
+      contract.result?.compatibilityShortlistsRequireDeclaredCapabilityAndInputSchema !== true) {
+      errors.push(`${label} must report only the live catalog, never submit media work or retry, and derive compatibility only from declared profile data`);
+    }
+    return;
+  }
   if (transport?.usesRelativePathsOnly !== true || transport?.requiresNativeMediaByteDelivery !== true) {
     errors.push(`${label} must use relative API paths and require native media bytes`);
   }
@@ -336,41 +383,95 @@ function validateExecutionContract(errors, directory, contract) {
     return;
   }
   if (kind === "image") {
+    validateRequest(errors, `${label} catalog`, operations.catalog, "GET", "/v1/media/models");
     validateRequest(errors, `${label} submit`, operations.submit, "POST", "/v1/images/generations");
     validateRequiredBodyFields(errors, `${label} submit`, operations.submit, ["model", "prompt", "async"]);
     if (operations.submit?.fixedBody?.async !== true) errors.push(`${label} submit must fix async to true`);
+    if (operations.edit?.method !== "POST") errors.push(`${label} edit must use POST`);
+    const editPaths = Array.isArray(operations.edit?.allowedPaths) ? operations.edit.allowedPaths : [];
+    if (editPaths.length !== 2 || !editPaths.includes("/v1/images/generations") || !editPaths.includes("/v1/images/edits")) {
+      errors.push(`${label} edit must allow only /v1/images/generations and /v1/images/edits`);
+    }
+    if (operations.edit?.pathSource !== "authenticated_live_profile_operation_path") {
+      errors.push(`${label} edit must use the authenticated live image-edit operation path`);
+    }
+    validateRequiredBodyFields(errors, `${label} edit`, operations.edit, ["model", "prompt", "image", "async"]);
+    if (operations.edit?.contentType !== "multipart/form-data" || operations.edit?.requiresAuthenticatedLiveProfileOperation !== "image_edit" ||
+      operations.edit?.fixedBody?.async !== true || operations.edit?.inputSource !== "current_user_explicit_native_media_only" ||
+      operations.edit?.transport !== "profile_declared_multipart_file") {
+      errors.push(`${label} must define the authenticated multipart image-edit operation`);
+    }
     validateRequest(errors, `${label} status`, operations.status, "GET", "/v1/images/{task_id}", true);
     validateRequest(errors, `${label} content`, operations.content, "GET", "/v1/images/{task_id}/content?index={index}", true);
     const conditional = operations.submit?.conditionalBodyFields;
-    if (!conditional || !sameArray(conditional.n?.integerRange, [1, 6])) errors.push(`${label} must bound n to integers 1 through 6`);
-    if (!sameArray(conditional?.size?.allowed, ["1024x1024", "1536x1024", "1024x1536"])) errors.push(`${label} must declare the supported size values`);
-    if (!sameArray(conditional?.image_size?.allowed, ["1K", "2K", "4K"])) errors.push(`${label} must declare the supported image_size values`);
-    if (contract.parameterValidation?.defaultModel !== "gpt-image-2" || contract.parameterValidation?.defaultModelUsesDeclaredContractOptions !== true ||
-      contract.parameterValidation?.nonDefaultModelOptionalParametersRequire !== "authenticated_live_catalog_input_schema" ||
+    if (!conditional || conditional.all_user_optional_fields !== "only_when_the_exact_authenticated_live_input_schema_declares_the_field_and_value") {
+      errors.push(`${label} must gate every optional image field on the exact authenticated live profile`);
+    }
+    if (contract.parameterValidation?.defaultModel !== "gpt-image-2" || contract.parameterValidation?.everyNewSubmissionReadsAuthenticatedLiveCatalog !== true ||
+      contract.parameterValidation?.everySelectedModelRequiresExactLiveCatalogIdAndImageCapability !== true ||
+      contract.parameterValidation?.allOptionalParametersRequire !== "authenticated_live_catalog_input_schema" ||
       contract.parameterValidation?.whenProfileIsMissing !== "do_not_submit_requested_optional_parameters") {
-      errors.push(`${label} must fail closed for non-default model optional parameters without a live profile`);
+      errors.push(`${label} must read the live catalog for every image task and fail closed for optional parameters without a live profile`);
     }
     const retrieval = contract.contentRetrieval;
     if (!retrieval || retrieval.indexBase !== 0 || retrieval.requestedCount !== "explicit_n_or_default_1" ||
       retrieval.allowedIndexes !== "0..requestedCount-1" || retrieval.completeDeliveryRequiresEveryRequestedIndex !== true ||
-      retrieval.partialOrMissingContent !== "report_delivered_and_missing_indexes_without_resubmission") {
-      errors.push(`${label} must retrieve every zero-based requested image content index before success`);
+      retrieval.partialOrMissingContent !== "report_delivered_and_missing_indexes_without_resubmission" ||
+      retrieval.fetchOnlyAfterTerminalSuccess !== true || retrieval.sequentialByIndex !== true ||
+      retrieval.oneInFlightContentReadPerTask !== true || retrieval.neverPrefetchOrRefetchDeliveredContent !== true ||
+      retrieval.handoffBeforeNextContentRead !== true) {
+      errors.push(`${label} must retrieve every zero-based requested image content index sequentially after terminal success without prefetching or duplicate delivery`);
     }
     if (contract.result?.successRequires !== "native_image_bytes") errors.push(`${label} must require native image bytes for success`);
-    validatePolling(errors, `${label} polling`, contract.polling, 120);
+    const media = contract.inputMediaValidation;
+    if (!media || media.publicUrlReferenceRequires !== "authenticated_live_catalog_property_and_declared_reference_transport" ||
+      media.nativeAttachmentRequires !== "authenticated_live_catalog_input_schema_operation" || media.imageEditOperation !== "image_edit" ||
+      media.onlyCurrentUserExplicitMedia !== true || media.skillPassesUserProvidedPublicUrlsWithoutDownloadingOrRehosting !== true || media.skillNeverDownloadsOrRehostsMedia !== true ||
+      media.gatewayStagesCurrentRequestAttachment !== true ||
+      media.requiresHostNativeAttachmentByteDelivery !== true || media.whenTransportUnavailable !== "do_not_submit_and_explain_declared_transport") {
+      errors.push(`${label} must gate public URL and native image input on the authenticated live profile`);
+    }
+    validatePolling(errors, `${label} polling`, contract.polling, {
+      deadlineSeconds: 120,
+      fallbackDelaysSeconds: [3, 6, 12, 24, 30],
+      steadyDelaySeconds: 30,
+      maxAutomaticStatusReads: 6
+    });
   } else {
     validateRequest(errors, `${label} catalog`, operations.catalog, "GET", "/v1/media/models");
     validateRequest(errors, `${label} submit`, operations.submit, "POST", "/v1/videos");
-    validateRequiredBodyFields(errors, `${label} submit`, operations.submit, ["model", "prompt"]);
+    validateRequiredBodyFields(errors, `${label} submit`, operations.submit, ["model"]);
     validateRequest(errors, `${label} status`, operations.status, "GET", "/v1/videos/{task_id}", true);
     validateRequest(errors, `${label} content`, operations.content, "GET", "/v1/videos/{task_id}/content", true);
     if (contract.parameterValidation?.allModelsOptionalParametersRequire !== "authenticated_live_catalog_input_schema" ||
-      contract.parameterValidation?.promptAllowedWithoutProfile !== true ||
+      contract.parameterValidation?.promptRequirementUsesAuthenticatedLivePropertiesAndConstraints !== true ||
+      contract.parameterValidation?.resolutionUsesAuthenticatedLiveModeConstraint !== true ||
       contract.parameterValidation?.whenProfileIsMissing !== "do_not_submit_requested_optional_parameters") {
-      errors.push(`${label} must fail closed for video optional parameters without a live profile`);
+      errors.push(`${label} must use the live profile for video optional parameters, prompt requirement, and mode-specific resolution limits`);
     }
     if (contract.result?.successRequires !== "native_video_bytes") errors.push(`${label} must require native video bytes for success`);
-    validatePolling(errors, `${label} polling`, contract.polling, 300);
+    const retrieval = contract.contentRetrieval;
+    if (!retrieval || retrieval.fetchOnlyAfterTerminalSuccess !== true || retrieval.oneInFlightContentReadPerTask !== true ||
+      retrieval.neverPrefetchOrRefetchDeliveredContent !== true || retrieval.handoffBeforeNextContentRead !== true) {
+      errors.push(`${label} must retrieve video content only after terminal success, one native response at a time, without prefetching or duplicate delivery`);
+    }
+    const media = contract.inputMediaValidation;
+    if (!media || media.imageToVideoOperation !== "image_to_video" || media.referenceImageVideoOperation !== "reference_image_video" ||
+      media.requiresAuthenticatedLiveCatalogInputSchemaOperation !== true || media.onlyCurrentUserExplicitMedia !== true ||
+      media.publicUrlOrDeclaredIdReferenceRequires !== "authenticated_live_catalog_property_and_declared_reference_transport" ||
+      !sameArray(media.allowedTransports, ["multipart_file"]) || media.skillPassesUserProvidedPublicUrlsOrDeclaredIdsWithoutDownloadingOrRehosting !== true || media.skillNeverDownloadsOrRehostsMedia !== true ||
+      media.gatewayStagesCurrentRequestAttachment !== true ||
+      media.multipleNativeAttachmentTypesRequireOneDeclaredCombinedOperation !== true ||
+      media.multiplePublicUrlOrIdFieldsRequireNoDeclaredConflict !== true ||
+      media.whenTransportUnavailable !== "do_not_submit_and_explain_declared_transport") {
+      errors.push(`${label} must gate public reference and native attachment video input on the authenticated live profile`);
+    }
+    validatePolling(errors, `${label} polling`, contract.polling, {
+      deadlineSeconds: 300,
+      fallbackDelaysSeconds: [5, 10, 20, 40, 60],
+      steadyDelaySeconds: 60,
+      maxAutomaticStatusReads: 7
+    });
   }
   if (contract.result?.sameTaskOnly !== true || contract.result?.neverAutoResubmit !== true) {
     errors.push(`${label} must stay on the same task without automatic resubmission`);
@@ -378,12 +479,15 @@ function validateExecutionContract(errors, directory, contract) {
   if (!Array.isArray(contract.unsupportedInput) || !contract.unsupportedInput.length) errors.push(`${label} must declare unsupported media input`);
 }
 
-function validatePolling(errors, label, polling, deadlineSeconds) {
-  if (!polling || polling.serverDelay !== "honor_valid_retry_after_before_fallback" ||
-    !sameArray(polling.fallbackDelaysSeconds, [2, 3, 5, 8]) || polling.steadyDelaySeconds !== 15 ||
-    polling.automaticDeadlineSeconds !== deadlineSeconds ||
+function validatePolling(errors, label, polling, expected) {
+  if (!polling || polling.serverDelay !== "honor_valid_positive_retry_after_before_fallback" || polling.serverDelayMustFitRemainingAutomaticDeadline !== true ||
+    !sameArray(polling.fallbackDelaysSeconds, expected.fallbackDelaysSeconds) || polling.steadyDelaySeconds !== expected.steadyDelaySeconds ||
+    polling.automaticDeadlineSeconds !== expected.deadlineSeconds || polling.maxAutomaticStatusReads !== expected.maxAutomaticStatusReads ||
+    polling.oneInFlightStatusReadPerTask !== true || polling.automaticPollingScope !== "submission_or_explicit_same_task_continuation_turn_only_no_background_timer_or_queue" ||
+    polling.afterStatusReadError !== "stop_automatic_polling_and_require_explicit_same_task_continuation" ||
+    polling.explicitContinuation !== "new_bounded_same_task_polling_window_only_when_explicitly_requested" ||
     polling.afterDeadline !== "report_pending_and_require_explicit_same_task_continuation") {
-    errors.push(`${label} must honor valid Retry-After, then wait 2/3/5/8 seconds and 15 seconds thereafter, with the ${deadlineSeconds}-second same-task deadline`);
+    errors.push(`${label} must use the bounded adaptive same-task polling contract without background work or overlapping reads`);
   }
 }
 

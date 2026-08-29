@@ -6,6 +6,35 @@
 
 ## Unreleased
 
+- Synchronized the published media catalog with the current 18-model base catalog, including `grok-imagine-image-2.0`, `grok-imagine-video-1.5`, `wan3.0-video`, and `wan3.0-video-prime`. Added unambiguous Wan3 aliases while retaining exact-ID selection where a Grok 1.5 name is ambiguous.
+- Bounded media resource use: polling is limited to the submission turn or a user-explicit same-task continuation turn, with one in-flight status read, no background timer or queue, adaptive capped backoff, and immediate stop on rate limits, server errors, transport errors, or timeouts. A pending task can open another bounded window only when the user explicitly continues that same task ID. Content delivery is terminal-success-only, one-at-a-time, sequential for multi-image output, and never prefetched, duplicated, or stored in Skill state or logs.
+- Video resolution now honors the live profile's `resolution_by_mode` constraint, and the image-edit example uses a model that currently declares `image_edit`.
+- Aligned image and video Skills with the current authenticated media profile contract. Every new image task now reads the live catalog, including the default model; all model-specific image controls are profile-gated instead of using a shared count or canvas list.
+- Added profile-gated public reference support: explicitly supplied public HTTPS URLs, file IDs, and voice IDs can be sent only through the exact declared property and transport. Native attachments remain one-request `multipart_file` flows with gateway-owned private R2 staging.
+- Video prompt requirement now follows the exact live profile and its declared single-reference exception. Native attachment combinations still require an explicit combined operation; public URL/ID fields must obey declared conflicts and mode limits.
+
+## 0.9.0 — 2026-08-25
+
+- Added `puretokens_connection`, a read-only connection-identity Skill. It calls only `GET /v1` through the current connection and confirms the API's existing `status: "ok"`, `name: "Pure Tokens API"`, and `base_url: "/v1"` declaration without reading or exposing the actual Base URL, credentials, or host configuration.
+- Added `puretokens_models`, a read-only current-connection catalog Skill. It reports only the authenticated `GET /v1/media/models` response: exact model IDs, declared capabilities, public parameter properties, non-input conditional constraints, and declared media operations.
+- Added profile-compatible model shortlists for user requirements such as image-to-video, reference media, a requested duration, or an aspect ratio. They match only explicitly returned capabilities and `input_schema`; the Skill does not rank unverified quality, price, speed, or availability.
+
+## 0.8.4 — 2026-08-25
+
+- Added authenticated-live-profile-gated reference-video, reference-audio, and video-edit support to the video Skill. `reference_video` and `reference_audio` use `POST /v1/videos`; `video_edit` uses `POST /v1/videos/edits` only when the catalog explicitly declares it.
+- New inputs accept only current-request native media bytes over the profile-declared `multipart_file` transport. Gateway-owned short-lived R2 staging and URL mapping remain private; undeclared mixed-media operations stop before billing without splitting or dropping attachments.
+
+## 0.8.3 — 2026-08-25
+
+- Corrected profile-gated image editing to use `POST /v1/images/generations` with `multipart/form-data`, the same Images API entry point as text-to-image.
+- Standardized all supported current-request image inputs as `multipart_file` on the single Images/Videos API request. The Pure Tokens gateway owns short-lived R2 staging and public-read verification internally; Skills never expose or manufacture the provider-facing URL.
+
+## 0.8.2 — 2026-08-24
+
+- Added authenticated-profile-gated image editing through the Images API, plus image-to-video and reference-image video through `POST /v1/videos` when the exact selected model publishes the corresponding input operation.
+- Made attachment handling fail closed: Skills use only media explicitly supplied in the current request and the exact transport declared by the live profile; they never download, rehost, manufacture URLs or file IDs, silently fall back to text generation, or read credentials.
+- Added operation-aware task receipts, installed contracts, scenarios, manifests, and documentation for these media-input workflows.
+
 ## 0.8.1 — 2026-08-24
 
 - Defined bounded asynchronous polling for media tasks: honor a valid `Retry-After`, otherwise wait 2, 3, 5, 8, then 15 seconds between same-task status reads. Image polling stops after 120 seconds and video polling after 300 seconds with an explicit same-task continuation prompt; neither deadline is treated as a failure or a reason to resubmit.

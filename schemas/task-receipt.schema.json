@@ -21,7 +21,7 @@
         "requiredFields": {
           "type": "array",
           "uniqueItems": true,
-          "items": { "enum": ["exact_model_id", "task_id", "returned_state", "requested_count", "requested_size_or_parameters", "delivered_count", "next_action"] }
+          "items": { "enum": ["exact_model_id", "task_id", "returned_state", "requested_operation", "requested_count", "requested_size_or_parameters", "delivered_count", "next_action"] }
         },
         "nextAction": { "type": "string", "minLength": 1 }
       },

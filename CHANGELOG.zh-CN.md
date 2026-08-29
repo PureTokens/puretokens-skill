@@ -6,6 +6,35 @@
 
 ## Unreleased
 
+- 已将公开媒体目录同步到当前包含 18 个模型的基础目录，新增 `grok-imagine-image-2.0`、`grok-imagine-video-1.5`、`wan3.0-video`、`wan3.0-video-prime`。为 Wan3 增加了无歧义别名；可能混淆的 Grok 1.5 名称仍要求精确 ID。
+- 已收紧媒体资源使用：轮询只在提交所在回合或用户明确继续同一任务的回合内进行，同一任务只有一个状态请求在途，不创建后台计时器或队列，使用有上限的自适应退避，并在限流、服务端错误、传输错误或超时时立即停止。任务仍在处理时，只有用户明确继续同一 `task_id` 才会开启下一轮有界轮询。内容交付只在终态成功后进行，一次一个，多图按索引顺序读取，不预取、不重复读取，也不写入 Skill 状态或日志。
+- 视频分辨率会遵循实时 profile 的 `resolution_by_mode`；图片编辑示例改为当前实际声明 `image_edit` 的模型。
+- 图片和视频 Skill 已与当前认证媒体 profile 契约对齐。每个新图片任务（包括默认模型）都会读取实时目录；所有模型级图片参数都改为由 profile 控制，不再使用共享数量或画布清单。
+- 增加按 profile 控制的公网参考输入：用户明确提供的公网 HTTPS URL、file ID、voice ID 只能写入精确声明的字段和 transport。原生附件仍是单次请求中的 `multipart_file`，网关内部完成私有 R2 暂存。
+- 视频提示词是否必填改为遵循精确实时 profile 及其声明的单参考例外。原生附件组合仍需明确组合 operation；公网 URL/ID 字段必须遵守已声明的互斥和模式限制。
+
+## 0.9.0 — 2026-08-25
+
+- 新增 `puretokens_connection`：只读检查当前连接。它只调用 `GET /v1`，核对现有 API 声明的 `status: "ok"`、`name: "Pure Tokens API"` 和 `base_url: "/v1"`，不读取或展示真实 Base URL、凭据和宿主配置。
+- 新增 `puretokens_models`：只读查询当前连接的认证模型目录，只展示 `GET /v1/media/models` 实际返回的精确模型 ID、能力、公开参数属性、非请求字段的条件限制和媒体操作。
+- 新增按需求给出 profile 兼容模型清单的能力，例如图生视频、参考媒体、指定时长或画幅；只匹配实际返回的 capability 与 `input_schema`，不编造质量、价格、速度或可用性排序。
+
+## 0.8.4 — 2026-08-25
+
+- 为视频 Skill 增加按认证后实时 profile 开启的参考视频、参考音频和视频编辑。`reference_video`、`reference_audio` 仍走 `POST /v1/videos`；`video_edit` 只在目录明确声明时走 `POST /v1/videos/edits`。
+- 所有新增输入只接收用户在当前请求附带的原生媒体字节，且仅接受 profile 声明的 `multipart_file`；网关内部短期 R2 暂存与 URL 映射不会暴露给用户。组合媒体没有明确 operation 时会在计费前停止，不拆单、不丢弃附件。
+
+## 0.8.3 — 2026-08-25
+
+- 修正按 profile 开启的图片编辑：与文生图一样使用 `POST /v1/images/generations` 和 `multipart/form-data`。
+- 所有当前请求的已支持图片输入统一使用单次 Images/Videos API 请求中的 `multipart_file`。Pure Tokens 网关在内部负责短期 R2 暂存和公网可读校验；Skill 不暴露或伪造供上游使用的 URL。
+
+## 0.8.2 — 2026-08-24
+
+- 新增认证后按 profile 开启的图片编辑：精确模型发布对应输入操作时，使用 Images API；同时支持通过 `POST /v1/videos` 的图生视频和参考图视频。
+- 媒体附件改为失败即停止：只使用当前请求中用户明确提供的媒体和实时 profile 声明的精确 transport；绝不下载、转存、伪造 URL 或 file ID、静默回退为文生，也不读取凭据。
+- 为上述媒体输入流程补齐请求操作回执、随安装提供的契约、行为场景、清单和双语文档。
+
 ## 0.8.1 — 2026-08-24
 
 - 明确媒体异步任务的有界轮询：优先遵循有效的 `Retry-After`；否则同一任务状态查询依次等待 2、3、5、8 秒，之后每次等待 15 秒。生图自动轮询最多 120 秒，生视频最多 300 秒；到期会提示用户明确继续同一任务，不会被视为失败或重提理由。

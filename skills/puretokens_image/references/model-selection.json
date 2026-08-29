@@ -2,56 +2,659 @@
   "$schema": "https://puretokensx.com/schemas/model-selection.schema.json",
   "schemaVersion": 1,
   "capability": "image",
-  "catalogUpdatedAt": "2026-08-21",
-  "catalogCapturedAt": "2026-08-21T02:46:19.421Z",
+  "catalogUpdatedAt": "2026-08-29",
+  "catalogCapturedAt": "2026-08-29T05:03:13.833Z",
   "models": [
     {
       "id": "gpt-image-2",
       "aliases": [
         "image2"
-      ]
+      ],
+      "parameterSchema": {
+        "properties": {
+          "n": {
+            "type": "integer",
+            "enum": [
+              1
+            ],
+            "default": 1
+          },
+          "image_size": {
+            "type": "string",
+            "enum": [
+              "1K",
+              "2K",
+              "4K"
+            ],
+            "default": "1K"
+          },
+          "aspect_ratio": {
+            "type": "string",
+            "enum": [
+              "1:1",
+              "5:4",
+              "9:16",
+              "21:9",
+              "16:9",
+              "3:2",
+              "4:3",
+              "4:5",
+              "3:4",
+              "2:3"
+            ],
+            "default": "1:1"
+          },
+          "image": {
+            "type": "string[]",
+            "maxLength": 6
+          }
+        },
+        "constraints": {
+          "reference_transport": {
+            "image": [
+              "public_https_url"
+            ]
+          }
+        },
+        "lifecycle": {
+          "create": {
+            "successStatus": 200,
+            "idField": "id",
+            "object": "image",
+            "initialStatuses": [
+              "pending"
+            ]
+          },
+          "poll": {
+            "method": "GET",
+            "path": "/v1/images/{image_id}",
+            "intervalSeconds": 3,
+            "statusField": "status",
+            "pendingStatuses": [
+              "pending"
+            ],
+            "successStatuses": [
+              "completed"
+            ],
+            "failureStatuses": [
+              "failed"
+            ],
+            "resultFields": [
+              "content_url",
+              "content_urls"
+            ]
+          }
+        }
+      }
     },
     {
       "id": "grok-imagine-image",
       "aliases": [
         "grok image"
-      ]
+      ],
+      "parameterSchema": {
+        "properties": {
+          "n": {
+            "type": "integer",
+            "enum": [
+              1
+            ],
+            "default": 1
+          },
+          "size": {
+            "type": "string"
+          },
+          "image": {
+            "type": "json"
+          }
+        },
+        "constraints": {
+          "response_format": {
+            "value": [
+              "url"
+            ]
+          },
+          "reference_transport": {
+            "image": [
+              "public_https_url",
+              "max_1"
+            ]
+          }
+        },
+        "operations": {
+          "image_edit": {
+            "request": {
+              "method": "POST",
+              "path": "/v1/images/edits",
+              "contentType": "multipart/form-data"
+            },
+            "requiredBodyFields": [
+              "model",
+              "prompt",
+              "image"
+            ],
+            "inputs": {
+              "image": {
+                "field": "image",
+                "required": true,
+                "minItems": 1,
+                "maxItems": 1,
+                "transports": [
+                  "multipart_file"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "grok-imagine-image-2.0",
+      "aliases": [
+        "grok image 2.0"
+      ],
+      "parameterSchema": {
+        "properties": {
+          "n": {
+            "type": "integer",
+            "enum": [
+              1
+            ],
+            "default": 1
+          },
+          "size": {
+            "type": "string"
+          },
+          "image": {
+            "type": "json"
+          }
+        },
+        "constraints": {
+          "response_format": {
+            "value": [
+              "url"
+            ]
+          },
+          "reference_transport": {
+            "image": [
+              "public_https_url",
+              "max_1"
+            ]
+          }
+        },
+        "operations": {
+          "image_edit": {
+            "request": {
+              "method": "POST",
+              "path": "/v1/images/edits",
+              "contentType": "multipart/form-data"
+            },
+            "requiredBodyFields": [
+              "model",
+              "prompt",
+              "image"
+            ],
+            "inputs": {
+              "image": {
+                "field": "image",
+                "required": true,
+                "minItems": 1,
+                "maxItems": 1,
+                "transports": [
+                  "multipart_file"
+                ]
+              }
+            }
+          }
+        }
+      }
     },
     {
       "id": "grok-imagine-image-quality",
-      "aliases": []
+      "aliases": [],
+      "parameterSchema": {
+        "properties": {
+          "n": {
+            "type": "integer",
+            "enum": [
+              1
+            ],
+            "default": 1
+          },
+          "size": {
+            "type": "string"
+          },
+          "image": {
+            "type": "json"
+          }
+        },
+        "constraints": {
+          "response_format": {
+            "value": [
+              "url"
+            ]
+          },
+          "reference_transport": {
+            "image": [
+              "public_https_url",
+              "max_1"
+            ]
+          }
+        },
+        "operations": {
+          "image_edit": {
+            "request": {
+              "method": "POST",
+              "path": "/v1/images/edits",
+              "contentType": "multipart/form-data"
+            },
+            "requiredBodyFields": [
+              "model",
+              "prompt",
+              "image"
+            ],
+            "inputs": {
+              "image": {
+                "field": "image",
+                "required": true,
+                "minItems": 1,
+                "maxItems": 1,
+                "transports": [
+                  "multipart_file"
+                ]
+              }
+            }
+          }
+        }
+      }
     },
     {
       "id": "nano-banana-2",
       "aliases": [
         "nano banana 2"
-      ]
+      ],
+      "parameterSchema": {
+        "properties": {
+          "n": {
+            "type": "integer",
+            "enum": [
+              1
+            ],
+            "default": 1
+          },
+          "image_size": {
+            "type": "string",
+            "enum": [
+              "1K",
+              "2K",
+              "4K"
+            ],
+            "default": "1K"
+          },
+          "image": {
+            "type": "string[]",
+            "maxLength": 6
+          },
+          "aspect_ratio": {
+            "type": "string",
+            "enum": [
+              "1:1",
+              "2:3",
+              "3:2",
+              "3:4",
+              "4:3",
+              "9:16",
+              "16:9",
+              "21:9"
+            ]
+          }
+        },
+        "constraints": {
+          "reference_transport": {
+            "image": [
+              "public_https_url"
+            ]
+          }
+        },
+        "lifecycle": {
+          "create": {
+            "successStatus": 200,
+            "idField": "id",
+            "object": "image",
+            "initialStatuses": [
+              "pending"
+            ]
+          },
+          "poll": {
+            "method": "GET",
+            "path": "/v1/images/{image_id}",
+            "intervalSeconds": 3,
+            "statusField": "status",
+            "pendingStatuses": [
+              "pending"
+            ],
+            "successStatuses": [
+              "completed"
+            ],
+            "failureStatuses": [
+              "failed"
+            ],
+            "resultFields": [
+              "content_url",
+              "content_urls"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "nano-banana-2-lite",
+      "aliases": [],
+      "parameterSchema": {
+        "properties": {
+          "n": {
+            "type": "integer",
+            "enum": [
+              1
+            ],
+            "default": 1
+          },
+          "image_size": {
+            "type": "string",
+            "enum": [
+              "1K"
+            ],
+            "default": "1K"
+          },
+          "image": {
+            "type": "string[]",
+            "maxLength": 6
+          },
+          "aspect_ratio": {
+            "type": "string",
+            "enum": [
+              "1:1",
+              "2:3",
+              "3:2",
+              "3:4",
+              "4:3",
+              "9:16",
+              "16:9",
+              "21:9"
+            ]
+          }
+        },
+        "constraints": {
+          "reference_transport": {
+            "image": [
+              "public_https_url"
+            ]
+          }
+        },
+        "lifecycle": {
+          "create": {
+            "successStatus": 200,
+            "idField": "id",
+            "object": "image",
+            "initialStatuses": [
+              "pending"
+            ]
+          },
+          "poll": {
+            "method": "GET",
+            "path": "/v1/images/{image_id}",
+            "intervalSeconds": 3,
+            "statusField": "status",
+            "pendingStatuses": [
+              "pending"
+            ],
+            "successStatuses": [
+              "completed"
+            ],
+            "failureStatuses": [
+              "failed"
+            ],
+            "resultFields": [
+              "content_url",
+              "content_urls"
+            ]
+          }
+        }
+      }
     },
     {
       "id": "nano-banana-pro",
       "aliases": [
         "nano banana pro"
-      ]
-    },
-    {
-      "id": "qwen-image-2.0",
-      "aliases": []
-    },
-    {
-      "id": "qwen-image-2.0-pro",
-      "aliases": []
+      ],
+      "parameterSchema": {
+        "properties": {
+          "n": {
+            "type": "integer",
+            "enum": [
+              1
+            ],
+            "default": 1
+          },
+          "image_size": {
+            "type": "string",
+            "enum": [
+              "1K",
+              "2K",
+              "4K"
+            ],
+            "default": "1K"
+          },
+          "image": {
+            "type": "string[]",
+            "maxLength": 6
+          },
+          "aspect_ratio": {
+            "type": "string",
+            "enum": [
+              "1:1",
+              "2:3",
+              "3:2",
+              "3:4",
+              "4:3",
+              "9:16",
+              "16:9",
+              "21:9",
+              "9:21"
+            ]
+          }
+        },
+        "constraints": {
+          "reference_transport": {
+            "image": [
+              "public_https_url"
+            ]
+          }
+        },
+        "lifecycle": {
+          "create": {
+            "successStatus": 200,
+            "idField": "id",
+            "object": "image",
+            "initialStatuses": [
+              "pending"
+            ]
+          },
+          "poll": {
+            "method": "GET",
+            "path": "/v1/images/{image_id}",
+            "intervalSeconds": 3,
+            "statusField": "status",
+            "pendingStatuses": [
+              "pending"
+            ],
+            "successStatuses": [
+              "completed"
+            ],
+            "failureStatuses": [
+              "failed"
+            ],
+            "resultFields": [
+              "content_url",
+              "content_urls"
+            ]
+          }
+        }
+      }
     },
     {
       "id": "seedream-5.0-pro",
-      "aliases": []
-    },
-    {
-      "id": "wan2.7-image",
-      "aliases": []
-    },
-    {
-      "id": "wan2.7-image-pro",
-      "aliases": []
+      "aliases": [],
+      "parameterSchema": {
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "required": true,
+            "minLength": 3,
+            "maxLength": 2000
+          },
+          "n": {
+            "type": "integer",
+            "default": 1,
+            "min": 1,
+            "max": 6
+          },
+          "width": {
+            "type": "integer",
+            "min": 768,
+            "max": 2048
+          },
+          "height": {
+            "type": "integer",
+            "min": 768,
+            "max": 2048
+          },
+          "aspect_ratio": {
+            "type": "string",
+            "enum": [
+              "1:1",
+              "2:3",
+              "3:2",
+              "3:4",
+              "4:3",
+              "16:9",
+              "9:16",
+              "21:9"
+            ],
+            "default": "1:1"
+          },
+          "size": {
+            "type": "string",
+            "enum": [
+              "2048x2048",
+              "1024x1536",
+              "1536x1024",
+              "1152x1536",
+              "1536x1152",
+              "1920x1080",
+              "1080x1920",
+              "2016x864"
+            ]
+          },
+          "image_urls": {
+            "type": "string[]",
+            "maxLength": 10
+          },
+          "strength": {
+            "type": "string",
+            "enum": [
+              "LOW",
+              "MID",
+              "HIGH"
+            ]
+          }
+        },
+        "constraints": {
+          "size_expression_precedence": {
+            "order": [
+              "width+height",
+              "aspect_ratio",
+              "size"
+            ]
+          },
+          "requires_together": {
+            "width": [
+              "height"
+            ],
+            "height": [
+              "width"
+            ]
+          },
+          "reference_transport": {
+            "image_urls": [
+              "public_https_url"
+            ]
+          }
+        },
+        "outputSizes": [
+          {
+            "aspectRatio": "1:1",
+            "size": "2048x2048"
+          },
+          {
+            "aspectRatio": "2:3",
+            "size": "1024x1536"
+          },
+          {
+            "aspectRatio": "3:2",
+            "size": "1536x1024"
+          },
+          {
+            "aspectRatio": "3:4",
+            "size": "1152x1536"
+          },
+          {
+            "aspectRatio": "4:3",
+            "size": "1536x1152"
+          },
+          {
+            "aspectRatio": "16:9",
+            "size": "1920x1080"
+          },
+          {
+            "aspectRatio": "9:16",
+            "size": "1080x1920"
+          },
+          {
+            "aspectRatio": "21:9",
+            "size": "2016x864"
+          }
+        ],
+        "lifecycle": {
+          "create": {
+            "successStatus": 200,
+            "idField": "id",
+            "object": "image",
+            "initialStatuses": [
+              "pending"
+            ]
+          },
+          "poll": {
+            "method": "GET",
+            "path": "/v1/images/{image_id}",
+            "intervalSeconds": 3,
+            "statusField": "status",
+            "pendingStatuses": [
+              "pending"
+            ],
+            "successStatuses": [
+              "completed"
+            ],
+            "failureStatuses": [
+              "failed"
+            ],
+            "resultFields": [
+              "content_url",
+              "content_urls"
+            ]
+          }
+        }
+      }
     }
   ]
 }

@@ -93,7 +93,9 @@ function explicitCapabilities(model) {
 }
 
 function explicitParameterSchema(model) {
-  const candidate = model?.input_schema
+  const candidate = model?.media_input_schema
+    ?? model?.mediaInputSchema
+    ?? model?.input_schema
     ?? model?.inputSchema
     ?? model?.media_parameters
     ?? model?.mediaParameters;

@@ -1,16 +1,16 @@
 {
   "schemaVersion": 1,
-  "name": "puretokens_balance",
+  "name": "puretokens_connection",
   "version": "0.9.0",
   "entry": "SKILL.md",
-  "displayName": "Pure Tokens Balance",
-  "description": "Read a host-exposed balance from the current configured connection.",
+  "displayName": "Pure Tokens Connection",
+  "description": "Check whether the current API endpoint identifies itself as Pure Tokens API.",
   "executionContract": "references/execution-contract.json",
   "behaviorScenarios": "references/behavior-scenarios.json",
   "distribution": {
     "claudeDesktop": {
       "format": "zip",
-      "archiveRoot": "puretokens_balance",
+      "archiveRoot": "puretokens_connection",
       "requiredFiles": [
         "SKILL.md",
         "skill.json",
@@ -51,7 +51,10 @@
     "usesRelativeApiPathsOnly": true,
     "doesNotInspectConnectionIdentity": true,
     "doesNotReadCredentialsOrHostConfiguration": true,
-    "balanceQueryDoesNotEstimateOrRetry": true,
-    "balanceRequiresExistingAccountSession": true
+    "apiDeclaredIdentityCheck": true,
+    "identityPath": "/v1",
+    "doesNotReadActualBaseUrl": true,
+    "doesNotInferIdentityFromModelCatalog": true,
+    "neverRetry": true
   }
 }

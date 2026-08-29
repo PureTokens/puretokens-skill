@@ -3,7 +3,7 @@
   "$id": "https://puretokensx.com/schemas/host-native-execution-contract.schema.json",
   "title": "Pure Tokens host-native API execution contract",
   "type": "object",
-  "required": ["schemaVersion", "transport", "requiredCapabilities", "acceptanceScenarios", "balance"],
+  "required": ["schemaVersion", "transport", "requiredCapabilities", "acceptanceScenarios", "userMediaInput", "mediaDeliveryResourceBounds", "balance"],
   "properties": {
     "$schema": { "const": "https://puretokensx.com/schemas/host-native-execution-contract.schema.json" },
     "schemaVersion": { "const": 1 },
@@ -37,6 +37,36 @@
         },
         "additionalProperties": false
       }
+    },
+    "userMediaInput": {
+      "type": "object",
+      "required": ["onlyCurrentUserExplicitMedia", "publicUrlOrDeclaredIdRequiresLiveProfilePropertyAndTransport", "requiresProfileDeclaredTransport", "requiresHostToExposeExactAttachmentRepresentation", "skillNeverDownloadsOrRehosts", "pureTokensGatewayStagesMultipartAttachments", "fallback"],
+      "properties": {
+        "onlyCurrentUserExplicitMedia": { "const": true },
+        "publicUrlOrDeclaredIdRequiresLiveProfilePropertyAndTransport": { "const": true },
+        "requiresProfileDeclaredTransport": { "const": true },
+        "requiresHostToExposeExactAttachmentRepresentation": { "const": true },
+        "skillNeverDownloadsOrRehosts": { "const": true },
+        "pureTokensGatewayStagesMultipartAttachments": { "const": true },
+        "fallback": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "mediaDeliveryResourceBounds": {
+      "type": "object",
+      "required": ["oneInFlightStatusReadPerTask", "noBackgroundPollingOrQueue", "readContentOnlyAfterTerminalSuccess", "oneInFlightContentReadPerTask", "sequentialImageContentIndexes", "neverPrefetchOrRefetchDeliveredContent", "handoffNativeBytesBeforeNextRead", "doesNotPersistMediaBytesInSkillStateOrLogs", "fallback"],
+      "properties": {
+        "oneInFlightStatusReadPerTask": { "const": true },
+        "noBackgroundPollingOrQueue": { "const": true },
+        "readContentOnlyAfterTerminalSuccess": { "const": true },
+        "oneInFlightContentReadPerTask": { "const": true },
+        "sequentialImageContentIndexes": { "const": true },
+        "neverPrefetchOrRefetchDeliveredContent": { "const": true },
+        "handoffNativeBytesBeforeNextRead": { "const": true },
+        "doesNotPersistMediaBytesInSkillStateOrLogs": { "const": true },
+        "fallback": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
     },
     "balance": {
       "type": "object",

@@ -10,16 +10,26 @@
     "requiredHostCapabilities": ["authenticated_relative_http", "json_task_response", "native_media_byte_delivery", "same_task_continuation"]
   },
   "operations": {
+    "catalog": { "method": "GET", "path": "/v1/media/models" },
     "submit": {
       "method": "POST",
       "path": "/v1/images/generations",
       "requiredBodyFields": ["model", "prompt", "async"],
       "fixedBody": { "async": true },
       "conditionalBodyFields": {
-        "n": { "onlyWhenExplicit": true, "integerRange": [1, 6] },
-        "size": { "onlyWhenExplicit": true, "allowed": ["1024x1024", "1536x1024", "1024x1536"] },
-        "image_size": { "onlyWhenExplicit": true, "allowed": ["1K", "2K", "4K"] }
+        "all_user_optional_fields": "only_when_the_exact_authenticated_live_input_schema_declares_the_field_and_value"
       }
+    },
+    "edit": {
+      "method": "POST",
+      "allowedPaths": ["/v1/images/generations", "/v1/images/edits"],
+      "pathSource": "authenticated_live_profile_operation_path",
+      "contentType": "multipart/form-data",
+      "requiresAuthenticatedLiveProfileOperation": "image_edit",
+      "requiredBodyFields": ["model", "prompt", "image", "async"],
+      "fixedBody": { "async": true },
+      "inputSource": "current_user_explicit_native_media_only",
+      "transport": "profile_declared_multipart_file"
     },
     "status": { "method": "GET", "pathTemplate": "/v1/images/{task_id}" },
     "content": { "method": "GET", "pathTemplate": "/v1/images/{task_id}/content?index={index}" }
@@ -32,23 +42,46 @@
   },
   "parameterValidation": {
     "defaultModel": "gpt-image-2",
-    "defaultModelUsesDeclaredContractOptions": true,
-    "nonDefaultModelOptionalParametersRequire": "authenticated_live_catalog_input_schema",
+    "everyNewSubmissionReadsAuthenticatedLiveCatalog": true,
+    "everySelectedModelRequiresExactLiveCatalogIdAndImageCapability": true,
+    "allOptionalParametersRequire": "authenticated_live_catalog_input_schema",
     "whenProfileIsMissing": "do_not_submit_requested_optional_parameters"
+  },
+  "inputMediaValidation": {
+    "publicUrlReferenceRequires": "authenticated_live_catalog_property_and_declared_reference_transport",
+    "nativeAttachmentRequires": "authenticated_live_catalog_input_schema_operation",
+    "imageEditOperation": "image_edit",
+    "onlyCurrentUserExplicitMedia": true,
+    "skillPassesUserProvidedPublicUrlsWithoutDownloadingOrRehosting": true,
+    "skillNeverDownloadsOrRehostsMedia": true,
+    "gatewayStagesCurrentRequestAttachment": true,
+    "requiresHostNativeAttachmentByteDelivery": true,
+    "whenTransportUnavailable": "do_not_submit_and_explain_declared_transport"
   },
   "contentRetrieval": {
     "indexBase": 0,
     "requestedCount": "explicit_n_or_default_1",
     "allowedIndexes": "0..requestedCount-1",
     "completeDeliveryRequiresEveryRequestedIndex": true,
-    "partialOrMissingContent": "report_delivered_and_missing_indexes_without_resubmission"
+    "partialOrMissingContent": "report_delivered_and_missing_indexes_without_resubmission",
+    "fetchOnlyAfterTerminalSuccess": true,
+    "sequentialByIndex": true,
+    "oneInFlightContentReadPerTask": true,
+    "neverPrefetchOrRefetchDeliveredContent": true,
+    "handoffBeforeNextContentRead": true
   },
   "polling": {
-    "serverDelay": "honor_valid_retry_after_before_fallback",
-    "fallbackDelaysSeconds": [2, 3, 5, 8],
-    "steadyDelaySeconds": 15,
+    "serverDelay": "honor_valid_positive_retry_after_before_fallback",
+    "serverDelayMustFitRemainingAutomaticDeadline": true,
+    "fallbackDelaysSeconds": [3, 6, 12, 24, 30],
+    "steadyDelaySeconds": 30,
     "automaticDeadlineSeconds": 120,
+    "maxAutomaticStatusReads": 6,
+    "oneInFlightStatusReadPerTask": true,
+    "automaticPollingScope": "submission_or_explicit_same_task_continuation_turn_only_no_background_timer_or_queue",
+    "afterStatusReadError": "stop_automatic_polling_and_require_explicit_same_task_continuation",
+    "explicitContinuation": "new_bounded_same_task_polling_window_only_when_explicitly_requested",
     "afterDeadline": "report_pending_and_require_explicit_same_task_continuation"
   },
-  "unsupportedInput": ["reference_image", "image_edit", "mask", "user_media_upload"]
+  "unsupportedInput": ["mask", "undeclared_image_edit_extensions", "non_current_user_media"]
 }

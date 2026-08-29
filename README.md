@@ -1,28 +1,36 @@
 # Pure Tokens Skills
 
-This repository provides three independent Skills:
+This repository provides five independent Skills:
 
 | Skill | What it does |
 | --- | --- |
 | `puretokens_balance` | Reads a current-balance snapshot only when the host exposes that read-only capability. |
-| `puretokens_image` | Generates images through the current configured Pure Tokens Images API. |
-| `puretokens_video` | Generates videos through the current configured Pure Tokens Videos API. |
+| `puretokens_connection` | Checks whether the current API endpoint identifies itself as Pure Tokens API, without reading connection configuration. |
+| `puretokens_models` | Reads the current authenticated media catalog and explains declared model capabilities, parameters, and media operations. |
+| `puretokens_image` | Generates images and performs profile-gated image edits through the current configured Pure Tokens Images API. |
+| `puretokens_video` | Generates videos and performs profile-gated image, video, or audio reference generation and video edits through the current configured Pure Tokens Videos API. |
 
 Install the Skills you need into the supported host's documented global Skill directory:
 
 ```bash
 # Codex
 node bin/puretokens-skill.js install puretokens_balance --target ~/.agents/skills
+node bin/puretokens-skill.js install puretokens_connection --target ~/.agents/skills
+node bin/puretokens-skill.js install puretokens_models --target ~/.agents/skills
 node bin/puretokens-skill.js install puretokens_image --target ~/.agents/skills
 node bin/puretokens-skill.js install puretokens_video --target ~/.agents/skills
 
 # Claude Code
 node bin/puretokens-skill.js install puretokens_balance --target ~/.claude/skills
+node bin/puretokens-skill.js install puretokens_connection --target ~/.claude/skills
+node bin/puretokens-skill.js install puretokens_models --target ~/.claude/skills
 node bin/puretokens-skill.js install puretokens_image --target ~/.claude/skills
 node bin/puretokens-skill.js install puretokens_video --target ~/.claude/skills
 
 # Gemini CLI
 node bin/puretokens-skill.js install puretokens_balance --target ~/.gemini/skills
+node bin/puretokens-skill.js install puretokens_connection --target ~/.gemini/skills
+node bin/puretokens-skill.js install puretokens_models --target ~/.gemini/skills
 node bin/puretokens-skill.js install puretokens_image --target ~/.gemini/skills
 node bin/puretokens-skill.js install puretokens_video --target ~/.gemini/skills
 ```
@@ -45,9 +53,13 @@ The canonical matrix is `references/host-support.json`. The CLI intentionally ne
 
 The host's current configured connection owns the Base URL, authentication, and routing. CC Switch, Pure Tokens Desktop, or a manually configured host connection can provide it. The Skills do not read, scan, ask for, print, or store credentials or host configuration; they do not inspect a provider label, Base URL, or service attribution.
 
-`puretokens_image` uses `POST /v1/images/generations`; the default is `gpt-image-2`, and every image request sends `async: true`. For another image model, it first verifies the exact ID and `image` capability with `GET /v1/media/models`.
+`puretokens_connection` makes exactly one read-only `GET /v1` request through the current connection. It confirms the connection only when that API endpoint declares `status: "ok"`, `name: "Pure Tokens API"`, and `base_url: "/v1"`. It never reveals the actual Base URL or reads host configuration. If the declaration is absent or the request fails, it says only that Pure Tokens could not be confirmed; that result does not prove the connection belongs to another service. This is an endpoint-declaration check, not cryptographic anti-spoof verification.
 
-`puretokens_video` first uses `GET /v1/media/models`, verifies an exact `video` model ID, then uses `POST /v1/videos`. Its default is `grok-imagine-video-1.5-preview`; it polls and delivers only the same task's native bytes.
+`puretokens_models` makes exactly one read-only `GET /v1/media/models` request. It exposes the current authenticated catalog in a user-readable form: exact model IDs, returned capabilities, declared optional parameters, and declared media operations. It can shortlist models for an explicit technical requirement such as image-to-video, a reference medium, duration, aspect ratio, or resolution, but only when that requirement is explicitly declared by the current model profile. It never submits media work, retries the catalog request, falls back to the static README catalog, or ranks unreturned quality, price, speed, or availability information.
+
+`puretokens_image` reads `GET /v1/media/models` before every new task, including its default `gpt-image-2`, then uses `POST /v1/images/generations` with `async: true`. Every non-core image field — count, pixel size, semantic image size, aspect ratio, reference field, and strength — must be declared by that exact authenticated profile. An explicitly supplied public HTTPS reference URL may be sent only in a profile property whose declared transport allows it. An attached native image may be sent only when `input_schema.operations.image_edit` declares `POST` to `/v1/images/generations` or `/v1/images/edits`, multipart input, fields, counts, and transport; the Skill uses that declared operation path.
+
+`puretokens_video` first uses `GET /v1/media/models`, verifies an exact `video` model ID, then uses `POST /v1/videos`. Its default is `grok-imagine-video-1.5-preview`; it polls and delivers only the same task's native bytes. Prompt requirement and every optional field come from the exact live profile. When `constraints.resolution_by_mode` is declared, the selected text, image, or reference operation must use that mode's resolution set rather than the broader `resolution` property. An explicitly supplied public HTTPS media URL, file ID, or voice ID may use a declared profile property and declared transport; native attached media instead requires the corresponding declared multipart operation (`image_to_video`, `reference_image_video`, `reference_video`, `reference_audio`, or `video_edit`). Video editing still requires `POST /v1/videos/edits`, a `video` attachment field, and multipart transport.
 
 Every supported host is held to the same native-execution contract: authenticated relative-path HTTP, JSON task responses, native media-byte delivery, and continuation by the same task ID. The acceptance matrix is `references/host-native-execution-contract.json`; it does not grant the Skill access to a Base URL, API key, or host configuration.
 
@@ -59,37 +71,51 @@ The active connection must execute those requests and deliver native image or vi
 
 ## Image sizes and count
 
-Images default to one result. An explicit `n` must be an integer from 1 through 6; a request is never split into several paid submissions. Supported `size` values are `1024x1024`, `1536x1024`, and `1024x1536`; supported `image_size` values are `1K`, `2K`, and `4K`.
+An image request is never split into several paid submissions. Count and every size control are model-specific: `n`, `size`, `image_size`, `aspect_ratio`, `width`, and `height` may be sent only when the selected model's current authenticated profile declares that exact field and value. If `n` is not declared, the Skill does not invent it.
 
-Physical dimensions such as `200cm × 230cm` cannot be guaranteed and are never passed as `n` or `size`. The Skill explains the limitation and asks the user to choose one of the supported options.
+Physical dimensions such as `200cm × 230cm` cannot be guaranteed and are never passed as `n`, `size`, or another API field. The Skill explains the limitation and lists the exact model's declared pixel or semantic-size choices.
 
-For `n` images, delivery reads exactly the zero-based indexes `0` through `n-1` from the same task. A request is successful only when native bytes arrive for every requested index. A partial result names both delivered and missing indexes, then permits only another read of the missing content from that same task.
+For `n` images, delivery reads exactly the zero-based indexes `0` through `n-1` from the same task, one index at a time and only after the task succeeds. A request is successful only when native bytes arrive for every requested index. A partial result names both delivered and missing indexes, then permits only another read of the missing content from that same task. The Skill never prefetches or re-downloads delivered content; it hands off each native result before reading the next.
 
 ## Model parameter profiles and receipts
 
-The default `gpt-image-2` uses the count and size values declared above. For another image model, a requested optional field such as `n`, `size`, or `image_size` must be present with a supported value in that model's authenticated live `input_schema`; prompt-only image requests do not need a profile. For video, every optional duration, aspect ratio, resolution, size, or other field likewise requires the selected model's live `input_schema`; prompt-only video requests remain valid without one. A missing or incompatible profile stops before submission and asks the user to remove the option or choose a model with a published profile.
+Every new image and video task uses the selected model's authenticated live `input_schema`; the static selection list is only for aliases. Any requested optional field must be present with a compatible value. Video prompt is required when the profile says so; it may be omitted only for the exact single-reference exception explicitly declared by that profile. A missing or incompatible profile stops before submission and asks the user to remove the option or choose a model with a published profile.
 
-On submit, continuation, completion, and failure, media Skills return a consistent receipt: exact model ID when returned, task ID when returned, current state, requested count, requested size/parameters, delivered count on completion, and the next action. Missing task metadata is reported as not returned, never guessed.
+The same live profile controls media inputs. An explicitly supplied public HTTPS URL, file ID, or voice ID is sent only in its exact declared property and permitted transport; the Skill never downloads, probes, checks accessibility, rehosts, or rewrites it. Native media explicitly attached in the current request uses only an advertised `multipart_file` operation. The Skill sends those bytes with the one declared Images or Videos API request; the Pure Tokens gateway then performs short-lived internal R2 staging, verifies its provider-facing HTTPS URL, and does not return that URL. Multiple native attachment types need an explicitly declared combined operation; multiple public URL/ID fields need no declared conflict. The Skill never manufactures a URL or file ID, calls a separate upload API, or silently turns a media request into text generation.
+
+On submit, continuation, completion, and failure, media Skills return a consistent receipt: exact model ID when returned, task ID when returned, current state, requested operation, requested count, requested size/parameters, delivered count on completion, and the next action. Missing task metadata is reported as not returned, never guessed.
 
 ## Asynchronous polling
 
-Media polling begins only after submission returns a `task_id`. If a task-status response includes a valid HTTP `Retry-After` delay, the Skill uses it. Otherwise it waits 2, 3, 5, and 8 seconds for the first four same-task status reads, then 15 seconds between subsequent reads. Automatic polling lasts at most 120 seconds for images and 300 seconds for videos, measured from the submission response. A still-pending task is reported as pending at that deadline; the user can explicitly ask to continue the same task, but the Skill never treats the deadline as failure or submits a replacement task.
+Media polling begins only after submission returns a `task_id` and runs only within the submission turn or a user turn that explicitly continues that same task ID. It has at most one status request in flight per task and never creates a background timer, queue, or worker. A valid positive HTTP `Retry-After` is used only while time remains in the automatic-polling budget. Otherwise an image task waits `3, 6, 12, 24, 30, 30` seconds before at most six same-task status reads; a video task waits `5, 10, 20, 40, 60, 60` seconds before at most seven reads. Each bounded window lasts at most 120 seconds for images or 300 seconds for videos. A rate limit, 5xx response, transport error, or timeout stops that window immediately. A still-pending task is reported as pending with its task ID. When the user explicitly asks to continue it, the Skill opens one new bounded window for that same task only; it never treats a deadline or read error as failure and never submits a replacement task.
+
+Media bytes are not cached in Skill state, prompts, or logs. Content is read only after terminal success, with one content read in flight; the host hands off the native bytes before another read. If the host cannot do that without unbounded background work, duplicate reads, or cached copies, the Skill reports same-task delivery as unavailable instead of substituting a URL or submitting a new task.
 
 ## Usage examples
 
-- Image: `Use gpt-image-2 to generate a 1024x1024 illustration of a snowy village at dawn.`
+- Connection: `Is my current connection Pure Tokens?` The Skill checks only the current endpoint's `GET /v1` declaration and does not reveal configuration.
+- Models: `Show the video models currently available to me, their declared duration and aspect-ratio options, and which support image-to-video.` This is read-only; it does not submit a task.
+- Image: `Use gpt-image-2 to generate a 2K, 16:9 illustration of a snowy village at dawn.`
 - Another image model: `Use nano banana pro to generate a clean product poster.` The Skill resolves a unique installed alias, then confirms the exact ID and image capability in the current authenticated catalog.
+- Image reference URL: `Use gpt-image-2 with this public reference image URL: https://example.com/reference.png` The Skill first confirms a matching profile field and declared URL transport.
+- Image edit: `Use grok-imagine-image to edit the attached image: replace the cloudy sky with a clear sunset.` The Skill first confirms the authenticated image-edit profile and the host's multipart attachment delivery.
 - Video: `Use grok 1.5 video to generate a six-second cinematic sunrise over the ocean.`
+- Image-to-video: `Use grok 1.5 video to animate this public image URL for six seconds: https://example.com/reference.png` The Skill uses it only when the authenticated profile declares the matching URL field and transport.
+- Reference video: `Use seedance-2.5 to create a six-second video from my attached video.` The Skill uses it only if the authenticated profile publishes `reference_video`.
+- Reference audio: `Use minimax h3 to create a video from my attached audio.` The Skill uses it only if the authenticated profile publishes `reference_audio`.
+- Video edit: `Edit my attached video: turn daylight into night.` The Skill submits to `/v1/videos/edits` only if the authenticated profile publishes `video_edit`.
 - Existing task only: `Continue querying task <task_id>.` The Skill only reads that task; it never submits a replacement task automatically.
 
 ## Model discovery
 
-The README is for discovery only. At execution time, the current authenticated `GET /v1/media/models` response remains authoritative for non-default images and all videos. Capabilities are taken only from the base model catalog's explicit image/video declarations, never inferred from a model name. Each installed image/video Skill includes its capability-specific `references/model-selection.json`, generated from this same catalog; an alias is usable only when it resolves to one exact model ID.
+Use `puretokens_models` when the user asks what is actually available through the current connection, which models support a media operation, or which models accept a particular declared parameter. Its authenticated `GET /v1/media/models` response is the runtime source of truth: it reports exact model IDs, capabilities, optional parameter schema, and `input_schema.operations` without guessing missing fields. A compatibility shortlist is technical only; it matches declared capability, field/value, and operation metadata and does not make subjective quality or price claims.
+
+The README is discovery-only. Capabilities are taken only from the base model catalog's explicit image/video declarations, never inferred from a model name. Each installed image/video Skill includes its capability-specific `references/model-selection.json`, generated from this same catalog; an alias is usable only when it resolves to one exact model ID.
 
 <!-- media-model-catalog:start -->
 ## Media model catalog
 
-Synchronized with the base model catalog: 2026-08-21T02:46:19.421Z.
+Synchronized with the base model catalog: 2026-08-29T05:03:13.833Z.
 
 This list is generated from Pure Tokens' base model catalog using explicit image/video capabilities. At execution time, the exact model and required capability must still appear in the current authenticated GET /v1/media/models response.
 
@@ -99,28 +125,29 @@ README is generated only from base-catalog models with explicit image/video capa
 
 | Model ID | Provider | You can also say | Good for | Example |
 | --- | --- | --- | --- | --- |
-| `gpt-image-2` | OpenAI | `image2` | Image generation | `Use image2 to generate an image.` |
+| `gpt-image-2` | OpenAI | `image2` | Image generation | `Use gpt-image-2 to generate an image.` |
 | `grok-imagine-image` | xAI | `grok image` | Image generation | `Use grok-imagine-image to generate an image.` |
+| `grok-imagine-image-2.0` | xAI | `grok image 2.0` | Image generation | `Use grok-imagine-image-2.0 to generate an image.` |
 | `grok-imagine-image-quality` | xAI | Exact ID only | Image generation | `Use grok-imagine-image-quality to generate an image.` |
 | `nano-banana-2` | Google | `nano banana 2` | Image generation | `Use nano-banana-2 to generate an image.` |
+| `nano-banana-2-lite` | Google | Exact ID only | Image generation | `Use nano-banana-2-lite to generate an image.` |
 | `nano-banana-pro` | Google | `nano banana pro` | Image generation | `Use nano-banana-pro to generate an image.` |
-| `qwen-image-2.0` | Qwen | Exact ID only | Image generation | `Use qwen-image-2.0 to generate an image.` |
-| `qwen-image-2.0-pro` | Qwen | Exact ID only | Image generation | `Use qwen-image-2.0-pro to generate an image.` |
-| `seedream-5.0-pro` | Doubao | Exact ID only | Image generation | `Use seedream-5.0-pro to generate an image.` |
-| `wan2.7-image` | Qwen | Exact ID only | Image generation | `Use wan2.7-image to generate an image.` |
-| `wan2.7-image-pro` | Qwen | Exact ID only | Image generation | `Use wan2.7-image-pro to generate an image.` |
+| `seedream-5.0-pro` | ByteDance | Exact ID only | Image generation | `Use seedream-5.0-pro to generate an image.` |
 
 ### Video models
 
 | Model ID | Provider | You can also say | Good for | Example |
 | --- | --- | --- | --- | --- |
 | `grok-imagine-video` | xAI | `grok video` | Video generation | `Use grok-imagine-video to generate a video.` |
+| `grok-imagine-video-1.5` | xAI | Exact ID only | Video generation | `Use grok-imagine-video-1.5 to generate a short video.` |
 | `grok-imagine-video-1.5-preview` | xAI | `grok 1.5 video` | Video generation | `Use grok-imagine-video-1.5-preview to generate a video.` |
 | `minimax-h3` | MiniMax | `minimax h3` | Video generation | `Use minimax-h3 to generate a video.` |
-| `seedance-2.0` | Doubao | Exact ID only | Video generation | `Use seedance-2.0 to generate a video.` |
-| `seedance-2.0-fast` | Doubao | Exact ID only | Video generation | `Use seedance-2.0-fast to generate a video.` |
-| `seedance-2.0-mini` | Doubao | Exact ID only | Video generation | `Use seedance-2.0-mini to generate a video.` |
-| `seedance-2.5` | Doubao | Exact ID only | Video generation | `Use seedance-2.5 to generate a video.` |
+| `seedance-2.0` | ByteDance | Exact ID only | Video generation | `Use seedance-2.0 to generate a video.` |
+| `seedance-2.0-fast` | ByteDance | Exact ID only | Video generation | `Use seedance-2.0-fast to generate a video.` |
+| `seedance-2.0-mini` | ByteDance | Exact ID only | Video generation | `Use seedance-2.0-mini to generate a video.` |
+| `seedance-2.5` | ByteDance | Exact ID only | Video generation | `Use seedance-2.5 to generate a video.` |
+| `wan3.0-video` | Qwen | `wan3 video`, `wan 3 video` | Video generation | `Use wan3.0-video to generate a short video.` |
+| `wan3.0-video-prime` | Qwen | `wan3 video prime`, `wan 3 video prime` | Video generation | `Use wan3.0-video-prime to generate a short video.` |
 
 <!-- media-model-catalog:end -->
 

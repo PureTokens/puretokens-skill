@@ -1,6 +1,6 @@
 {
   "name": "puretokens-skill",
-  "version": "0.8.1",
+  "version": "0.9.0",
   "description": "Installable Pure Tokens skills and skill management tooling.",
   "private": true,
   "type": "module",
@@ -29,7 +29,7 @@
     "docs:sync-media-models-from-service": "npm run docs:sync-media-models-from-base-catalog",
     "test": "node --test",
     "check": "npm run validate && npm test",
-    "bundle:claude": "node bin/puretokens-skill.js bundle puretokens_balance --format claude-desktop --out dist/puretokens_balance-0.8.1.zip --force && node bin/puretokens-skill.js bundle puretokens_image --format claude-desktop --out dist/puretokens_image-0.8.1.zip --force && node bin/puretokens-skill.js bundle puretokens_video --format claude-desktop --out dist/puretokens_video-0.8.1.zip --force"
+    "bundle:claude": "node bin/puretokens-skill.js bundle puretokens_balance --format claude-desktop --out dist/puretokens_balance-0.9.0.zip --force && node bin/puretokens-skill.js bundle puretokens_connection --format claude-desktop --out dist/puretokens_connection-0.9.0.zip --force && node bin/puretokens-skill.js bundle puretokens_models --format claude-desktop --out dist/puretokens_models-0.9.0.zip --force && node bin/puretokens-skill.js bundle puretokens_image --format claude-desktop --out dist/puretokens_image-0.9.0.zip --force && node bin/puretokens-skill.js bundle puretokens_video --format claude-desktop --out dist/puretokens_video-0.9.0.zip --force"
   },
   "engines": {
     "node": ">=20"
