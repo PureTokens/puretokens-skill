@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./assets/brand/puretokens-skill-hero.png" alt="Pure Tokens Official Skills" width="100%" />
+</p>
+
 # Pure Tokens Skills
 
 This repository provides five independent Skills:
@@ -33,6 +37,35 @@ node bin/puretokens-skill.js install puretokens_connection --target ~/.gemini/sk
 node bin/puretokens-skill.js install puretokens_models --target ~/.gemini/skills
 node bin/puretokens-skill.js install puretokens_image --target ~/.gemini/skills
 node bin/puretokens-skill.js install puretokens_video --target ~/.gemini/skills
+```
+
+## Agent-assisted installation
+
+If a terminal-capable Agent has local file-write access, paste the matching prompt below. The Agent may update only the five named Pure Tokens Skill directories; it must not read, print, or alter API keys, Base URLs, model configuration, or MCP settings.
+
+### Codex on Windows — current `develop` test build
+
+```text
+Install or upgrade the current Pure Tokens Skills for Codex on this Windows machine. Perform the work; do not just describe commands.
+
+1. In a new temporary working directory, clone https://github.com/PureTokens/puretokens-skill.git on branch develop, then enter that repository.
+2. Run npm run check. Stop and report the error if it fails.
+3. Use $env:USERPROFILE\.agents\skills as the only installation root.
+4. For each of puretokens_balance, puretokens_connection, puretokens_models, puretokens_image, and puretokens_video: if that exact destination is already a managed Pure Tokens Skill, run its upgrade command; if it does not exist, run its install command. If an existing destination is not a managed Skill with the same name, do not overwrite it; report the conflict.
+5. Do not read, display, copy, modify, or ask for any API Key, Base URL, authentication file, model configuration, or MCP configuration.
+6. Report the installed Skill names and paths, then tell me to open a new Codex conversation before testing.
+```
+
+### Claude Code or Gemini CLI
+
+```text
+Install or upgrade the current Pure Tokens Skills for this host. Perform the work; do not just describe commands.
+
+1. Clone or update https://github.com/PureTokens/puretokens-skill.git on branch develop in a temporary working directory, enter it, and run npm run check. Stop and report the error if validation fails.
+2. Use ~/.claude/skills for Claude Code or ~/.gemini/skills for Gemini CLI as the only installation root.
+3. Install or upgrade only puretokens_balance, puretokens_connection, puretokens_models, puretokens_image, and puretokens_video. Never overwrite an existing destination unless it is the managed Skill with that same name; report any conflict instead.
+4. Do not read, display, copy, modify, or ask for any API Key, Base URL, authentication file, model configuration, or MCP configuration.
+5. Report the installed Skill names and paths, then tell me to start a new host conversation before testing.
 ```
 
 ## Host support

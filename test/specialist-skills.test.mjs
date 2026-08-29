@@ -36,6 +36,23 @@ test("image and video policies use the current API without MCP fallback", async 
   assert.doesNotMatch(policy, /MCP|Direct Cloud|krill|当前连接不是 Pure Tokens|无法确认归属|puretokensx\.com/i);
 });
 
+test("bilingual READMEs include safe copyable Agent installation prompts", async () => {
+  const [english, chinese] = await Promise.all([
+    readFile(path.join(repositoryRoot, "README.md"), "utf8"),
+    readFile(path.join(repositoryRoot, "README.zh-CN.md"), "utf8")
+  ]);
+  assert.match(english, /^<p align="center">\n  <img src="\.\/assets\/brand\/puretokens-skill-hero\.png" alt="Pure Tokens Official Skills" width="100%" \/>\n<\/p>/);
+  assert.match(english, /## Agent-assisted installation/);
+  assert.match(english, /\$env:USERPROFILE\\\.agents\\skills/);
+  assert.match(english, /Never overwrite an existing destination unless it is the managed Skill with that same name/);
+  assert.match(english, /Do not read, display, copy, modify, or ask for any API Key, Base URL, authentication file, model configuration, or MCP configuration/);
+  assert.match(chinese, /## 让 Agent 协助安装/);
+  assert.match(chinese, /^<p align="center">\n  <img src="\.\/assets\/brand\/puretokens-skill-hero\.png" alt="Pure Tokens 官方 Skills" width="100%" \/>\n<\/p>/);
+  assert.match(chinese, /\$env:USERPROFILE\\\.agents\\skills/);
+  assert.match(chinese, /若已有目录不是同名受管 Skill，绝不覆盖，报告冲突/);
+  assert.match(chinese, /不得读取、展示、复制、修改或索取任何 API Key、Base URL、认证文件、模型配置或 MCP 配置/);
+});
+
 test("specialist manifests use the configured connection without provider inspection", async () => {
   for (const name of names) {
     const manifest = JSON.parse(await readFile(path.join(repositoryRoot, "skills", name, "skill.json"), "utf8"));

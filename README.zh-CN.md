@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./assets/brand/puretokens-skill-hero.png" alt="Pure Tokens 官方 Skills" width="100%" />
+</p>
+
 # Pure Tokens Skills
 
 本仓库提供五个独立 Skill：
@@ -33,6 +37,35 @@ node bin/puretokens-skill.js install puretokens_connection --target ~/.gemini/sk
 node bin/puretokens-skill.js install puretokens_models --target ~/.gemini/skills
 node bin/puretokens-skill.js install puretokens_image --target ~/.gemini/skills
 node bin/puretokens-skill.js install puretokens_video --target ~/.gemini/skills
+```
+
+## 让 Agent 协助安装
+
+如果 Agent 具备终端和本机文件写入能力，可复制对应提示词给它。Agent 只能更新下列五个 Pure Tokens Skill 目录；不得读取、打印或修改 API Key、Base URL、模型配置或 MCP 配置。
+
+### Windows 上的 Codex：当前 `develop` 测试版本
+
+```text
+请在这台 Windows 机器上为 Codex 安装或升级当前的 Pure Tokens Skills。请直接完成操作，不要只告诉我命令。
+
+1. 在新建的临时工作目录中克隆 https://github.com/PureTokens/puretokens-skill.git 的 develop 分支，然后进入该仓库。
+2. 执行 npm run check；如失败，立即停止并报告错误。
+3. 只使用 $env:USERPROFILE\.agents\skills 作为安装根目录。
+4. 依次处理 puretokens_balance、puretokens_connection、puretokens_models、puretokens_image、puretokens_video：若目标目录已经是同名的受管 Pure Tokens Skill，就执行对应的 upgrade；若目录不存在，就执行 install。若已有目录不是同名受管 Skill，绝不覆盖，报告冲突。
+5. 不得读取、展示、复制、修改或索取任何 API Key、Base URL、认证文件、模型配置或 MCP 配置。
+6. 报告已安装的 Skill 名称和路径，并提醒我新开一个 Codex 会话后再测试。
+```
+
+### Claude Code 或 Gemini CLI
+
+```text
+请为当前宿主安装或升级 Pure Tokens Skills。请直接完成操作，不要只告诉我命令。
+
+1. 在临时工作目录中克隆或更新 https://github.com/PureTokens/puretokens-skill.git 的 develop 分支，进入仓库后执行 npm run check；如校验失败，立即停止并报告错误。
+2. Claude Code 只使用 ~/.claude/skills；Gemini CLI 只使用 ~/.gemini/skills 作为安装根目录。
+3. 只安装或升级 puretokens_balance、puretokens_connection、puretokens_models、puretokens_image、puretokens_video。除非现有目录是同名受管 Skill，否则绝不覆盖；出现冲突时报告即可。
+4. 不得读取、展示、复制、修改或索取任何 API Key、Base URL、认证文件、模型配置或 MCP 配置。
+5. 报告已安装的 Skill 名称和路径，并提醒我新开一个宿主会话后再测试。
 ```
 
 ## 宿主支持
