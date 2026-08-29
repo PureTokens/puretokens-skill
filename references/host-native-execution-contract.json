@@ -1,0 +1,70 @@
+{
+  "$schema": "https://puretokensx.com/schemas/host-native-execution-contract.schema.json",
+  "schemaVersion": 1,
+  "transport": {
+    "usesCurrentConfiguredConnection": true,
+    "usesRelativeApiPathsOnly": true,
+    "doesNotReadCredentialsOrHostConfiguration": true,
+    "doesNotInspectConnectionIdentity": true
+  },
+  "requiredCapabilities": [
+    "authenticated_relative_http",
+    "json_task_response",
+    "native_media_byte_delivery",
+    "same_task_continuation"
+  ],
+  "acceptanceScenarios": [
+    {
+      "id": "connection-identity-read",
+      "request": "GET /v1",
+      "expect": "the host uses the current connection and returns the API identity JSON without exposing credentials or host configuration"
+    },
+    {
+      "id": "catalog-read",
+      "request": "GET /v1/media/models",
+      "expect": "the host uses the current connection and returns authenticated JSON without exposing credentials"
+    },
+    {
+      "id": "media-submit",
+      "request": "POST /v1/images/generations, POST /v1/videos, or a profile-declared POST /v1/videos/edits",
+      "expect": "the host sends the relative path and profile-declared JSON or multipart body once without changing model or parameters"
+    },
+    {
+      "id": "same-task-status",
+      "request": "GET a submitted task's status and content paths",
+      "expect": "the host continues only the supplied task_id and never submits a replacement task"
+    },
+    {
+      "id": "native-media-delivery",
+      "request": "GET a completed task's content path",
+      "expect": "the host returns or attaches native media bytes; URLs, HTML, SVG, task IDs, and status text are not a completed delivery"
+    }
+  ],
+  "userMediaInput": {
+    "onlyCurrentUserExplicitMedia": true,
+    "publicUrlOrDeclaredIdRequiresLiveProfilePropertyAndTransport": true,
+    "requiresProfileDeclaredTransport": true,
+    "requiresHostToExposeExactAttachmentRepresentation": true,
+    "skillNeverDownloadsOrRehosts": true,
+    "pureTokensGatewayStagesMultipartAttachments": true,
+    "fallback": "When the current host cannot deliver the user's attachment as a profile-declared transport, stop before submission, explain the declared transport, and do not invent a URL, file ID, or upload path. When it can deliver multipart_file bytes, send them only with the one Images/Videos API request; the Pure Tokens gateway owns short-lived R2 staging and never returns the provider-facing URL. A public HTTPS URL, file ID, or voice ID explicitly supplied by the user may be sent only in the exact live-profile field whose declared transport permits it; the Skill never downloads, validates, or rehosts it."
+  },
+  "mediaDeliveryResourceBounds": {
+    "oneInFlightStatusReadPerTask": true,
+    "noBackgroundPollingOrQueue": true,
+    "readContentOnlyAfterTerminalSuccess": true,
+    "oneInFlightContentReadPerTask": true,
+    "sequentialImageContentIndexes": true,
+    "neverPrefetchOrRefetchDeliveredContent": true,
+    "handoffNativeBytesBeforeNextRead": true,
+    "doesNotPersistMediaBytesInSkillStateOrLogs": true,
+    "fallback": "If the host cannot hand off a native media response without creating unbounded background work, cached copies, or duplicated reads, stop before content delivery and report that same-task native delivery is unavailable. Do not substitute a URL, HTML, SVG, status text, or a re-submitted task."
+  },
+  "balance": {
+    "path": "/api/product/desktop/account/balance",
+    "method": "GET",
+    "requiresExistingAuthenticatedAccountSession": true,
+    "responseSchema": "schemas/balance-snapshot.schema.json",
+    "fallback": "If the current host does not expose this authenticated account read, tell the user to use that connection's client balance view; do not estimate or ask for credentials."
+  }
+}

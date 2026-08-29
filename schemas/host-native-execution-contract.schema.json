@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://puretokensx.com/schemas/host-native-execution-contract.schema.json",
+  "title": "Pure Tokens host-native API execution contract",
+  "type": "object",
+  "required": ["schemaVersion", "transport", "requiredCapabilities", "acceptanceScenarios", "userMediaInput", "mediaDeliveryResourceBounds", "balance"],
+  "properties": {
+    "$schema": { "const": "https://puretokensx.com/schemas/host-native-execution-contract.schema.json" },
+    "schemaVersion": { "const": 1 },
+    "transport": {
+      "type": "object",
+      "required": ["usesCurrentConfiguredConnection", "usesRelativeApiPathsOnly", "doesNotReadCredentialsOrHostConfiguration", "doesNotInspectConnectionIdentity"],
+      "properties": {
+        "usesCurrentConfiguredConnection": { "const": true },
+        "usesRelativeApiPathsOnly": { "const": true },
+        "doesNotReadCredentialsOrHostConfiguration": { "const": true },
+        "doesNotInspectConnectionIdentity": { "const": true }
+      },
+      "additionalProperties": false
+    },
+    "requiredCapabilities": {
+      "type": "array",
+      "uniqueItems": true,
+      "contains": { "const": "authenticated_relative_http" },
+      "items": { "enum": ["authenticated_relative_http", "json_task_response", "native_media_byte_delivery", "same_task_continuation"] }
+    },
+    "acceptanceScenarios": {
+      "type": "array",
+      "minItems": 4,
+      "items": {
+        "type": "object",
+        "required": ["id", "request", "expect"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+          "request": { "type": "string", "minLength": 1 },
+          "expect": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "userMediaInput": {
+      "type": "object",
+      "required": ["onlyCurrentUserExplicitMedia", "publicUrlOrDeclaredIdRequiresLiveProfilePropertyAndTransport", "requiresProfileDeclaredTransport", "requiresHostToExposeExactAttachmentRepresentation", "skillNeverDownloadsOrRehosts", "pureTokensGatewayStagesMultipartAttachments", "fallback"],
+      "properties": {
+        "onlyCurrentUserExplicitMedia": { "const": true },
+        "publicUrlOrDeclaredIdRequiresLiveProfilePropertyAndTransport": { "const": true },
+        "requiresProfileDeclaredTransport": { "const": true },
+        "requiresHostToExposeExactAttachmentRepresentation": { "const": true },
+        "skillNeverDownloadsOrRehosts": { "const": true },
+        "pureTokensGatewayStagesMultipartAttachments": { "const": true },
+        "fallback": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "mediaDeliveryResourceBounds": {
+      "type": "object",
+      "required": ["oneInFlightStatusReadPerTask", "noBackgroundPollingOrQueue", "readContentOnlyAfterTerminalSuccess", "oneInFlightContentReadPerTask", "sequentialImageContentIndexes", "neverPrefetchOrRefetchDeliveredContent", "handoffNativeBytesBeforeNextRead", "doesNotPersistMediaBytesInSkillStateOrLogs", "fallback"],
+      "properties": {
+        "oneInFlightStatusReadPerTask": { "const": true },
+        "noBackgroundPollingOrQueue": { "const": true },
+        "readContentOnlyAfterTerminalSuccess": { "const": true },
+        "oneInFlightContentReadPerTask": { "const": true },
+        "sequentialImageContentIndexes": { "const": true },
+        "neverPrefetchOrRefetchDeliveredContent": { "const": true },
+        "handoffNativeBytesBeforeNextRead": { "const": true },
+        "doesNotPersistMediaBytesInSkillStateOrLogs": { "const": true },
+        "fallback": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "balance": {
+      "type": "object",
+      "required": ["path", "method", "requiresExistingAuthenticatedAccountSession", "responseSchema", "fallback"],
+      "properties": {
+        "path": { "const": "/api/product/desktop/account/balance" },
+        "method": { "const": "GET" },
+        "requiresExistingAuthenticatedAccountSession": { "const": true },
+        "responseSchema": { "const": "schemas/balance-snapshot.schema.json" },
+        "fallback": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

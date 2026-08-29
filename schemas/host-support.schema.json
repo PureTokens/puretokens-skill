@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://puretokensx.com/schemas/host-support.schema.json",
+  "title": "Pure Tokens specialist Skill host support",
+  "type": "object",
+  "required": ["schemaVersion", "nativeExecutionContract", "supported", "notDistributed"],
+  "properties": {
+    "$schema": { "const": "https://puretokensx.com/schemas/host-support.schema.json" },
+    "schemaVersion": { "const": 1 },
+    "nativeExecutionContract": { "const": "references/host-native-execution-contract.json" },
+    "supported": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/supportedHost" }
+    },
+    "notDistributed": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/notDistributedHost" }
+    }
+  },
+  "$defs": {
+    "supportedHost": {
+      "type": "object",
+      "required": ["id", "delivery", "guidance", "nativeExecution"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+        "delivery": { "enum": ["manual-source", "bundle"] },
+        "globalSkillDirectory": { "type": "string", "pattern": "^~/\\.[a-z-]+/skills$" },
+        "guidance": { "type": "string", "minLength": 1 },
+        "nativeExecution": {
+          "type": "object",
+          "required": ["authenticatedRelativeHttp", "jsonTaskResponse", "nativeMediaByteDelivery", "sameTaskContinuation"],
+          "properties": {
+            "authenticatedRelativeHttp": { "const": true },
+            "jsonTaskResponse": { "const": true },
+            "nativeMediaByteDelivery": { "const": true },
+            "sameTaskContinuation": { "const": true }
+          },
+          "additionalProperties": false
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "delivery": { "const": "manual-source" } } },
+          "then": { "required": ["globalSkillDirectory"] },
+          "else": { "not": { "required": ["globalSkillDirectory"] } }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "notDistributedHost": {
+      "type": "object",
+      "required": ["id", "reason"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+        "reason": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

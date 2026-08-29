@@ -1,0 +1,15 @@
+{
+  "$schema": "https://puretokensx.com/schemas/media-behavior-scenarios.schema.json",
+  "schemaVersion": 1,
+  "kind": "models",
+  "scenarios": [
+    { "id": "models-catalog-unavailable", "when": "the current connection cannot execute the authenticated catalog read", "then": "state that the current connection did not return model data, ask the user to check the existing connection configuration, and do not call another path or request credentials" },
+    { "id": "models-catalog-empty", "when": "the authenticated catalog returns no media models", "then": "state that no authorized media models were returned and do not substitute the installed static catalog" },
+    { "id": "models-exact-id-unavailable", "when": "the user asks for an exact model ID absent from the authenticated catalog", "then": "state that the current catalog did not return that exact model and offer to show the returned models; do not infer an alias or substitute another model" },
+    { "id": "models-capability-filter-empty", "when": "no catalog model explicitly declares the requested image, video, or media operation capability", "then": "state that no current model declared that capability and do not recommend a model by name similarity" },
+    { "id": "models-parameter-profile-absent", "when": "a returned model has no input_schema for a requested optional parameter", "then": "report the model without claiming support for that parameter and explain that the directory did not publish the parameter profile" },
+    { "id": "models-operation-profile-absent", "when": "a returned model has no matching input_schema.operations entry", "then": "report that the model did not publish the requested media operation and do not infer it from a general capability label" },
+    { "id": "models-requirement-ambiguous", "when": "the user asks for the best model without a requirement represented by declared capability, parameter, or operation metadata", "then": "ask for an explicit compatible constraint or show the complete authenticated catalog; do not rank unverified quality, price, or speed" },
+    { "id": "models-catalog-response", "when": "the current connection returns authenticated model data", "then": "display only returned exact IDs, declared capabilities, properties, non-input constraints, and operations in a user-readable grouped format, then stop without submitting media work" }
+  ]
+}

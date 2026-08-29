@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "name": "puretokens_models",
+  "version": "0.9.0",
+  "entry": "SKILL.md",
+  "displayName": "Pure Tokens Models",
+  "description": "Inspect current authenticated media models, declared parameters, and media operations.",
+  "executionContract": "references/execution-contract.json",
+  "behaviorScenarios": "references/behavior-scenarios.json",
+  "distribution": {
+    "claudeDesktop": {
+      "format": "zip",
+      "archiveRoot": "puretokens_models",
+      "requiredFiles": [
+        "SKILL.md",
+        "skill.json",
+        "references/execution-contract.json",
+        "references/behavior-scenarios.json"
+      ],
+      "importPath": "Settings > Features > Skills > Upload skill",
+      "enableAfterImport": true
+    },
+    "codex": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.agents/skills",
+      "requiresPluginFeature": false
+    },
+    "claudeCode": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.claude/skills"
+    },
+    "geminiCli": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.gemini/skills"
+    }
+  },
+  "supportedClients": [
+    "claude-code",
+    "claude-desktop",
+    "codex",
+    "gemini-cli"
+  ],
+  "excludedClients": [
+    "grok-build",
+    "opencode",
+    "trae",
+    "workbuddy"
+  ],
+  "rules": {
+    "usesCurrentConfiguredConnection": true,
+    "usesRelativeApiPathsOnly": true,
+    "doesNotInspectConnectionIdentity": true,
+    "doesNotReadCredentialsOrHostConfiguration": true,
+    "catalogReadOnly": true,
+    "reportsOnlyLiveDeclaredCapabilities": true,
+    "doesNotSubmitMediaTasks": true,
+    "compatibilityShortlistsRequireLiveCapabilityAndInputSchema": true,
+    "doesNotRankUndeclaredModelAttributes": true
+  }
+}

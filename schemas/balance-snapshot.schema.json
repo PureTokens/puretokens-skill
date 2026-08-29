@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://puretokensx.com/schemas/balance-snapshot.schema.json",
+  "title": "Pure Tokens authenticated balance snapshot",
+  "type": "object",
+  "properties": {
+    "balance_display": { "type": ["string", "null"] },
+    "balance_minor": { "type": ["integer", "null"] },
+    "quota_remaining": { "type": ["integer", "null"] },
+    "quota_total": { "type": ["integer", "null"] },
+    "quota_per_unit": { "type": ["integer", "null"], "minimum": 1 },
+    "quota_display_type": { "type": ["string", "null"] }
+  },
+  "additionalProperties": true
+}

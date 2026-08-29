@@ -1,0 +1,12 @@
+{
+  "$schema": "https://puretokensx.com/schemas/media-behavior-scenarios.schema.json",
+  "schemaVersion": 1,
+  "kind": "connection",
+  "scenarios": [
+    { "id": "connection-identity-confirmed", "when": "GET /v1 returns status ok, name Pure Tokens API, and base_url /v1", "then": "state that the current API endpoint identifies itself as Pure Tokens API and can be used as the current Pure Tokens connection" },
+    { "id": "connection-identity-unconfirmed", "when": "GET /v1 returns unreadable JSON, missing fields, or values other than the declared Pure Tokens API identity", "then": "state that the current connection did not return a confirmable Pure Tokens API identity and do not assert that it belongs to another service" },
+    { "id": "connection-identity-unavailable", "when": "the current connection cannot execute GET /v1", "then": "state that the current connection could not be checked, ask the user to inspect their existing connection configuration, and do not try another path or request credentials" },
+    { "id": "connection-base-url-request", "when": "the user asks for the actual current Base URL, API key, provider label, or host configuration", "then": "state that the Skill does not read host configuration and direct the user to the connection settings in their client, CC Switch, or Pure Tokens Desktop" },
+    { "id": "connection-identity-assurance", "when": "the user needs proof stronger than the API endpoint public identity declaration", "then": "explain that the existing check validates the endpoint declaration only and does not claim cryptographic anti-spoof verification" }
+  ]
+}

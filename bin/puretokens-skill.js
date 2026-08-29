@@ -5,7 +5,7 @@ import { cp, mkdir, readFile, rename, rm, stat, writeFile } from "node:fs/promis
 import path from "node:path";
 import process from "node:process";
 import { collectSkillRecords, repositoryRoot, skillsRoot, validateRepository } from "../scripts/skill-registry.mjs";
-import { getMediaSkillProvenance, mediaSkillSourceFiles } from "../scripts/media-skill-provenance.mjs";
+import { getSkillProvenance, getSkillSourceFiles } from "../scripts/media-skill-provenance.mjs";
 
 const [command, ...argumentsList] = process.argv.slice(2);
 
@@ -118,9 +118,7 @@ async function bundleSkill(args) {
   }
   const source = await resolveSkillSource(options.name);
   const manifest = JSON.parse(await readFile(path.join(source, "skill.json"), "utf8"));
-  const files = mediaSkillSourceFiles.filter((relativePath) => (
-    relativePath !== "agents/openai.yaml" && !relativePath.startsWith("adapters/")
-  ));
+  const files = await collectClaudeBundleFiles(manifest.name);
   const entries = [];
   for (const relativePath of files) {
     const absolutePath = path.join(source, relativePath);
@@ -134,25 +132,32 @@ async function bundleSkill(args) {
   }
   entries.push({
     path: "source-delivery.json",
-    data: `${JSON.stringify({ delivery: "claude-desktop", derivedFrom: await getMediaSkillProvenance() }, null, 2)}\n`
+    data: `${JSON.stringify({ delivery: "claude-desktop", derivedFrom: await getSkillProvenance(manifest.name) }, null, 2)}\n`
   });
   const output = path.resolve(options.out || `${options.name}-${manifest.version}-claude-desktop.zip`);
   if (await exists(output) && !options.force) {
     throw new Error(`Refusing to overwrite existing bundle: ${output} (pass --force to replace it)`);
   }
   await mkdir(path.dirname(output), { recursive: true });
-  await writeFile(output, createZip(entries));
+  await writeFile(output, createZip(options.name, entries));
   process.stdout.write(`Created Claude Desktop Skill bundle at ${output}\n`);
 }
 
 function createClaudeDesktopManifest(sourceManifest) {
-  const { workBuddyAdapter, distribution, supportedClients, ...sharedManifest } = sourceManifest;
+  const { distribution, supportedClients, ...sharedManifest } = sourceManifest;
   const { claudeDesktop } = distribution;
   return {
     ...sharedManifest,
     distribution: { claudeDesktop },
-    supportedClients: supportedClients.filter((client) => client !== "codex" && client !== "workbuddy")
+    supportedClients: supportedClients.filter((client) => client !== "codex")
   };
+}
+
+async function collectClaudeBundleFiles(skillName) {
+  const files = await getSkillSourceFiles(skillName);
+  return files.filter((relativePath) => (
+    relativePath !== "agents/openai.yaml" && !relativePath.startsWith("adapters/")
+  ));
 }
 
 async function validate() {
@@ -252,12 +257,12 @@ async function existsDirectory(value) {
   }
 }
 
-function createZip(entries) {
+function createZip(archiveRoot, entries) {
   const localParts = [];
   const centralParts = [];
   let offset = 0;
   for (const entry of entries) {
-    const name = Buffer.from(`puretokens_media/${entry.path}`, "utf8");
+    const name = Buffer.from(`${archiveRoot}/${entry.path}`, "utf8");
     const data = Buffer.isBuffer(entry.data) ? entry.data : Buffer.from(entry.data);
     const crc = crc32(data);
     const localHeader = Buffer.alloc(30);
@@ -318,5 +323,5 @@ function crc32(buffer) {
 }
 
 function printHelp() {
-  process.stdout.write(`Pure Tokens Skill Manager\n\nUsage:\n  puretokens-skill list\n  puretokens-skill validate\n  puretokens-skill install <skill-name> --target <directory>\n  puretokens-skill upgrade <skill-name> --target <directory>\n  puretokens-skill uninstall <skill-name> --target <directory> --yes\n  puretokens-skill bundle <skill-name> --format claude-desktop [--out <zip-file>] [--force]\n\nEvery install target is explicit. Pure Tokens Desktop can also apply managed Codex and WorkBuddy deliveries; Claude Desktop requires the generated ZIP to be uploaded and enabled in its Skills settings.\n\nRepository: ${repositoryRoot}\n`);
+  process.stdout.write(`Pure Tokens Skill Manager\n\nUsage:\n  puretokens-skill list\n  puretokens-skill validate\n  puretokens-skill install <skill-name> --target <directory>\n  puretokens-skill upgrade <skill-name> --target <directory>\n  puretokens-skill uninstall <skill-name> --target <directory> --yes\n  puretokens-skill bundle <skill-name> --format claude-desktop [--out <zip-file>] [--force]\n\nEvery install target is explicit. Use the supported host directories in README.md; Claude Desktop requires the generated ZIP to be uploaded and enabled in its Skills settings.\n\nRepository: ${repositoryRoot}\n`);
 }

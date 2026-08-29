@@ -1,235 +1,173 @@
-<p align="center">
-  <img src="./assets/brand/puretokens-skill-hero.png" alt="Pure Tokens Skill — one skill, every model" width="100%" />
-</p>
-
-<p align="center">
-  <strong>English</strong> · <a href="./README.zh-CN.md">中文</a> · <a href="./CHANGELOG.md">Changelog</a>
-</p>
-
 # Pure Tokens Skills
 
-`puretokens-skill` is the source repository for Pure Tokens Skills. It owns Skill instructions, versions, compatibility declarations, client installation instructions, and validation tools. It does not contain user credentials, Router configuration, or model-routing logic.
+This repository provides five independent Skills:
 
-## Quick start
-
-Choose the one path your host can actually execute:
-
-| Host | Execution path | Setup |
-| --- | --- | --- |
-| Pure Tokens Desktop-managed client | Skill → managed MCP → local Router → service | Optional convenience path: select the client groups, click **Verify and apply**, then restart the client and start a new chat. |
-| Host with a selected native Pure Tokens media model | Skill → host-native media operation → service | The configured operation must expose an exact verified image/video model and actual media delivery. A general chat-model setting alone is not enough. |
-| GUI host with callable MCP tools | Skill → `puretokens-image` MCP → service | Install/configure the callable MCP delivery for that client. The GUI user never pastes a token into chat. |
-| HTTPS-capable Agent | Skill → Direct Cloud → service | Install the Skill and inject `PURETOKENS_API_KEY` through the host's Secret/environment mechanism. A CC Switch-connected host can use this path only when it can actually execute HTTPS and deliver media bytes locally. No Desktop, Router, CLI sidecar, or MCP is required. |
-
-Then start a new chat. Say `Generate a cute dog` for the default image model, or name a model such as `Use Nano Banana Pro to generate ...`.
-
-> **Before using a specific model:** the exact model must appear in the authenticated `GET /v1/media/models` catalog for the selected execution path. Desktop-managed MCP uses only the selected client groups. Direct Cloud uses only the API key's permissions. Neither path can use every model mentioned in a public catalog.
-
-Current Skill:
-
-| Skill | Purpose |
+| Skill | What it does |
 | --- | --- |
-| `puretokens_media` | Select an exact image/video model from the live catalog, submit one task, poll the same task, and deliver actual native media bytes plus local files. |
+| `puretokens_balance` | Reads a current-balance snapshot only when the host exposes that read-only capability. |
+| `puretokens_connection` | Checks whether the current API endpoint identifies itself as Pure Tokens API, without reading connection configuration. |
+| `puretokens_models` | Reads the current authenticated media catalog and explains declared model capabilities, parameters, and media operations. |
+| `puretokens_image` | Generates images and performs profile-gated image edits through the current configured Pure Tokens Images API. |
+| `puretokens_video` | Generates videos and performs profile-gated image, video, or audio reference generation and video edits through the current configured Pure Tokens Videos API. |
+
+Install the Skills you need into the supported host's documented global Skill directory:
+
+```bash
+# Codex
+node bin/puretokens-skill.js install puretokens_balance --target ~/.agents/skills
+node bin/puretokens-skill.js install puretokens_connection --target ~/.agents/skills
+node bin/puretokens-skill.js install puretokens_models --target ~/.agents/skills
+node bin/puretokens-skill.js install puretokens_image --target ~/.agents/skills
+node bin/puretokens-skill.js install puretokens_video --target ~/.agents/skills
+
+# Claude Code
+node bin/puretokens-skill.js install puretokens_balance --target ~/.claude/skills
+node bin/puretokens-skill.js install puretokens_connection --target ~/.claude/skills
+node bin/puretokens-skill.js install puretokens_models --target ~/.claude/skills
+node bin/puretokens-skill.js install puretokens_image --target ~/.claude/skills
+node bin/puretokens-skill.js install puretokens_video --target ~/.claude/skills
+
+# Gemini CLI
+node bin/puretokens-skill.js install puretokens_balance --target ~/.gemini/skills
+node bin/puretokens-skill.js install puretokens_connection --target ~/.gemini/skills
+node bin/puretokens-skill.js install puretokens_models --target ~/.gemini/skills
+node bin/puretokens-skill.js install puretokens_image --target ~/.gemini/skills
+node bin/puretokens-skill.js install puretokens_video --target ~/.gemini/skills
+```
+
+## Host support
+
+CC Switch is a connection-configuration tool, not a Skill host. A supported host uses whichever current connection CC Switch, Pure Tokens Desktop, or the user has already configured.
+
+| Host | Current specialist-Skill delivery | What the user does |
+| --- | --- | --- |
+| Codex | Manual source install | Install the required Skill into `~/.agents/skills`. |
+| Claude Code | Manual source install | Install the required Skill into `~/.claude/skills`. |
+| Claude Desktop | ZIP bundle | Bundle the required specialist Skill and upload/enable it in Claude Desktop Skills settings. |
+| Gemini CLI | Manual source install | Install the required Skill into `~/.gemini/skills`. |
+| WorkBuddy, Grok Build, OpenCode, Trae | Not currently distributed | Their Desktop Router/configuration adapters do not imply a compatible specialist-Skill delivery. |
+
+The canonical matrix is `references/host-support.json`. The CLI intentionally never guesses a host directory.
+
+## Connection contract
+
+The host's current configured connection owns the Base URL, authentication, and routing. CC Switch, Pure Tokens Desktop, or a manually configured host connection can provide it. The Skills do not read, scan, ask for, print, or store credentials or host configuration; they do not inspect a provider label, Base URL, or service attribution.
+
+`puretokens_connection` makes exactly one read-only `GET /v1` request through the current connection. It confirms the connection only when that API endpoint declares `status: "ok"`, `name: "Pure Tokens API"`, and `base_url: "/v1"`. It never reveals the actual Base URL or reads host configuration. If the declaration is absent or the request fails, it says only that Pure Tokens could not be confirmed; that result does not prove the connection belongs to another service. This is an endpoint-declaration check, not cryptographic anti-spoof verification.
+
+`puretokens_models` makes exactly one read-only `GET /v1/media/models` request. It exposes the current authenticated catalog in a user-readable form: exact model IDs, returned capabilities, declared optional parameters, and declared media operations. It can shortlist models for an explicit technical requirement such as image-to-video, a reference medium, duration, aspect ratio, or resolution, but only when that requirement is explicitly declared by the current model profile. It never submits media work, retries the catalog request, falls back to the static README catalog, or ranks unreturned quality, price, speed, or availability information.
+
+`puretokens_image` reads `GET /v1/media/models` before every new task, including its default `gpt-image-2`, then uses `POST /v1/images/generations` with `async: true`. Every non-core image field — count, pixel size, semantic image size, aspect ratio, reference field, and strength — must be declared by that exact authenticated profile. An explicitly supplied public HTTPS reference URL may be sent only in a profile property whose declared transport allows it. An attached native image may be sent only when `input_schema.operations.image_edit` declares `POST` to `/v1/images/generations` or `/v1/images/edits`, multipart input, fields, counts, and transport; the Skill uses that declared operation path.
+
+`puretokens_video` first uses `GET /v1/media/models`, verifies an exact `video` model ID, then uses `POST /v1/videos`. Its default is `grok-imagine-video-1.5-preview`; it polls and delivers only the same task's native bytes. Prompt requirement and every optional field come from the exact live profile. When `constraints.resolution_by_mode` is declared, the selected text, image, or reference operation must use that mode's resolution set rather than the broader `resolution` property. An explicitly supplied public HTTPS media URL, file ID, or voice ID may use a declared profile property and declared transport; native attached media instead requires the corresponding declared multipart operation (`image_to_video`, `reference_image_video`, `reference_video`, `reference_audio`, or `video_edit`). Video editing still requires `POST /v1/videos/edits`, a `video` attachment field, and multipart transport.
+
+Every supported host is held to the same native-execution contract: authenticated relative-path HTTP, JSON task responses, native media-byte delivery, and continuation by the same task ID. The acceptance matrix is `references/host-native-execution-contract.json`; it does not grant the Skill access to a Base URL, API key, or host configuration.
+
+The active connection must execute those requests and deliver native image or video bytes. If it cannot, the Skill stops before a billable submission and tells the user to check the existing Pure Tokens Base URL, authentication, and routing configuration. It never falls back to another execution path and does not identify or branch on other relay services.
+
+## Balance
+
+`puretokens_balance` makes exactly one read-only `GET /api/product/desktop/account/balance` request only when the host exposes the current connection's existing authenticated account session. It reports only returned fields. If that session is not exposed, it directs the user to the current connection's client balance view; it never guesses a balance, tries another endpoint, or asks for credentials.
+
+## Image sizes and count
+
+An image request is never split into several paid submissions. Count and every size control are model-specific: `n`, `size`, `image_size`, `aspect_ratio`, `width`, and `height` may be sent only when the selected model's current authenticated profile declares that exact field and value. If `n` is not declared, the Skill does not invent it.
+
+Physical dimensions such as `200cm × 230cm` cannot be guaranteed and are never passed as `n`, `size`, or another API field. The Skill explains the limitation and lists the exact model's declared pixel or semantic-size choices.
+
+For `n` images, delivery reads exactly the zero-based indexes `0` through `n-1` from the same task, one index at a time and only after the task succeeds. A request is successful only when native bytes arrive for every requested index. A partial result names both delivered and missing indexes, then permits only another read of the missing content from that same task. The Skill never prefetches or re-downloads delivered content; it hands off each native result before reading the next.
+
+## Model parameter profiles and receipts
+
+Every new image and video task uses the selected model's authenticated live `input_schema`; the static selection list is only for aliases. Any requested optional field must be present with a compatible value. Video prompt is required when the profile says so; it may be omitted only for the exact single-reference exception explicitly declared by that profile. A missing or incompatible profile stops before submission and asks the user to remove the option or choose a model with a published profile.
+
+The same live profile controls media inputs. An explicitly supplied public HTTPS URL, file ID, or voice ID is sent only in its exact declared property and permitted transport; the Skill never downloads, probes, checks accessibility, rehosts, or rewrites it. Native media explicitly attached in the current request uses only an advertised `multipart_file` operation. The Skill sends those bytes with the one declared Images or Videos API request; the Pure Tokens gateway then performs short-lived internal R2 staging, verifies its provider-facing HTTPS URL, and does not return that URL. Multiple native attachment types need an explicitly declared combined operation; multiple public URL/ID fields need no declared conflict. The Skill never manufactures a URL or file ID, calls a separate upload API, or silently turns a media request into text generation.
+
+On submit, continuation, completion, and failure, media Skills return a consistent receipt: exact model ID when returned, task ID when returned, current state, requested operation, requested count, requested size/parameters, delivered count on completion, and the next action. Missing task metadata is reported as not returned, never guessed.
+
+## Asynchronous polling
+
+Media polling begins only after submission returns a `task_id` and runs only within the submission turn or a user turn that explicitly continues that same task ID. It has at most one status request in flight per task and never creates a background timer, queue, or worker. A valid positive HTTP `Retry-After` is used only while time remains in the automatic-polling budget. Otherwise an image task waits `3, 6, 12, 24, 30, 30` seconds before at most six same-task status reads; a video task waits `5, 10, 20, 40, 60, 60` seconds before at most seven reads. Each bounded window lasts at most 120 seconds for images or 300 seconds for videos. A rate limit, 5xx response, transport error, or timeout stops that window immediately. A still-pending task is reported as pending with its task ID. When the user explicitly asks to continue it, the Skill opens one new bounded window for that same task only; it never treats a deadline or read error as failure and never submits a replacement task.
+
+Media bytes are not cached in Skill state, prompts, or logs. Content is read only after terminal success, with one content read in flight; the host hands off the native bytes before another read. If the host cannot do that without unbounded background work, duplicate reads, or cached copies, the Skill reports same-task delivery as unavailable instead of substituting a URL or submitting a new task.
+
+## Usage examples
+
+- Connection: `Is my current connection Pure Tokens?` The Skill checks only the current endpoint's `GET /v1` declaration and does not reveal configuration.
+- Models: `Show the video models currently available to me, their declared duration and aspect-ratio options, and which support image-to-video.` This is read-only; it does not submit a task.
+- Image: `Use gpt-image-2 to generate a 2K, 16:9 illustration of a snowy village at dawn.`
+- Another image model: `Use nano banana pro to generate a clean product poster.` The Skill resolves a unique installed alias, then confirms the exact ID and image capability in the current authenticated catalog.
+- Image reference URL: `Use gpt-image-2 with this public reference image URL: https://example.com/reference.png` The Skill first confirms a matching profile field and declared URL transport.
+- Image edit: `Use grok-imagine-image to edit the attached image: replace the cloudy sky with a clear sunset.` The Skill first confirms the authenticated image-edit profile and the host's multipart attachment delivery.
+- Video: `Use grok 1.5 video to generate a six-second cinematic sunrise over the ocean.`
+- Image-to-video: `Use grok 1.5 video to animate this public image URL for six seconds: https://example.com/reference.png` The Skill uses it only when the authenticated profile declares the matching URL field and transport.
+- Reference video: `Use seedance-2.5 to create a six-second video from my attached video.` The Skill uses it only if the authenticated profile publishes `reference_video`.
+- Reference audio: `Use minimax h3 to create a video from my attached audio.` The Skill uses it only if the authenticated profile publishes `reference_audio`.
+- Video edit: `Edit my attached video: turn daylight into night.` The Skill submits to `/v1/videos/edits` only if the authenticated profile publishes `video_edit`.
+- Existing task only: `Continue querying task <task_id>.` The Skill only reads that task; it never submits a replacement task automatically.
+
+## Model discovery
+
+Use `puretokens_models` when the user asks what is actually available through the current connection, which models support a media operation, or which models accept a particular declared parameter. Its authenticated `GET /v1/media/models` response is the runtime source of truth: it reports exact model IDs, capabilities, optional parameter schema, and `input_schema.operations` without guessing missing fields. A compatibility shortlist is technical only; it matches declared capability, field/value, and operation metadata and does not make subjective quality or price claims.
+
+The README is discovery-only. Capabilities are taken only from the base model catalog's explicit image/video declarations, never inferred from a model name. Each installed image/video Skill includes its capability-specific `references/model-selection.json`, generated from this same catalog; an alias is usable only when it resolves to one exact model ID.
 
 <!-- media-model-catalog:start -->
 ## Media model catalog
 
-Synchronized with the base model catalog: 2026-08-21T02:46:19.421Z.
+Synchronized with the base model catalog: 2026-08-29T05:03:13.833Z.
 
 This list is generated from Pure Tokens' base model catalog using explicit image/video capabilities. At execution time, the exact model and required capability must still appear in the current authenticated GET /v1/media/models response.
 
-README is generated only from base-catalog models with explicit image/video capabilities; it never infers capability from a model name. Before release, run `npm run docs:sync-media-models-from-service` against the controlled base catalog; execution still uses the authenticated `GET /v1/media/models` response.
+README is generated only from base-catalog models with explicit image/video capabilities; it never infers capability from a model name. The current catalog snapshot is discovery-only; the authenticated live model and its `input_schema` win at execution time. Before release, refresh from the controlled base catalog and run `npm run release:validate`; the release gate fails when the snapshot is over seven days old.
 
 ### Image models
 
 | Model ID | Provider | You can also say | Good for | Example |
 | --- | --- | --- | --- | --- |
-| `gpt-image-2` | OpenAI | `image2`, `image 2`, `gpt image 2`, `openai image 2` | High-quality posters, product visuals, and illustrations | `Use image2 to make a clean orange product launch poster.` |
-| `grok-imagine-image` | xAI | `grok image`, `grok imagine` | Social posts and everyday image generation | `Use grok-imagine-image to create a realistic cafe opening post.` |
-| `grok-imagine-image-quality` | xAI | `grok quality image`, `grok high quality image` | Sharper brand key visuals | `Use grok quality image to make a polished app-store banner.` |
-| `nano-banana-2` | Google | `nano banana`, `nano banana 2`, `nano banana two` | Fast visual exploration and social-media creatives | `Use Nano Banana 2 to create a bright product social post.` |
-| `nano-banana-pro` | Google | `nano banana`, `nano banana pro`, `nano banana professional` | Polished marketing images and premium key visuals | `Use Nano Banana Pro to create a premium cloud-computing hero image.` |
-| `qwen-image-2.0` | Qwen | `qwen image 2`, `qwen image 2.0` | General-purpose image creation and product creatives | `Use qwen-image-2.0 to make a clean ecommerce product scene.` |
-| `qwen-image-2.0-pro` | Qwen | `qwen image 2 pro`, `qwen image 2.0 pro` | Higher-fidelity campaigns and product key visuals | `Use qwen-image-2.0-pro to make a premium product campaign visual.` |
-| `seedream-5.0-pro` | Doubao | Exact ID only | Image generation | `Use seedream-5.0-pro to generate an image.` |
-| `wan2.7-image` | Qwen | `wan image`, `wan 2.7 image` | Chinese posters and product creatives | `Use wan 2.7 image to make a Chinese New Year promotion poster.` |
-| `wan2.7-image-pro` | Qwen | `wan 2.7 image pro` | Higher-fidelity Chinese posters and brand visuals | `Use wan2.7-image-pro to make a premium Chinese product launch poster.` |
+| `gpt-image-2` | OpenAI | `image2` | Image generation | `Use gpt-image-2 to generate an image.` |
+| `grok-imagine-image` | xAI | `grok image` | Image generation | `Use grok-imagine-image to generate an image.` |
+| `grok-imagine-image-2.0` | xAI | `grok image 2.0` | Image generation | `Use grok-imagine-image-2.0 to generate an image.` |
+| `grok-imagine-image-quality` | xAI | Exact ID only | Image generation | `Use grok-imagine-image-quality to generate an image.` |
+| `nano-banana-2` | Google | `nano banana 2` | Image generation | `Use nano-banana-2 to generate an image.` |
+| `nano-banana-2-lite` | Google | Exact ID only | Image generation | `Use nano-banana-2-lite to generate an image.` |
+| `nano-banana-pro` | Google | `nano banana pro` | Image generation | `Use nano-banana-pro to generate an image.` |
+| `seedream-5.0-pro` | ByteDance | Exact ID only | Image generation | `Use seedream-5.0-pro to generate an image.` |
 
 ### Video models
 
 | Model ID | Provider | You can also say | Good for | Example |
 | --- | --- | --- | --- | --- |
-| `grok-imagine-video` | xAI | `grok video`, `grok imagine video` | Short social clips and quick concepts | `Use grok-imagine-video to make a 5-second coffee ad.` |
-| `grok-imagine-video-1.5-preview` | xAI | `grok video`, `grok imagine video`, `grok 1.5 video`, `grok video 1.5`, `grok imagine video 1.5` | Video generation | `Use grok-imagine-video-1.5-preview to generate a short video.` |
-| `minimax-h3` | MiniMax | `minimax h3`, `minimax h3 video` | Cinematic product clips and motion-led concepts | `Use minimax-h3 to make a 10-second product reveal video.` |
-| `seedance-2.0` | Doubao | Exact ID only | Video generation | `Use seedance-2.0 to generate a short video.` |
-| `seedance-2.0-fast` | Doubao | Exact ID only | Video generation | `Use seedance-2.0-fast to generate a short video.` |
-| `seedance-2.0-mini` | Doubao | Exact ID only | Video generation | `Use seedance-2.0-mini to generate a short video.` |
-| `seedance-2.5` | Doubao | Exact ID only | Video generation | `Use seedance-2.5 to generate a short video.` |
+| `grok-imagine-video` | xAI | `grok video` | Video generation | `Use grok-imagine-video to generate a video.` |
+| `grok-imagine-video-1.5` | xAI | Exact ID only | Video generation | `Use grok-imagine-video-1.5 to generate a short video.` |
+| `grok-imagine-video-1.5-preview` | xAI | `grok 1.5 video` | Video generation | `Use grok-imagine-video-1.5-preview to generate a video.` |
+| `minimax-h3` | MiniMax | `minimax h3` | Video generation | `Use minimax-h3 to generate a video.` |
+| `seedance-2.0` | ByteDance | Exact ID only | Video generation | `Use seedance-2.0 to generate a video.` |
+| `seedance-2.0-fast` | ByteDance | Exact ID only | Video generation | `Use seedance-2.0-fast to generate a video.` |
+| `seedance-2.0-mini` | ByteDance | Exact ID only | Video generation | `Use seedance-2.0-mini to generate a video.` |
+| `seedance-2.5` | ByteDance | Exact ID only | Video generation | `Use seedance-2.5 to generate a video.` |
+| `wan3.0-video` | Qwen | `wan3 video`, `wan 3 video` | Video generation | `Use wan3.0-video to generate a short video.` |
+| `wan3.0-video-prime` | Qwen | `wan3 video prime`, `wan 3 video prime` | Video generation | `Use wan3.0-video-prime to generate a short video.` |
 
 <!-- media-model-catalog:end -->
 
-The Skill requests one result by default. It passes a higher count only when the user explicitly asks for it and the selected execution contract supports that count; it never turns one request into several submissions. MCP calls the selected generation tool once, then polls the same task. Direct Cloud image submissions always send `async: true`; its execution layer still defensively accepts compatible synchronous `data[].b64_json` and `data[].url` responses as well as asynchronous tasks, but reports success only after actual bytes are locally delivered.
+## Updating
 
-## What to say
-
-| You want | Say this |
-| --- | --- |
-| Generate an image | `Generate a cute dog.` |
-| Generate a video | `Generate a 15-second 16:9 product ad.` |
-| Use Nano Banana | `Use Nano Banana Pro to create a premium product key visual.` |
-| See available models | `List the image and video models I can use now.` |
-
-## Boundaries
-
-```text
-Natural-language user request → Skill → (MCP → local Router → service | Direct Cloud → service)
-```
-
-- The Skill interprets requests such as “use image2” or “use Grok Video”, reads the live catalog, asks for clarification when the match is not unique, and selects the correct tool.
-- MCP accepts only an exact model ID. It validates arguments, submits once, polls the result, and delivers local files. MCP never performs natural-language matching, guesses a model, or silently substitutes one.
-- A host-selected native Pure Tokens media operation takes precedence when it reports an exact verified model and real media delivery. Otherwise GUI clients use a callable `puretokens-image` MCP tool; an HTTPS-capable Agent may use Direct Cloud with a host-injected `PURETOKENS_API_KEY`. These independent paths do not require Pure Tokens Desktop, Router, an extra CLI, or MCP.
-- The live catalog remains authoritative. Desktop Router and Direct Cloud both read the same authenticated `/v1/media/models` response with explicit `image` / `video` capabilities.
-
-## Prerequisites
-
-For the Desktop-managed MCP path, complete these steps in order:
-
-1. In Pure Tokens Desktop, open the configuration for the target client.
-2. Select one or more groups that contain the target model.
-3. Click **Verify and apply**.
-4. Restart the target client and start a new chat.
-
-Only models in the selected group or groups are available to this Desktop-managed MCP path. If the target model is absent from the live media catalog, return to client configuration, select a group that contains it, and apply the configuration again. Desktop configures an MCP server named `puretokens-image` for supported clients. A self-managed MCP through CC Switch or another provider does not require Desktop; its own authenticated `puretokens_list_media_models` response determines availability. The Skill does not replace MCP configuration and never carries credentials.
-
-For a host-native manually configured Pure Tokens model, the selected operation must provide an exact verified `image` or `video` model and real media delivery. A generic text/chat model connection, an opaque model label, or a rendered widget does not meet that requirement. For Direct Cloud, configure the host's normal **API Base URL** and **API Key** fields with `https://api.puretokensx.com` and a Pure Tokens API key. Hosts that use environment variables map those fields to `PURETOKENS_API_BASE_URL` and `PURETOKENS_API_KEY`; the Skill must never ask for, print, persist, or put that key in a prompt. Direct Cloud does not use the Desktop group selection UI; the API key's own permissions and the authenticated `/v1/media/models` catalog are authoritative.
-
-## Install and update from GitHub
-
-`puretokens_media` is the single behavior source for every supported client. Claude Desktop receives an uploadable ZIP; Codex can install the shared source directly; WorkBuddy uses a generated adapter when needed. Pure Tokens Desktop can manage Codex and WorkBuddy as an optional convenience path. Always use this repository for the current shared-Skill installation instructions and files.
-
-### Codex
-
-For Desktop-managed Codex, select the target groups and click **Verify and apply**. Desktop atomically installs the generated shared Skill at `~/.codex/skills/puretokens_media` and configures the separate local `puretokens-image` MCP server. No Plugin Marketplace or Plugin unlock is required.
-
-For a standalone terminal-capable Codex Agent, install the same shared source directly and use its independently configured MCP or Direct Cloud capabilities:
+Pull the current repository and run the matching command for each installed Skill:
 
 ```bash
-node bin/puretokens-skill.js install puretokens_media --target ~/.codex/skills
+node bin/puretokens-skill.js upgrade puretokens_image --target ~/.agents/skills
 ```
 
-Start a new Codex task after either installation path. The Skill never bundles, starts, or replaces a Desktop-managed MCP.
-
-### Claude Code, Gemini CLI, and OpenCode
-
-Clone the canonical repository, then install into the target client's user Skill directory:
+For Claude Desktop, bundle and upload the required specialist Skill:
 
 ```bash
-git clone https://github.com/PureTokens/puretokens-skill.git
-cd puretokens-skill
-
-# Claude Code
-node bin/puretokens-skill.js install puretokens_media --target ~/.claude/skills
-
-# Gemini CLI
-node bin/puretokens-skill.js install puretokens_media --target ~/.gemini/skills
-
-# OpenCode
-node bin/puretokens-skill.js install puretokens_media --target ~/.config/opencode/skills
+node bin/puretokens-skill.js bundle puretokens_image --format claude-desktop --out ./puretokens_image.zip
 ```
 
-### Copy this to a terminal-capable local agent
-
-Paste this only into an agent that can run local commands and write local files:
-
-```text
-Install Pure Tokens Skill for the client I am using from https://github.com/PureTokens/puretokens-skill.
-
-1. Before identifying a target client, confirm that this environment has both a local terminal and permission to write local files.
-   - If this is a normal ChatGPT conversation, or either capability is unavailable, stop. Do not clone or download the repository or claim the Skill was installed. Tell me to use a terminal-capable local agent or have a local administrator install it.
-2. Only after that check, identify whether this is Codex, Claude Code, Gemini CLI, or OpenCode.
-3. Clone or download the repository into a temporary working directory.
-4. Install only the matching Pure Tokens delivery:
-   - Codex: ~/.codex/skills
-   - Claude Code: ~/.claude/skills
-   - Gemini CLI: ~/.gemini/skills
-   - OpenCode: ~/.config/opencode/skills
-5. Do not overwrite any other Skill.
-6. Do not read, request, print, or store API keys, cookies, passwords, Router tokens, or local authorization URLs.
-7. Tell me the installed directory and whether the operation succeeded.
-
-If this is Claude Desktop, do not claim it was installed automatically. Build the ZIP following the README, then tell me exactly where to upload and enable it. For WorkBuddy, use the generated adapter command in the README only when the local WorkBuddy Skill directory is known; otherwise use Pure Tokens Desktop's **Verify and apply**.
-```
-
-Do not use that prompt as a self-install instruction inside a normal ChatGPT chat. It must fail closed rather than pretend that a local Skill was installed.
-
-To update a manually installed Codex, Claude Code, Gemini CLI, or OpenCode Skill, pull the repository and run the matching upgrade command:
+Before publishing a release:
 
 ```bash
-git pull
-node bin/puretokens-skill.js upgrade puretokens_media --target ~/.codex/skills
+npm run docs:sync-media-models-from-service
+npm run release:validate
 ```
-
-Codex, Claude Code, Gemini CLI, and OpenCode use the matching `upgrade` command and target directory from the installation table above. Upgrade replaces only a Pure Tokens-managed directory containing matching `skill.json` and `SKILL.md`; it never overwrites another Skill.
-
-### Windows PowerShell
-
-```powershell
-git clone https://github.com/PureTokens/puretokens-skill.git
-Set-Location puretokens-skill
-node .\bin\puretokens-skill.js install puretokens_media --target $HOME\.claude\skills
-```
-
-For the other clients, use `$HOME\.claude\skills`, `$HOME\.gemini\skills`, or `$HOME\.config\opencode\skills` with `node .\bin\puretokens-skill.js install puretokens_media --target ...`. If PowerShell cannot find `node`, install Node.js LTS from the official Node.js website and reopen PowerShell.
-
-## Claude Desktop import and WorkBuddy routing
-
-Claude Desktop uses a graphical local Skill upload. Create the ZIP:
-
-```bash
-node bin/puretokens-skill.js bundle puretokens_media --format claude-desktop --out ./puretokens_media-0.4.7.zip
-```
-
-The ZIP has this layout:
-
-```text
-puretokens_media/
-├── SKILL.md
-├── skill.json
-├── source-delivery.json
-└── references/
-    ├── behavior-scenarios.json
-    ├── direct-cloud-contract.md
-    ├── model-catalog-contract.md
-    └── natural-language-aliases.json
-```
-
-In Claude Desktop, open **Settings → Features → Skills** (some builds show **Customize → Skills**), choose **Upload skill**, upload the ZIP, and enable `Pure Tokens Media`. A Claude Desktop instance connected through CC Switch can use this same ZIP: independently configure a callable `puretokens-image` MCP tool through CC Switch or another local tool provider. If the host itself exposes authenticated HTTPS execution and local media delivery, it may use Direct Cloud instead. The ZIP intentionally excludes the WorkBuddy-only adapter.
-
-For WorkBuddy, choose one installation path. Pure Tokens Desktop can atomically render and manage the always-on `puretokens_workbuddy_router` delivery from the shared `puretokens_media` source, along with the `puretokens-image` MCP entry and reference files: select a compatible group, click **Verify and apply**, then start a new chat. A self-managed WorkBuddy installation can render the same generated delivery from this repository when its local Skill directory is known:
-
-```bash
-node scripts/render-workbuddy-media-skill.mjs --out ~/.workbuddy/skills/puretokens_workbuddy_router
-```
-
-The self-managed path still needs either a callable `puretokens-image` MCP configured through WorkBuddy, CC Switch, or another tool provider, or the host's actual Direct Cloud capabilities. Bare image/video requests discover deferred MCP tools and invoke them with `DeferExecuteTool`; discovery or a rendered widget is not generation. A WorkBuddy `ImageGen`, `VideoGen`, or manually configured model selected in its UI/tool context is preserved. When that selection targets a verified Pure Tokens image/video operation, WorkBuddy's configured native execution runs it without a duplicate MCP submission. A general chat-model configuration or a model name written only in the message is not enough to bypass catalog-first selection.
-
-To update Claude Desktop, get the new version from GitHub, generate a new ZIP, disable the old Skill, upload the new ZIP, and enable it. Desktop-managed WorkBuddy regenerates the shared media behavior on the next **Verify and apply**; self-managed WorkBuddy reruns the render command. Do not hand-edit generated deliveries.
-
-## Codex install and update
-
-Pure Tokens Desktop's **Verify and apply** atomically replaces only its own generated `puretokens_media` directory and configures only its own `puretokens-image` MCP entry. It does not enable Codex Plugins, register a Marketplace, or change any other Skill. A standalone Codex installation uses the shared source commands above and must independently provide callable MCP or Direct Cloud execution.
-
-## Model-selection rules
-
-`puretokens_media` must call `puretokens_list_media_models` first and match only fields returned in that response: `id`, `displayName`, `aliases`, `provider`, and `capabilities`. MCP generation calls include the exact `model` and a stable `request_id`; Direct Cloud retains that request ID in host task state because the public endpoint has no documented idempotency field. One logical user request submits once, requests one result unless the user explicitly gives a count, and reuses the same `request_id` on an MCP host retry. `gpt-image-2` returns native MCP image content from the generation call and must not be followed by `puretokens_image_result`; task-based image models poll only the same returned `task_id` and original model.
-
-Completed media reports the exact model, the saved filename, and `Downloads/Pure Tokens`. Images are previewable only when MCP or the host returns native image content; Direct Cloud always requests asynchronous image generation and, as a compatibility fallback, downloads returned `b64_json`, returned URLs, or completed `/content` bytes before it claims delivery. For a completed multi-image task, it retrieves each declared result through the same `/content` endpoint with zero-based `index` values. Videos may include a bounded native MCP resource for hosts that render it; larger videos remain successfully delivered as local MP4 files. An open-file/open-folder entry is shown only when the execution layer actually returned one.
-
-Behavior scenarios for ambiguity, an empty catalog, unavailable MCP, task failure, and polling timeout are stored in `skills/puretokens_media/references/behavior-scenarios.json`. No error may trigger an automatic model switch or resubmission unless the user explicitly chooses a new model.
-
-## Security boundary
-
-The Skill does not contain or request cloud credentials, Router tokens, cookies, passwords, user configuration, group routing, payment data, local authorization addresses, media, task results, or prompt history.
-
-Trae is currently not supported by this media Skill flow.

@@ -2,11 +2,43 @@
   "schemaVersion": 1,
   "skills": [
     {
-      "name": "puretokens_media",
-      "version": "0.4.7",
-      "entry": "skills/puretokens_media/SKILL.md",
-      "manifest": "skills/puretokens_media/skill.json",
-      "summary": "Shared source for exact Pure Tokens media selection, Direct Cloud or MCP execution, one task submission with explicit result counts, safe polling, native result delivery, and optional Desktop-managed Codex and WorkBuddy deliveries.",
+      "name": "puretokens_balance",
+      "version": "0.9.0",
+      "entry": "skills/puretokens_balance/SKILL.md",
+      "manifest": "skills/puretokens_balance/skill.json",
+      "summary": "Read a balance from the current configured connection.",
+      "distribution": "cross-client-source"
+    },
+    {
+      "name": "puretokens_connection",
+      "version": "0.9.0",
+      "entry": "skills/puretokens_connection/SKILL.md",
+      "manifest": "skills/puretokens_connection/skill.json",
+      "summary": "Check whether the current API endpoint identifies itself as Pure Tokens API.",
+      "distribution": "cross-client-source"
+    },
+    {
+      "name": "puretokens_models",
+      "version": "0.9.0",
+      "entry": "skills/puretokens_models/SKILL.md",
+      "manifest": "skills/puretokens_models/skill.json",
+      "summary": "Inspect the current authenticated media catalog and explain declared model capabilities.",
+      "distribution": "cross-client-source"
+    },
+    {
+      "name": "puretokens_image",
+      "version": "0.9.0",
+      "entry": "skills/puretokens_image/SKILL.md",
+      "manifest": "skills/puretokens_image/skill.json",
+      "summary": "Generate and profile-gated edit images through the current configured Images API.",
+      "distribution": "cross-client-source"
+    },
+    {
+      "name": "puretokens_video",
+      "version": "0.9.0",
+      "entry": "skills/puretokens_video/SKILL.md",
+      "manifest": "skills/puretokens_video/skill.json",
+      "summary": "Generate and profile-gated animate, reference, or edit video through the current configured Videos API.",
       "distribution": "cross-client-source"
     }
   ]

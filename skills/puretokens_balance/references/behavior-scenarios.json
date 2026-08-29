@@ -1,0 +1,9 @@
+{
+  "$schema": "https://puretokensx.com/schemas/media-behavior-scenarios.schema.json",
+  "schemaVersion": 1,
+  "kind": "balance",
+  "scenarios": [
+    { "id": "balance-account-session-unavailable", "when": "the host cannot call GET /api/product/desktop/account/balance with an existing authenticated account session", "then": "tell the user to use the current connection's client balance view; do not estimate or request credentials" },
+    { "id": "balance-response", "when": "the host returns a balance response", "then": "report only returned fields once; do not retry or infer omitted values" }
+  ]
+}

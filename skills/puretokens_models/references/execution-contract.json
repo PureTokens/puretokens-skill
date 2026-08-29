@@ -1,0 +1,21 @@
+{
+  "$schema": "https://puretokensx.com/schemas/media-execution-contract.schema.json",
+  "schemaVersion": 1,
+  "kind": "models",
+  "transport": {
+    "usesCurrentConfiguredConnection": true,
+    "usesRelativePathsOnly": true,
+    "doesNotInspectConnectionIdentity": true,
+    "requiredHostCapabilities": ["authenticated_relative_http", "json_task_response"]
+  },
+  "operations": {
+    "catalog": { "method": "GET", "path": "/v1/media/models" }
+  },
+  "result": {
+    "reportOnlyAuthenticatedCatalog": true,
+    "doesNotSubmitMediaTasks": true,
+    "neverRetry": true,
+    "noStaticCatalogFallback": true,
+    "compatibilityShortlistsRequireDeclaredCapabilityAndInputSchema": true
+  }
+}

@@ -1,0 +1,85 @@
+{
+  "$schema": "https://puretokensx.com/schemas/media-execution-contract.schema.json",
+  "schemaVersion": 1,
+  "kind": "video",
+  "transport": {
+    "usesCurrentConfiguredConnection": true,
+    "usesRelativePathsOnly": true,
+    "doesNotInspectConnectionIdentity": true,
+    "requiresNativeMediaByteDelivery": true,
+    "requiredHostCapabilities": ["authenticated_relative_http", "json_task_response", "native_media_byte_delivery", "same_task_continuation"]
+  },
+  "operations": {
+    "catalog": { "method": "GET", "path": "/v1/media/models" },
+    "submit": {
+      "method": "POST",
+      "path": "/v1/videos",
+      "requiredBodyFields": ["model"],
+      "conditionalBodyFields": {
+        "prompt": "required_only_when_the_exact_authenticated_live_profile_requires_it_or_no_declared_single-reference-exception-applies",
+        "all_other_user_optional_fields": "only_when_the_exact_authenticated_live_input_schema_declares_the_field_and_value"
+      },
+      "contentType": "profile_declared_json_or_multipart"
+    },
+    "edit": {
+      "method": "POST",
+      "path": "/v1/videos/edits",
+      "contentType": "multipart/form-data",
+      "requiresAuthenticatedLiveProfileOperation": "video_edit",
+      "requiredBodyFields": ["model", "prompt", "video"],
+      "inputSource": "current_user_explicit_native_media_only",
+      "transport": "profile_declared_multipart_file"
+    },
+    "status": { "method": "GET", "pathTemplate": "/v1/videos/{task_id}" },
+    "content": { "method": "GET", "pathTemplate": "/v1/videos/{task_id}/content" }
+  },
+  "result": {
+    "successRequires": "native_video_bytes",
+    "notSuccess": ["task_id", "status_text", "html", "svg", "component", "remote_url"],
+    "sameTaskOnly": true,
+    "neverAutoResubmit": true
+  },
+  "contentRetrieval": {
+    "fetchOnlyAfterTerminalSuccess": true,
+    "oneInFlightContentReadPerTask": true,
+    "neverPrefetchOrRefetchDeliveredContent": true,
+    "handoffBeforeNextContentRead": true
+  },
+  "parameterValidation": {
+    "allModelsOptionalParametersRequire": "authenticated_live_catalog_input_schema",
+    "promptRequirementUsesAuthenticatedLivePropertiesAndConstraints": true,
+    "resolutionUsesAuthenticatedLiveModeConstraint": true,
+    "whenProfileIsMissing": "do_not_submit_requested_optional_parameters"
+  },
+  "inputMediaValidation": {
+    "imageToVideoOperation": "image_to_video",
+    "referenceImageVideoOperation": "reference_image_video",
+    "referenceVideoOperation": "reference_video",
+    "referenceAudioOperation": "reference_audio",
+    "videoEditOperation": "video_edit",
+    "requiresAuthenticatedLiveCatalogInputSchemaOperation": true,
+    "publicUrlOrDeclaredIdReferenceRequires": "authenticated_live_catalog_property_and_declared_reference_transport",
+    "onlyCurrentUserExplicitMedia": true,
+    "allowedTransports": ["multipart_file"],
+    "skillPassesUserProvidedPublicUrlsOrDeclaredIdsWithoutDownloadingOrRehosting": true,
+    "skillNeverDownloadsOrRehostsMedia": true,
+    "gatewayStagesCurrentRequestAttachment": true,
+    "multipleNativeAttachmentTypesRequireOneDeclaredCombinedOperation": true,
+    "multiplePublicUrlOrIdFieldsRequireNoDeclaredConflict": true,
+    "whenTransportUnavailable": "do_not_submit_and_explain_declared_transport"
+  },
+  "polling": {
+    "serverDelay": "honor_valid_positive_retry_after_before_fallback",
+    "serverDelayMustFitRemainingAutomaticDeadline": true,
+    "fallbackDelaysSeconds": [5, 10, 20, 40, 60],
+    "steadyDelaySeconds": 60,
+    "automaticDeadlineSeconds": 300,
+    "maxAutomaticStatusReads": 7,
+    "oneInFlightStatusReadPerTask": true,
+    "automaticPollingScope": "submission_or_explicit_same_task_continuation_turn_only_no_background_timer_or_queue",
+    "afterStatusReadError": "stop_automatic_polling_and_require_explicit_same_task_continuation",
+    "explicitContinuation": "new_bounded_same_task_polling_window_only_when_explicitly_requested",
+    "afterDeadline": "report_pending_and_require_explicit_same_task_continuation"
+  },
+  "unsupportedInput": ["undeclared_media_operation", "undeclared_combined_media_operation", "non_current_user_media"]
+}

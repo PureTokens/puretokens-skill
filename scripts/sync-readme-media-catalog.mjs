@@ -5,10 +5,8 @@ import { repositoryRoot } from "./skill-registry.mjs";
 
 const catalogPath = path.join(
   repositoryRoot,
-  "skills",
-  "puretokens_media",
   "references",
-  "published-model-catalog.json"
+  "media-model-catalog.json"
 );
 
 const readmes = [
@@ -53,8 +51,8 @@ function renderCatalog(catalog, locale) {
     : `Synchronized with the base model catalog: ${catalog.serviceCatalog.capturedAt}.`;
   const liveNotice = catalog.availabilityNotice[locale];
   const newModelNotice = isChinese
-    ? "README 只从基础目录中带有明确图片/视频能力的模型生成，不通过模型名称推断。发布前运行 `npm run docs:sync-media-models-from-service`，从受控基础模型目录刷新清单；执行时仍以认证后的 `GET /v1/media/models` 为准。"
-    : "README is generated only from base-catalog models with explicit image/video capabilities; it never infers capability from a model name. Before release, run `npm run docs:sync-media-models-from-service` against the controlled base catalog; execution still uses the authenticated `GET /v1/media/models` response.";
+    ? "README 只从基础目录中带有明确图片/视频能力的模型生成，不通过模型名称推断。当前目录快照只用于发现能力；实际执行时以认证后的实时模型和其 `input_schema` 为准。发布前从受控基础目录刷新，并运行 `npm run release:validate`；当快照超过七天时发布校验会失败。"
+    : "README is generated only from base-catalog models with explicit image/video capabilities; it never infers capability from a model name. The current catalog snapshot is discovery-only; the authenticated live model and its `input_schema` win at execution time. Before release, refresh from the controlled base catalog and run `npm run release:validate`; the release gate fails when the snapshot is over seven days old.";
   const imageHeading = isChinese ? "### 图片模型" : "### Image models";
   const videoHeading = isChinese ? "### 视频模型" : "### Video models";
   const idHeader = isChinese ? "模型 ID" : "Model ID";

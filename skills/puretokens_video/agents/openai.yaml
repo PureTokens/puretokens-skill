@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pure Tokens Video"
+  short_description: "Generate videos through the current Pure Tokens connection."
+  default_prompt: "Use $puretokens_video to generate a video through my current Pure Tokens connection."
