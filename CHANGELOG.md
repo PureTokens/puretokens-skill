@@ -4,7 +4,7 @@
 
 # Changelog
 
-## Unreleased
+## 0.11.0 — 2026-08-29
 
 - The client-download Agent-installation prompt now declares the canonical GitHub repository and `main` branch in its first instruction, so a copied prompt has an unambiguous installation source before the Agent begins work.
 
