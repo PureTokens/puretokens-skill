@@ -16,24 +16,25 @@ test("registry exposes exactly the five specialist Skills", async () => {
   const { registry, records } = await collectSkillRecords();
   assert.deepEqual(registry.skills.map((skill) => skill.name), names);
   assert.equal(records.length, 5);
-  assert.deepEqual([...new Set(records.map((record) => record.manifest.version))], ["0.9.0"]);
+  assert.deepEqual([...new Set(records.map((record) => record.manifest.version))], ["0.10.0"]);
   assert.deepEqual(await validateRepository(), []);
 });
 
-test("image and video policies use the current API without MCP fallback", async () => {
+test("specialist policies use the fixed direct API without MCP fallback", async () => {
   const [balance, connection, models, image, video] = await Promise.all(names.map((name) => readFile(path.join(repositoryRoot, "skills", name, "SKILL.md"), "utf8")));
-  assert.match(connection, /GET \/v1/);
-  assert.match(connection, /不读取、扫描、展示或索取真实 Base URL、凭据、provider 标签或宿主配置/);
-  assert.match(models, /GET \/v1\/media\/models/);
+  assert.match(connection, /GET https:\/\/api\.puretokensx\.com\/v1/);
+  assert.match(connection, /不读取、扫描、展示、复制或索取真实 Base URL、凭据、provider 标签或宿主配置/);
+  assert.match(models, /GET https:\/\/api\.puretokensx\.com\/v1\/media\/models/);
   assert.match(models, /不得调用 Images\/Videos 提交、任务状态、内容、余额或其他路径/);
   assert.match(models, /`input_schema\.constraints`/);
-  assert.match(image, /POST \/v1\/images\/generations/);
+  assert.match(image, /POST https:\/\/api\.puretokensx\.com\/v1\/images\/generations/);
   assert.match(image, /`200cm × 230cm`/);
-  assert.match(video, /POST \/v1\/videos/);
+  assert.match(video, /POST https:\/\/api\.puretokensx\.com\/v1\/videos/);
   assert.match(video, /`grok-imagine-video-1.5-preview`/);
   const policy = balance + connection + models + image + video;
-  assert.match(policy, /不检查或判断 Base URL、provider 标签、服务归属或凭据/);
-  assert.doesNotMatch(policy, /MCP|Direct Cloud|krill|当前连接不是 Pure Tokens|无法确认归属|puretokensx\.com/i);
+  assert.match(policy, /https:\/\/api\.puretokensx\.com/);
+  assert.doesNotMatch(policy, /internal-upstream|当前连接不是 Pure Tokens|无法确认归属/i);
+  assert.match(policy, /不构造认证头/);
 });
 
 test("bilingual READMEs include safe copyable Agent installation prompts", async () => {
@@ -81,12 +82,14 @@ test("bilingual READMEs include safe copyable Agent installation prompts", async
   assert.match(chinese, /不得读取、展示、复制、修改或索取 API Key、Base URL、认证文件、模型配置、MCP 配置/);
 });
 
-test("specialist manifests use the configured connection without provider inspection", async () => {
+test("specialist manifests use the fixed direct API without credential inspection", async () => {
   for (const name of names) {
     const manifest = JSON.parse(await readFile(path.join(repositoryRoot, "skills", name, "skill.json"), "utf8"));
-    assert.equal(manifest.rules.usesCurrentConfiguredConnection, true);
-    assert.equal(manifest.rules.usesRelativeApiPathsOnly, true);
-    assert.equal(manifest.rules.doesNotInspectConnectionIdentity, true);
+    assert.equal(manifest.rules.usesFixedPureTokensApiOrigin, true);
+    assert.equal(manifest.rules.usesFullApiUrls, true);
+    assert.equal(manifest.rules.usesRuntimeManagedAuthentication, true);
+    assert.equal(manifest.rules.doesNotReadCredentialsOrHostConfiguration, true);
+    assert.equal(manifest.rules.doesNotUseMcpOrFallbackTransport, true);
   }
 });
 
@@ -128,7 +131,7 @@ test("installed contracts cover bounded requests, task recovery, and user-facing
   const image = JSON.parse(await readFile(path.join(repositoryRoot, "skills", "puretokens_image", "references", "execution-contract.json"), "utf8"));
   assert.equal(image.operations.submit.conditionalBodyFields.all_user_optional_fields, "only_when_the_exact_authenticated_live_input_schema_declares_the_field_and_value");
   assert.equal(image.operations.submit.fixedBody.async, true);
-  assert.equal(image.operations.catalog.path, "/v1/media/models");
+  assert.equal(image.operations.catalog.url, "https://api.puretokensx.com/v1/media/models");
   assert.deepEqual(image.operations.edit.allowedPaths, ["/v1/images/generations", "/v1/images/edits"]);
   assert.equal(image.operations.edit.pathSource, "authenticated_live_profile_operation_path");
   assert.equal(image.operations.edit.contentType, "multipart/form-data");
@@ -141,10 +144,17 @@ test("installed contracts cover bounded requests, task recovery, and user-facing
   assert.equal(image.inputMediaValidation.skillPassesUserProvidedPublicUrlsWithoutDownloadingOrRehosting, true);
   assert.equal(image.inputMediaValidation.skillNeverDownloadsOrRehostsMedia, true);
   assert.equal(image.inputMediaValidation.gatewayStagesCurrentRequestAttachment, true);
-  assert.equal(image.inputMediaValidation.requiresHostNativeAttachmentByteDelivery, true);
+  assert.equal(image.inputMediaValidation.requiresRuntimeNativeAttachmentByteDelivery, true);
   assert.equal(image.result.sameTaskOnly, true);
   assert.equal(image.result.neverAutoResubmit, true);
-  assert.deepEqual(image.transport.requiredHostCapabilities, ["authenticated_relative_http", "json_task_response", "native_media_byte_delivery", "same_task_continuation"]);
+  assert.deepEqual(image.transport, {
+    fixedApiOrigin: "https://api.puretokensx.com",
+    usesFullApiUrls: true,
+    usesRuntimeManagedAuthentication: true,
+    doesNotReadCredentialsOrHostConfiguration: true,
+    requiresNativeMediaByteDelivery: true,
+    doesNotUseMcpOrFallbackTransport: true
+  });
   assert.equal(image.parameterValidation.everyNewSubmissionReadsAuthenticatedLiveCatalog, true);
   assert.equal(image.parameterValidation.everySelectedModelRequiresExactLiveCatalogIdAndImageCapability, true);
   assert.equal(image.parameterValidation.allOptionalParametersRequire, "authenticated_live_catalog_input_schema");
@@ -168,10 +178,10 @@ test("installed contracts cover bounded requests, task recovery, and user-facing
   assert.equal(image.polling.explicitContinuation, "new_bounded_same_task_polling_window_only_when_explicitly_requested");
   assert.equal(image.polling.afterDeadline, "report_pending_and_require_explicit_same_task_continuation");
   const video = JSON.parse(await readFile(path.join(repositoryRoot, "skills", "puretokens_video", "references", "execution-contract.json"), "utf8"));
-  assert.equal(video.operations.catalog.path, "/v1/media/models");
-  assert.equal(video.operations.submit.path, "/v1/videos");
+  assert.equal(video.operations.catalog.url, "https://api.puretokensx.com/v1/media/models");
+  assert.equal(video.operations.submit.url, "https://api.puretokensx.com/v1/videos");
   assert.deepEqual(video.operations.submit.requiredBodyFields, ["model"]);
-  assert.equal(video.operations.edit.path, "/v1/videos/edits");
+  assert.equal(video.operations.edit.url, "https://api.puretokensx.com/v1/videos/edits");
   assert.equal(video.operations.edit.requiresAuthenticatedLiveProfileOperation, "video_edit");
   assert.equal(video.result.sameTaskOnly, true);
   assert.equal(video.result.neverAutoResubmit, true);
@@ -208,14 +218,13 @@ test("installed contracts cover bounded requests, task recovery, and user-facing
   assert.equal(video.polling.afterDeadline, "report_pending_and_require_explicit_same_task_continuation");
 
   const balance = JSON.parse(await readFile(path.join(repositoryRoot, "skills", "puretokens_balance", "references", "execution-contract.json"), "utf8"));
-  assert.equal(balance.operations.read.path, "/api/product/desktop/account/balance");
+  assert.equal(balance.operations.read.url, "https://api.puretokensx.com/api/product/desktop/account/balance");
   assert.equal(balance.operations.read.requiresExistingAuthenticatedAccountSession, true);
   assert.equal(balance.operations.read.responseSchema, "https://puretokensx.com/schemas/balance-snapshot.schema.json");
 
   const connection = JSON.parse(await readFile(path.join(repositoryRoot, "skills", "puretokens_connection", "references", "execution-contract.json"), "utf8"));
   assert.equal(connection.kind, "connection");
-  assert.equal(connection.operations.identity.path, "/v1");
-  assert.deepEqual(connection.transport.requiredHostCapabilities, ["authenticated_relative_http", "json_task_response"]);
+  assert.equal(connection.operations.identity.url, "https://api.puretokensx.com/v1");
   assert.deepEqual(connection.result, {
     identitySource: "api_declared_public_health",
     expectedStatus: "ok",
@@ -228,8 +237,7 @@ test("installed contracts cover bounded requests, task recovery, and user-facing
 
   const models = JSON.parse(await readFile(path.join(repositoryRoot, "skills", "puretokens_models", "references", "execution-contract.json"), "utf8"));
   assert.equal(models.kind, "models");
-  assert.equal(models.operations.catalog.path, "/v1/media/models");
-  assert.deepEqual(models.transport.requiredHostCapabilities, ["authenticated_relative_http", "json_task_response"]);
+  assert.equal(models.operations.catalog.url, "https://api.puretokensx.com/v1/media/models");
   assert.equal(models.result.reportOnlyAuthenticatedCatalog, true);
   assert.equal(models.result.doesNotSubmitMediaTasks, true);
   assert.equal(models.result.neverRetry, true);
@@ -237,7 +245,7 @@ test("installed contracts cover bounded requests, task recovery, and user-facing
   assert.equal(models.result.compatibilityShortlistsRequireDeclaredCapabilityAndInputSchema, true);
 });
 
-test("host matrix is explicit and matches every specialist manifest", async () => {
+test("distribution matrix and fixed direct API contract match every specialist manifest", async () => {
   const hostSupport = JSON.parse(await readFile(path.join(repositoryRoot, "references", "host-support.json"), "utf8"));
   assert.equal(hostSupport.$schema, "https://puretokensx.com/schemas/host-support.schema.json");
   const supported = hostSupport.supported.map((host) => host.id).sort();
@@ -247,40 +255,22 @@ test("host matrix is explicit and matches every specialist manifest", async () =
     "claude-code": "~/.claude/skills",
     "gemini-cli": "~/.gemini/skills"
   });
-  assert.equal(hostSupport.nativeExecutionContract, "references/host-native-execution-contract.json");
-  for (const host of hostSupport.supported) {
-    assert.deepEqual(host.nativeExecution, {
-      authenticatedRelativeHttp: true,
-      jsonTaskResponse: true,
-      nativeMediaByteDelivery: true,
-      sameTaskContinuation: true
-    });
-  }
-  const nativeContract = JSON.parse(await readFile(path.join(repositoryRoot, "references", "host-native-execution-contract.json"), "utf8"));
-  assert.deepEqual(nativeContract.requiredCapabilities, ["authenticated_relative_http", "json_task_response", "native_media_byte_delivery", "same_task_continuation"]);
-  assert.deepEqual(nativeContract.acceptanceScenarios.map((scenario) => scenario.id), ["connection-identity-read", "catalog-read", "media-submit", "same-task-status", "native-media-delivery"]);
-  assert.equal(nativeContract.acceptanceScenarios.find((scenario) => scenario.id === "connection-identity-read").request, "GET /v1");
-  assert.match(nativeContract.acceptanceScenarios.find((scenario) => scenario.id === "media-submit").request, /\/v1\/videos\/edits/);
-  assert.deepEqual(nativeContract.userMediaInput, {
-    onlyCurrentUserExplicitMedia: true,
-    publicUrlOrDeclaredIdRequiresLiveProfilePropertyAndTransport: true,
-    requiresProfileDeclaredTransport: true,
-    requiresHostToExposeExactAttachmentRepresentation: true,
-    skillNeverDownloadsOrRehosts: true,
-    pureTokensGatewayStagesMultipartAttachments: true,
-    fallback: "When the current host cannot deliver the user's attachment as a profile-declared transport, stop before submission, explain the declared transport, and do not invent a URL, file ID, or upload path. When it can deliver multipart_file bytes, send them only with the one Images/Videos API request; the Pure Tokens gateway owns short-lived R2 staging and never returns the provider-facing URL. A public HTTPS URL, file ID, or voice ID explicitly supplied by the user may be sent only in the exact live-profile field whose declared transport permits it; the Skill never downloads, validates, or rehosts it."
+  assert.equal(hostSupport.directApiOrigin, "https://api.puretokensx.com");
+  const directContract = JSON.parse(await readFile(path.join(repositoryRoot, "references", "direct-api-execution-contract.json"), "utf8"));
+  assert.equal(directContract.apiOrigin, "https://api.puretokensx.com");
+  assert.deepEqual(directContract.authentication, {
+    usesRuntimeManagedExistingAuthentication: true,
+    skillNeverReadsOrConstructsCredentials: true
   });
-  assert.deepEqual(nativeContract.mediaDeliveryResourceBounds, {
-    oneInFlightStatusReadPerTask: true,
-    noBackgroundPollingOrQueue: true,
-    readContentOnlyAfterTerminalSuccess: true,
-    oneInFlightContentReadPerTask: true,
-    sequentialImageContentIndexes: true,
-    neverPrefetchOrRefetchDeliveredContent: true,
-    handoffNativeBytesBeforeNextRead: true,
-    doesNotPersistMediaBytesInSkillStateOrLogs: true,
-    fallback: "If the host cannot hand off a native media response without creating unbounded background work, cached copies, or duplicated reads, stop before content delivery and report that same-task native delivery is unavailable. Do not substitute a URL, HTML, SVG, status text, or a re-submitted task."
+  assert.deepEqual(directContract.transport, {
+    usesFullApiUrls: true,
+    doesNotUseMcp: true,
+    doesNotUseLocalProxyOrSidecar: true,
+    doesNotUseFallbackEndpoint: true
   });
+  assert.deepEqual(directContract.acceptanceScenarios.map((scenario) => scenario.id), ["api-identity-read", "catalog-read", "media-submit", "same-task-status", "native-media-delivery"]);
+  assert.equal(directContract.acceptanceScenarios.find((scenario) => scenario.id === "api-identity-read").request, "GET https://api.puretokensx.com/v1");
+  assert.match(directContract.acceptanceScenarios.find((scenario) => scenario.id === "media-submit").request, /fixed Images or Videos API URL/);
   for (const name of names) {
     const manifest = JSON.parse(await readFile(path.join(repositoryRoot, "skills", name, "skill.json"), "utf8"));
     assert.deepEqual([...manifest.supportedClients].sort(), supported);
@@ -326,7 +316,7 @@ test("formal reference schemas ship with the package", async () => {
     "media-behavior-scenarios.schema.json",
     "model-selection.schema.json",
     "host-support.schema.json",
-    "host-native-execution-contract.schema.json",
+    "direct-api-execution-contract.schema.json",
     "catalog-freshness.schema.json",
     "balance-snapshot.schema.json",
     "task-receipt.schema.json"

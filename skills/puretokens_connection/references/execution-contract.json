@@ -3,13 +3,14 @@
   "schemaVersion": 1,
   "kind": "connection",
   "transport": {
-    "usesCurrentConfiguredConnection": true,
-    "usesRelativePathsOnly": true,
-    "doesNotInspectConnectionIdentity": true,
-    "requiredHostCapabilities": ["authenticated_relative_http", "json_task_response"]
+    "fixedApiOrigin": "https://api.puretokensx.com",
+    "usesFullApiUrls": true,
+    "usesRuntimeManagedAuthentication": true,
+    "doesNotReadCredentialsOrHostConfiguration": true,
+    "doesNotUseMcpOrFallbackTransport": true
   },
   "operations": {
-    "identity": { "method": "GET", "path": "/v1" }
+    "identity": { "method": "GET", "url": "https://api.puretokensx.com/v1" }
   },
   "result": {
     "identitySource": "api_declared_public_health",

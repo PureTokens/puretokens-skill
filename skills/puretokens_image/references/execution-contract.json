@@ -3,17 +3,18 @@
   "schemaVersion": 1,
   "kind": "image",
   "transport": {
-    "usesCurrentConfiguredConnection": true,
-    "usesRelativePathsOnly": true,
-    "doesNotInspectConnectionIdentity": true,
+    "fixedApiOrigin": "https://api.puretokensx.com",
+    "usesFullApiUrls": true,
+    "usesRuntimeManagedAuthentication": true,
+    "doesNotReadCredentialsOrHostConfiguration": true,
     "requiresNativeMediaByteDelivery": true,
-    "requiredHostCapabilities": ["authenticated_relative_http", "json_task_response", "native_media_byte_delivery", "same_task_continuation"]
+    "doesNotUseMcpOrFallbackTransport": true
   },
   "operations": {
-    "catalog": { "method": "GET", "path": "/v1/media/models" },
+    "catalog": { "method": "GET", "url": "https://api.puretokensx.com/v1/media/models" },
     "submit": {
       "method": "POST",
-      "path": "/v1/images/generations",
+      "url": "https://api.puretokensx.com/v1/images/generations",
       "requiredBodyFields": ["model", "prompt", "async"],
       "fixedBody": { "async": true },
       "conditionalBodyFields": {
@@ -31,8 +32,8 @@
       "inputSource": "current_user_explicit_native_media_only",
       "transport": "profile_declared_multipart_file"
     },
-    "status": { "method": "GET", "pathTemplate": "/v1/images/{task_id}" },
-    "content": { "method": "GET", "pathTemplate": "/v1/images/{task_id}/content?index={index}" }
+    "status": { "method": "GET", "urlTemplate": "https://api.puretokensx.com/v1/images/{task_id}" },
+    "content": { "method": "GET", "urlTemplate": "https://api.puretokensx.com/v1/images/{task_id}/content?index={index}" }
   },
   "result": {
     "successRequires": "native_image_bytes",
@@ -55,7 +56,7 @@
     "skillPassesUserProvidedPublicUrlsWithoutDownloadingOrRehosting": true,
     "skillNeverDownloadsOrRehostsMedia": true,
     "gatewayStagesCurrentRequestAttachment": true,
-    "requiresHostNativeAttachmentByteDelivery": true,
+    "requiresRuntimeNativeAttachmentByteDelivery": true,
     "whenTransportUnavailable": "do_not_submit_and_explain_declared_transport"
   },
   "contentRetrieval": {

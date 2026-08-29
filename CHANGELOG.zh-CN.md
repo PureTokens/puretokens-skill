@@ -6,6 +6,11 @@
 
 ## Unreleased
 
+- 移除相对路径和宿主能力前置契约，改为固定直连 API 契约。所有专项 Skill 现在都调用完整的 `https://api.puretokensx.com` URL；不依赖 MCP、本地代理、sidecar、用户配置的 Base URL 或宿主专用的相对路径执行器。
+- 认证仍由当前运行环境管理。Skill 绝不读取、扫描、展示、复制、索取、保存或构造 API Key、Base URL、认证头或客户端配置。
+- 生图、生视频、模型查询、API 身份检查和余额查询统一改为固定 API origin；图片和视频的状态/内容读取也使用完整固定 URL，profile 声明的 multipart operation 路径只会与该 origin 组合。
+- 用 `references/direct-api-execution-contract.json` 替代旧的宿主原生执行矩阵，并同步更新校验、manifest、行为场景、双语 README 与测试。
+
 - 已在两份 README 顶部恢复仓库内受版本控制的官方 Skills Hero 图。
 - 将客户端下载页的 Agent 安装提示词重写为简洁、分行的执行清单：自动识别当前受支持宿主、选择目录、安装或升级五个 Skill、复验结果，同时保留既有安全边界。
 - 已将公开媒体目录同步到当前包含 18 个模型的基础目录，新增 `grok-imagine-image-2.0`、`grok-imagine-video-1.5`、`wan3.0-video`、`wan3.0-video-prime`。为 Wan3 增加了无歧义别名；可能混淆的 Grok 1.5 名称仍要求精确 ID。

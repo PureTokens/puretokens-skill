@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "name": "puretokens_connection",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "entry": "SKILL.md",
   "displayName": "Pure Tokens Connection",
-  "description": "Check whether the current API endpoint identifies itself as Pure Tokens API.",
+  "description": "Check the fixed Pure Tokens API identity declaration.",
   "executionContract": "references/execution-contract.json",
   "behaviorScenarios": "references/behavior-scenarios.json",
   "distribution": {
@@ -47,14 +47,15 @@
     "workbuddy"
   ],
   "rules": {
-    "usesCurrentConfiguredConnection": true,
-    "usesRelativeApiPathsOnly": true,
-    "doesNotInspectConnectionIdentity": true,
+    "usesFixedPureTokensApiOrigin": true,
+    "usesFullApiUrls": true,
+    "usesRuntimeManagedAuthentication": true,
     "doesNotReadCredentialsOrHostConfiguration": true,
     "apiDeclaredIdentityCheck": true,
     "identityPath": "/v1",
     "doesNotReadActualBaseUrl": true,
     "doesNotInferIdentityFromModelCatalog": true,
-    "neverRetry": true
+    "neverRetry": true,
+    "doesNotUseMcpOrFallbackTransport": true
   }
 }

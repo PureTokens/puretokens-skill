@@ -168,8 +168,8 @@ export function buildPublishedCatalog(previous, models, args) {
       capturedAt
     },
     availabilityNotice: {
-      en: "This list is generated from Pure Tokens' base model catalog using explicit image/video capabilities. At execution time, the exact model and required capability must still appear in the current authenticated GET /v1/media/models response.",
-      zh: "这份清单由 Pure Tokens 基础模型目录中的明确图片/视频能力生成。实际执行时，精确模型和所需能力仍必须出现在当前认证后的 GET /v1/media/models 响应中。"
+      en: "This list is generated from Pure Tokens' base model catalog using explicit image/video capabilities. At execution time, the exact model and required capability must still appear in the authenticated GET https://api.puretokensx.com/v1/media/models response.",
+      zh: "这份清单由 Pure Tokens 基础模型目录中的明确图片/视频能力生成。实际执行时，精确模型和所需能力仍必须出现在认证后的 GET https://api.puretokensx.com/v1/media/models 响应中。"
     },
     models: normalized
   };

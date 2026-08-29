@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "name": "puretokens_image",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "entry": "SKILL.md",
   "displayName": "Pure Tokens Image",
-  "description": "Generate and profile-gated edit images through the current configured Images API.",
+  "description": "Generate and profile-gated edit images through the fixed Pure Tokens Images API.",
   "modelSelection": "references/model-selection.json",
   "executionContract": "references/execution-contract.json",
   "taskReceipt": "references/task-receipt.json",
@@ -51,9 +51,9 @@
     "workbuddy"
   ],
   "rules": {
-    "usesCurrentConfiguredConnection": true,
-    "usesRelativeApiPathsOnly": true,
-    "doesNotInspectConnectionIdentity": true,
+    "usesFixedPureTokensApiOrigin": true,
+    "usesFullApiUrls": true,
+    "usesRuntimeManagedAuthentication": true,
     "doesNotReadCredentialsOrHostConfiguration": true,
     "defaultModel": "gpt-image-2",
     "imagesAlwaysAsync": true,
@@ -71,6 +71,7 @@
     "usesBoundedSameTaskPolling": true,
     "usesResourceBoundedPolling": true,
     "doesNotCreateBackgroundMediaWork": true,
-    "usesSequentialNativeContentDelivery": true
+    "usesSequentialNativeContentDelivery": true,
+    "doesNotUseMcpOrFallbackTransport": true
   }
 }

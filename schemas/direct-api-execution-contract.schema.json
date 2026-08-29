@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://puretokensx.com/schemas/direct-api-execution-contract.schema.json",
+  "title": "Pure Tokens direct API execution contract",
+  "type": "object",
+  "required": ["schemaVersion", "apiOrigin", "authentication", "transport", "acceptanceScenarios", "userMediaInput", "mediaDeliveryResourceBounds", "balance"],
+  "properties": {
+    "$schema": { "const": "https://puretokensx.com/schemas/direct-api-execution-contract.schema.json" },
+    "schemaVersion": { "const": 1 },
+    "apiOrigin": { "const": "https://api.puretokensx.com" },
+    "authentication": {
+      "type": "object",
+      "required": ["usesRuntimeManagedExistingAuthentication", "skillNeverReadsOrConstructsCredentials"],
+      "properties": {
+        "usesRuntimeManagedExistingAuthentication": { "const": true },
+        "skillNeverReadsOrConstructsCredentials": { "const": true }
+      },
+      "additionalProperties": false
+    },
+    "transport": {
+      "type": "object",
+      "required": ["usesFullApiUrls", "doesNotUseMcp", "doesNotUseLocalProxyOrSidecar", "doesNotUseFallbackEndpoint"],
+      "properties": {
+        "usesFullApiUrls": { "const": true },
+        "doesNotUseMcp": { "const": true },
+        "doesNotUseLocalProxyOrSidecar": { "const": true },
+        "doesNotUseFallbackEndpoint": { "const": true }
+      },
+      "additionalProperties": false
+    },
+    "acceptanceScenarios": { "type": "array", "minItems": 5 },
+    "userMediaInput": { "type": "object" },
+    "mediaDeliveryResourceBounds": { "type": "object" },
+    "balance": { "type": "object" }
+  },
+  "additionalProperties": false
+}

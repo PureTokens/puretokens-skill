@@ -3,16 +3,16 @@
   "schemaVersion": 1,
   "kind": "balance",
   "transport": {
-    "usesCurrentConfiguredConnection": true,
-    "usesRelativePathsOnly": true,
-    "doesNotInspectConnectionIdentity": true,
-    "requiresHostExposedReadOnlyBalanceCapability": true,
-    "requiredHostCapabilities": ["authenticated_relative_http", "json_task_response"]
+    "fixedApiOrigin": "https://api.puretokensx.com",
+    "usesFullApiUrls": true,
+    "usesRuntimeManagedAuthentication": true,
+    "doesNotReadCredentialsOrHostConfiguration": true,
+    "doesNotUseMcpOrFallbackTransport": true
   },
   "operations": {
     "read": {
       "method": "GET",
-      "path": "/api/product/desktop/account/balance",
+      "url": "https://api.puretokensx.com/api/product/desktop/account/balance",
       "requiresExistingAuthenticatedAccountSession": true,
       "responseSchema": "https://puretokensx.com/schemas/balance-snapshot.schema.json"
     }
@@ -21,6 +21,6 @@
     "reportOnlyReturnedFields": true,
     "neverEstimate": true,
     "neverRetry": true,
-    "fallbackWhenAccountSessionUnavailable": "direct_user_to_current_connection_client_balance_view"
+    "fallbackWhenAccountSessionUnavailable": "report_direct_result_and_direct_to_puretokens_client_balance_view"
   }
 }

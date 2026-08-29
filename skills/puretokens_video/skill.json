@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "name": "puretokens_video",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "entry": "SKILL.md",
   "displayName": "Pure Tokens Video",
-  "description": "Generate and profile-gated animate, reference, or edit video through the current configured Videos API.",
+  "description": "Generate and profile-gated animate, reference, or edit video through the fixed Pure Tokens Videos API.",
   "modelSelection": "references/model-selection.json",
   "executionContract": "references/execution-contract.json",
   "taskReceipt": "references/task-receipt.json",
@@ -51,9 +51,9 @@
     "workbuddy"
   ],
   "rules": {
-    "usesCurrentConfiguredConnection": true,
-    "usesRelativeApiPathsOnly": true,
-    "doesNotInspectConnectionIdentity": true,
+    "usesFixedPureTokensApiOrigin": true,
+    "usesFullApiUrls": true,
+    "usesRuntimeManagedAuthentication": true,
     "doesNotReadCredentialsOrHostConfiguration": true,
     "defaultModel": "grok-imagine-video-1.5-preview",
     "exactLiveCatalogIdRequired": true,
@@ -74,6 +74,7 @@
     "usesBoundedSameTaskPolling": true,
     "usesResourceBoundedPolling": true,
     "doesNotCreateBackgroundMediaWork": true,
-    "usesSequentialNativeContentDelivery": true
+    "usesSequentialNativeContentDelivery": true,
+    "doesNotUseMcpOrFallbackTransport": true
   }
 }

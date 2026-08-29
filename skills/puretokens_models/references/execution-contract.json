@@ -3,13 +3,14 @@
   "schemaVersion": 1,
   "kind": "models",
   "transport": {
-    "usesCurrentConfiguredConnection": true,
-    "usesRelativePathsOnly": true,
-    "doesNotInspectConnectionIdentity": true,
-    "requiredHostCapabilities": ["authenticated_relative_http", "json_task_response"]
+    "fixedApiOrigin": "https://api.puretokensx.com",
+    "usesFullApiUrls": true,
+    "usesRuntimeManagedAuthentication": true,
+    "doesNotReadCredentialsOrHostConfiguration": true,
+    "doesNotUseMcpOrFallbackTransport": true
   },
   "operations": {
-    "catalog": { "method": "GET", "path": "/v1/media/models" }
+    "catalog": { "method": "GET", "url": "https://api.puretokensx.com/v1/media/models" }
   },
   "result": {
     "reportOnlyAuthenticatedCatalog": true,

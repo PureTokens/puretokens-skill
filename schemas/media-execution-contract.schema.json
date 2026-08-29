@@ -1,30 +1,14 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://puretokensx.com/schemas/media-execution-contract.schema.json",
-  "title": "Pure Tokens specialist execution contract",
+  "title": "Pure Tokens specialist direct API execution contract",
   "type": "object",
   "required": ["schemaVersion", "kind", "transport", "result"],
   "properties": {
     "$schema": { "const": "https://puretokensx.com/schemas/media-execution-contract.schema.json" },
     "schemaVersion": { "const": 1 },
     "kind": { "enum": ["balance", "connection", "models", "image", "video"] },
-    "transport": {
-      "type": "object",
-      "required": ["usesCurrentConfiguredConnection", "doesNotInspectConnectionIdentity"],
-      "properties": {
-        "usesCurrentConfiguredConnection": { "const": true },
-        "usesRelativePathsOnly": { "const": true },
-        "doesNotInspectConnectionIdentity": { "const": true },
-        "requiresNativeMediaByteDelivery": { "const": true },
-        "requiresHostExposedReadOnlyBalanceCapability": { "const": true },
-        "requiredHostCapabilities": {
-          "type": "array",
-          "uniqueItems": true,
-          "items": { "enum": ["authenticated_relative_http", "json_task_response", "native_media_byte_delivery", "same_task_continuation"] }
-        }
-      },
-      "additionalProperties": true
-    },
+    "transport": { "$ref": "#/$defs/directTransport" },
     "operations": {
       "type": "object",
       "properties": {
@@ -34,64 +18,16 @@
         "status": { "$ref": "#/$defs/request" },
         "content": { "$ref": "#/$defs/request" },
         "identity": { "$ref": "#/$defs/request" },
-        "read": { "$ref": "#/$defs/accountReadRequest" }
+        "read": { "$ref": "#/$defs/request" }
       },
       "additionalProperties": false
     },
-    "result": {
-      "type": "object",
-      "minProperties": 1,
-      "additionalProperties": true
-    },
-    "unsupportedInput": {
-      "type": "array",
-      "uniqueItems": true,
-      "items": { "type": "string", "minLength": 1 }
-    },
-    "parameterValidation": {
-      "type": "object",
-      "additionalProperties": true
-    },
-    "contentRetrieval": {
-      "type": "object",
-      "minProperties": 1,
-      "properties": {
-        "indexBase": { "const": 0 },
-        "requestedCount": { "const": "explicit_n_or_default_1" },
-        "allowedIndexes": { "const": "0..requestedCount-1" },
-        "completeDeliveryRequiresEveryRequestedIndex": { "const": true },
-        "partialOrMissingContent": { "const": "report_delivered_and_missing_indexes_without_resubmission" },
-        "fetchOnlyAfterTerminalSuccess": { "const": true },
-        "sequentialByIndex": { "const": true },
-        "oneInFlightContentReadPerTask": { "const": true },
-        "neverPrefetchOrRefetchDeliveredContent": { "const": true },
-        "handoffBeforeNextContentRead": { "const": true }
-      },
-      "additionalProperties": false
-    },
-    "polling": {
-      "type": "object",
-      "required": ["serverDelay", "serverDelayMustFitRemainingAutomaticDeadline", "fallbackDelaysSeconds", "steadyDelaySeconds", "automaticDeadlineSeconds", "maxAutomaticStatusReads", "oneInFlightStatusReadPerTask", "automaticPollingScope", "afterStatusReadError", "explicitContinuation", "afterDeadline"],
-      "properties": {
-        "serverDelay": { "const": "honor_valid_positive_retry_after_before_fallback" },
-        "serverDelayMustFitRemainingAutomaticDeadline": { "const": true },
-        "fallbackDelaysSeconds": {
-          "type": "array",
-          "minItems": 1,
-          "maxItems": 5,
-          "items": { "type": "integer", "minimum": 1, "maximum": 300 }
-        },
-        "steadyDelaySeconds": { "type": "integer", "minimum": 1, "maximum": 300 },
-        "automaticDeadlineSeconds": { "enum": [120, 300] },
-        "maxAutomaticStatusReads": { "type": "integer", "minimum": 1, "maximum": 10 },
-        "oneInFlightStatusReadPerTask": { "const": true },
-        "automaticPollingScope": { "const": "submission_or_explicit_same_task_continuation_turn_only_no_background_timer_or_queue" },
-        "afterStatusReadError": { "const": "stop_automatic_polling_and_require_explicit_same_task_continuation" },
-        "explicitContinuation": { "const": "new_bounded_same_task_polling_window_only_when_explicitly_requested" },
-        "afterDeadline": { "const": "report_pending_and_require_explicit_same_task_continuation" }
-      },
-      "additionalProperties": false
-    }
+    "result": { "type": "object", "minProperties": 1, "additionalProperties": true },
+    "unsupportedInput": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+    "parameterValidation": { "type": "object", "additionalProperties": true },
+    "inputMediaValidation": { "type": "object", "additionalProperties": true },
+    "contentRetrieval": { "type": "object", "additionalProperties": true },
+    "polling": { "type": "object", "additionalProperties": true }
   },
   "allOf": [
     {
@@ -99,30 +35,9 @@
       "then": {
         "required": ["operations"],
         "properties": {
-          "transport": {
-            "required": ["usesRelativePathsOnly", "requiredHostCapabilities"],
-            "properties": {
-              "usesRelativePathsOnly": { "const": true },
-              "requiredHostCapabilities": { "const": ["authenticated_relative_http", "json_task_response"] }
-            }
-          },
           "operations": {
             "required": ["identity"],
-            "properties": {
-              "identity": { "properties": { "method": { "const": "GET" }, "path": { "const": "/v1" } } }
-            }
-          },
-          "result": {
-            "required": ["identitySource", "expectedStatus", "expectedName", "expectedBasePath", "neverRetry", "doesNotExposeHostConfiguration", "unconfirmedDoesNotProveOtherService"],
-            "properties": {
-              "identitySource": { "const": "api_declared_public_health" },
-              "expectedStatus": { "const": "ok" },
-              "expectedName": { "const": "Pure Tokens API" },
-              "expectedBasePath": { "const": "/v1" },
-              "neverRetry": { "const": true },
-              "doesNotExposeHostConfiguration": { "const": true },
-              "unconfirmedDoesNotProveOtherService": { "const": true }
-            }
+            "properties": { "identity": { "properties": { "method": { "const": "GET" }, "url": { "const": "https://api.puretokensx.com/v1" } } } }
           }
         }
       }
@@ -132,28 +47,9 @@
       "then": {
         "required": ["operations"],
         "properties": {
-          "transport": {
-            "required": ["usesRelativePathsOnly", "requiredHostCapabilities"],
-            "properties": {
-              "usesRelativePathsOnly": { "const": true },
-              "requiredHostCapabilities": { "const": ["authenticated_relative_http", "json_task_response"] }
-            }
-          },
           "operations": {
             "required": ["catalog"],
-            "properties": {
-              "catalog": { "properties": { "method": { "const": "GET" }, "path": { "const": "/v1/media/models" } } }
-            }
-          },
-          "result": {
-            "required": ["reportOnlyAuthenticatedCatalog", "doesNotSubmitMediaTasks", "neverRetry", "noStaticCatalogFallback", "compatibilityShortlistsRequireDeclaredCapabilityAndInputSchema"],
-            "properties": {
-              "reportOnlyAuthenticatedCatalog": { "const": true },
-              "doesNotSubmitMediaTasks": { "const": true },
-              "neverRetry": { "const": true },
-              "noStaticCatalogFallback": { "const": true },
-              "compatibilityShortlistsRequireDeclaredCapabilityAndInputSchema": { "const": true }
-            }
+            "properties": { "catalog": { "properties": { "method": { "const": "GET" }, "url": { "const": "https://api.puretokensx.com/v1/media/models" } } } }
           }
         }
       }
@@ -166,90 +62,10 @@
           "operations": {
             "required": ["catalog", "submit", "edit", "status", "content"],
             "properties": {
-              "catalog": { "properties": { "method": { "const": "GET" }, "path": { "const": "/v1/media/models" } } },
-              "submit": {
-                "required": ["method", "path", "requiredBodyFields", "fixedBody"],
-                "properties": {
-                  "method": { "const": "POST" },
-                  "path": { "const": "/v1/images/generations" },
-                  "requiredBodyFields": { "allOf": [{ "$ref": "#/$defs/stringArray" }, { "contains": { "const": "model" } }, { "contains": { "const": "prompt" } }, { "contains": { "const": "async" } }] },
-                  "fixedBody": { "type": "object", "required": ["async"], "properties": { "async": { "const": true } } }
-                }
-              },
-              "edit": {
-                "required": ["method", "allowedPaths", "pathSource", "contentType", "requiresAuthenticatedLiveProfileOperation", "requiredBodyFields", "fixedBody", "inputSource", "transport"],
-                "properties": {
-                  "method": { "const": "POST" },
-                  "allowedPaths": {
-                    "type": "array",
-                    "minItems": 2,
-                    "maxItems": 2,
-                    "uniqueItems": true,
-                    "allOf": [
-                      { "$ref": "#/$defs/stringArray" },
-                      { "contains": { "const": "/v1/images/generations" } },
-                      { "contains": { "const": "/v1/images/edits" } }
-                    ]
-                  },
-                  "pathSource": { "const": "authenticated_live_profile_operation_path" },
-                  "contentType": { "const": "multipart/form-data" },
-                  "requiresAuthenticatedLiveProfileOperation": { "const": "image_edit" },
-                  "requiredBodyFields": { "allOf": [{ "$ref": "#/$defs/stringArray" }, { "contains": { "const": "model" } }, { "contains": { "const": "prompt" } }, { "contains": { "const": "image" } }, { "contains": { "const": "async" } }] },
-                  "fixedBody": { "type": "object", "required": ["async"], "properties": { "async": { "const": true } } },
-                  "inputSource": { "const": "current_user_explicit_native_media_only" },
-                  "transport": { "const": "profile_declared_multipart_file" }
-                }
-              },
-              "status": { "properties": { "method": { "const": "GET" }, "pathTemplate": { "const": "/v1/images/{task_id}" } } },
-              "content": { "properties": { "method": { "const": "GET" }, "pathTemplate": { "const": "/v1/images/{task_id}/content?index={index}" } } }
-            }
-          },
-          "result": { "required": ["successRequires", "sameTaskOnly", "neverAutoResubmit"], "properties": { "successRequires": { "const": "native_image_bytes" }, "sameTaskOnly": { "const": true }, "neverAutoResubmit": { "const": true } } },
-          "parameterValidation": {
-            "required": ["defaultModel", "everyNewSubmissionReadsAuthenticatedLiveCatalog", "everySelectedModelRequiresExactLiveCatalogIdAndImageCapability", "allOptionalParametersRequire", "whenProfileIsMissing"],
-            "properties": {
-              "defaultModel": { "const": "gpt-image-2" },
-              "everyNewSubmissionReadsAuthenticatedLiveCatalog": { "const": true },
-              "everySelectedModelRequiresExactLiveCatalogIdAndImageCapability": { "const": true },
-              "allOptionalParametersRequire": { "const": "authenticated_live_catalog_input_schema" },
-              "whenProfileIsMissing": { "const": "do_not_submit_requested_optional_parameters" }
-            }
-          },
-          "inputMediaValidation": {
-            "required": ["publicUrlReferenceRequires", "nativeAttachmentRequires", "imageEditOperation", "onlyCurrentUserExplicitMedia", "skillPassesUserProvidedPublicUrlsWithoutDownloadingOrRehosting", "skillNeverDownloadsOrRehostsMedia", "gatewayStagesCurrentRequestAttachment", "requiresHostNativeAttachmentByteDelivery", "whenTransportUnavailable"],
-            "properties": {
-              "publicUrlReferenceRequires": { "const": "authenticated_live_catalog_property_and_declared_reference_transport" },
-              "nativeAttachmentRequires": { "const": "authenticated_live_catalog_input_schema_operation" },
-              "imageEditOperation": { "const": "image_edit" },
-              "onlyCurrentUserExplicitMedia": { "const": true },
-              "skillPassesUserProvidedPublicUrlsWithoutDownloadingOrRehosting": { "const": true },
-              "skillNeverDownloadsOrRehostsMedia": { "const": true },
-              "gatewayStagesCurrentRequestAttachment": { "const": true },
-              "requiresHostNativeAttachmentByteDelivery": { "const": true },
-              "whenTransportUnavailable": { "const": "do_not_submit_and_explain_declared_transport" }
-            }
-          },
-          "polling": {
-            "properties": {
-              "fallbackDelaysSeconds": { "const": [3, 6, 12, 24, 30] },
-              "steadyDelaySeconds": { "const": 30 },
-              "automaticDeadlineSeconds": { "const": 120 },
-              "maxAutomaticStatusReads": { "const": 6 }
-            }
-          },
-          "contentRetrieval": {
-            "required": ["indexBase", "requestedCount", "allowedIndexes", "completeDeliveryRequiresEveryRequestedIndex", "partialOrMissingContent", "fetchOnlyAfterTerminalSuccess", "sequentialByIndex", "oneInFlightContentReadPerTask", "neverPrefetchOrRefetchDeliveredContent", "handoffBeforeNextContentRead"],
-            "properties": {
-              "indexBase": { "const": 0 },
-              "requestedCount": { "const": "explicit_n_or_default_1" },
-              "allowedIndexes": { "const": "0..requestedCount-1" },
-              "completeDeliveryRequiresEveryRequestedIndex": { "const": true },
-              "partialOrMissingContent": { "const": "report_delivered_and_missing_indexes_without_resubmission" },
-              "fetchOnlyAfterTerminalSuccess": { "const": true },
-              "sequentialByIndex": { "const": true },
-              "oneInFlightContentReadPerTask": { "const": true },
-              "neverPrefetchOrRefetchDeliveredContent": { "const": true },
-              "handoffBeforeNextContentRead": { "const": true }
+              "catalog": { "properties": { "method": { "const": "GET" }, "url": { "const": "https://api.puretokensx.com/v1/media/models" } } },
+              "submit": { "properties": { "method": { "const": "POST" }, "url": { "const": "https://api.puretokensx.com/v1/images/generations" } } },
+              "status": { "properties": { "method": { "const": "GET" }, "urlTemplate": { "const": "https://api.puretokensx.com/v1/images/{task_id}" } } },
+              "content": { "properties": { "method": { "const": "GET" }, "urlTemplate": { "const": "https://api.puretokensx.com/v1/images/{task_id}/content?index={index}" } } }
             }
           }
         }
@@ -263,76 +79,11 @@
           "operations": {
             "required": ["catalog", "submit", "edit", "status", "content"],
             "properties": {
-              "catalog": { "properties": { "method": { "const": "GET" }, "path": { "const": "/v1/media/models" } } },
-              "submit": {
-                "required": ["method", "path", "requiredBodyFields"],
-                "properties": {
-                  "method": { "const": "POST" },
-                  "path": { "const": "/v1/videos" },
-                  "requiredBodyFields": { "allOf": [{ "$ref": "#/$defs/stringArray" }, { "contains": { "const": "model" } }] }
-                }
-              },
-              "edit": {
-                "required": ["method", "path", "contentType", "requiresAuthenticatedLiveProfileOperation", "requiredBodyFields", "inputSource", "transport"],
-                "properties": {
-                  "method": { "const": "POST" },
-                  "path": { "const": "/v1/videos/edits" },
-                  "contentType": { "const": "multipart/form-data" },
-                  "requiresAuthenticatedLiveProfileOperation": { "const": "video_edit" },
-                  "requiredBodyFields": { "allOf": [{ "$ref": "#/$defs/stringArray" }, { "contains": { "const": "model" } }, { "contains": { "const": "prompt" } }, { "contains": { "const": "video" } }] },
-                  "inputSource": { "const": "current_user_explicit_native_media_only" },
-                  "transport": { "const": "profile_declared_multipart_file" }
-                }
-              },
-              "status": { "properties": { "method": { "const": "GET" }, "pathTemplate": { "const": "/v1/videos/{task_id}" } } },
-              "content": { "properties": { "method": { "const": "GET" }, "pathTemplate": { "const": "/v1/videos/{task_id}/content" } } }
-            }
-          },
-          "result": { "required": ["successRequires", "sameTaskOnly", "neverAutoResubmit"], "properties": { "successRequires": { "const": "native_video_bytes" }, "sameTaskOnly": { "const": true }, "neverAutoResubmit": { "const": true } } },
-          "parameterValidation": {
-            "required": ["allModelsOptionalParametersRequire", "promptRequirementUsesAuthenticatedLivePropertiesAndConstraints", "resolutionUsesAuthenticatedLiveModeConstraint", "whenProfileIsMissing"],
-            "properties": {
-              "allModelsOptionalParametersRequire": { "const": "authenticated_live_catalog_input_schema" },
-              "promptRequirementUsesAuthenticatedLivePropertiesAndConstraints": { "const": true },
-              "resolutionUsesAuthenticatedLiveModeConstraint": { "const": true },
-              "whenProfileIsMissing": { "const": "do_not_submit_requested_optional_parameters" }
-            }
-          },
-          "inputMediaValidation": {
-            "required": ["imageToVideoOperation", "referenceImageVideoOperation", "referenceVideoOperation", "referenceAudioOperation", "videoEditOperation", "requiresAuthenticatedLiveCatalogInputSchemaOperation", "publicUrlOrDeclaredIdReferenceRequires", "onlyCurrentUserExplicitMedia", "allowedTransports", "skillPassesUserProvidedPublicUrlsOrDeclaredIdsWithoutDownloadingOrRehosting", "skillNeverDownloadsOrRehostsMedia", "gatewayStagesCurrentRequestAttachment", "multipleNativeAttachmentTypesRequireOneDeclaredCombinedOperation", "multiplePublicUrlOrIdFieldsRequireNoDeclaredConflict", "whenTransportUnavailable"],
-            "properties": {
-              "imageToVideoOperation": { "const": "image_to_video" },
-              "referenceImageVideoOperation": { "const": "reference_image_video" },
-              "referenceVideoOperation": { "const": "reference_video" },
-              "referenceAudioOperation": { "const": "reference_audio" },
-              "videoEditOperation": { "const": "video_edit" },
-              "requiresAuthenticatedLiveCatalogInputSchemaOperation": { "const": true },
-              "publicUrlOrDeclaredIdReferenceRequires": { "const": "authenticated_live_catalog_property_and_declared_reference_transport" },
-              "onlyCurrentUserExplicitMedia": { "const": true },
-              "allowedTransports": { "const": ["multipart_file"] },
-              "skillPassesUserProvidedPublicUrlsOrDeclaredIdsWithoutDownloadingOrRehosting": { "const": true },
-              "skillNeverDownloadsOrRehostsMedia": { "const": true },
-              "gatewayStagesCurrentRequestAttachment": { "const": true },
-              "multipleNativeAttachmentTypesRequireOneDeclaredCombinedOperation": { "const": true },
-              "multiplePublicUrlOrIdFieldsRequireNoDeclaredConflict": { "const": true },
-              "whenTransportUnavailable": { "const": "do_not_submit_and_explain_declared_transport" }
-            }
-          },
-          "polling": {
-            "properties": {
-              "fallbackDelaysSeconds": { "const": [5, 10, 20, 40, 60] },
-              "steadyDelaySeconds": { "const": 60 },
-              "automaticDeadlineSeconds": { "const": 300 },
-              "maxAutomaticStatusReads": { "const": 7 }
-            }
-          },
-          "contentRetrieval": {
-            "required": ["fetchOnlyAfterTerminalSuccess", "oneInFlightContentReadPerTask", "neverPrefetchOrRefetchDeliveredContent", "handoffBeforeNextContentRead"],
-            "properties": {
-              "fetchOnlyAfterTerminalSuccess": { "const": true },
-              "oneInFlightContentReadPerTask": { "const": true },
-              "neverPrefetchOrRefetchDeliveredContent": { "const": true },
-              "handoffBeforeNextContentRead": { "const": true }
+              "catalog": { "properties": { "method": { "const": "GET" }, "url": { "const": "https://api.puretokensx.com/v1/media/models" } } },
+              "submit": { "properties": { "method": { "const": "POST" }, "url": { "const": "https://api.puretokensx.com/v1/videos" } } },
+              "edit": { "properties": { "method": { "const": "POST" }, "url": { "const": "https://api.puretokensx.com/v1/videos/edits" } } },
+              "status": { "properties": { "method": { "const": "GET" }, "urlTemplate": { "const": "https://api.puretokensx.com/v1/videos/{task_id}" } } },
+              "content": { "properties": { "method": { "const": "GET" }, "urlTemplate": { "const": "https://api.puretokensx.com/v1/videos/{task_id}/content" } } }
             }
           }
         }
@@ -341,55 +92,52 @@
     {
       "if": { "properties": { "kind": { "const": "balance" } } },
       "then": {
+        "required": ["operations"],
         "properties": {
-          "transport": { "required": ["usesRelativePathsOnly", "requiresHostExposedReadOnlyBalanceCapability", "requiredHostCapabilities"] },
           "operations": {
             "required": ["read"],
-            "properties": {
-              "read": {
-                "required": ["method", "path", "requiresExistingAuthenticatedAccountSession", "responseSchema"],
-                "properties": {
-                  "method": { "const": "GET" },
-                  "path": { "const": "/api/product/desktop/account/balance" },
-                  "requiresExistingAuthenticatedAccountSession": { "const": true },
-                  "responseSchema": { "const": "https://puretokensx.com/schemas/balance-snapshot.schema.json" }
-                }
-              }
-            }
-          },
-          "result": { "required": ["reportOnlyReturnedFields", "neverEstimate", "neverRetry", "fallbackWhenAccountSessionUnavailable"] }
+            "properties": { "read": { "properties": { "method": { "const": "GET" }, "url": { "const": "https://api.puretokensx.com/api/product/desktop/account/balance" } } } }
+          }
         }
       }
     }
   ],
   "$defs": {
-    "stringArray": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+    "directTransport": {
+      "type": "object",
+      "required": ["fixedApiOrigin", "usesFullApiUrls", "usesRuntimeManagedAuthentication", "doesNotReadCredentialsOrHostConfiguration", "doesNotUseMcpOrFallbackTransport"],
+      "properties": {
+        "fixedApiOrigin": { "const": "https://api.puretokensx.com" },
+        "usesFullApiUrls": { "const": true },
+        "usesRuntimeManagedAuthentication": { "const": true },
+        "doesNotReadCredentialsOrHostConfiguration": { "const": true },
+        "doesNotUseMcpOrFallbackTransport": { "const": true },
+        "requiresNativeMediaByteDelivery": { "const": true }
+      },
+      "additionalProperties": false
+    },
     "request": {
       "type": "object",
       "required": ["method"],
       "properties": {
         "method": { "enum": ["GET", "POST"] },
-        "path": { "type": "string", "pattern": "^/v1(?:/|$)" },
-        "pathTemplate": { "type": "string", "pattern": "^/v1(?:/|$)" },
+        "url": { "type": "string", "pattern": "^https://api\\.puretokensx\\.com/" },
+        "urlTemplate": { "type": "string", "pattern": "^https://api\\.puretokensx\\.com/" },
+        "allowedPaths": { "type": "array", "items": { "type": "string", "pattern": "^/v1/" } },
+        "pathSource": { "type": "string" },
         "contentType": { "type": "string", "minLength": 1 },
-        "requiredBodyFields": { "$ref": "#/$defs/stringArray" },
+        "requiredBodyFields": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
         "fixedBody": { "type": "object" },
-        "conditionalBodyFields": { "type": ["object", "array"] }
+        "conditionalBodyFields": { "type": ["object", "array"] },
+        "requiresAuthenticatedLiveProfileOperation": { "type": "string" },
+        "inputSource": { "type": "string" },
+        "transport": { "type": "string" },
+        "requiresExistingAuthenticatedAccountSession": { "type": "boolean" },
+        "responseSchema": { "type": "string" }
       },
-      "oneOf": [{ "required": ["path"] }, { "required": ["pathTemplate"] }],
-      "additionalProperties": true
-    },
-    "accountReadRequest": {
-      "type": "object",
-      "required": ["method", "path", "requiresExistingAuthenticatedAccountSession", "responseSchema"],
-      "properties": {
-        "method": { "const": "GET" },
-        "path": { "const": "/api/product/desktop/account/balance" },
-        "requiresExistingAuthenticatedAccountSession": { "const": true },
-        "responseSchema": { "const": "https://puretokensx.com/schemas/balance-snapshot.schema.json" }
-      },
+      "oneOf": [{ "required": ["url"] }, { "required": ["urlTemplate"] }, { "required": ["allowedPaths"] }],
       "additionalProperties": false
     }
   },
-  "additionalProperties": true
+  "additionalProperties": false
 }

@@ -7,10 +7,8 @@ export const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.met
 export const skillsRoot = path.join(repositoryRoot, "skills");
 
 const forbiddenPattern = /(BEGIN [A-Z ]*PRIVATE|api[_-]?key|authorization:|bearer\s+|pts-router-token|127\.0\.0\.1:|\/Users\/)/i;
-const nativeMediaCapabilities = ["authenticated_relative_http", "json_task_response", "native_media_byte_delivery", "same_task_continuation"];
-const balanceCapabilities = ["authenticated_relative_http", "json_task_response"];
-const modelCatalogCapabilities = ["authenticated_relative_http", "json_task_response"];
-const hostAcceptanceScenarioIds = ["connection-identity-read", "catalog-read", "media-submit", "same-task-status", "native-media-delivery"];
+const directApiOrigin = "https://api.puretokensx.com";
+const directAcceptanceScenarioIds = ["api-identity-read", "catalog-read", "media-submit", "same-task-status", "native-media-delivery"];
 const receiptCoreFields = ["exact_model_id", "task_id", "returned_state", "requested_operation", "requested_count", "requested_size_or_parameters", "next_action"];
 
 export async function readSkillRegistry() {
@@ -51,10 +49,9 @@ export async function validateRepository() {
   }
   await validateSchemaDocuments(errors);
   const hostSupport = await readHostSupport(errors);
-  const hostNativeExecutionContract = await readHostNativeExecutionContract(errors);
+  const directApiExecutionContract = await readDirectApiExecutionContract(errors);
   await validateCatalogFreshnessPolicy(errors);
-  validateHostNativeExecutionContract(errors, hostNativeExecutionContract);
-  validateHostExecutionMatrix(errors, hostSupport, hostNativeExecutionContract);
+  validateDirectApiExecutionContract(errors, directApiExecutionContract);
   const seen = new Set();
   const registryByName = new Map(registry.skills.map((skill) => [skill?.name, skill]));
 
@@ -140,8 +137,8 @@ async function readHostSupport(errors) {
       errors.push("references/host-support.json must be schemaVersion=1 with supported and notDistributed arrays");
       return { supported: [], notDistributed: [] };
     }
-    if (support.nativeExecutionContract !== "references/host-native-execution-contract.json") {
-      errors.push("references/host-support.json must reference the host-native execution contract");
+    if (support.directApiOrigin !== directApiOrigin) {
+      errors.push("references/host-support.json must declare the fixed direct API origin");
     }
     const records = [...support.supported, ...support.notDistributed];
     const ids = records.map((host) => host?.id).filter((id) => typeof id === "string" && /^[a-z][a-z0-9-]*$/.test(id));
@@ -159,10 +156,6 @@ async function readHostSupport(errors) {
       } else if (host?.delivery !== "bundle") {
         errors.push(`references/host-support.json: ${host?.id || "unnamed host"} has an unsupported delivery type`);
       }
-      if (!sameObjectKeys(host?.nativeExecution, ["authenticatedRelativeHttp", "jsonTaskResponse", "nativeMediaByteDelivery", "sameTaskContinuation"]) ||
-        Object.values(host.nativeExecution || {}).some((value) => value !== true)) {
-        errors.push(`references/host-support.json: ${host?.id || "unnamed host"} must declare all four verified native execution capabilities`);
-      }
     }
     for (const host of support.notDistributed) {
       if (!host || typeof host.reason !== "string" || !host.reason) {
@@ -176,12 +169,12 @@ async function readHostSupport(errors) {
   }
 }
 
-async function readHostNativeExecutionContract(errors) {
-  const file = path.join(repositoryRoot, "references", "host-native-execution-contract.json");
+async function readDirectApiExecutionContract(errors) {
+  const file = path.join(repositoryRoot, "references", "direct-api-execution-contract.json");
   try {
     return JSON.parse(await readFile(file, "utf8"));
   } catch {
-    errors.push("references/host-native-execution-contract.json is missing or invalid JSON");
+    errors.push("references/direct-api-execution-contract.json is missing or invalid JSON");
     return undefined;
   }
 }
@@ -200,37 +193,36 @@ async function validateCatalogFreshnessPolicy(errors) {
   }
 }
 
-function validateHostNativeExecutionContract(errors, contract) {
-  const label = "references/host-native-execution-contract.json";
+function validateDirectApiExecutionContract(errors, contract) {
+  const label = "references/direct-api-execution-contract.json";
   if (!contract || typeof contract !== "object") return;
-  if (contract.$schema !== "https://puretokensx.com/schemas/host-native-execution-contract.schema.json" || contract.schemaVersion !== 1) {
-    errors.push(`${label} must declare schemaVersion=1 host-native execution contract`);
+  if (contract.$schema !== "https://puretokensx.com/schemas/direct-api-execution-contract.schema.json" || contract.schemaVersion !== 1) {
+    errors.push(`${label} must declare schemaVersion=1 direct API execution contract`);
   }
   const transport = contract.transport;
-  if (!transport || transport.usesCurrentConfiguredConnection !== true || transport.usesRelativeApiPathsOnly !== true ||
-    transport.doesNotReadCredentialsOrHostConfiguration !== true || transport.doesNotInspectConnectionIdentity !== true) {
-    errors.push(`${label} must use the current connection, relative paths, and no credential/configuration inspection`);
+  if (contract.apiOrigin !== directApiOrigin || !contract.authentication ||
+    contract.authentication.usesRuntimeManagedExistingAuthentication !== true ||
+    contract.authentication.skillNeverReadsOrConstructsCredentials !== true ||
+    !transport || transport.usesFullApiUrls !== true || transport.doesNotUseMcp !== true ||
+    transport.doesNotUseLocalProxyOrSidecar !== true || transport.doesNotUseFallbackEndpoint !== true) {
+    errors.push(`${label} must use the fixed full API origin with runtime-managed authentication and no MCP, proxy, sidecar, or fallback`);
   }
-  if (!sameArray(contract.requiredCapabilities, nativeMediaCapabilities)) {
-    errors.push(`${label} must require authenticated relative HTTP, JSON task responses, native media bytes, and same-task continuation`);
-  }
-  if (!Array.isArray(contract.acceptanceScenarios) || !sameArray(contract.acceptanceScenarios.map((scenario) => scenario?.id), hostAcceptanceScenarioIds)) {
-    errors.push(`${label} must define the four ordered native-host acceptance scenarios`);
+  if (!Array.isArray(contract.acceptanceScenarios) || !sameArray(contract.acceptanceScenarios.map((scenario) => scenario?.id), directAcceptanceScenarioIds)) {
+    errors.push(`${label} must define the ordered direct-API acceptance scenarios`);
   }
   const balance = contract.balance;
-  if (!balance || balance.method !== "GET" || balance.path !== "/api/product/desktop/account/balance" ||
+  if (!balance || balance.method !== "GET" || balance.url !== `${directApiOrigin}/api/product/desktop/account/balance` ||
     balance.requiresExistingAuthenticatedAccountSession !== true || balance.responseSchema !== "schemas/balance-snapshot.schema.json" ||
     typeof balance.fallback !== "string" || !balance.fallback) {
-    errors.push(`${label} must define the authenticated balance endpoint and fallback`);
+    errors.push(`${label} must define the fixed direct balance endpoint and fallback`);
   }
   const userMediaInput = contract.userMediaInput;
   if (!userMediaInput || userMediaInput.onlyCurrentUserExplicitMedia !== true ||
     userMediaInput.requiresProfileDeclaredTransport !== true ||
-    userMediaInput.requiresHostToExposeExactAttachmentRepresentation !== true ||
     userMediaInput.skillNeverDownloadsOrRehosts !== true ||
     userMediaInput.pureTokensGatewayStagesMultipartAttachments !== true ||
     typeof userMediaInput.fallback !== "string" || !userMediaInput.fallback) {
-    errors.push(`${label} must define the fail-closed user-media input contract`);
+    errors.push(`${label} must define the fail-closed direct user-media input contract`);
   }
   const mediaDeliveryResourceBounds = contract.mediaDeliveryResourceBounds;
   if (!mediaDeliveryResourceBounds || mediaDeliveryResourceBounds.oneInFlightStatusReadPerTask !== true ||
@@ -243,17 +235,6 @@ function validateHostNativeExecutionContract(errors, contract) {
     mediaDeliveryResourceBounds.doesNotPersistMediaBytesInSkillStateOrLogs !== true ||
     typeof mediaDeliveryResourceBounds.fallback !== "string" || !mediaDeliveryResourceBounds.fallback) {
     errors.push(`${label} must define bounded same-task polling and native-media delivery without skill-state or log persistence`);
-  }
-}
-
-function validateHostExecutionMatrix(errors, hostSupport, hostNativeExecutionContract) {
-  if (!hostNativeExecutionContract) return;
-  for (const host of hostSupport.supported) {
-    const nativeExecution = host?.nativeExecution;
-    if (!nativeExecution || nativeExecution.authenticatedRelativeHttp !== true || nativeExecution.jsonTaskResponse !== true ||
-      nativeExecution.nativeMediaByteDelivery !== true || nativeExecution.sameTaskContinuation !== true) {
-      errors.push(`references/host-support.json: ${host?.id || "unnamed host"} does not meet the host-native execution contract`);
-    }
   }
 }
 
@@ -327,43 +308,35 @@ function validateExecutionContract(errors, directory, contract) {
   if (contract.$schema !== "https://puretokensx.com/schemas/media-execution-contract.schema.json") errors.push(`${label} must declare the execution-contract schema`);
   const kind = skillKind(directory);
   if (contract.schemaVersion !== 1 || contract.kind !== kind) errors.push(`${label} must be schemaVersion=1 for ${kind}`);
-  const transport = contract.transport;
-  if (!transport || transport.usesCurrentConfiguredConnection !== true || transport.doesNotInspectConnectionIdentity !== true) {
-    errors.push(`${label} must use the current connection without identity inspection`);
+  validateDirectTransport(errors, label, contract.transport, kind === "image" || kind === "video");
+  const operations = contract.operations;
+  if (!operations || typeof operations !== "object") {
+    errors.push(`${label} must define operations`);
+    return;
   }
   if (kind === "balance") {
-    if (transport?.usesRelativePathsOnly !== true || transport?.requiresHostExposedReadOnlyBalanceCapability !== true || !sameArray(transport?.requiredHostCapabilities, balanceCapabilities)) {
-      errors.push(`${label} must require authenticated relative HTTP and JSON balance response capabilities`);
-    }
-    validateRequest(errors, `${label} read`, contract.operations?.read, "GET", "/api/product/desktop/account/balance");
-    if (contract.operations?.read?.requiresExistingAuthenticatedAccountSession !== true ||
-      contract.operations?.read?.responseSchema !== "https://puretokensx.com/schemas/balance-snapshot.schema.json") {
+    validateRequest(errors, `${label} read`, operations.read, "GET", `${directApiOrigin}/api/product/desktop/account/balance`);
+    if (operations.read?.requiresExistingAuthenticatedAccountSession !== true || operations.read?.responseSchema !== "https://puretokensx.com/schemas/balance-snapshot.schema.json") {
       errors.push(`${label} read must require an existing account session and the balance snapshot schema`);
     }
     if (contract.result?.reportOnlyReturnedFields !== true || contract.result?.neverEstimate !== true || contract.result?.neverRetry !== true ||
-      contract.result?.fallbackWhenAccountSessionUnavailable !== "direct_user_to_current_connection_client_balance_view") {
-      errors.push(`${label} must report only returned balance fields and use the account-session fallback`);
+      contract.result?.fallbackWhenAccountSessionUnavailable !== "report_direct_result_and_direct_to_puretokens_client_balance_view") {
+      errors.push(`${label} must report only returned balance fields and use the direct-request fallback`);
     }
     return;
   }
   if (kind === "connection") {
-    if (transport?.usesRelativePathsOnly !== true || !sameArray(transport?.requiredHostCapabilities, modelCatalogCapabilities)) {
-      errors.push(`${label} must require authenticated relative HTTP and JSON identity response capabilities`);
-    }
-    validateRequest(errors, `${label} identity`, contract.operations?.identity, "GET", "/v1");
+    validateRequest(errors, `${label} identity`, operations.identity, "GET", `${directApiOrigin}/v1`);
     if (contract.result?.identitySource !== "api_declared_public_health" || contract.result?.expectedStatus !== "ok" ||
       contract.result?.expectedName !== "Pure Tokens API" || contract.result?.expectedBasePath !== "/v1" ||
       contract.result?.neverRetry !== true || contract.result?.doesNotExposeHostConfiguration !== true ||
       contract.result?.unconfirmedDoesNotProveOtherService !== true) {
-      errors.push(`${label} must verify only the declared /v1 API identity without retrying, exposing host configuration, or inferring another service`);
+      errors.push(`${label} must verify only the fixed /v1 API identity without retrying, exposing host configuration, or inferring another service`);
     }
     return;
   }
   if (kind === "models") {
-    if (transport?.usesRelativePathsOnly !== true || !sameArray(transport?.requiredHostCapabilities, modelCatalogCapabilities)) {
-      errors.push(`${label} must require authenticated relative HTTP and JSON catalog response capabilities`);
-    }
-    validateRequest(errors, `${label} catalog`, contract.operations?.catalog, "GET", "/v1/media/models");
+    validateRequest(errors, `${label} catalog`, operations.catalog, "GET", `${directApiOrigin}/v1/media/models`);
     if (contract.result?.reportOnlyAuthenticatedCatalog !== true || contract.result?.doesNotSubmitMediaTasks !== true ||
       contract.result?.neverRetry !== true || contract.result?.noStaticCatalogFallback !== true ||
       contract.result?.compatibilityShortlistsRequireDeclaredCapabilityAndInputSchema !== true) {
@@ -371,112 +344,70 @@ function validateExecutionContract(errors, directory, contract) {
     }
     return;
   }
-  if (transport?.usesRelativePathsOnly !== true || transport?.requiresNativeMediaByteDelivery !== true) {
-    errors.push(`${label} must use relative API paths and require native media bytes`);
-  }
-  if (!sameArray(transport?.requiredHostCapabilities, nativeMediaCapabilities)) {
-    errors.push(`${label} must require all four host-native media capabilities`);
-  }
-  const operations = contract.operations;
-  if (!operations || typeof operations !== "object") {
-    errors.push(`${label} must define operations`);
-    return;
-  }
   if (kind === "image") {
-    validateRequest(errors, `${label} catalog`, operations.catalog, "GET", "/v1/media/models");
-    validateRequest(errors, `${label} submit`, operations.submit, "POST", "/v1/images/generations");
+    validateRequest(errors, `${label} catalog`, operations.catalog, "GET", `${directApiOrigin}/v1/media/models`);
+    validateRequest(errors, `${label} submit`, operations.submit, "POST", `${directApiOrigin}/v1/images/generations`);
     validateRequiredBodyFields(errors, `${label} submit`, operations.submit, ["model", "prompt", "async"]);
-    if (operations.submit?.fixedBody?.async !== true) errors.push(`${label} submit must fix async to true`);
-    if (operations.edit?.method !== "POST") errors.push(`${label} edit must use POST`);
+    validateRequest(errors, `${label} status`, operations.status, "GET", `${directApiOrigin}/v1/images/{task_id}`, true);
+    validateRequest(errors, `${label} content`, operations.content, "GET", `${directApiOrigin}/v1/images/{task_id}/content?index={index}`, true);
     const editPaths = Array.isArray(operations.edit?.allowedPaths) ? operations.edit.allowedPaths : [];
-    if (editPaths.length !== 2 || !editPaths.includes("/v1/images/generations") || !editPaths.includes("/v1/images/edits")) {
-      errors.push(`${label} edit must allow only /v1/images/generations and /v1/images/edits`);
-    }
-    if (operations.edit?.pathSource !== "authenticated_live_profile_operation_path") {
-      errors.push(`${label} edit must use the authenticated live image-edit operation path`);
+    if (operations.edit?.method !== "POST" || editPaths.length !== 2 || !editPaths.includes("/v1/images/generations") || !editPaths.includes("/v1/images/edits") ||
+      operations.edit?.pathSource !== "authenticated_live_profile_operation_path" || operations.edit?.contentType !== "multipart/form-data" ||
+      operations.edit?.requiresAuthenticatedLiveProfileOperation !== "image_edit") {
+      errors.push(`${label} must define the fixed-origin, live-profile image-edit operation`);
     }
     validateRequiredBodyFields(errors, `${label} edit`, operations.edit, ["model", "prompt", "image", "async"]);
-    if (operations.edit?.contentType !== "multipart/form-data" || operations.edit?.requiresAuthenticatedLiveProfileOperation !== "image_edit" ||
-      operations.edit?.fixedBody?.async !== true || operations.edit?.inputSource !== "current_user_explicit_native_media_only" ||
-      operations.edit?.transport !== "profile_declared_multipart_file") {
-      errors.push(`${label} must define the authenticated multipart image-edit operation`);
-    }
-    validateRequest(errors, `${label} status`, operations.status, "GET", "/v1/images/{task_id}", true);
-    validateRequest(errors, `${label} content`, operations.content, "GET", "/v1/images/{task_id}/content?index={index}", true);
-    const conditional = operations.submit?.conditionalBodyFields;
-    if (!conditional || conditional.all_user_optional_fields !== "only_when_the_exact_authenticated_live_input_schema_declares_the_field_and_value") {
-      errors.push(`${label} must gate every optional image field on the exact authenticated live profile`);
+    if (operations.submit?.fixedBody?.async !== true || operations.edit?.fixedBody?.async !== true ||
+      operations.edit?.inputSource !== "current_user_explicit_native_media_only" || operations.edit?.transport !== "profile_declared_multipart_file") {
+      errors.push(`${label} must fix async and declare the multipart image-edit input`);
     }
     if (contract.parameterValidation?.defaultModel !== "gpt-image-2" || contract.parameterValidation?.everyNewSubmissionReadsAuthenticatedLiveCatalog !== true ||
       contract.parameterValidation?.everySelectedModelRequiresExactLiveCatalogIdAndImageCapability !== true ||
-      contract.parameterValidation?.allOptionalParametersRequire !== "authenticated_live_catalog_input_schema" ||
-      contract.parameterValidation?.whenProfileIsMissing !== "do_not_submit_requested_optional_parameters") {
-      errors.push(`${label} must read the live catalog for every image task and fail closed for optional parameters without a live profile`);
+      contract.parameterValidation?.allOptionalParametersRequire !== "authenticated_live_catalog_input_schema") {
+      errors.push(`${label} must use the live image profile for model and optional parameter validation`);
     }
-    const retrieval = contract.contentRetrieval;
-    if (!retrieval || retrieval.indexBase !== 0 || retrieval.requestedCount !== "explicit_n_or_default_1" ||
-      retrieval.allowedIndexes !== "0..requestedCount-1" || retrieval.completeDeliveryRequiresEveryRequestedIndex !== true ||
-      retrieval.partialOrMissingContent !== "report_delivered_and_missing_indexes_without_resubmission" ||
-      retrieval.fetchOnlyAfterTerminalSuccess !== true || retrieval.sequentialByIndex !== true ||
-      retrieval.oneInFlightContentReadPerTask !== true || retrieval.neverPrefetchOrRefetchDeliveredContent !== true ||
-      retrieval.handoffBeforeNextContentRead !== true) {
-      errors.push(`${label} must retrieve every zero-based requested image content index sequentially after terminal success without prefetching or duplicate delivery`);
-    }
+    validateImageRetrieval(errors, label, contract);
+    validatePolling(errors, `${label} polling`, contract.polling, { deadlineSeconds: 120, fallbackDelaysSeconds: [3, 6, 12, 24, 30], steadyDelaySeconds: 30, maxAutomaticStatusReads: 6 });
     if (contract.result?.successRequires !== "native_image_bytes") errors.push(`${label} must require native image bytes for success`);
-    const media = contract.inputMediaValidation;
-    if (!media || media.publicUrlReferenceRequires !== "authenticated_live_catalog_property_and_declared_reference_transport" ||
-      media.nativeAttachmentRequires !== "authenticated_live_catalog_input_schema_operation" || media.imageEditOperation !== "image_edit" ||
-      media.onlyCurrentUserExplicitMedia !== true || media.skillPassesUserProvidedPublicUrlsWithoutDownloadingOrRehosting !== true || media.skillNeverDownloadsOrRehostsMedia !== true ||
-      media.gatewayStagesCurrentRequestAttachment !== true ||
-      media.requiresHostNativeAttachmentByteDelivery !== true || media.whenTransportUnavailable !== "do_not_submit_and_explain_declared_transport") {
-      errors.push(`${label} must gate public URL and native image input on the authenticated live profile`);
-    }
-    validatePolling(errors, `${label} polling`, contract.polling, {
-      deadlineSeconds: 120,
-      fallbackDelaysSeconds: [3, 6, 12, 24, 30],
-      steadyDelaySeconds: 30,
-      maxAutomaticStatusReads: 6
-    });
   } else {
-    validateRequest(errors, `${label} catalog`, operations.catalog, "GET", "/v1/media/models");
-    validateRequest(errors, `${label} submit`, operations.submit, "POST", "/v1/videos");
+    validateRequest(errors, `${label} catalog`, operations.catalog, "GET", `${directApiOrigin}/v1/media/models`);
+    validateRequest(errors, `${label} submit`, operations.submit, "POST", `${directApiOrigin}/v1/videos`);
+    validateRequest(errors, `${label} edit`, operations.edit, "POST", `${directApiOrigin}/v1/videos/edits`);
+    validateRequest(errors, `${label} status`, operations.status, "GET", `${directApiOrigin}/v1/videos/{task_id}`, true);
+    validateRequest(errors, `${label} content`, operations.content, "GET", `${directApiOrigin}/v1/videos/{task_id}/content`, true);
     validateRequiredBodyFields(errors, `${label} submit`, operations.submit, ["model"]);
-    validateRequest(errors, `${label} status`, operations.status, "GET", "/v1/videos/{task_id}", true);
-    validateRequest(errors, `${label} content`, operations.content, "GET", "/v1/videos/{task_id}/content", true);
     if (contract.parameterValidation?.allModelsOptionalParametersRequire !== "authenticated_live_catalog_input_schema" ||
       contract.parameterValidation?.promptRequirementUsesAuthenticatedLivePropertiesAndConstraints !== true ||
-      contract.parameterValidation?.resolutionUsesAuthenticatedLiveModeConstraint !== true ||
-      contract.parameterValidation?.whenProfileIsMissing !== "do_not_submit_requested_optional_parameters") {
-      errors.push(`${label} must use the live profile for video optional parameters, prompt requirement, and mode-specific resolution limits`);
+      contract.parameterValidation?.resolutionUsesAuthenticatedLiveModeConstraint !== true || contract.result?.successRequires !== "native_video_bytes") {
+      errors.push(`${label} must use the live video profile and require native video bytes`);
     }
-    if (contract.result?.successRequires !== "native_video_bytes") errors.push(`${label} must require native video bytes for success`);
     const retrieval = contract.contentRetrieval;
-    if (!retrieval || retrieval.fetchOnlyAfterTerminalSuccess !== true || retrieval.oneInFlightContentReadPerTask !== true ||
-      retrieval.neverPrefetchOrRefetchDeliveredContent !== true || retrieval.handoffBeforeNextContentRead !== true) {
-      errors.push(`${label} must retrieve video content only after terminal success, one native response at a time, without prefetching or duplicate delivery`);
+    if (!retrieval || retrieval.fetchOnlyAfterTerminalSuccess !== true || retrieval.oneInFlightContentReadPerTask !== true || retrieval.neverPrefetchOrRefetchDeliveredContent !== true || retrieval.handoffBeforeNextContentRead !== true) {
+      errors.push(`${label} must retrieve video content only after terminal success, one response at a time, without prefetching or duplicate delivery`);
     }
-    const media = contract.inputMediaValidation;
-    if (!media || media.imageToVideoOperation !== "image_to_video" || media.referenceImageVideoOperation !== "reference_image_video" ||
-      media.requiresAuthenticatedLiveCatalogInputSchemaOperation !== true || media.onlyCurrentUserExplicitMedia !== true ||
-      media.publicUrlOrDeclaredIdReferenceRequires !== "authenticated_live_catalog_property_and_declared_reference_transport" ||
-      !sameArray(media.allowedTransports, ["multipart_file"]) || media.skillPassesUserProvidedPublicUrlsOrDeclaredIdsWithoutDownloadingOrRehosting !== true || media.skillNeverDownloadsOrRehostsMedia !== true ||
-      media.gatewayStagesCurrentRequestAttachment !== true ||
-      media.multipleNativeAttachmentTypesRequireOneDeclaredCombinedOperation !== true ||
-      media.multiplePublicUrlOrIdFieldsRequireNoDeclaredConflict !== true ||
-      media.whenTransportUnavailable !== "do_not_submit_and_explain_declared_transport") {
-      errors.push(`${label} must gate public reference and native attachment video input on the authenticated live profile`);
-    }
-    validatePolling(errors, `${label} polling`, contract.polling, {
-      deadlineSeconds: 300,
-      fallbackDelaysSeconds: [5, 10, 20, 40, 60],
-      steadyDelaySeconds: 60,
-      maxAutomaticStatusReads: 7
-    });
+    validatePolling(errors, `${label} polling`, contract.polling, { deadlineSeconds: 300, fallbackDelaysSeconds: [5, 10, 20, 40, 60], steadyDelaySeconds: 60, maxAutomaticStatusReads: 7 });
   }
-  if (contract.result?.sameTaskOnly !== true || contract.result?.neverAutoResubmit !== true) {
-    errors.push(`${label} must stay on the same task without automatic resubmission`);
+  if (contract.result?.sameTaskOnly !== true || contract.result?.neverAutoResubmit !== true || !Array.isArray(contract.unsupportedInput) || !contract.unsupportedInput.length) {
+    errors.push(`${label} must stay on the same task without automatic resubmission and declare unsupported input`);
   }
-  if (!Array.isArray(contract.unsupportedInput) || !contract.unsupportedInput.length) errors.push(`${label} must declare unsupported media input`);
+}
+
+function validateDirectTransport(errors, label, transport, requiresNativeMediaByteDelivery) {
+  if (!transport || transport.fixedApiOrigin !== directApiOrigin || transport.usesFullApiUrls !== true ||
+    transport.usesRuntimeManagedAuthentication !== true || transport.doesNotReadCredentialsOrHostConfiguration !== true ||
+    transport.doesNotUseMcpOrFallbackTransport !== true || (requiresNativeMediaByteDelivery && transport.requiresNativeMediaByteDelivery !== true)) {
+    errors.push(`${label} must use the fixed full API origin, runtime-managed authentication, and no MCP or fallback transport`);
+  }
+}
+
+function validateImageRetrieval(errors, label, contract) {
+  const retrieval = contract.contentRetrieval;
+  if (!retrieval || retrieval.indexBase !== 0 || retrieval.requestedCount !== "explicit_n_or_default_1" || retrieval.allowedIndexes !== "0..requestedCount-1" ||
+    retrieval.completeDeliveryRequiresEveryRequestedIndex !== true || retrieval.partialOrMissingContent !== "report_delivered_and_missing_indexes_without_resubmission" ||
+    retrieval.fetchOnlyAfterTerminalSuccess !== true || retrieval.sequentialByIndex !== true || retrieval.oneInFlightContentReadPerTask !== true ||
+    retrieval.neverPrefetchOrRefetchDeliveredContent !== true || retrieval.handoffBeforeNextContentRead !== true) {
+    errors.push(`${label} must retrieve every zero-based requested image content index sequentially after terminal success without prefetching or duplicate delivery`);
+  }
 }
 
 function validatePolling(errors, label, polling, expected) {
@@ -491,9 +422,9 @@ function validatePolling(errors, label, polling, expected) {
   }
 }
 
-function validateRequest(errors, label, request, method, expectedPath, usesTemplate = false) {
-  if (!request || request.method !== method || request[usesTemplate ? "pathTemplate" : "path"] !== expectedPath) {
-    errors.push(`${label} must be ${method} ${expectedPath}`);
+function validateRequest(errors, label, request, method, expectedUrl, usesTemplate = false) {
+  if (!request || request.method !== method || request[usesTemplate ? "urlTemplate" : "url"] !== expectedUrl) {
+    errors.push(`${label} must be ${method} ${expectedUrl}`);
   }
 }
 
@@ -573,17 +504,13 @@ function sameArray(actual, expected) {
   return Array.isArray(actual) && actual.length === expected.length && actual.every((value, index) => value === expected[index]);
 }
 
-function sameObjectKeys(actual, expected) {
-  return !!actual && typeof actual === "object" && !Array.isArray(actual) && sameArray(Object.keys(actual).sort(), [...expected].sort());
-}
-
 async function validateSchemaDocuments(errors) {
   const schemas = [
     "schemas/media-execution-contract.schema.json",
     "schemas/media-behavior-scenarios.schema.json",
     "schemas/model-selection.schema.json",
     "schemas/host-support.schema.json",
-    "schemas/host-native-execution-contract.schema.json",
+    "schemas/direct-api-execution-contract.schema.json",
     "schemas/catalog-freshness.schema.json",
     "schemas/balance-snapshot.schema.json",
     "schemas/task-receipt.schema.json"

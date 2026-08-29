@@ -8,11 +8,11 @@ This repository provides five independent Skills:
 
 | Skill | What it does |
 | --- | --- |
-| `puretokens_balance` | Reads a current-balance snapshot only when the host exposes that read-only capability. |
-| `puretokens_connection` | Checks whether the current API endpoint identifies itself as Pure Tokens API, without reading connection configuration. |
-| `puretokens_models` | Reads the current authenticated media catalog and explains declared model capabilities, parameters, and media operations. |
-| `puretokens_image` | Generates images and performs profile-gated image edits through the current configured Pure Tokens Images API. |
-| `puretokens_video` | Generates videos and performs profile-gated image, video, or audio reference generation and video edits through the current configured Pure Tokens Videos API. |
+| `puretokens_balance` | Reads a current-balance snapshot from the fixed Pure Tokens API. |
+| `puretokens_connection` | Checks the fixed Pure Tokens API identity declaration, without reading connection configuration. |
+| `puretokens_models` | Reads the fixed API's authenticated media catalog and explains declared model capabilities, parameters, and media operations. |
+| `puretokens_image` | Generates images and performs profile-gated image edits through the fixed Pure Tokens Images API. |
+| `puretokens_video` | Generates videos and performs profile-gated image, video, or audio reference generation and video edits through the fixed Pure Tokens Videos API. |
 
 Install the Skills you need into the supported host's documented global Skill directory:
 
@@ -72,7 +72,7 @@ If terminal execution is unavailable or denied, say so and provide the next copy
 
 ## Host support
 
-CC Switch is a connection-configuration tool, not a Skill host. A supported host uses whichever current connection CC Switch, Pure Tokens Desktop, or the user has already configured.
+CC Switch is a connection-configuration tool, not a Skill host. CC Switch, Pure Tokens Desktop, or a manual client setup can make existing Pure Tokens authentication available to the active runtime. The Skills themselves always call the fixed public Pure Tokens API origin; they never read the user's connection configuration.
 
 | Host | Current specialist-Skill delivery | What the user does |
 | --- | --- | --- |
@@ -84,25 +84,23 @@ CC Switch is a connection-configuration tool, not a Skill host. A supported host
 
 The canonical matrix is `references/host-support.json`. The CLI intentionally never guesses a host directory.
 
-## Connection contract
+## Direct API contract
 
-The host's current configured connection owns the Base URL, authentication, and routing. CC Switch, Pure Tokens Desktop, or a manually configured host connection can provide it. The Skills do not read, scan, ask for, print, or store credentials or host configuration; they do not inspect a provider label, Base URL, or service attribution.
+Every specialist Skill calls the fixed public API origin `https://api.puretokensx.com`. It uses full URLs, never a configured Base URL or a relative-path host executor. The active runtime supplies its existing Pure Tokens request authentication automatically; Skills never read, scan, ask for, print, copy, or store API keys, Base URLs, authentication files, provider labels, or client configuration. They never construct an authorization header, use MCP, a local proxy, a sidecar, or another endpoint.
 
-`puretokens_connection` makes exactly one read-only `GET /v1` request through the current connection. It confirms the connection only when that API endpoint declares `status: "ok"`, `name: "Pure Tokens API"`, and `base_url: "/v1"`. It never reveals the actual Base URL or reads host configuration. If the declaration is absent or the request fails, it says only that Pure Tokens could not be confirmed; that result does not prove the connection belongs to another service. This is an endpoint-declaration check, not cryptographic anti-spoof verification.
+`puretokens_connection` makes exactly one read-only `GET https://api.puretokensx.com/v1` request. It confirms the fixed API only when that endpoint declares `status: "ok"`, `name: "Pure Tokens API"`, and `base_url: "/v1"`. This does not reveal or validate the user's configured Base URL, and it is not cryptographic anti-spoof verification.
 
-`puretokens_models` makes exactly one read-only `GET /v1/media/models` request. It exposes the current authenticated catalog in a user-readable form: exact model IDs, returned capabilities, declared optional parameters, and declared media operations. It can shortlist models for an explicit technical requirement such as image-to-video, a reference medium, duration, aspect ratio, or resolution, but only when that requirement is explicitly declared by the current model profile. It never submits media work, retries the catalog request, falls back to the static README catalog, or ranks unreturned quality, price, speed, or availability information.
+`puretokens_models` makes exactly one read-only `GET https://api.puretokensx.com/v1/media/models` request. It exposes the authenticated catalog in a user-readable form: exact model IDs, returned capabilities, declared optional parameters, and declared media operations. It can shortlist models for an explicit technical requirement such as image-to-video, a reference medium, duration, aspect ratio, or resolution, but only when that requirement is explicitly declared by the live model profile. It never submits media work, retries the catalog request, falls back to the static README catalog, or ranks unreturned quality, price, speed, or availability information.
 
-`puretokens_image` reads `GET /v1/media/models` before every new task, including its default `gpt-image-2`, then uses `POST /v1/images/generations` with `async: true`. Every non-core image field — count, pixel size, semantic image size, aspect ratio, reference field, and strength — must be declared by that exact authenticated profile. An explicitly supplied public HTTPS reference URL may be sent only in a profile property whose declared transport allows it. An attached native image may be sent only when `input_schema.operations.image_edit` declares `POST` to `/v1/images/generations` or `/v1/images/edits`, multipart input, fields, counts, and transport; the Skill uses that declared operation path.
+`puretokens_image` reads `GET https://api.puretokensx.com/v1/media/models` before every new task, including its default `gpt-image-2`, then uses `POST https://api.puretokensx.com/v1/images/generations` with `async: true`. Every non-core image field — count, pixel size, semantic image size, aspect ratio, reference field, and strength — must be declared by that exact authenticated profile. An explicitly supplied public HTTPS reference URL may be sent only in a profile property whose declared transport allows it. An attached native image may be sent only when `input_schema.operations.image_edit` declares `POST` to `/v1/images/generations` or `/v1/images/edits`, multipart input, fields, counts, and transport; the Skill combines that declared path with the fixed API origin.
 
-`puretokens_video` first uses `GET /v1/media/models`, verifies an exact `video` model ID, then uses `POST /v1/videos`. Its default is `grok-imagine-video-1.5-preview`; it polls and delivers only the same task's native bytes. Prompt requirement and every optional field come from the exact live profile. When `constraints.resolution_by_mode` is declared, the selected text, image, or reference operation must use that mode's resolution set rather than the broader `resolution` property. An explicitly supplied public HTTPS media URL, file ID, or voice ID may use a declared profile property and declared transport; native attached media instead requires the corresponding declared multipart operation (`image_to_video`, `reference_image_video`, `reference_video`, `reference_audio`, or `video_edit`). Video editing still requires `POST /v1/videos/edits`, a `video` attachment field, and multipart transport.
+`puretokens_video` first uses `GET https://api.puretokensx.com/v1/media/models`, verifies an exact `video` model ID, then uses `POST https://api.puretokensx.com/v1/videos`. Its default is `grok-imagine-video-1.5-preview`; it polls and delivers only the same task's native bytes. Prompt requirement and every optional field come from the exact live profile. When `constraints.resolution_by_mode` is declared, the selected text, image, or reference operation must use that mode's resolution set rather than the broader `resolution` property. An explicitly supplied public HTTPS media URL, file ID, or voice ID may use a declared profile property and declared transport; native attached media instead requires the corresponding declared multipart operation (`image_to_video`, `reference_image_video`, `reference_video`, `reference_audio`, or `video_edit`). Video editing uses `POST https://api.puretokensx.com/v1/videos/edits` only when the live profile declares it.
 
-Every supported host is held to the same native-execution contract: authenticated relative-path HTTP, JSON task responses, native media-byte delivery, and continuation by the same task ID. The acceptance matrix is `references/host-native-execution-contract.json`; it does not grant the Skill access to a Base URL, API key, or host configuration.
-
-The active connection must execute those requests and deliver native image or video bytes. If it cannot, the Skill stops before a billable submission and tells the user to check the existing Pure Tokens Base URL, authentication, and routing configuration. It never falls back to another execution path and does not identify or branch on other relay services.
+The full direct-API contract is `references/direct-api-execution-contract.json`. If a direct request fails before a task is accepted, the Skill reports the returned failure and does not guess a Base URL, authentication, or routing cause. It never falls back to another execution path or identifies another relay.
 
 ## Balance
 
-`puretokens_balance` makes exactly one read-only `GET /api/product/desktop/account/balance` request only when the host exposes the current connection's existing authenticated account session. It reports only returned fields. If that session is not exposed, it directs the user to the current connection's client balance view; it never guesses a balance, tries another endpoint, or asks for credentials.
+`puretokens_balance` makes exactly one read-only `GET https://api.puretokensx.com/api/product/desktop/account/balance` request with the active runtime's existing Pure Tokens account authentication. It reports only returned fields. If the direct request is not authenticated or fails, it reports the returned result and directs the user to the Pure Tokens client balance view; it never guesses a balance, tries another endpoint, or asks for credentials.
 
 ## Image sizes and count
 
@@ -124,16 +122,16 @@ On submit, continuation, completion, and failure, media Skills return a consiste
 
 Media polling begins only after submission returns a `task_id` and runs only within the submission turn or a user turn that explicitly continues that same task ID. It has at most one status request in flight per task and never creates a background timer, queue, or worker. A valid positive HTTP `Retry-After` is used only while time remains in the automatic-polling budget. Otherwise an image task waits `3, 6, 12, 24, 30, 30` seconds before at most six same-task status reads; a video task waits `5, 10, 20, 40, 60, 60` seconds before at most seven reads. Each bounded window lasts at most 120 seconds for images or 300 seconds for videos. A rate limit, 5xx response, transport error, or timeout stops that window immediately. A still-pending task is reported as pending with its task ID. When the user explicitly asks to continue it, the Skill opens one new bounded window for that same task only; it never treats a deadline or read error as failure and never submits a replacement task.
 
-Media bytes are not cached in Skill state, prompts, or logs. Content is read only after terminal success, with one content read in flight; the host hands off the native bytes before another read. If the host cannot do that without unbounded background work, duplicate reads, or cached copies, the Skill reports same-task delivery as unavailable instead of substituting a URL or submitting a new task.
+Media bytes are not cached in Skill state, prompts, or logs. Content is read only after terminal success, with one content read in flight; the active runtime hands off the native bytes before another read. If it cannot do that without unbounded background work, duplicate reads, or cached copies, the Skill reports same-task delivery as unavailable instead of substituting a URL or submitting a new task.
 
 ## Usage examples
 
-- Connection: `Is my current connection Pure Tokens?` The Skill checks only the current endpoint's `GET /v1` declaration and does not reveal configuration.
+- Connection: `Can this Pure Tokens Skill confirm its API?` The Skill checks only the fixed endpoint's `GET https://api.puretokensx.com/v1` declaration and does not reveal configuration.
 - Models: `Show the video models currently available to me, their declared duration and aspect-ratio options, and which support image-to-video.` This is read-only; it does not submit a task.
 - Image: `Use gpt-image-2 to generate a 2K, 16:9 illustration of a snowy village at dawn.`
 - Another image model: `Use nano banana pro to generate a clean product poster.` The Skill resolves a unique installed alias, then confirms the exact ID and image capability in the current authenticated catalog.
 - Image reference URL: `Use gpt-image-2 with this public reference image URL: https://example.com/reference.png` The Skill first confirms a matching profile field and declared URL transport.
-- Image edit: `Use grok-imagine-image to edit the attached image: replace the cloudy sky with a clear sunset.` The Skill first confirms the authenticated image-edit profile and the host's multipart attachment delivery.
+- Image edit: `Use grok-imagine-image to edit the attached image: replace the cloudy sky with a clear sunset.` The Skill first confirms the authenticated image-edit profile and direct multipart attachment delivery.
 - Video: `Use grok 1.5 video to generate a six-second cinematic sunrise over the ocean.`
 - Image-to-video: `Use grok 1.5 video to animate this public image URL for six seconds: https://example.com/reference.png` The Skill uses it only when the authenticated profile declares the matching URL field and transport.
 - Reference video: `Use seedance-2.5 to create a six-second video from my attached video.` The Skill uses it only if the authenticated profile publishes `reference_video`.
@@ -143,7 +141,7 @@ Media bytes are not cached in Skill state, prompts, or logs. Content is read onl
 
 ## Model discovery
 
-Use `puretokens_models` when the user asks what is actually available through the current connection, which models support a media operation, or which models accept a particular declared parameter. Its authenticated `GET /v1/media/models` response is the runtime source of truth: it reports exact model IDs, capabilities, optional parameter schema, and `input_schema.operations` without guessing missing fields. A compatibility shortlist is technical only; it matches declared capability, field/value, and operation metadata and does not make subjective quality or price claims.
+Use `puretokens_models` when the user asks what is actually available through Pure Tokens, which models support a media operation, or which models accept a particular declared parameter. Its authenticated `GET https://api.puretokensx.com/v1/media/models` response is the runtime source of truth: it reports exact model IDs, capabilities, optional parameter schema, and `input_schema.operations` without guessing missing fields. A compatibility shortlist is technical only; it matches declared capability, field/value, and operation metadata and does not make subjective quality or price claims.
 
 The README is discovery-only. Capabilities are taken only from the base model catalog's explicit image/video declarations, never inferred from a model name. Each installed image/video Skill includes its capability-specific `references/model-selection.json`, generated from this same catalog; an alias is usable only when it resolves to one exact model ID.
 

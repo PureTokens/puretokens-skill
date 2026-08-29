@@ -3,17 +3,18 @@
   "schemaVersion": 1,
   "kind": "video",
   "transport": {
-    "usesCurrentConfiguredConnection": true,
-    "usesRelativePathsOnly": true,
-    "doesNotInspectConnectionIdentity": true,
+    "fixedApiOrigin": "https://api.puretokensx.com",
+    "usesFullApiUrls": true,
+    "usesRuntimeManagedAuthentication": true,
+    "doesNotReadCredentialsOrHostConfiguration": true,
     "requiresNativeMediaByteDelivery": true,
-    "requiredHostCapabilities": ["authenticated_relative_http", "json_task_response", "native_media_byte_delivery", "same_task_continuation"]
+    "doesNotUseMcpOrFallbackTransport": true
   },
   "operations": {
-    "catalog": { "method": "GET", "path": "/v1/media/models" },
+    "catalog": { "method": "GET", "url": "https://api.puretokensx.com/v1/media/models" },
     "submit": {
       "method": "POST",
-      "path": "/v1/videos",
+      "url": "https://api.puretokensx.com/v1/videos",
       "requiredBodyFields": ["model"],
       "conditionalBodyFields": {
         "prompt": "required_only_when_the_exact_authenticated_live_profile_requires_it_or_no_declared_single-reference-exception-applies",
@@ -23,15 +24,15 @@
     },
     "edit": {
       "method": "POST",
-      "path": "/v1/videos/edits",
+      "url": "https://api.puretokensx.com/v1/videos/edits",
       "contentType": "multipart/form-data",
       "requiresAuthenticatedLiveProfileOperation": "video_edit",
       "requiredBodyFields": ["model", "prompt", "video"],
       "inputSource": "current_user_explicit_native_media_only",
       "transport": "profile_declared_multipart_file"
     },
-    "status": { "method": "GET", "pathTemplate": "/v1/videos/{task_id}" },
-    "content": { "method": "GET", "pathTemplate": "/v1/videos/{task_id}/content" }
+    "status": { "method": "GET", "urlTemplate": "https://api.puretokensx.com/v1/videos/{task_id}" },
+    "content": { "method": "GET", "urlTemplate": "https://api.puretokensx.com/v1/videos/{task_id}/content" }
   },
   "result": {
     "successRequires": "native_video_bytes",

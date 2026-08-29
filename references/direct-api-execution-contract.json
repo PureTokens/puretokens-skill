@@ -1,0 +1,68 @@
+{
+  "$schema": "https://puretokensx.com/schemas/direct-api-execution-contract.schema.json",
+  "schemaVersion": 1,
+  "apiOrigin": "https://api.puretokensx.com",
+  "authentication": {
+    "usesRuntimeManagedExistingAuthentication": true,
+    "skillNeverReadsOrConstructsCredentials": true
+  },
+  "transport": {
+    "usesFullApiUrls": true,
+    "doesNotUseMcp": true,
+    "doesNotUseLocalProxyOrSidecar": true,
+    "doesNotUseFallbackEndpoint": true
+  },
+  "acceptanceScenarios": [
+    {
+      "id": "api-identity-read",
+      "request": "GET https://api.puretokensx.com/v1",
+      "expect": "returns the API identity JSON without the Skill reading or exposing credentials"
+    },
+    {
+      "id": "catalog-read",
+      "request": "GET https://api.puretokensx.com/v1/media/models",
+      "expect": "returns the authenticated media catalog"
+    },
+    {
+      "id": "media-submit",
+      "request": "POST the fixed Images or Videos API URL once with the selected model and declared request body",
+      "expect": "returns a JSON task response without changing the model or parameters"
+    },
+    {
+      "id": "same-task-status",
+      "request": "GET a submitted task's fixed full status or content URL",
+      "expect": "continues only the supplied task_id and never submits a replacement task"
+    },
+    {
+      "id": "native-media-delivery",
+      "request": "GET a completed task's fixed full content URL",
+      "expect": "returns or attaches native media bytes; URLs, HTML, SVG, task IDs, and status text are not completed delivery"
+    }
+  ],
+  "userMediaInput": {
+    "onlyCurrentUserExplicitMedia": true,
+    "publicUrlOrDeclaredIdRequiresLiveProfilePropertyAndTransport": true,
+    "requiresProfileDeclaredTransport": true,
+    "skillNeverDownloadsOrRehosts": true,
+    "pureTokensGatewayStagesMultipartAttachments": true,
+    "fallback": "If the active runtime cannot send an explicitly attached file as the declared multipart representation, stop before submission, explain the declared transport, and do not invent a URL, file ID, or upload path. A public HTTPS URL, file ID, or voice ID explicitly supplied by the user may be sent only in the exact live-profile field whose declared transport permits it; the Skill never downloads, validates, or rehosts it."
+  },
+  "mediaDeliveryResourceBounds": {
+    "oneInFlightStatusReadPerTask": true,
+    "noBackgroundPollingOrQueue": true,
+    "readContentOnlyAfterTerminalSuccess": true,
+    "oneInFlightContentReadPerTask": true,
+    "sequentialImageContentIndexes": true,
+    "neverPrefetchOrRefetchDeliveredContent": true,
+    "handoffNativeBytesBeforeNextRead": true,
+    "doesNotPersistMediaBytesInSkillStateOrLogs": true,
+    "fallback": "If native media bytes cannot be handed off, report same-task delivery as unavailable. Do not substitute a URL, HTML, SVG, status text, or a re-submitted task."
+  },
+  "balance": {
+    "url": "https://api.puretokensx.com/api/product/desktop/account/balance",
+    "method": "GET",
+    "requiresExistingAuthenticatedAccountSession": true,
+    "responseSchema": "schemas/balance-snapshot.schema.json",
+    "fallback": "If the direct balance request is not authenticated or cannot be executed, report the returned result and direct the user to the Pure Tokens client balance view; do not estimate or ask for credentials."
+  }
+}
