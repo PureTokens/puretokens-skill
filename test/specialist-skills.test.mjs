@@ -44,12 +44,26 @@ test("bilingual READMEs include safe copyable Agent installation prompts", async
   assert.match(english, /^<p align="center">\n  <img src="\.\/assets\/brand\/puretokens-skill-hero\.png" alt="Pure Tokens Official Skills" width="100%" \/>\n<\/p>/);
   assert.match(english, /## Agent-assisted installation/);
   assert.match(english, /\$env:USERPROFILE\\\.agents\\skills/);
-  assert.match(english, /Never overwrite an existing destination unless it is the managed Skill with that same name/);
+  assert.match(english, /call an available tool before replying/);
+  assert.match(english, /installation-state result, not a terminal-tool failure/);
+  assert.match(english, /Stop using tools only when the tool itself is unavailable, the host rejects the call/);
+  assert.match(english, /After the installation work, run `npm run check` again/);
+  assert.match(english, /contains SKILL\.md and skill\.json and that each manifest name matches its directory name/);
+  assert.match(english, /Advance only one verifiable step per reply/);
+  assert.match(english, /Do not use third-party package mirrors or delete files/);
+  assert.match(english, /do not overwrite, move, or delete it/);
   assert.match(english, /Do not read, display, copy, modify, or ask for any API Key, Base URL, authentication file, model configuration, or MCP configuration/);
   assert.match(chinese, /## 让 Agent 协助安装/);
   assert.match(chinese, /^<p align="center">\n  <img src="\.\/assets\/brand\/puretokens-skill-hero\.png" alt="Pure Tokens 官方 Skills" width="100%" \/>\n<\/p>/);
   assert.match(chinese, /\$env:USERPROFILE\\\.agents\\skills/);
-  assert.match(chinese, /若已有目录不是同名受管 Skill，绝不覆盖，报告冲突/);
+  assert.match(chinese, /必须在回复前先调用一个可用工具/);
+  assert.match(chinese, /目标目录不存在是安装状态，不是终端工具失败/);
+  assert.match(chinese, /只有工具本身不存在、宿主拒绝调用/);
+  assert.match(chinese, /安装操作完成后，再执行一次 `npm run check`/);
+  assert.match(chinese, /每个目标目录都包含 SKILL\.md 和 skill\.json，且每份 manifest 的 name 与目录名一致/);
+  assert.match(chinese, /每轮只推进一个可验证步骤/);
+  assert.match(chinese, /不得使用第三方包镜像或删除文件/);
+  assert.match(chinese, /不得覆盖、移动或删除/);
   assert.match(chinese, /不得读取、展示、复制、修改或索取任何 API Key、Base URL、认证文件、模型配置或 MCP 配置/);
 });
 
