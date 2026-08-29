@@ -50,7 +50,7 @@ The client download page extracts the first fenced block under the fixed heading
 ### Copy this to a terminal-capable local agent
 
 ```text
-Install or update the official Pure Tokens Skills for this local agent host. Do the work; do not only describe it.
+Install or update the official Pure Tokens Skills for this local agent host from the only authorized source: `https://github.com/PureTokens/puretokens-skill.git` (branch `main`). Do the work; do not only describe it. Do not substitute a package, mirror, fork, or similarly named repository.
 
 1. Identify the current host from this runtime:
    - Codex: `$env:USERPROFILE\.agents\skills` on Windows PowerShell; `~/.agents/skills` on macOS/Linux.

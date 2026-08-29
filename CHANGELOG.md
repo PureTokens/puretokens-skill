@@ -6,6 +6,8 @@
 
 ## Unreleased
 
+- The client-download Agent-installation prompt now declares the canonical GitHub repository and `main` branch in its first instruction, so a copied prompt has an unambiguous installation source before the Agent begins work.
+
 - Added `puretokens_update` and the `puretokens-skill sync --target <directory>` command. Explicit update requests now validate a fresh official `main` checkout, install missing official Skills, and atomically upgrade only matching managed Skills; an unmanaged same-name directory stops the sync before any target changes.
 - Added dedicated update behavior scenarios, a local-update execution contract, Claude Desktop bundle guidance, and coverage for successful sync and conflict-safe refusal.
 

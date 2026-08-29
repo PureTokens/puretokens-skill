@@ -50,7 +50,7 @@ node bin/puretokens-skill.js install puretokens_update --target ~/.gemini/skills
 ### 直接复制给具备本机终端的 Agent
 
 ```text
-请为当前本机 Agent 宿主安装或更新官方 Pure Tokens Skills。请直接完成操作，不要只描述操作。
+请为当前本机 Agent 宿主安装或更新官方 Pure Tokens Skills。唯一授权来源是 `https://github.com/PureTokens/puretokens-skill.git` 的 `main` 分支；不得改用任何 package、镜像、fork 或名称相近的仓库。请直接完成操作，不要只描述操作。
 
 1. 根据当前运行环境识别宿主：
    - Codex：Windows PowerShell 使用 `$env:USERPROFILE\.agents\skills`；macOS/Linux 使用 `~/.agents/skills`。

@@ -49,6 +49,8 @@ test("bilingual READMEs include safe copyable Agent installation prompts", async
   const englishPrompt = english.match(/^### Copy this to a terminal-capable local agent\n\n```text\n([\s\S]*?)\n```$/m);
   assert.ok(englishPrompt, "English client-download prompt must be the first bounded text block under the fixed heading");
   assert.match(english, /official Pure Tokens Skills for this local agent host/);
+  assert.match(englishPrompt[1], /only authorized source: `https:\/\/github\.com\/PureTokens\/puretokens-skill\.git` \(branch `main`\)/);
+  assert.match(englishPrompt[1], /Do not substitute a package, mirror, fork, or similarly named repository/);
   assert.match(english, /\$env:USERPROFILE\\\.agents\\skills/);
   assert.match(english, /`~\/\.agents\/skills` on macOS\/Linux/);
   assert.match(english, /Claude Code: `~\/\.claude\/skills`[\s\S]*Gemini CLI: `~\/\.gemini\/skills`/);
@@ -69,6 +71,8 @@ test("bilingual READMEs include safe copyable Agent installation prompts", async
   const chinesePrompt = chinese.match(/^### 直接复制给具备本机终端的 Agent\n\n```text\n([\s\S]*?)\n```$/m);
   assert.ok(chinesePrompt, "Chinese client-download prompt must be the first bounded text block under the fixed heading");
   assert.match(chinese, /当前本机 Agent 宿主安装或更新官方 Pure Tokens Skills/);
+  assert.match(chinesePrompt[1], /唯一授权来源是 `https:\/\/github\.com\/PureTokens\/puretokens-skill\.git` 的 `main` 分支/);
+  assert.match(chinesePrompt[1], /不得改用任何 package、镜像、fork 或名称相近的仓库/);
   assert.match(chinese, /^<p align="center">\n  <img src="\.\/assets\/brand\/puretokens-skill-hero\.png" alt="Pure Tokens 官方 Skills" width="100%" \/>\n<\/p>/);
   assert.match(chinese, /\$env:USERPROFILE\\\.agents\\skills/);
   assert.match(chinese, /macOS\/Linux 使用 `~\/\.agents\/skills`/);

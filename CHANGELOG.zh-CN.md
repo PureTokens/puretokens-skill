@@ -6,6 +6,8 @@
 
 ## Unreleased
 
+- 客户端下载页的 Agent 安装提示词现已在第一句明确唯一 GitHub 官方仓库及 `main` 分支，用户复制后在 Agent 开始执行前就能得到无歧义的安装来源。
+
 - 新增 `puretokens_update` 与 `puretokens-skill sync --target <directory>` 命令。用户明确要求更新时会先校验新克隆的官方 `main`，安装缺失的官方 Skill，只原子升级同名受管 Skill；任一非受管同名目录都会让同步在改动前停止。
 - 增加独立的更新行为场景、本机更新执行契约、Claude Desktop 打包引导，以及同步成功和冲突安全拒绝的测试覆盖。
 
