@@ -21,12 +21,12 @@
     {
       "id": "catalog-read",
       "request": "GET https://api.puretokensx.com/v1/media/models",
-      "expect": "returns the authenticated media catalog"
+      "expect": "returns the authenticated media catalog only for explicit discovery, an installed-profile gap, or post-rejection diagnosis; it is not a normal media-submission preflight"
     },
     {
       "id": "media-submit",
-      "request": "POST the fixed Images or Videos API URL once with the selected model and declared request body",
-      "expect": "returns a JSON task response without changing the model or parameters"
+      "request": "POST the fixed Images or Videos API URL once with the installed selected model and declared request body",
+      "expect": "normal core text generation submits directly without a catalog preflight and returns a JSON task response without changing the model or parameters"
     },
     {
       "id": "same-task-status",
@@ -41,11 +41,11 @@
   ],
   "userMediaInput": {
     "onlyCurrentUserExplicitMedia": true,
-    "publicUrlOrDeclaredIdRequiresLiveProfilePropertyAndTransport": true,
-    "requiresProfileDeclaredTransport": true,
+    "publicUrlOrDeclaredIdRequiresInstalledOrOnDemandProfilePropertyAndTransport": true,
+    "requiresInstalledOrOnDemandDeclaredTransport": true,
     "skillNeverDownloadsOrRehosts": true,
     "pureTokensGatewayStagesMultipartAttachments": true,
-    "fallback": "If the active runtime cannot send an explicitly attached file as the declared multipart representation, stop before submission, explain the declared transport, and do not invent a URL, file ID, or upload path. A public HTTPS URL, file ID, or voice ID explicitly supplied by the user may be sent only in the exact live-profile field whose declared transport permits it; the Skill never downloads, validates, or rehosts it."
+    "fallback": "If the active runtime cannot send an explicitly attached file as the declared multipart representation, stop before submission, explain the declared transport, and do not invent a URL, file ID, or upload path. A public HTTPS URL, file ID, or voice ID explicitly supplied by the user may be sent only in the exact installed or on-demand-profile field whose declared transport permits it; the Skill never downloads, validates, or rehosts it."
   },
   "mediaDeliveryResourceBounds": {
     "oneInFlightStatusReadPerTask": true,

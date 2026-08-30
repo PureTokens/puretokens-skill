@@ -18,15 +18,15 @@
       "requiredBodyFields": ["model", "prompt", "async"],
       "fixedBody": { "async": true },
       "conditionalBodyFields": {
-        "all_user_optional_fields": "only_when_the_exact_authenticated_live_input_schema_declares_the_field_and_value"
+        "all_user_optional_fields": "only_when_the_installed_exact_model_selection_or_an_on_demand_live_input_schema_declares_the_field_and_value"
       }
     },
     "edit": {
       "method": "POST",
       "allowedPaths": ["/v1/images/generations", "/v1/images/edits"],
-      "pathSource": "authenticated_live_profile_operation_path",
+      "pathSource": "installed_model_selection_or_on_demand_live_profile_operation_path",
       "contentType": "multipart/form-data",
-      "requiresAuthenticatedLiveProfileOperation": "image_edit",
+      "requiresDeclaredProfileOperation": "image_edit",
       "requiredBodyFields": ["model", "prompt", "image", "async"],
       "fixedBody": { "async": true },
       "inputSource": "current_user_explicit_native_media_only",
@@ -41,16 +41,32 @@
     "sameTaskOnly": true,
     "neverAutoResubmit": true
   },
+  "taskIdentity": {
+    "receiptField": "task_id",
+    "preferredResponseFieldSource": "installed_model_lifecycle_create_idField",
+    "fallbackTopLevelResponseFields": ["task_id", "id"],
+    "neverDerivesIdFromUrlsNestedObjectsOrPrompt": true,
+    "pathEncoding": "percent_encode_opaque_id_as_one_path_segment",
+    "whenMissing": "report_task_id_not_returned_and_do_not_poll_download_or_resubmit"
+  },
+  "taskState": {
+    "declaredStateSource": "installed_model_lifecycle_poll",
+    "fallbackPendingStates": ["pending", "queued", "running", "in_progress"],
+    "fallbackSuccessStates": ["completed", "succeeded", "success"],
+    "fallbackFailureStates": ["failed", "cancelled", "canceled", "expired", "error"],
+    "whenUnrecognized": "report_raw_state_stop_automatic_polling_and_require_explicit_same_task_continuation"
+  },
   "parameterValidation": {
     "defaultModel": "gpt-image-2",
-    "everyNewSubmissionReadsAuthenticatedLiveCatalog": true,
-    "everySelectedModelRequiresExactLiveCatalogIdAndImageCapability": true,
-    "allOptionalParametersRequire": "authenticated_live_catalog_input_schema",
-    "whenProfileIsMissing": "do_not_submit_requested_optional_parameters"
+    "normalSubmissionUsesInstalledModelSelection": true,
+    "exactModelCoreSubmissionDoesNotRequireCatalogPreflight": true,
+    "onDemandLiveCatalogRead": "only_for_explicit_discovery_installed_profile_gap_or_post_rejection_diagnosis",
+    "allOptionalParametersRequire": "installed_model_selection_parameter_schema_or_on_demand_live_input_schema",
+    "whenProfileIsMissing": "do_not_submit_requested_optional_parameters_or_media_operations"
   },
   "inputMediaValidation": {
-    "publicUrlReferenceRequires": "authenticated_live_catalog_property_and_declared_reference_transport",
-    "nativeAttachmentRequires": "authenticated_live_catalog_input_schema_operation",
+    "publicUrlReferenceRequires": "installed_model_selection_or_on_demand_live_profile_property_and_declared_reference_transport",
+    "nativeAttachmentRequires": "installed_model_selection_or_on_demand_live_profile_operation",
     "imageEditOperation": "image_edit",
     "onlyCurrentUserExplicitMedia": true,
     "skillPassesUserProvidedPublicUrlsWithoutDownloadingOrRehosting": true,
@@ -83,6 +99,11 @@
     "afterStatusReadError": "stop_automatic_polling_and_require_explicit_same_task_continuation",
     "explicitContinuation": "new_bounded_same_task_polling_window_only_when_explicitly_requested",
     "afterDeadline": "report_pending_and_require_explicit_same_task_continuation"
+  },
+  "submissionFailure": {
+    "modelParameterOrCapabilityRejection": "one_on_demand_catalog_read_then_require_explicit_corrected_new_request",
+    "rateLimit": "report_retry_after_when_returned_and_require_explicit_retry",
+    "serverTransportOrTimeoutWithoutTaskId": "report_submission_outcome_unknown_without_declaring_task_absent_or_resubmitting"
   },
   "unsupportedInput": ["mask", "undeclared_image_edit_extensions", "non_current_user_media"]
 }

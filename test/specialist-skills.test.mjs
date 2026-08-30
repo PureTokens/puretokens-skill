@@ -16,7 +16,7 @@ test("registry exposes exactly the six specialist Skills", async () => {
   const { registry, records } = await collectSkillRecords();
   assert.deepEqual(registry.skills.map((skill) => skill.name), names);
   assert.equal(records.length, 6);
-  assert.deepEqual([...new Set(records.map((record) => record.manifest.version))], ["0.11.0"]);
+  assert.deepEqual([...new Set(records.map((record) => record.manifest.version))], ["0.12.0"]);
   assert.deepEqual(await validateRepository(), []);
 });
 
@@ -127,8 +127,8 @@ test("installed contracts cover bounded requests, task recovery, and user-facing
     puretokens_balance: ["balance-account-session-unavailable", "balance-response"],
     puretokens_connection: ["connection-identity-confirmed", "connection-identity-unconfirmed", "connection-identity-unavailable", "connection-base-url-request", "connection-identity-assurance"],
     puretokens_models: ["models-catalog-unavailable", "models-catalog-empty", "models-exact-id-unavailable", "models-capability-filter-empty", "models-parameter-profile-absent", "models-operation-profile-absent", "models-requirement-ambiguous", "models-catalog-response"],
-    puretokens_image: ["image-model-alias-ambiguous", "image-model-unavailable", "image-model-parameter-profile-unavailable", "image-model-parameter-unsupported", "image-execution-unavailable", "image-count-invalid", "image-pixel-size-invalid", "image-physical-size", "image-edit-profile-unavailable", "image-public-url-reference-profile-unavailable", "image-public-url-reference-invalid", "image-public-url-reference-ambiguous", "image-edit-attachment-unavailable", "image-edit-input-unsupported", "image-task-pending", "image-task-poll-delay", "image-task-poll-resource-bound", "image-task-polling-deadline", "image-task-explicit-continuation", "image-task-terminal-failure", "image-task-timeout-or-unknown", "image-content-delivery-failure", "image-content-index-missing", "image-content-resource-bound"],
-    puretokens_video: ["video-model-alias-ambiguous", "video-model-unavailable", "video-model-parameter-profile-unavailable", "video-model-parameter-unsupported", "video-execution-unavailable", "video-parameter-unsupported", "video-resolution-mode-unsupported", "video-image-operation-profile-unavailable", "video-media-operation-profile-unavailable", "video-image-transport-unavailable", "video-public-url-reference-profile-unavailable", "video-public-url-reference-invalid", "video-public-url-reference-ambiguous", "video-prompt-requirement", "video-image-count-unsupported", "video-media-combination-unsupported", "video-input-media-unsupported", "video-task-pending", "video-task-poll-delay", "video-task-poll-resource-bound", "video-task-polling-deadline", "video-task-explicit-continuation", "video-task-terminal-failure", "video-task-timeout-or-unknown", "video-content-delivery-failure", "video-content-resource-bound"],
+    puretokens_image: ["image-model-alias-ambiguous", "image-normal-submission-skips-catalog", "image-submission-model-parameter-rejected", "image-submission-rate-limited", "image-submission-outcome-unknown", "image-model-unavailable", "image-model-parameter-profile-unavailable", "image-model-parameter-unsupported", "image-catalog-on-demand-unavailable", "image-execution-unavailable", "image-count-invalid", "image-pixel-size-invalid", "image-physical-size", "image-edit-profile-unavailable", "image-public-url-reference-profile-unavailable", "image-public-url-reference-invalid", "image-public-url-reference-not-public", "image-public-url-reference-ambiguous", "image-edit-attachment-unavailable", "image-edit-input-unsupported", "image-task-id-normalization", "image-task-id-missing", "image-task-id-invalid", "image-task-state-unrecognized", "image-task-request-count-unknown", "image-task-pending", "image-task-poll-delay", "image-task-poll-resource-bound", "image-task-polling-deadline", "image-task-explicit-continuation", "image-task-terminal-failure", "image-task-timeout-or-unknown", "image-content-delivery-failure", "image-content-index-missing", "image-content-resource-bound"],
+    puretokens_video: ["video-model-alias-ambiguous", "video-normal-submission-skips-catalog", "video-submission-model-parameter-rejected", "video-submission-rate-limited", "video-submission-outcome-unknown", "video-model-unavailable", "video-model-parameter-profile-unavailable", "video-model-parameter-unsupported", "video-catalog-on-demand-unavailable", "video-execution-unavailable", "video-parameter-unsupported", "video-resolution-mode-unsupported", "video-image-operation-profile-unavailable", "video-media-operation-profile-unavailable", "video-image-transport-unavailable", "video-public-url-reference-profile-unavailable", "video-public-url-reference-invalid", "video-public-url-reference-not-public", "video-public-url-reference-ambiguous", "video-prompt-requirement", "video-image-count-unsupported", "video-media-combination-unsupported", "video-input-media-unsupported", "video-task-id-normalization", "video-task-id-missing", "video-task-id-invalid", "video-task-state-unrecognized", "video-task-pending", "video-task-poll-delay", "video-task-poll-resource-bound", "video-task-polling-deadline", "video-task-explicit-continuation", "video-task-terminal-failure", "video-task-timeout-or-unknown", "video-content-delivery-failure", "video-content-resource-bound"],
     puretokens_update: ["update-host-unknown", "update-terminal-unavailable", "update-validation-failed", "update-unmanaged-conflict", "update-managed-sync", "update-claude-desktop-bundle"]
   };
   for (const name of names) {
@@ -144,16 +144,16 @@ test("installed contracts cover bounded requests, task recovery, and user-facing
     for (const id of requiredScenarios[name]) assert.ok(ids.has(id), `${name} missing ${id}`);
   }
   const image = JSON.parse(await readFile(path.join(repositoryRoot, "skills", "puretokens_image", "references", "execution-contract.json"), "utf8"));
-  assert.equal(image.operations.submit.conditionalBodyFields.all_user_optional_fields, "only_when_the_exact_authenticated_live_input_schema_declares_the_field_and_value");
+  assert.equal(image.operations.submit.conditionalBodyFields.all_user_optional_fields, "only_when_the_installed_exact_model_selection_or_an_on_demand_live_input_schema_declares_the_field_and_value");
   assert.equal(image.operations.submit.fixedBody.async, true);
   assert.equal(image.operations.catalog.url, "https://api.puretokensx.com/v1/media/models");
   assert.deepEqual(image.operations.edit.allowedPaths, ["/v1/images/generations", "/v1/images/edits"]);
-  assert.equal(image.operations.edit.pathSource, "authenticated_live_profile_operation_path");
+  assert.equal(image.operations.edit.pathSource, "installed_model_selection_or_on_demand_live_profile_operation_path");
   assert.equal(image.operations.edit.contentType, "multipart/form-data");
-  assert.equal(image.operations.edit.requiresAuthenticatedLiveProfileOperation, "image_edit");
+  assert.equal(image.operations.edit.requiresDeclaredProfileOperation, "image_edit");
   assert.deepEqual(image.operations.edit.requiredBodyFields, ["model", "prompt", "image", "async"]);
-  assert.equal(image.inputMediaValidation.publicUrlReferenceRequires, "authenticated_live_catalog_property_and_declared_reference_transport");
-  assert.equal(image.inputMediaValidation.nativeAttachmentRequires, "authenticated_live_catalog_input_schema_operation");
+  assert.equal(image.inputMediaValidation.publicUrlReferenceRequires, "installed_model_selection_or_on_demand_live_profile_property_and_declared_reference_transport");
+  assert.equal(image.inputMediaValidation.nativeAttachmentRequires, "installed_model_selection_or_on_demand_live_profile_operation");
   assert.equal(image.inputMediaValidation.imageEditOperation, "image_edit");
   assert.equal(image.inputMediaValidation.onlyCurrentUserExplicitMedia, true);
   assert.equal(image.inputMediaValidation.skillPassesUserProvidedPublicUrlsWithoutDownloadingOrRehosting, true);
@@ -170,9 +170,14 @@ test("installed contracts cover bounded requests, task recovery, and user-facing
     requiresNativeMediaByteDelivery: true,
     doesNotUseMcpOrFallbackTransport: true
   });
-  assert.equal(image.parameterValidation.everyNewSubmissionReadsAuthenticatedLiveCatalog, true);
-  assert.equal(image.parameterValidation.everySelectedModelRequiresExactLiveCatalogIdAndImageCapability, true);
-  assert.equal(image.parameterValidation.allOptionalParametersRequire, "authenticated_live_catalog_input_schema");
+  assert.equal(image.parameterValidation.normalSubmissionUsesInstalledModelSelection, true);
+  assert.equal(image.parameterValidation.exactModelCoreSubmissionDoesNotRequireCatalogPreflight, true);
+  assert.equal(image.parameterValidation.onDemandLiveCatalogRead, "only_for_explicit_discovery_installed_profile_gap_or_post_rejection_diagnosis");
+  assert.equal(image.parameterValidation.allOptionalParametersRequire, "installed_model_selection_parameter_schema_or_on_demand_live_input_schema");
+  assert.deepEqual(image.taskIdentity.fallbackTopLevelResponseFields, ["task_id", "id"]);
+  assert.equal(image.taskIdentity.neverDerivesIdFromUrlsNestedObjectsOrPrompt, true);
+  assert.deepEqual(image.taskState.fallbackPendingStates, ["pending", "queued", "running", "in_progress"]);
+  assert.equal(image.submissionFailure.rateLimit, "report_retry_after_when_returned_and_require_explicit_retry");
   assert.equal(image.contentRetrieval.indexBase, 0);
   assert.equal(image.contentRetrieval.allowedIndexes, "0..requestedCount-1");
   assert.equal(image.contentRetrieval.completeDeliveryRequiresEveryRequestedIndex, true);
@@ -197,18 +202,25 @@ test("installed contracts cover bounded requests, task recovery, and user-facing
   assert.equal(video.operations.submit.url, "https://api.puretokensx.com/v1/videos");
   assert.deepEqual(video.operations.submit.requiredBodyFields, ["model"]);
   assert.equal(video.operations.edit.url, "https://api.puretokensx.com/v1/videos/edits");
-  assert.equal(video.operations.edit.requiresAuthenticatedLiveProfileOperation, "video_edit");
+  assert.equal(video.operations.edit.requiresDeclaredProfileOperation, "video_edit");
   assert.equal(video.result.sameTaskOnly, true);
   assert.equal(video.result.neverAutoResubmit, true);
-  assert.equal(video.parameterValidation.allModelsOptionalParametersRequire, "authenticated_live_catalog_input_schema");
-  assert.equal(video.parameterValidation.promptRequirementUsesAuthenticatedLivePropertiesAndConstraints, true);
-  assert.equal(video.parameterValidation.resolutionUsesAuthenticatedLiveModeConstraint, true);
+  assert.equal(video.parameterValidation.normalSubmissionUsesInstalledModelSelection, true);
+  assert.equal(video.parameterValidation.exactModelCoreSubmissionDoesNotRequireCatalogPreflight, true);
+  assert.equal(video.parameterValidation.onDemandLiveCatalogRead, "only_for_explicit_discovery_installed_profile_gap_or_post_rejection_diagnosis");
+  assert.equal(video.parameterValidation.allModelsOptionalParametersRequire, "installed_model_selection_parameter_schema_or_on_demand_live_input_schema");
+  assert.equal(video.parameterValidation.promptRequirementUsesInstalledOrOnDemandPropertiesAndConstraints, true);
+  assert.equal(video.parameterValidation.resolutionUsesInstalledOrOnDemandModeConstraint, true);
+  assert.deepEqual(video.taskIdentity.fallbackTopLevelResponseFields, ["task_id", "id"]);
+  assert.equal(video.taskIdentity.neverDerivesIdFromUrlsNestedObjectsOrPrompt, true);
+  assert.deepEqual(video.taskState.fallbackPendingStates, ["pending", "queued", "running", "in_progress"]);
+  assert.equal(video.submissionFailure.rateLimit, "report_retry_after_when_returned_and_require_explicit_retry");
   assert.equal(video.inputMediaValidation.imageToVideoOperation, "image_to_video");
   assert.equal(video.inputMediaValidation.referenceImageVideoOperation, "reference_image_video");
   assert.equal(video.inputMediaValidation.referenceVideoOperation, "reference_video");
   assert.equal(video.inputMediaValidation.referenceAudioOperation, "reference_audio");
   assert.equal(video.inputMediaValidation.videoEditOperation, "video_edit");
-  assert.equal(video.inputMediaValidation.publicUrlOrDeclaredIdReferenceRequires, "authenticated_live_catalog_property_and_declared_reference_transport");
+  assert.equal(video.inputMediaValidation.publicUrlOrDeclaredIdReferenceRequires, "installed_model_selection_or_on_demand_live_profile_property_and_declared_reference_transport");
   assert.deepEqual(video.inputMediaValidation.allowedTransports, ["multipart_file"]);
   assert.equal(video.inputMediaValidation.onlyCurrentUserExplicitMedia, true);
   assert.equal(video.inputMediaValidation.skillPassesUserProvidedPublicUrlsOrDeclaredIdsWithoutDownloadingOrRehosting, true);
@@ -324,7 +336,7 @@ test("distribution matrix and fixed direct API contract match every specialist m
   assert.equal(videoManifest.rules.profiledReferenceVideoSupported, true);
   assert.equal(videoManifest.rules.profiledReferenceAudioSupported, true);
   assert.equal(videoManifest.rules.profiledVideoEditSupported, true);
-  assert.equal(videoManifest.rules.modeSpecificResolutionRequiresLiveConstraint, true);
+  assert.equal(videoManifest.rules.modeSpecificResolutionUsesInstalledOrOnDemandConstraint, true);
   assert.equal(videoManifest.rules.usesResourceBoundedPolling, true);
   assert.equal(videoManifest.rules.doesNotCreateBackgroundMediaWork, true);
   assert.equal(videoManifest.rules.usesSequentialNativeContentDelivery, true);

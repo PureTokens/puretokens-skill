@@ -4,6 +4,13 @@
 
 # Changelog
 
+## 0.12.0 — 2026-08-30
+
+- Normal text-to-image and text-to-video submissions now use the installed versioned model selection and submit directly. They no longer make a `GET /v1/media/models` preflight request on every task.
+- The live media catalog is now read only on demand: when a user explicitly asks for current model information, when an installed profile lacks a requested option or media operation, or once to explain a model/parameter/capability rejection. A catalog-read failure cannot block an otherwise valid core generation request or trigger automatic resubmission.
+- Hardened asynchronous task handling: normalize only declared top-level task IDs, classify declared lifecycle states (including `queued` and `in_progress`), stop on unknown states, preserve an unknown submission outcome, and guide rate-limit, rejection, invalid continuation-ID, and incomplete multi-image cases without guessing or automatic resubmission.
+- Public reference URLs now fail closed for URLs with credentials, local hosts, or explicit loopback/private/link-local IPs; the Skill still never probes, downloads, or rehosts user media.
+
 ## 0.11.0 — 2026-08-29
 
 - The client-download Agent-installation prompt now declares the canonical GitHub repository and `main` branch in its first instruction, so a copied prompt has an unambiguous installation source before the Agent begins work.

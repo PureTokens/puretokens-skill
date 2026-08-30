@@ -28,7 +28,10 @@
     "parameterValidation": { "type": "object", "additionalProperties": true },
     "inputMediaValidation": { "type": "object", "additionalProperties": true },
     "contentRetrieval": { "type": "object", "additionalProperties": true },
-    "polling": { "type": "object", "additionalProperties": true }
+    "polling": { "type": "object", "additionalProperties": true },
+    "taskIdentity": { "type": "object", "additionalProperties": true },
+    "taskState": { "type": "object", "additionalProperties": true },
+    "submissionFailure": { "type": "object", "additionalProperties": true }
   },
   "allOf": [
     {
@@ -58,7 +61,7 @@
     {
       "if": { "properties": { "kind": { "const": "image" } } },
       "then": {
-        "required": ["operations", "unsupportedInput", "parameterValidation", "inputMediaValidation", "contentRetrieval", "polling"],
+        "required": ["operations", "unsupportedInput", "parameterValidation", "inputMediaValidation", "contentRetrieval", "polling", "taskIdentity", "taskState", "submissionFailure"],
         "properties": {
           "operations": {
             "required": ["catalog", "submit", "edit", "status", "content"],
@@ -75,7 +78,7 @@
     {
       "if": { "properties": { "kind": { "const": "video" } } },
       "then": {
-        "required": ["operations", "unsupportedInput", "parameterValidation", "inputMediaValidation", "contentRetrieval", "polling"],
+        "required": ["operations", "unsupportedInput", "parameterValidation", "inputMediaValidation", "contentRetrieval", "polling", "taskIdentity", "taskState", "submissionFailure"],
         "properties": {
           "operations": {
             "required": ["catalog", "submit", "edit", "status", "content"],
@@ -172,7 +175,7 @@
         "requiredBodyFields": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
         "fixedBody": { "type": "object" },
         "conditionalBodyFields": { "type": ["object", "array"] },
-        "requiresAuthenticatedLiveProfileOperation": { "type": "string" },
+        "requiresDeclaredProfileOperation": { "type": "string" },
         "inputSource": { "type": "string" },
         "transport": { "type": "string" },
         "requiresExistingAuthenticatedAccountSession": { "type": "boolean" },

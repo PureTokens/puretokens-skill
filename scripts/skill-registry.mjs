@@ -218,7 +218,7 @@ function validateDirectApiExecutionContract(errors, contract) {
   }
   const userMediaInput = contract.userMediaInput;
   if (!userMediaInput || userMediaInput.onlyCurrentUserExplicitMedia !== true ||
-    userMediaInput.requiresProfileDeclaredTransport !== true ||
+    userMediaInput.requiresInstalledOrOnDemandDeclaredTransport !== true ||
     userMediaInput.skillNeverDownloadsOrRehosts !== true ||
     userMediaInput.pureTokensGatewayStagesMultipartAttachments !== true ||
     typeof userMediaInput.fallback !== "string" || !userMediaInput.fallback) {
@@ -356,20 +356,22 @@ function validateExecutionContract(errors, directory, contract) {
     validateRequest(errors, `${label} content`, operations.content, "GET", `${directApiOrigin}/v1/images/{task_id}/content?index={index}`, true);
     const editPaths = Array.isArray(operations.edit?.allowedPaths) ? operations.edit.allowedPaths : [];
     if (operations.edit?.method !== "POST" || editPaths.length !== 2 || !editPaths.includes("/v1/images/generations") || !editPaths.includes("/v1/images/edits") ||
-      operations.edit?.pathSource !== "authenticated_live_profile_operation_path" || operations.edit?.contentType !== "multipart/form-data" ||
-      operations.edit?.requiresAuthenticatedLiveProfileOperation !== "image_edit") {
-      errors.push(`${label} must define the fixed-origin, live-profile image-edit operation`);
+      operations.edit?.pathSource !== "installed_model_selection_or_on_demand_live_profile_operation_path" || operations.edit?.contentType !== "multipart/form-data" ||
+      operations.edit?.requiresDeclaredProfileOperation !== "image_edit") {
+      errors.push(`${label} must define the fixed-origin declared image-edit operation`);
     }
     validateRequiredBodyFields(errors, `${label} edit`, operations.edit, ["model", "prompt", "image", "async"]);
     if (operations.submit?.fixedBody?.async !== true || operations.edit?.fixedBody?.async !== true ||
       operations.edit?.inputSource !== "current_user_explicit_native_media_only" || operations.edit?.transport !== "profile_declared_multipart_file") {
       errors.push(`${label} must fix async and declare the multipart image-edit input`);
     }
-    if (contract.parameterValidation?.defaultModel !== "gpt-image-2" || contract.parameterValidation?.everyNewSubmissionReadsAuthenticatedLiveCatalog !== true ||
-      contract.parameterValidation?.everySelectedModelRequiresExactLiveCatalogIdAndImageCapability !== true ||
-      contract.parameterValidation?.allOptionalParametersRequire !== "authenticated_live_catalog_input_schema") {
-      errors.push(`${label} must use the live image profile for model and optional parameter validation`);
+    if (contract.parameterValidation?.defaultModel !== "gpt-image-2" || contract.parameterValidation?.normalSubmissionUsesInstalledModelSelection !== true ||
+      contract.parameterValidation?.exactModelCoreSubmissionDoesNotRequireCatalogPreflight !== true ||
+      contract.parameterValidation?.onDemandLiveCatalogRead !== "only_for_explicit_discovery_installed_profile_gap_or_post_rejection_diagnosis" ||
+      contract.parameterValidation?.allOptionalParametersRequire !== "installed_model_selection_parameter_schema_or_on_demand_live_input_schema") {
+      errors.push(`${label} must use its installed selection for normal image submissions and limit live catalog reads to on-demand cases`);
     }
+    validateTaskIdentityStateAndSubmissionFailure(errors, label, contract, true);
     validateImageRetrieval(errors, label, contract);
     validatePolling(errors, `${label} polling`, contract.polling, { deadlineSeconds: 120, fallbackDelaysSeconds: [3, 6, 12, 24, 30], steadyDelaySeconds: 30, maxAutomaticStatusReads: 6 });
     if (contract.result?.successRequires !== "native_image_bytes") errors.push(`${label} must require native image bytes for success`);
@@ -380,11 +382,15 @@ function validateExecutionContract(errors, directory, contract) {
     validateRequest(errors, `${label} status`, operations.status, "GET", `${directApiOrigin}/v1/videos/{task_id}`, true);
     validateRequest(errors, `${label} content`, operations.content, "GET", `${directApiOrigin}/v1/videos/{task_id}/content`, true);
     validateRequiredBodyFields(errors, `${label} submit`, operations.submit, ["model"]);
-    if (contract.parameterValidation?.allModelsOptionalParametersRequire !== "authenticated_live_catalog_input_schema" ||
-      contract.parameterValidation?.promptRequirementUsesAuthenticatedLivePropertiesAndConstraints !== true ||
-      contract.parameterValidation?.resolutionUsesAuthenticatedLiveModeConstraint !== true || contract.result?.successRequires !== "native_video_bytes") {
-      errors.push(`${label} must use the live video profile and require native video bytes`);
+    if (contract.parameterValidation?.normalSubmissionUsesInstalledModelSelection !== true ||
+      contract.parameterValidation?.exactModelCoreSubmissionDoesNotRequireCatalogPreflight !== true ||
+      contract.parameterValidation?.onDemandLiveCatalogRead !== "only_for_explicit_discovery_installed_profile_gap_or_post_rejection_diagnosis" ||
+      contract.parameterValidation?.allModelsOptionalParametersRequire !== "installed_model_selection_parameter_schema_or_on_demand_live_input_schema" ||
+      contract.parameterValidation?.promptRequirementUsesInstalledOrOnDemandPropertiesAndConstraints !== true ||
+      contract.parameterValidation?.resolutionUsesInstalledOrOnDemandModeConstraint !== true || contract.result?.successRequires !== "native_video_bytes") {
+      errors.push(`${label} must use its installed selection for normal video submissions, limit live catalog reads to on-demand cases, and require native video bytes`);
     }
+    validateTaskIdentityStateAndSubmissionFailure(errors, label, contract, false);
     const retrieval = contract.contentRetrieval;
     if (!retrieval || retrieval.fetchOnlyAfterTerminalSuccess !== true || retrieval.oneInFlightContentReadPerTask !== true || retrieval.neverPrefetchOrRefetchDeliveredContent !== true || retrieval.handoffBeforeNextContentRead !== true) {
       errors.push(`${label} must retrieve video content only after terminal success, one response at a time, without prefetching or duplicate delivery`);
@@ -429,6 +435,32 @@ function validateImageRetrieval(errors, label, contract) {
     retrieval.fetchOnlyAfterTerminalSuccess !== true || retrieval.sequentialByIndex !== true || retrieval.oneInFlightContentReadPerTask !== true ||
     retrieval.neverPrefetchOrRefetchDeliveredContent !== true || retrieval.handoffBeforeNextContentRead !== true) {
     errors.push(`${label} must retrieve every zero-based requested image content index sequentially after terminal success without prefetching or duplicate delivery`);
+  }
+}
+
+function validateTaskIdentityStateAndSubmissionFailure(errors, label, contract, image) {
+  const identity = contract.taskIdentity;
+  if (!identity || identity.receiptField !== "task_id" || identity.preferredResponseFieldSource !== "installed_model_lifecycle_create_idField" ||
+    !sameArray(identity.fallbackTopLevelResponseFields, ["task_id", "id"]) || identity.neverDerivesIdFromUrlsNestedObjectsOrPrompt !== true ||
+    identity.pathEncoding !== "percent_encode_opaque_id_as_one_path_segment" || identity.whenMissing !== "report_task_id_not_returned_and_do_not_poll_download_or_resubmit") {
+    errors.push(`${label} must normalize only a declared top-level task ID and fail closed when it is missing`);
+  }
+  const state = contract.taskState;
+  if (!state || state.declaredStateSource !== "installed_model_lifecycle_poll" ||
+    !sameArray(state.fallbackPendingStates, ["pending", "queued", "running", "in_progress"]) ||
+    !sameArray(state.fallbackSuccessStates, ["completed", "succeeded", "success"]) ||
+    !sameArray(state.fallbackFailureStates, ["failed", "cancelled", "canceled", "expired", "error"]) ||
+    state.whenUnrecognized !== "report_raw_state_stop_automatic_polling_and_require_explicit_same_task_continuation") {
+    errors.push(`${label} must use declared or bounded fallback task states and stop on an unrecognized state`);
+  }
+  const failure = contract.submissionFailure;
+  if (!failure || failure.modelParameterOrCapabilityRejection !== "one_on_demand_catalog_read_then_require_explicit_corrected_new_request" ||
+    failure.rateLimit !== "report_retry_after_when_returned_and_require_explicit_retry" ||
+    failure.serverTransportOrTimeoutWithoutTaskId !== "report_submission_outcome_unknown_without_declaring_task_absent_or_resubmitting") {
+    errors.push(`${label} must guide rejection, rate limit, and uncertain-submission cases without automatic resubmission`);
+  }
+  if (image && contract.contentRetrieval?.requestedCount !== "explicit_n_or_default_1") {
+    errors.push(`${label} must preserve an explicit image count for same-task delivery`);
   }
 }
 

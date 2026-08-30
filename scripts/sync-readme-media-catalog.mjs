@@ -51,8 +51,8 @@ function renderCatalog(catalog, locale) {
     : `Synchronized with the base model catalog: ${catalog.serviceCatalog.capturedAt}.`;
   const liveNotice = catalog.availabilityNotice[locale];
   const newModelNotice = isChinese
-    ? "README 只从基础目录中带有明确图片/视频能力的模型生成，不通过模型名称推断。当前目录快照只用于发现能力；实际执行时以认证后的实时模型和其 `input_schema` 为准。发布前从受控基础目录刷新，并运行 `npm run release:validate`；当快照超过七天时发布校验会失败。"
-    : "README is generated only from base-catalog models with explicit image/video capabilities; it never infers capability from a model name. The current catalog snapshot is discovery-only; the authenticated live model and its `input_schema` win at execution time. Before release, refresh from the controlled base catalog and run `npm run release:validate`; the release gate fails when the snapshot is over seven days old.";
+    ? "README 只从基础目录中带有明确图片/视频能力的模型生成，不通过模型名称推断。已安装快照用于普通生成的模型选择和已知参数；实时目录只在明确查询、安装资料缺口或提交被拒后的诊断时按需读取。发布前从受控基础目录刷新，并运行 `npm run release:validate`；当快照超过七天时发布校验会失败。"
+    : "README is generated only from base-catalog models with explicit image/video capabilities; it never infers capability from a model name. The installed snapshot resolves normal generation models and known parameters; the live catalog is read on demand only for explicit discovery, an installed-profile gap, or post-rejection diagnosis. Before release, refresh from the controlled base catalog and run `npm run release:validate`; the release gate fails when the snapshot is over seven days old.";
   const imageHeading = isChinese ? "### 图片模型" : "### Image models";
   const videoHeading = isChinese ? "### 视频模型" : "### Video models";
   const idHeader = isChinese ? "模型 ID" : "Model ID";

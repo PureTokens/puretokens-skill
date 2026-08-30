@@ -93,9 +93,9 @@ CC Switch 是连接配置工具，不是 Skill 宿主。CC Switch、Pure Tokens 
 
 `puretokens_models` 只调用一次 `GET https://api.puretokensx.com/v1/media/models`。它将认证目录转换为用户可读的信息：精确模型 ID、实际返回的能力、已声明可选参数和媒体操作。用户可以问图生视频、参考媒体、时长、画幅或分辨率等明确技术要求有哪些兼容模型；Skill 只会根据实时 profile 实际声明的字段和值筛选，不会提交媒体任务、重试目录请求、回退到 README 静态目录，或编造质量、价格、速度和可用性排序。
 
-`puretokens_image` 每个新任务（包括默认 `gpt-image-2`）都会先读取 `GET https://api.puretokensx.com/v1/media/models`，再通过 `POST https://api.puretokensx.com/v1/images/generations` 传 `async: true`。数量、像素尺寸、语义尺寸、画幅、参考字段、强度等所有非核心图片字段，都必须由该精确模型认证后的 profile 明确声明。用户明确提供的公网 HTTPS 参考图 URL 只能写入 profile 声明且 transport 允许的字段；原生图片附件则只有在 `input_schema.operations.image_edit` 明确声明 Images 路径、multipart、字段、数量和 transport 时才可发送，Skill 会将该路径与固定 API origin 拼成完整 URL。
+`puretokens_image` 的普通文生图会直接调用 `POST https://api.puretokensx.com/v1/images/generations` 并传 `async: true`，不会先读取模型目录。已安装的版本化选择资料负责默认 `gpt-image-2`、唯一别名和已知图片参数。只有用户明确查询当前模型、要求安装资料未声明的参数或媒体操作，或模型/参数/capability 被 API 拒绝后需要解释时，才读取一次实时目录。目录读取失败绝不能阻止原本有效的核心文生图，也绝不会触发自动重提。
 
-`puretokens_video` 先使用 `GET https://api.puretokensx.com/v1/media/models`，验证精确 `video` 模型 ID，再使用 `POST https://api.puretokensx.com/v1/videos`。默认模型为 `grok-imagine-video-1.5-preview`；只轮询并交付同一任务的原生字节。提示词是否必填和所有可选字段都由精确实时 profile 决定。profile 声明 `constraints.resolution_by_mode` 时，文生、图生或参考模式必须使用该模式自己的分辨率集合，不能只按更宽的 `resolution` 属性判断。用户明确提供的公网 HTTPS 媒体 URL、file ID 或 voice ID 可以使用已声明字段和 transport；原生附件则必须使用对应的 multipart operation（`image_to_video`、`reference_image_video`、`reference_video`、`reference_audio` 或 `video_edit`）。视频编辑只有在实时 profile 声明时才会调用 `POST https://api.puretokensx.com/v1/videos/edits`。
+`puretokens_video` 的普通文生视频会直接调用 `POST https://api.puretokensx.com/v1/videos`，不会先读取模型目录。已安装选择资料负责默认 `grok-imagine-video-1.5-preview`、唯一别名、已知参数和媒体操作。只有明确查询当前模型、为满足安装资料未声明的参数或媒体操作，或 API 因模型/参数/capability 拒绝后需要解释时，才读取一次实时目录。目录读取失败绝不能阻止原本有效的核心文生视频，也绝不会触发自动重提。Skill 只轮询并交付同一任务的原生字节。
 
 完整直连 API 契约见 `references/direct-api-execution-contract.json`。若任务被接受前的直连请求失败，Skill 只报告实际返回的失败，不会猜测用户的 Base URL、认证或路由原因；不会切换执行路径，也不识别或分支处理其他中转服务。
 
@@ -109,23 +109,23 @@ CC Switch 是连接配置工具，不是 Skill 宿主。CC Switch、Pure Tokens 
 
 ## 图片尺寸和数量
 
-一个生图请求绝不会拆成多次付费提交。数量和所有尺寸控制都是模型级的：`n`、`size`、`image_size`、`aspect_ratio`、`width`、`height` 只有当前认证 profile 明确声明字段和值时才会发送。未声明 `n` 时，Skill 不会自行补充。
+一个生图请求绝不会拆成多次付费提交。数量和所有尺寸控制都是模型级的：`n`、`size`、`image_size`、`aspect_ratio`、`width`、`height` 只有已安装的精确模型资料，或为安装资料缺失的明确需求按需读取一次的目录，声明字段和值时才会发送。未声明 `n` 时，Skill 不会自行补充。
 
-`200cm × 230cm` 这类物理尺寸无法精确保证，也绝不会传给 `n`、`size` 或其他 API 字段。Skill 会说明限制，并列出该精确模型当前声明的像素或语义尺寸选项。
+`200cm × 230cm` 这类物理尺寸无法精确保证，也绝不会传给 `n`、`size` 或其他 API 字段。Skill 会说明限制，并列出已安装资料或按需目录查询声明的像素或语义尺寸选项。
 
 请求 `n` 张图时，交付会在任务成功后从同一任务严格按顺序读取零基索引 `0` 到 `n-1`，一次只读取一个索引。只有每个请求索引都拿到原生字节才算成功。部分结果会明确列出已交付和缺失索引，并且只允许继续读取该任务缺失的内容。Skill 不会预取或重复下载已交付内容；每一项原生结果交付给运行环境后才读取下一项。
 
 ## 模型参数资料与任务回执
 
-每个新图片和视频任务都会使用所选模型认证后的实时 `input_schema`；静态模型清单只用于解析别名。任何可选字段都必须存在且值兼容。视频提示词在 profile 明确要求时必须提供；只有 profile 明确声明的单参考例外才可省略。资料缺失或值不兼容时，Skill 会在提交前请用户移除该选项或选择已发布参数资料的模型。
+普通图片和视频任务使用已安装的版本化选择资料，不会因实时目录预检增加一次请求。任何可选字段都必须在该资料中存在且值兼容。只有用户明确查询当前能力、要求安装资料缺失的参数或媒体操作时，Skill 才按需读取一次目录；模型/参数/capability 被拒绝后，也只允许为解释读取一次，绝不会自动重试。普通文生视频必须提供提示词；只有已安装或按需资料明确声明精确单参考例外时才可省略。
 
-媒体输入同样由实时 profile 控制。用户明确提供的公网 HTTPS URL、file ID 或 voice ID 只能写入该 profile 的精确字段和允许 transport；Skill 不会下载、探测、检查可访问性、转存或改写它。用户当前请求附带的原生媒体则只能走已声明的 `multipart_file` operation；Skill 只会将字节随这一条 Images 或 Videos API 请求发送，Pure Tokens 网关会内部短期 R2 暂存、验证上游可读 URL，且不返回 URL。多个原生附件类型需要明确的组合 operation；多个公网 URL/ID 字段则不能与已声明的互斥或模式限制冲突。Skill 不会伪造 URL 或 file ID、调用独立上传 API，或把媒体请求静默改为纯文生。
+媒体输入由已安装资料控制；只有用户明确要求安装资料未声明的媒体操作时，才按需读取一次 profile。用户明确提供的公网 HTTPS URL、file ID 或 voice ID 只能写入资料声明的精确字段和允许 transport；Skill 不会下载、探测、检查可访问性、转存或改写它。用户当前请求附带的原生媒体则只能走已声明的 `multipart_file` operation；Skill 只会将字节随这一条 Images 或 Videos API 请求发送，Pure Tokens 网关会内部短期 R2 暂存、验证上游可读 URL，且不返回 URL。多个原生附件类型需要明确的组合 operation；多个公网 URL/ID 字段则不能与已声明的互斥或模式限制冲突。Skill 不会伪造 URL 或 file ID、调用独立上传 API，或把媒体请求静默改为纯文生。
 
-媒体 Skill 在提交、继续查询、完成和失败时统一返回回执：已返回的精确模型 ID、已返回的任务 ID、当前状态、请求操作、请求数量、尺寸/参数、完成时的已交付数量和下一步。任务元数据未返回时会明确写“未返回”，绝不猜测。
+媒体 Skill 在提交、继续查询、完成和失败时统一返回回执：已返回的精确模型 ID、已返回的任务 ID、当前状态、请求操作、请求数量、尺寸/参数、完成时的已交付数量和下一步。回执中的 `task_id` 会优先从所选模型 lifecycle 声明的顶层 ID 字段规范化；未声明 lifecycle 时只接受顶层 `task_id` 或 `id`，绝不从 URL 或嵌套响应数据猜测。任务元数据未返回时会明确写“未返回”。
 
 ## 异步轮询
 
-只有提交返回 `task_id` 后才开始轮询；自动轮询只在本次提交所在的用户回合，或用户明确继续查询同一 `task_id` 的用户回合内运行。同一任务最多一个状态请求在途，绝不会创建后台计时器、队列或工作器。状态响应有有效的正数 HTTP `Retry-After` 且自动轮询预算尚有剩余时优先遵循；否则生图依次等待 `3、6、12、24、30、30` 秒，最多读取同一任务状态 6 次；生视频依次等待 `5、10、20、40、60、60` 秒，最多读取 7 次。每个有界轮询窗口最多持续：生图 120 秒，生视频 300 秒。遇到限流、5xx、传输错误或超时时立即停止本轮。如仍在处理中会连同任务 ID 如实报告；用户明确继续查询时，才会为**同一任务**开启一个新的有界轮询窗口。Skill 不会把到期或读取错误当失败，也不会提交替代任务。
+只有提交返回规范化 `task_id` 后才开始轮询；自动轮询只在本次提交所在的用户回合，或用户明确继续查询同一 `task_id` 的用户回合内运行。优先使用所选模型声明的 lifecycle 状态；未声明时只把 `pending`、`queued`、`running`、`in_progress` 视为处理中。状态缺失或未识别时会如实报告并停止自动轮询。同一任务最多一个状态请求在途，绝不会创建后台计时器、队列或工作器。状态响应有有效的正数 HTTP `Retry-After` 且自动轮询预算尚有剩余时优先遵循；否则生图依次等待 `3、6、12、24、30、30` 秒，最多读取同一任务状态 6 次；生视频依次等待 `5、10、20、40、60、60` 秒，最多读取 7 次。每个有界轮询窗口最多持续：生图 120 秒，生视频 300 秒。遇到限流、5xx、传输错误或超时时立即停止本轮。如仍在处理中会连同任务 ID 如实报告；用户明确继续查询时，才会为**同一任务**开启一个新的有界轮询窗口。Skill 不会把到期或读取错误当失败，也不会提交替代任务。
 
 媒体字节不会缓存到 Skill 状态、提示词或日志中。只有任务终态成功后才读取内容，每个任务最多一个内容读取在途；运行环境交付原生字节后才会进行下一次读取。如果运行环境无法在不创建无界后台工作、重复读取或缓存副本的前提下交付，Skill 会报告同任务交付不可用，不会用 URL 代替或重提任务。
 
@@ -134,14 +134,14 @@ CC Switch 是连接配置工具，不是 Skill 宿主。CC Switch、Pure Tokens 
 - 连接：`这个 Pure Tokens Skill 能确认它调用的 API 吗？` Skill 只检查固定端点的 `GET https://api.puretokensx.com/v1` 声明，不会展示配置。
 - 模型：`查看 Pure Tokens 当前可用的视频模型、它们已声明的时长和画幅选项，以及哪些支持图生视频。` 此查询只读，不会提交任务。
 - 生图：`使用 gpt-image-2 生成一张 2K、16:9 的雪后黎明小镇插画。`
-- 其他图片模型：`用 nano banana pro 生成一张简洁的产品海报。` Skill 只会解析唯一的已安装别名，再在当前认证目录中确认精确 ID 和图片 capability。
-- 参考图 URL：`使用 gpt-image-2，并以此公网参考图 URL 生图：https://example.com/reference.png`。Skill 会先确认匹配的 profile 字段和 URL transport。
-- 图片编辑：`用 grok-imagine-image 编辑我附上的图片：把阴天改成晴朗的日落。` Skill 会先确认认证后的图片编辑 profile 以及可直连交付的 multipart 附件。
+- 其他图片模型：`用 nano banana pro 生成一张简洁的产品海报。` Skill 会解析唯一的已安装别名后直接提交。
+- 参考图 URL：`使用 gpt-image-2，并以此公网参考图 URL 生图：https://example.com/reference.png`。Skill 使用已安装资料声明的字段和 transport；若安装资料没有匹配能力，才读取一次目录。
+- 图片编辑：`用 grok-imagine-image 编辑我附上的图片：把阴天改成晴朗的日落。` Skill 使用已安装资料声明的图片编辑 operation；只有资料缺失时才读取一次目录。
 - 生视频：`用 grok 1.5 video 生成一段六秒钟的电影感海上日出。`
-- 图生视频：`用 grok 1.5 video 把这个公网图片 URL 制作成六秒视频：https://example.com/reference.png`。只有认证后的 profile 声明匹配 URL 字段和 transport 时才会提交。
-- 参考视频：`用 seedance-2.5 根据我附上的视频制作一段六秒视频。` 只有认证目录发布 `reference_video` 时才会提交。
-- 参考音频：`用 minimax h3 根据我附上的音频生成一段视频。` 只有认证目录发布 `reference_audio` 时才会提交。
-- 视频编辑：`编辑我附上的视频：将白天改为夜景。` 只有认证目录发布 `video_edit` 时，才会向 `https://api.puretokensx.com/v1/videos/edits` 提交。
+- 图生视频：`用 grok 1.5 video 把这个公网图片 URL 制作成六秒视频：https://example.com/reference.png`。Skill 使用已安装资料声明的 URL 字段和 transport；只有对应操作缺失时才读取一次目录。
+- 参考视频：`用 seedance-2.5 根据我附上的视频制作一段六秒视频。` Skill 使用已安装资料声明的 `reference_video` operation；只有资料缺失时才读取一次目录。
+- 参考音频：`用 minimax h3 根据我附上的音频生成一段视频。` Skill 使用已安装资料声明的 `reference_audio` operation；只有资料缺失时才读取一次目录。
+- 视频编辑：`编辑我附上的视频：将白天改为夜景。` 只有已安装资料或按需读取的 profile 声明 `video_edit` 时，才会向 `https://api.puretokensx.com/v1/videos/edits` 提交。
 - 继续已有任务：`继续查询任务 <task_id>。` Skill 只读取该任务，绝不会自动提交替代任务。
 - 升级：`升级我的 Pure Tokens Skills。` 更新 Skill 会校验官方 `main`，并安全同步本机 Skill 目录。
 
@@ -156,9 +156,9 @@ README 仅用于发现能力。模型能力只来自基础模型目录明确声�
 
 已与基础模型目录同步：2026-08-29T05:03:13.833Z。
 
-这份清单由 Pure Tokens 基础模型目录中的明确图片/视频能力生成。实际执行时，精确模型和所需能力仍必须出现在当前认证后的 GET /v1/media/models 响应中。
+这份清单由 Pure Tokens 基础模型目录中的明确图片/视频能力生成。普通生成直接使用已安装的版本化选择资料；只有明确查询、安装资料缺口或提交被拒后需要解释时，才按需调用 GET /v1/media/models。
 
-README 只从基础目录中带有明确图片/视频能力的模型生成，不通过模型名称推断。当前目录快照只用于发现能力；实际执行时以认证后的实时模型和其 `input_schema` 为准。发布前从受控基础目录刷新，并运行 `npm run release:validate`；当快照超过七天时发布校验会失败。
+README 只从基础目录中带有明确图片/视频能力的模型生成，不通过模型名称推断。已安装快照用于普通生成的模型选择和已知参数；实时目录只在明确查询、安装资料缺口或提交被拒后的诊断时按需读取。发布前从受控基础目录刷新，并运行 `npm run release:validate`；当快照超过七天时发布校验会失败。
 
 ### 图片模型
 
