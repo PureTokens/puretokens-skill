@@ -111,7 +111,8 @@
   "submissionFailure": {
     "modelParameterOrCapabilityRejection": "one_on_demand_catalog_read_then_require_explicit_corrected_new_request",
     "rateLimit": "report_retry_after_when_returned_and_require_explicit_retry",
-    "serverTransportOrTimeoutWithoutTaskId": "report_submission_outcome_unknown_without_declaring_task_absent_or_resubmitting"
+    "serverTransportOrTimeoutWithoutTaskId": "report_submission_outcome_unknown_without_declaring_task_absent_or_resubmitting",
+    "runtimeInvocationOutputUnknown": "treat_submission_outcome_as_unknown_do_not_repeat_post_or_submit_replacement_task"
   },
   "failureReceipt": {
     "requiredFields": ["failure_phase", "api_error_code", "http_status", "error_message", "next_action"],

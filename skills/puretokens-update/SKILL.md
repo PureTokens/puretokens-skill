@@ -12,7 +12,7 @@ description: 用户要求检查、安装或升级本机已安装的 Pure Tokens 
 - 只在用户明确要求安装、更新、升级、同步或检查 Pure Tokens Skills 时使用。不得在普通图片、视频、模型、余额或连接请求中自行运行升级。
 - 先根据当前运行环境识别宿主：Claude Code 使用 `~/.claude/skills`；Codex 使用 `~/.agents/skills`（Windows PowerShell 为 `$env:USERPROFILE\.agents\skills`）；WorkBuddy 使用 `~/.workbuddy/skills`；Gemini CLI 使用 `~/.gemini/skills`；Grok Build 使用 `~/.grok/skills`；OpenCode 使用 `~/.config/opencode/skills`；Trae 使用 `~/.trae/skills`。无法识别时，先问用户使用哪个受支持宿主，不得猜测或修改目录。
 - 若当前回合没有可执行终端、PowerShell、exec 或 shell 工具，说明无法代用户完成本机升级，并提供与该宿主匹配的官方可复制命令；不得声称已升级。
-- 有终端时，新建临时工作目录，不删除、覆盖或复用用户已有目录。克隆 `https://github.com/PureTokens/puretokens-skill.git` 的 `main` 分支，进入仓库后先运行 `npm run check`。校验失败时报告失败并停止，不修改任何已安装 Skill。
+- 有终端时，新建临时工作目录，不删除、覆盖或复用用户已有目录。克隆 `https://github.com/PureTokens/puretokens-skill.git` 的 `main` 分支，进入仓库后先运行 `npm run check`。该官方克隆是只读安装载荷：不得运行任何会改写它的生成、同步、格式化、构建、修复或 Git 写入命令，也不得为了让校验通过而修改其中任何文件。校验失败或校验后工作树不干净时，报告失败并停止，不修改任何已安装 Skill。
 - 对任一受支持宿主，使用 `node bin/puretokens-skill.js sync --target <installation-root>`。它会安装缺失的官方 Skill，只升级含匹配 `SKILL.md` 与 `skill.json` 的已受管同名 Skill，并将已验证的旧受管 Skill 移到目标根目录内可恢复的隐藏备份。只要任一当前或旧同名目录不是受管 Skill，必须在写入前停止并报告冲突，绝不覆盖、删除或改名该目录。
 - 升级完成后，逐项报告安装或升级的 Skill、未改动的冲突和失败原因（如有），并提醒用户新开宿主会话后再测试。
 
@@ -21,3 +21,4 @@ description: 用户要求检查、安装或升级本机已安装的 Pure Tokens 
 - 绝不读取、扫描、展示、复制、修改或索取 API Key、Base URL、认证文件、AI 客户端配置、模型配置、MCP 配置、环境变量、Shell 配置、系统代理或账户数据。
 - 不调用 Images、Videos、Models、余额或连接 API；不使用 MCP、本地代理、sidecar 或任何媒体生成路径。
 - 不使用第三方包镜像；不执行卸载；不删除用户文件。只允许 `sync` 对目标根目录内已验证的官方 Skill 目录做安装或原子升级。
+- 官方克隆只允许用于读取、`npm run check` 和执行 `node bin/puretokens-skill.js sync --target <installation-root>`；不得运行 `docs:sync-*`、任何 `--write`、生成器、修复器或会改变该克隆的命令。

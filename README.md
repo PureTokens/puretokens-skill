@@ -47,29 +47,7 @@ The client download page extracts the first fenced block under the fixed heading
 ### Copy this to a terminal-capable local agent
 
 ```text
-Install or update the official Pure Tokens Skills for this local agent host from the only authorized source: `https://github.com/PureTokens/puretokens-skill.git` (branch `main`). Do the work; do not only describe it. Do not substitute a package, mirror, fork, or similarly named repository.
-
-1. Identify the current host from this runtime:
-   - Claude Code: `$env:USERPROFILE\.claude\skills` on Windows PowerShell; `~/.claude/skills` on macOS/Linux.
-   - Codex: `$env:USERPROFILE\.agents\skills` on Windows PowerShell; `~/.agents/skills` on macOS/Linux.
-   - WorkBuddy: `$env:USERPROFILE\.workbuddy\skills` on Windows PowerShell; `~/.workbuddy/skills` on macOS/Linux.
-   - Gemini CLI: `$env:USERPROFILE\.gemini\skills` on Windows PowerShell; `~/.gemini/skills` on macOS/Linux.
-   - Grok Build: `$env:USERPROFILE\.grok\skills` on Windows PowerShell; `~/.grok/skills` on macOS/Linux.
-   - OpenCode: `$env:USERPROFILE\.config\opencode\skills` on Windows PowerShell; `~/.config/opencode/skills` on macOS/Linux.
-   - Trae: `$env:USERPROFILE\.trae\skills` on Windows PowerShell; `~/.trae/skills` on macOS/Linux.
-   If the current host is not one of these seven or cannot be identified, ask me which host I use before changing files.
-
-2. If a terminal, PowerShell, exec, or shell tool is available, use it before replying. Create a new temporary working directory without deleting an existing directory. Clone `https://github.com/PureTokens/puretokens-skill.git` from branch `main`, enter it, and run `npm run check`.
-
-3. If `npm run check` fails, report the failure and stop. Do not change any Skill directory.
-
-4. Sync all six Skills — `puretokens-balance`, `puretokens-connection`, `puretokens-models`, `puretokens-image`, `puretokens-video`, `puretokens-update` — in the selected installation root with `node bin/puretokens-skill.js sync --target <installation-root>`. It archives verified retired managed Skills to a recoverable hidden backup in that root, installs missing official Skills, and upgrades only matching managed Skills. If any current or retired same-name destination is not a managed Skill, it must stop before changing anything, leave the conflict untouched, and report it.
-
-5. Run `npm run check` again. Verify every requested destination has `SKILL.md` and `skill.json`, and each manifest name matches its directory name. Report installed or upgraded paths and any conflicts. Tell me to start a new host conversation before testing.
-
-Safety: never read, display, copy, change, or ask for API keys, Base URLs, authentication files, model settings, MCP settings, AI-client configuration, Pure Tokens connection configuration, environment variables, shell profiles, or system proxies. Do not use third-party package mirrors or delete files.
-
-If terminal execution is unavailable or denied, say so and provide the next copyable official command for my operating system and terminal. Only check for Node.js LTS if `npm run check` or the installer actually requires it. Advance one verifiable step per reply.
+Install or update the official Pure Tokens Skills from https://github.com/PureTokens/puretokens-skill.
 ```
 
 ## Host support
@@ -90,7 +68,7 @@ The canonical matrix is `references/host-support.json`. The CLI intentionally ne
 
 ## Direct API contract
 
-The API-facing Skills call the fixed public API origin `https://api.puretokensx.com`. They use full URLs, never a user-selected Base URL or fallback endpoint. The managed `.puretokens-runtime/puretokens-direct-api.mjs` is installed beside the Skills. On Claude Code, Codex, WorkBuddy, Gemini CLI, Grok Build, and OpenCode, it reads only one matching Pure Tokens credential from that host's documented fixed configuration source and only when the source exactly targets `https://api.puretokensx.com/v1` (or the required origin-only form). It retains that credential only in memory and sends it only as authorization for an allowed fixed Pure Tokens API path. It never prints, copies, persists, or asks for the key; it accepts no arbitrary URL and uses no MCP, proxy, or sidecar. `puretokens-update` is local-only and does not call API endpoints.
+The API-facing Skills call the fixed public API origin `https://api.puretokensx.com`. They use full URLs, never a user-selected Base URL or fallback endpoint. The managed `.puretokens-runtime/puretokens-direct-api.mjs` is installed beside the Skills. On Claude Code, Codex, WorkBuddy, Gemini CLI, Grok Build, and OpenCode, it reads only one matching Pure Tokens credential from that host's documented fixed configuration source. Sources normally target `https://api.puretokensx.com/v1` (or the required origin-only form); WorkBuddy may instead store its per-model resource URL beneath that same fixed origin as `/v1/...`, with no query or fragment. It retains that credential only in memory and sends it only as authorization for an allowed fixed Pure Tokens API path. It never prints, copies, persists, or asks for the key; it accepts no arbitrary URL and uses no MCP, proxy, or sidecar. `puretokens-update` is local-only and does not call API endpoints.
 
 The direct contract requires authenticated full-URL HTTPS requests, JSON task responses, same-task status reads, and native-media byte delivery. Claude Code, Codex, WorkBuddy, Gemini CLI, Grok Build, and OpenCode use the managed local runtime for this binding. Trae remains a manual-configuration-only exception because it has no approved local credential resolver; the Skill stops safely there rather than reading or guessing its user state.
 
@@ -139,6 +117,8 @@ Every normal image and video task uses the installed versioned selection; it nev
 The installed selection, or a permitted one-time on-demand profile lookup for an unsupported or incompatible requested media operation, controls media inputs. An explicitly supplied public HTTPS URL, file ID, or voice ID is sent only in its exact declared property and permitted transport; the Skill never downloads, probes, checks accessibility, rehosts, or rewrites it. A public-URL image edit additionally requires the exact declared `image_edit` JSON operation; a reference field alone is not an edit operation. Native media explicitly attached in the current request uses only an advertised `multipart_file` operation and is sent with that one declared Images or Videos API request by the verified runtime. It accepts only explicit regular media files, limits attachment count and size, and never calls a separate upload API. Multiple native attachment types need an explicitly declared combined operation; multiple public URL/ID fields need no declared conflict. The Skill never manufactures a URL or file ID or silently turns a media request into text generation.
 
 On submit, continuation, reconciliation, completion, and failure, media Skills return a consistent receipt: exact model ID when returned, task ID when returned, current state, requested operation, requested count, requested size/parameters, delivered count on completion, and the next action. A failure contains its phase, `api_error_code` only when the public API explicitly returned that exact code (otherwise “not returned”), the returned HTTP status or “not returned”, and a safe user-facing message; HTTP 429 receipts include a valid `Retry-After` value when available. The receipt never exposes raw response bodies, upstream identifiers, internal URLs, stacks, request data, credentials, or user media. The receipt's `task_id` is normalized from the selected lifecycle's declared top-level ID field, or only top-level `task_id` / `id` when no lifecycle is declared; it is never inferred from a URL or nested response data. Missing task metadata is reported as not returned, never guessed.
+
+If a submission POST began but the runtime's completion output is empty, truncated, malformed, or otherwise unusable, acceptance is unknown. The Skill does not send another POST or replacement task merely to obtain an ID, and it never claims that no task was created, no charge occurred, or a refund happened. If no task ID is available, the user may check Pure Tokens usage records and provide an ID, or explicitly submit a new request later.
 
 ## Asynchronous polling
 

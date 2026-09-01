@@ -69,6 +69,7 @@
   "asyncTaskHandling": {
     "reconciliationRequiredPrecedesLifecycle": true,
     "reconciliationOutcome": "stop_ordinary_polling_retain_same_task_id_do_not_submit_replacement_or_infer_refund",
+    "submissionRuntimeOutputUnknown": "treat_submission_outcome_as_unknown_do_not_repeat_post_or_submit_replacement_task",
     "statusHttp429": "honor_valid_positive_retry_after_then_continue_same_task_if_remaining_budget",
     "non429StatusReadFailure": "stop_bounded_window_without_replacement_task",
     "doesNotInventApiErrorCode": true

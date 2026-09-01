@@ -126,12 +126,13 @@
             }
           },
           "result": {
-            "required": ["installsMissingOfficialSkills", "upgradesOnlyManagedMatchingSkills", "neverOverwritesUnmanagedDirectories", "archivesVerifiedRetiredManagedSkills", "requiresNewHostConversationAfterSuccess"],
+            "required": ["installsMissingOfficialSkills", "upgradesOnlyManagedMatchingSkills", "neverOverwritesUnmanagedDirectories", "archivesVerifiedRetiredManagedSkills", "neverModifiesOfficialCheckout", "requiresNewHostConversationAfterSuccess"],
             "properties": {
               "installsMissingOfficialSkills": { "const": true },
               "upgradesOnlyManagedMatchingSkills": { "const": true },
               "neverOverwritesUnmanagedDirectories": { "const": true },
               "archivesVerifiedRetiredManagedSkills": { "const": true },
+              "neverModifiesOfficialCheckout": { "const": true },
               "requiresNewHostConversationAfterSuccess": { "const": true }
             }
           }

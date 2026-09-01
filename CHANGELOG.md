@@ -4,6 +4,13 @@
 
 # Changelog
 
+## 0.13.5 — 2026-09-01
+
+- Simplified the client-download Agent prompt to one copyable sentence pointing to the official Pure Tokens Skill repository.
+- Hardened the installation contract: the freshly cloned official `main` checkout is read-only. If validation fails or the checkout becomes dirty, installation stops; it must never run generators, docs sync, formatters, repair commands, Git writes, or any other source-mutating command to make the checkout pass.
+- Prevented duplicate paid media submissions after a started POST has an empty, truncated, malformed, or otherwise unusable runtime result. The Skill now treats that outcome as unknown, retains only a verified returned task ID, and never creates a replacement task automatically.
+- Fixed WorkBuddy credential resolution for its per-model Pure Tokens `/v1/...` resource URLs. The runtime still accepts only the fixed API origin with no query or fragment, requires one unambiguous credential, and sends requests only to fixed allowed API paths.
+
 ## 0.13.4 — 2026-09-01
 
 - Added a deterministic model-access-group recovery path. When an exact requested image or video model is not returned by the current authenticated catalog after the permitted diagnosis, the Skill directs the user to select a group containing that model in Pure Tokens client configuration, ensure the managed key covers the selected groups, verify and apply it, then start a new host conversation and explicitly retry.

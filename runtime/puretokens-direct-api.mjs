@@ -114,7 +114,7 @@ export async function resolveGrokBuildCredential(environment = process.env, conf
 
 export async function resolveWorkBuddyCredential(configPath = workBuddyModelConfigPath) {
   const entries = parseWorkBuddyModelEntries(await readJsonConfiguration(configPath, "WorkBuddy"));
-  return selectUnambiguousCredential(entries, isPureTokensApiEndpoint, "WorkBuddy");
+  return selectUnambiguousCredential(entries, isWorkBuddyPureTokensApiEndpoint, "WorkBuddy");
 }
 
 export async function resolveClaudeCodeCredential(settingsPath = claudeSettingsPath) {
@@ -289,6 +289,16 @@ function isPureTokensApiEndpoint(baseUrl) {
   try {
     const parsed = new URL(baseUrl);
     return parsed.href === pureTokensApiBaseUrl || parsed.href === `${pureTokensApiBaseUrl}/`;
+  } catch {
+    return false;
+  }
+}
+
+function isWorkBuddyPureTokensApiEndpoint(baseUrl) {
+  try {
+    const parsed = new URL(baseUrl);
+    return parsed.origin === apiOrigin && !parsed.search && !parsed.hash &&
+      (parsed.pathname === "/v1" || parsed.pathname === "/v1/" || parsed.pathname.startsWith("/v1/"));
   } catch {
     return false;
   }

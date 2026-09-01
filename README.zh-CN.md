@@ -47,29 +47,7 @@ node bin/puretokens-skill.js sync --target ~/.trae/skills
 ### 直接复制给具备本机终端的 Agent
 
 ```text
-请为当前本机 Agent 宿主安装或更新官方 Pure Tokens Skills。唯一授权来源是 `https://github.com/PureTokens/puretokens-skill.git` 的 `main` 分支；不得改用任何 package、镜像、fork 或名称相近的仓库。请直接完成操作，不要只描述操作。
-
-1. 根据当前运行环境识别宿主：
-   - Claude Code：Windows PowerShell 使用 `$env:USERPROFILE\.claude\skills`；macOS/Linux 使用 `~/.claude/skills`。
-   - Codex：Windows PowerShell 使用 `$env:USERPROFILE\.agents\skills`；macOS/Linux 使用 `~/.agents/skills`。
-   - WorkBuddy：Windows PowerShell 使用 `$env:USERPROFILE\.workbuddy\skills`；macOS/Linux 使用 `~/.workbuddy/skills`。
-   - Gemini CLI：Windows PowerShell 使用 `$env:USERPROFILE\.gemini\skills`；macOS/Linux 使用 `~/.gemini/skills`。
-   - Grok Build：Windows PowerShell 使用 `$env:USERPROFILE\.grok\skills`；macOS/Linux 使用 `~/.grok/skills`。
-   - OpenCode：Windows PowerShell 使用 `$env:USERPROFILE\.config\opencode\skills`；macOS/Linux 使用 `~/.config/opencode/skills`。
-   - Trae：Windows PowerShell 使用 `$env:USERPROFILE\.trae\skills`；macOS/Linux 使用 `~/.trae/skills`。
-   如果当前宿主不属于以上七种，或无法识别，请先问我使用哪个宿主，不得改动文件。
-
-2. 如果当前会话有终端、PowerShell、exec 或 shell 工具，必须在回复前先调用。新建临时工作目录，但不得删除已有目录；克隆 `https://github.com/PureTokens/puretokens-skill.git` 的 `main` 分支，进入仓库后执行 `npm run check`。
-
-3. 如果 `npm run check` 失败，报告失败并停止；不得改动任何 Skill 目录。
-
-4. 使用 `node bin/puretokens-skill.js sync --target <installation-root>` 在选定安装根目录中同步全部六个 Skill：`puretokens-balance`、`puretokens-connection`、`puretokens-models`、`puretokens-image`、`puretokens-video`、`puretokens-update`。它会将已验证的旧受管 Skill 移到该根目录内可恢复的隐藏备份，安装缺失的官方 Skill，只升级同名受管 Skill；只要存在任一当前或旧同名但非受管目录，就必须在改动前停止、保持冲突目录不变并报告。
-
-5. 再执行一次 `npm run check`。验证每个目标目录都有 `SKILL.md` 和 `skill.json`，且 manifest 名称与目录名一致。报告已安装或升级的路径和全部冲突；提醒我新开对应宿主会话再测试。
-
-安全边界：不得读取、展示、复制、修改或索取 API Key、Base URL、认证文件、模型配置、MCP 配置、AI 客户端配置、Pure Tokens 连接配置、环境变量、Shell 配置或系统代理；不得使用第三方包镜像或删除文件。
-
-如果终端执行不可用或被拒绝，说明原因，并只给出适用于我当前操作系统和终端的下一组官方可复制命令。仅当 `npm run check` 或安装器确实需要时，才检查 Node.js LTS。每轮只推进一个可验证步骤。
+请从 https://github.com/PureTokens/puretokens-skill 安装或更新官方 Pure Tokens Skills。
 ```
 
 ## 宿主支持
@@ -90,7 +68,7 @@ CC Switch 是连接配置工具，不是 Skill 宿主。Skill 自身始终调用
 
 ## 直连 API 契约
 
-面向 API 的 Skill 都调用固定的公开 API origin：`https://api.puretokensx.com`。请求使用完整 URL，不使用用户选择的 Base URL 或备用 endpoint。安装在 Skill 同级目录的受管 `.puretokens-runtime/puretokens-direct-api.mjs` 会在 Claude Code、Codex、WorkBuddy、Gemini CLI、Grok Build 和 OpenCode 中，只从各宿主已记录的固定配置位置狭义匹配一个指向 `https://api.puretokensx.com/v1`（或规定的仅 origin 形式）的 Pure Tokens 凭据。它只在内存中保留该凭据，并且只用于允许的固定 Pure Tokens API 路径认证。它绝不打印、复制、保存或索取 Key；不接受任意 URL，不使用 MCP、代理或 sidecar。`puretokens-update` 只处理本机更新，不调用 API endpoint。
+面向 API 的 Skill 都调用固定的公开 API origin：`https://api.puretokensx.com`。请求使用完整 URL，不使用用户选择的 Base URL 或备用 endpoint。安装在 Skill 同级目录的受管 `.puretokens-runtime/puretokens-direct-api.mjs` 会在 Claude Code、Codex、WorkBuddy、Gemini CLI、Grok Build 和 OpenCode 中，只从各宿主已记录的固定配置位置狭义匹配一个 Pure Tokens 凭据。通常配置应指向 `https://api.puretokensx.com/v1`（或规定的仅 origin 形式）；WorkBuddy 也允许在相同固定 origin 下保存无 query、无 fragment 的 `/v1/...` 单模型资源 URL。它只在内存中保留该凭据，并且只用于允许的固定 Pure Tokens API 路径认证。它绝不打印、复制、保存或索取 Key；不接受任意 URL，不使用 MCP、代理或 sidecar。`puretokens-update` 只处理本机更新，不调用 API endpoint。
 
 直连契约要求已认证的完整 URL HTTPS 请求、JSON 任务响应、同任务状态查询和原生媒体字节交付。Claude Code、Codex、WorkBuddy、Gemini CLI、Grok Build 和 OpenCode 通过受管本地运行器完成认证绑定。Trae 是手动配置例外：当前没有已批准的本地凭据读取契约，Skill 会安全停止，而不会读取或猜测其用户状态。
 
@@ -139,6 +117,8 @@ Skill 会将自然语言整理为简洁的图片简报，同时保留已说明�
 媒体输入由已安装资料控制；只有用户明确要求安装资料未声明或当前资料不兼容的媒体操作时，才按需读取一次 profile。用户明确提供的公网 HTTPS URL、file ID 或 voice ID 只能写入资料声明的精确字段和允许 transport；Skill 不会下载、探测、检查可访问性、转存或改写它。公网 URL 图片编辑还必须有精确声明的 JSON `image_edit` operation；仅有参考图字段不等于支持编辑。用户当前请求附带的原生媒体则只能走已声明的 `multipart_file` operation，并由已验证运行器随这一条 Images 或 Videos API 请求发送。运行器只接受当前请求明确指定的常规媒体文件，并限制附件数量与大小，不会调用独立上传 API。多个原生附件类型需要明确的组合 operation；多个公网 URL/ID 字段则不能与已声明的互斥或模式限制冲突。Skill 不会伪造 URL 或 file ID，也不会把媒体请求静默改为纯文生。
 
 媒体 Skill 在提交、继续查询、核验、完成和失败时统一返回回执：已返回的精确模型 ID、已返回的任务 ID、当前状态、请求操作、请求数量、尺寸/参数、完成时的已交付数量和下一步。失败时只有 API 明确返回公开机器码才会在 `api_error_code` 中原样显示，否则写“未返回”；同时会返回失败阶段、API 返回的 HTTP 状态（未返回时写“未返回”）和安全错误信息。HTTP 429 且存在有效 `Retry-After` 时会给出等待秒数。回执绝不暴露原始响应正文、上游标识、内部 URL、堆栈、请求数据、凭据或用户媒体。回执中的 `task_id` 会优先从所选模型 lifecycle 声明的顶层 ID 字段规范化；未声明 lifecycle 时只接受顶层 `task_id` 或 `id`，绝不从 URL 或嵌套响应数据猜测。任务元数据未返回时会明确写“未返回”。
+
+如果提交 `POST` 已开始，但运行器最终输出为空、截断、格式异常或无法使用，提交结果就是未知。Skill 不会为了拿到任务 ID 再发一次 `POST` 或创建替代任务，也不会声称任务未创建、未扣费或已退款。若没有任务 ID，用户可在 Pure Tokens 使用记录中核对后提供任务 ID，或稍后明确发起一次新的请求。
 
 ## 异步轮询
 

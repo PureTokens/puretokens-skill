@@ -223,10 +223,11 @@ function validateDirectApiExecutionContract(errors, contract, hostSupport) {
   const asyncTaskHandling = contract.asyncTaskHandling;
   if (!asyncTaskHandling || asyncTaskHandling.reconciliationRequiredPrecedesLifecycle !== true ||
     asyncTaskHandling.reconciliationOutcome !== "stop_ordinary_polling_retain_same_task_id_do_not_submit_replacement_or_infer_refund" ||
+    asyncTaskHandling.submissionRuntimeOutputUnknown !== "treat_submission_outcome_as_unknown_do_not_repeat_post_or_submit_replacement_task" ||
     asyncTaskHandling.statusHttp429 !== "honor_valid_positive_retry_after_then_continue_same_task_if_remaining_budget" ||
     asyncTaskHandling.non429StatusReadFailure !== "stop_bounded_window_without_replacement_task" ||
     asyncTaskHandling.doesNotInventApiErrorCode !== true) {
-    errors.push(`${label} must define reconciliation, status-rate-limit, and API-code handling for the same public task`);
+    errors.push(`${label} must define reconciliation, unknown-submission, status-rate-limit, and API-code handling for the same public task`);
   }
   const mediaDeliveryResourceBounds = contract.mediaDeliveryResourceBounds;
   if (!mediaDeliveryResourceBounds || mediaDeliveryResourceBounds.oneInFlightStatusReadPerTask !== true ||
@@ -413,8 +414,9 @@ function validateUpdateContract(errors, label, contract) {
   const result = contract.result;
   if (!result || result.installsMissingOfficialSkills !== true || result.upgradesOnlyManagedMatchingSkills !== true ||
     result.neverOverwritesUnmanagedDirectories !== true || result.archivesVerifiedRetiredManagedSkills !== true ||
+    result.neverModifiesOfficialCheckout !== true ||
     result.requiresNewHostConversationAfterSuccess !== true) {
-    errors.push(`${label} must safely archive verified retired Skills, preserve unmanaged directories, and report a new-conversation requirement`);
+    errors.push(`${label} must preserve the official checkout, safely archive verified retired Skills, preserve unmanaged directories, and report a new-conversation requirement`);
   }
 }
 
@@ -458,8 +460,9 @@ function validateTaskIdentityStateAndSubmissionFailure(errors, label, contract, 
   const failure = contract.submissionFailure;
   if (!failure || failure.modelParameterOrCapabilityRejection !== "one_on_demand_catalog_read_then_require_explicit_corrected_new_request" ||
     failure.rateLimit !== "report_retry_after_when_returned_and_require_explicit_retry" ||
-    failure.serverTransportOrTimeoutWithoutTaskId !== "report_submission_outcome_unknown_without_declaring_task_absent_or_resubmitting") {
-    errors.push(`${label} must guide rejection, rate limit, and uncertain-submission cases without automatic resubmission`);
+    failure.serverTransportOrTimeoutWithoutTaskId !== "report_submission_outcome_unknown_without_declaring_task_absent_or_resubmitting" ||
+    failure.runtimeInvocationOutputUnknown !== "treat_submission_outcome_as_unknown_do_not_repeat_post_or_submit_replacement_task") {
+    errors.push(`${label} must guide rejection, rate limit, and uncertain submission/runtime-output cases without automatic resubmission`);
   }
   validateFailureReceipt(errors, label, contract.failureReceipt);
   if (image && contract.contentRetrieval?.requestedCount !== "explicit_n_or_default_1") {

@@ -28,7 +28,7 @@ test("registry exposes exactly the six specialist Skills", async () => {
   const { registry, records } = await collectSkillRecords();
   assert.deepEqual(registry.skills.map((skill) => skill.name), names);
   assert.equal(records.length, 6);
-  assert.deepEqual([...new Set(records.map((record) => record.manifest.version))], ["0.13.4"]);
+  assert.deepEqual([...new Set(records.map((record) => record.manifest.version))], ["0.13.5"]);
   assert.deepEqual(await validateRepository(), []);
 });
 
@@ -67,23 +67,7 @@ test("bilingual READMEs include safe copyable Agent installation prompts", async
   assert.equal((english.match(/^### Copy this to a terminal-capable local agent$/gm) ?? []).length, 1);
   const englishPrompt = english.match(/^### Copy this to a terminal-capable local agent\n\n```text\n([\s\S]*?)\n```$/m);
   assert.ok(englishPrompt, "English client-download prompt must be the first bounded text block under the fixed heading");
-  assert.match(english, /official Pure Tokens Skills for this local agent host/);
-  assert.match(englishPrompt[1], /only authorized source: `https:\/\/github\.com\/PureTokens\/puretokens-skill\.git` \(branch `main`\)/);
-  assert.match(englishPrompt[1], /Do not substitute a package, mirror, fork, or similarly named repository/);
-  assert.match(english, /\$env:USERPROFILE\\\.agents\\skills/);
-  assert.match(english, /`~\/\.agents\/skills` on macOS\/Linux/);
-  assert.match(english, /Claude Code: `\$env:USERPROFILE\\\.claude\\skills`[\s\S]*Trae: `\$env:USERPROFILE\\\.trae\\skills`/);
-  assert.doesNotMatch(english, /current `develop` test build|branch `develop`/);
-  assert.match(english, /Identify the current host from this runtime/);
-  assert.match(english, /If a terminal, PowerShell, exec, or shell tool is available, use it before replying/);
-  assert.match(english, /If `npm run check` fails, report the failure and stop/);
-  assert.match(english, /Run `npm run check` again\. Verify every requested destination has `SKILL\.md` and `skill\.json`/);
-  assert.match(english, /Advance one verifiable step per reply/);
-  assert.match(english, /Do not use third-party package mirrors or delete files/);
-  assert.match(english, /leave the conflict untouched, and report it/);
-  assert.match(english, /Sync all six Skills/);
-  assert.match(english, /puretokens-update/);
-  assert.match(english, /never read, display, copy, change, or ask for API keys, Base URLs, authentication files, model settings, MCP settings/);
+  assert.equal(englishPrompt[1], "Install or update the official Pure Tokens Skills from https://github.com/PureTokens/puretokens-skill.");
   assert.match(english, /## Model access groups/);
   assert.match(english, /select a group containing that exact model/);
   assert.match(chinese, /## 让 Agent 协助安装/);
@@ -91,24 +75,8 @@ test("bilingual READMEs include safe copyable Agent installation prompts", async
   assert.equal((chinese.match(/^### 直接复制给具备本机终端的 Agent$/gm) ?? []).length, 1);
   const chinesePrompt = chinese.match(/^### 直接复制给具备本机终端的 Agent\n\n```text\n([\s\S]*?)\n```$/m);
   assert.ok(chinesePrompt, "Chinese client-download prompt must be the first bounded text block under the fixed heading");
-  assert.match(chinese, /当前本机 Agent 宿主安装或更新官方 Pure Tokens Skills/);
-  assert.match(chinesePrompt[1], /唯一授权来源是 `https:\/\/github\.com\/PureTokens\/puretokens-skill\.git` 的 `main` 分支/);
-  assert.match(chinesePrompt[1], /不得改用任何 package、镜像、fork 或名称相近的仓库/);
+  assert.equal(chinesePrompt[1], "请从 https://github.com/PureTokens/puretokens-skill 安装或更新官方 Pure Tokens Skills。");
   assert.match(chinese, /^<p align="center">\n  <img src="\.\/assets\/brand\/puretokens-skill-hero\.png" alt="Pure Tokens 官方 Skills" width="100%" \/>\n<\/p>/);
-  assert.match(chinese, /\$env:USERPROFILE\\\.agents\\skills/);
-  assert.match(chinese, /macOS\/Linux 使用 `~\/\.agents\/skills`/);
-  assert.match(chinese, /Claude Code：Windows PowerShell 使用 `\$env:USERPROFILE\\\.claude\\skills`[\s\S]*Trae：Windows PowerShell 使用 `\$env:USERPROFILE\\\.trae\\skills`/);
-  assert.doesNotMatch(chinese, /当前 `develop` 测试版本|`develop` 分支/);
-  assert.match(chinese, /根据当前运行环境识别宿主/);
-  assert.match(chinese, /必须在回复前先调用/);
-  assert.match(chinese, /如果 `npm run check` 失败，报告失败并停止/);
-  assert.match(chinese, /再执行一次 `npm run check`。验证每个目标目录都有 `SKILL\.md` 和 `skill\.json`/);
-  assert.match(chinese, /每轮只推进一个可验证步骤/);
-  assert.match(chinese, /不得使用第三方包镜像或删除文件/);
-  assert.match(chinese, /保持冲突目录不变并报告/);
-  assert.match(chinese, /同步全部六个 Skill/);
-  assert.match(chinese, /puretokens-update/);
-  assert.match(chinese, /不得读取、展示、复制、修改或索取 API Key、Base URL、认证文件、模型配置、MCP 配置/);
   assert.match(chinese, /## 模型访问分组/);
   assert.match(chinese, /勾选包含该精确模型的分组/);
 });
@@ -153,8 +121,8 @@ test("installed contracts cover bounded requests, task recovery, and user-facing
     "puretokens-balance": ["balance-account-session-unavailable", "balance-response"],
     "puretokens-connection": ["connection-identity-confirmed", "connection-identity-unconfirmed", "connection-identity-unavailable", "connection-base-url-request", "connection-identity-assurance"],
     "puretokens-models": ["models-catalog-unavailable", "models-catalog-empty", "models-exact-id-unavailable", "models-capability-filter-empty", "models-parameter-profile-absent", "models-operation-profile-absent", "models-requirement-ambiguous", "models-catalog-response"],
-    "puretokens-image": ["image-model-alias-ambiguous", "image-normal-submission-skips-catalog", "image-failure-receipt-safe", "image-content-safety-failure", "image-input-role-ambiguous", "image-distinct-assets", "image-prompt-shaping", "image-submission-model-parameter-rejected", "image-submission-rate-limited", "image-submission-outcome-unknown", "image-model-unavailable", "image-model-parameter-profile-unavailable", "image-model-parameter-unsupported", "image-catalog-on-demand-unavailable", "image-execution-unavailable", "image-count-invalid", "image-pixel-size-invalid", "image-physical-size", "image-edit-profile-unavailable", "image-public-url-reference-profile-unavailable", "image-public-url-edit-profile-unavailable", "image-public-url-reference-invalid", "image-public-url-reference-not-public", "image-public-url-reference-ambiguous", "image-edit-attachment-unavailable", "image-edit-attachment-direct-api", "image-edit-input-unsupported", "image-task-id-normalization", "image-task-id-missing", "image-task-id-invalid", "image-task-state-unrecognized", "image-task-reconciliation-required", "image-task-request-count-unknown", "image-task-pending", "image-task-poll-delay", "image-task-poll-rate-limited", "image-task-poll-resource-bound", "image-task-polling-deadline", "image-task-explicit-continuation", "image-task-terminal-failure", "image-task-timeout-or-unknown", "image-content-delivery-failure", "image-content-delivery-location", "image-content-index-missing", "image-content-resource-bound"],
-    "puretokens-video": ["video-model-alias-ambiguous", "video-normal-submission-skips-catalog", "video-failure-receipt-safe", "video-content-safety-failure", "video-submission-model-parameter-rejected", "video-submission-rate-limited", "video-submission-outcome-unknown", "video-model-unavailable", "video-model-parameter-profile-unavailable", "video-model-parameter-unsupported", "video-catalog-on-demand-unavailable", "video-execution-unavailable", "video-parameter-unsupported", "video-resolution-mode-unsupported", "video-image-operation-profile-unavailable", "video-media-operation-profile-unavailable", "video-image-transport-unavailable", "video-public-url-reference-profile-unavailable", "video-public-url-reference-invalid", "video-public-url-reference-not-public", "video-public-url-reference-ambiguous", "video-prompt-requirement", "video-attachment-direct-api", "video-image-count-unsupported", "video-media-combination-unsupported", "video-input-media-unsupported", "video-task-id-normalization", "video-task-id-missing", "video-task-id-invalid", "video-task-state-unrecognized", "video-task-reconciliation-required", "video-task-pending", "video-task-poll-delay", "video-task-poll-rate-limited", "video-task-poll-resource-bound", "video-task-polling-deadline", "video-task-explicit-continuation", "video-task-terminal-failure", "video-task-timeout-or-unknown", "video-content-delivery-failure", "video-content-resource-bound"],
+    "puretokens-image": ["image-model-alias-ambiguous", "image-normal-submission-skips-catalog", "image-failure-receipt-safe", "image-content-safety-failure", "image-input-role-ambiguous", "image-distinct-assets", "image-prompt-shaping", "image-submission-model-parameter-rejected", "image-submission-rate-limited", "image-submission-outcome-unknown", "image-submission-runtime-output-unknown", "image-model-unavailable", "image-model-parameter-profile-unavailable", "image-model-parameter-unsupported", "image-catalog-on-demand-unavailable", "image-execution-unavailable", "image-count-invalid", "image-pixel-size-invalid", "image-physical-size", "image-edit-profile-unavailable", "image-public-url-reference-profile-unavailable", "image-public-url-edit-profile-unavailable", "image-public-url-reference-invalid", "image-public-url-reference-not-public", "image-public-url-reference-ambiguous", "image-edit-attachment-unavailable", "image-edit-attachment-direct-api", "image-edit-input-unsupported", "image-task-id-normalization", "image-task-id-missing", "image-task-id-invalid", "image-task-state-unrecognized", "image-task-reconciliation-required", "image-task-request-count-unknown", "image-task-pending", "image-task-poll-delay", "image-task-poll-rate-limited", "image-task-poll-resource-bound", "image-task-polling-deadline", "image-task-explicit-continuation", "image-task-terminal-failure", "image-task-timeout-or-unknown", "image-content-delivery-failure", "image-content-delivery-location", "image-content-index-missing", "image-content-resource-bound"],
+    "puretokens-video": ["video-model-alias-ambiguous", "video-normal-submission-skips-catalog", "video-failure-receipt-safe", "video-content-safety-failure", "video-submission-model-parameter-rejected", "video-submission-rate-limited", "video-submission-outcome-unknown", "video-submission-runtime-output-unknown", "video-model-unavailable", "video-model-parameter-profile-unavailable", "video-model-parameter-unsupported", "video-catalog-on-demand-unavailable", "video-execution-unavailable", "video-parameter-unsupported", "video-resolution-mode-unsupported", "video-image-operation-profile-unavailable", "video-media-operation-profile-unavailable", "video-image-transport-unavailable", "video-public-url-reference-profile-unavailable", "video-public-url-reference-invalid", "video-public-url-reference-not-public", "video-public-url-reference-ambiguous", "video-prompt-requirement", "video-attachment-direct-api", "video-image-count-unsupported", "video-media-combination-unsupported", "video-input-media-unsupported", "video-task-id-normalization", "video-task-id-missing", "video-task-id-invalid", "video-task-state-unrecognized", "video-task-reconciliation-required", "video-task-pending", "video-task-poll-delay", "video-task-poll-rate-limited", "video-task-poll-resource-bound", "video-task-polling-deadline", "video-task-explicit-continuation", "video-task-terminal-failure", "video-task-timeout-or-unknown", "video-content-delivery-failure", "video-content-resource-bound"],
     "puretokens-update": ["update-host-unknown", "update-terminal-unavailable", "update-validation-failed", "update-unmanaged-conflict", "update-managed-retired-skill", "update-managed-sync"]
   };
   for (const name of names) {
@@ -173,6 +141,9 @@ test("installed contracts cover bounded requests, task recovery, and user-facing
       assert.match(unavailable.then, /select a group that contains that exact model/);
       assert.match(unavailable.then, /create or select a managed key covering the selected groups/);
       assert.match(unavailable.then, /Do not claim which group contains the model/);
+      const runtimeOutputUnknown = scenarios.scenarios.find((scenario) => scenario.id === `${name.replace("puretokens-", "")}-submission-runtime-output-unknown`);
+      assert.match(runtimeOutputUnknown.then, /do not invoke POST again, submit a replacement task/);
+      assert.match(runtimeOutputUnknown.then, /claim the task was not created, charged, or refunded/);
     }
     if (name === "puretokens-models") {
       const unavailable = scenarios.scenarios.find((scenario) => scenario.id === "models-exact-id-unavailable");
@@ -229,6 +200,7 @@ test("installed contracts cover bounded requests, task recovery, and user-facing
   assert.equal(image.taskState.reconciliationPrecedesLifecycle, true);
   assert.equal(image.taskState.whenReconciliationRequired, "stop_ordinary_polling_retain_same_task_id_do_not_submit_replacement_or_infer_refund");
   assert.equal(image.submissionFailure.rateLimit, "report_retry_after_when_returned_and_require_explicit_retry");
+  assert.equal(image.submissionFailure.runtimeInvocationOutputUnknown, "treat_submission_outcome_as_unknown_do_not_repeat_post_or_submit_replacement_task");
   assert.equal(image.contentRetrieval.indexBase, 0);
   assert.equal(image.contentRetrieval.allowedIndexes, "0..requestedCount-1");
   assert.equal(image.contentRetrieval.completeDeliveryRequiresEveryRequestedIndex, true);
@@ -271,6 +243,7 @@ test("installed contracts cover bounded requests, task recovery, and user-facing
   assert.equal(video.taskState.reconciliationPrecedesLifecycle, true);
   assert.equal(video.taskState.whenReconciliationRequired, "stop_ordinary_polling_retain_same_task_id_do_not_submit_replacement_or_infer_refund");
   assert.equal(video.submissionFailure.rateLimit, "report_retry_after_when_returned_and_require_explicit_retry");
+  assert.equal(video.submissionFailure.runtimeInvocationOutputUnknown, "treat_submission_outcome_as_unknown_do_not_repeat_post_or_submit_replacement_task");
   assert.equal(video.inputMediaValidation.imageToVideoOperation, "image_to_video");
   assert.equal(video.inputMediaValidation.referenceImageVideoOperation, "reference_image_video");
   assert.equal(video.inputMediaValidation.referenceVideoOperation, "reference_video");
@@ -334,6 +307,12 @@ test("installed contracts cover bounded requests, task recovery, and user-facing
   assert.equal(update.operations.sync.sourceBranch, "main");
   assert.equal(update.result.neverOverwritesUnmanagedDirectories, true);
   assert.equal(update.result.archivesVerifiedRetiredManagedSkills, true);
+  assert.equal(update.result.neverModifiesOfficialCheckout, true);
+  const updateScenarios = JSON.parse(await readFile(path.join(repositoryRoot, "skills", "puretokens-update", "references", "behavior-scenarios.json"), "utf8"));
+  assert.match(updateScenarios.scenarios.find((scenario) => scenario.id === "update-validation-failed").then, /Do not run generators, docs sync, formatters, repair commands, Git writes/);
+  const updateSkill = await readFile(path.join(repositoryRoot, "skills", "puretokens-update", "SKILL.md"), "utf8");
+  assert.match(updateSkill, /官方克隆是只读安装载荷/);
+  assert.match(updateSkill, /不得运行 `docs:sync-\*`、任何 `--write`、生成器、修复器/);
 });
 
 test("distribution matrix and fixed direct API contract match every specialist manifest", async () => {
@@ -392,6 +371,7 @@ test("distribution matrix and fixed direct API contract match every specialist m
   assert.deepEqual(directContract.asyncTaskHandling, {
     reconciliationRequiredPrecedesLifecycle: true,
     reconciliationOutcome: "stop_ordinary_polling_retain_same_task_id_do_not_submit_replacement_or_infer_refund",
+    submissionRuntimeOutputUnknown: "treat_submission_outcome_as_unknown_do_not_repeat_post_or_submit_replacement_task",
     statusHttp429: "honor_valid_positive_retry_after_then_continue_same_task_if_remaining_budget",
     non429StatusReadFailure: "stop_bounded_window_without_replacement_task",
     doesNotInventApiErrorCode: true
@@ -599,19 +579,21 @@ test("WorkBuddy direct runtime parses only model URL and credential fields", () 
   ]);
 });
 
-test("WorkBuddy direct runtime resolves only one exact Pure Tokens model credential", async (t) => {
+test("WorkBuddy direct runtime resolves one credential from fixed API base or resource URLs only", async (t) => {
   const directory = await mkdtemp(path.join(os.tmpdir(), "puretokens-workbuddy-runtime-"));
   t.after(() => rm(directory, { recursive: true, force: true }));
   const configPath = path.join(directory, "models.json");
   await writeFile(configPath, JSON.stringify([
     { url: "https://example.com/v1", apiKey: "other-key" },
     { url: "https://api.puretokensx.com/v1?unexpected=query", apiKey: "not-a-match" },
-    { url: "https://api.puretokensx.com/v1/", apiKey: "test-direct-key" }
+    { url: "https://api.puretokensx.com/v2/chat/completions", apiKey: "not-a-match" },
+    { url: "https://api.puretokensx.com/v1/chat/completions", apiKey: "test-direct-key" },
+    { url: "https://api.puretokensx.com/v1/responses", apiKey: "test-direct-key" }
   ]));
   assert.equal(await resolveWorkBuddyCredential(configPath), "test-direct-key");
   await writeFile(configPath, JSON.stringify([
-    { url: "https://api.puretokensx.com/v1", apiKey: "first-key" },
-    { url: "https://api.puretokensx.com/v1", apiKey: "second-key" }
+    { url: "https://api.puretokensx.com/v1/chat/completions", apiKey: "first-key" },
+    { url: "https://api.puretokensx.com/v1/responses", apiKey: "second-key" }
   ]));
   await assert.rejects(resolveWorkBuddyCredential(configPath), /Multiple different Pure Tokens API credentials/);
 });
@@ -650,7 +632,7 @@ test("CLI sync installs missing Skills and refuses unmanaged conflicts before wr
   for (const name of names) {
     assert.equal(JSON.parse(await readFile(path.join(target, name, "skill.json"), "utf8")).name, name);
   }
-  assert.equal(JSON.parse(await readFile(path.join(target, ".puretokens-runtime", "runtime.json"), "utf8")).version, "0.13.4");
+  assert.equal(JSON.parse(await readFile(path.join(target, ".puretokens-runtime", "runtime.json"), "utf8")).version, "0.13.5");
 });
 
 test("CLI refuses an unmanaged direct runtime before changing Skills", async (t) => {
