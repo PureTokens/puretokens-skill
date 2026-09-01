@@ -9,7 +9,7 @@ This repository provides six independent Skills:
 | Skill | What it does |
 | --- | --- |
 | `puretokens-balance` | Reads a current-balance snapshot from the fixed Pure Tokens API. |
-| `puretokens-connection` | Checks the fixed Pure Tokens API identity declaration, without reading connection configuration. |
+| `puretokens-connection` | Checks the fixed Pure Tokens API identity declaration without exposing connection configuration. |
 | `puretokens-models` | Reads the fixed API's authenticated media catalog and explains declared model capabilities, parameters, and media operations. |
 | `puretokens-image` | Generates images and performs profile-gated image edits through the fixed Pure Tokens Images API. |
 | `puretokens-video` | Generates videos and performs profile-gated image, video, or audio reference generation and video edits through the fixed Pure Tokens Videos API. |
@@ -74,27 +74,27 @@ If terminal execution is unavailable or denied, say so and provide the next copy
 
 ## Host support
 
-CC Switch is a connection-configuration tool, not a Skill host. CC Switch, Pure Tokens Desktop, or a manual client setup can make existing Pure Tokens authentication available to the active runtime. The Skills themselves always call the fixed public Pure Tokens API origin; they never read the user's connection configuration.
+CC Switch is a connection-configuration tool, not a Skill host. The Skills always call the fixed public Pure Tokens API origin. The managed runtime narrowly resolves a matching Pure Tokens model credential only in memory for a fixed request; it never displays, copies, persists, or asks for the credential.
 
-| Host | Current specialist-Skill delivery | What the user does |
-| --- | --- | --- |
-| Claude Code | Manual source install | Install the required Skill into `~/.claude/skills`. |
-| Codex | Manual source install | Install the required Skill into `~/.agents/skills`. |
-| WorkBuddy | Manual source install | Install the required Skill into `~/.workbuddy/skills`. |
-| Gemini CLI | Manual source install | Install the required Skill into `~/.gemini/skills`. |
-| Grok Build | Manual source install | Install the required Skill into `~/.grok/skills`. |
-| OpenCode | Manual source install | Install the required Skill into `~/.config/opencode/skills`. |
-| Trae | Manual source install | Install the required Skill into `~/.trae/skills`. |
+| Host | Current specialist-Skill delivery | Direct API execution | What the user does |
+| --- | --- | --- | --- |
+| Claude Code | Manual source install | Verified managed runtime | Install the required Skill into `~/.claude/skills`. |
+| Codex | Manual source install | Verified managed runtime | Install the required Skill into `~/.agents/skills`. |
+| WorkBuddy | Manual source install | Verified managed runtime | Install the required Skill into `~/.workbuddy/skills`. |
+| Gemini CLI | Manual source install | Verified managed runtime | Install the required Skill into `~/.gemini/skills`. |
+| Grok Build | Manual source install | Verified managed runtime | Install the required Skill into `~/.grok/skills`. |
+| OpenCode | Manual source install | Verified managed runtime | Install the required Skill into `~/.config/opencode/skills`. |
+| Trae | Manual source install | Manual credential setup | Install the required Skill into `~/.trae/skills`. |
 
 The canonical matrix is `references/host-support.json`. The CLI intentionally never guesses a host directory.
 
 ## Direct API contract
 
-The API-facing Skills call the fixed public API origin `https://api.puretokensx.com`. They use full URLs, never a configured Base URL or a relative-path host executor. The active runtime supplies its existing Pure Tokens request authentication automatically; Skills never read, scan, ask for, print, copy, or store API keys, Base URLs, authentication files, provider labels, or client configuration. They never construct an authorization header, use MCP, a local proxy, a sidecar, or another endpoint. `puretokens-update` is local-only and does not call API endpoints.
+The API-facing Skills call the fixed public API origin `https://api.puretokensx.com`. They use full URLs, never a user-selected Base URL or fallback endpoint. The managed `.puretokens-runtime/puretokens-direct-api.mjs` is installed beside the Skills. On Claude Code, Codex, WorkBuddy, Gemini CLI, Grok Build, and OpenCode, it reads only one matching Pure Tokens credential from that host's documented fixed configuration source and only when the source exactly targets `https://api.puretokensx.com/v1` (or the required origin-only form). It retains that credential only in memory and sends it only as authorization for an allowed fixed Pure Tokens API path. It never prints, copies, persists, or asks for the key; it accepts no arbitrary URL and uses no MCP, proxy, or sidecar. `puretokens-update` is local-only and does not call API endpoints.
 
-All seven supported hosts use this same direct contract. Their active runtime must provide existing authenticated full-URL HTTPS requests, JSON task responses, same-task status reads, and native-media byte delivery; there is one shared generation path.
+The direct contract requires authenticated full-URL HTTPS requests, JSON task responses, same-task status reads, and native-media byte delivery. Claude Code, Codex, WorkBuddy, Gemini CLI, Grok Build, and OpenCode use the managed local runtime for this binding. Trae remains a manual-configuration-only exception because it has no approved local credential resolver; the Skill stops safely there rather than reading or guessing its user state.
 
-`puretokens-connection` makes exactly one read-only `GET https://api.puretokensx.com/v1` request. It confirms the fixed API only when that endpoint declares `status: "ok"`, `name: "Pure Tokens API"`, and `base_url: "/v1"`. This does not reveal or validate the user's configured Base URL, and it is not cryptographic anti-spoof verification.
+`puretokens-connection` makes exactly one read-only `GET https://api.puretokensx.com/v1` request. It confirms the fixed API only when that endpoint declares `status: "ok"`, `name: "Pure Tokens API"`, and `base_url: "/v1"`. The managed runtime may use a credential internally for this request, but the Skill never reveals or reports the user's configured Base URL or credential. This is not cryptographic anti-spoof verification.
 
 `puretokens-models` makes exactly one read-only `GET https://api.puretokensx.com/v1/media/models` request. It exposes the authenticated catalog in a user-readable form: exact model IDs, returned capabilities, declared optional parameters, and declared media operations. It can shortlist models for an explicit technical requirement such as image-to-video, a reference medium, duration, aspect ratio, or resolution, but only when that requirement is explicitly declared by the live model profile. It never submits media work, retries the catalog request, falls back to the static README catalog, or ranks unreturned quality, price, speed, or availability information.
 
@@ -106,7 +106,7 @@ The full direct-API contract is `references/direct-api-execution-contract.json`.
 
 ## Balance
 
-`puretokens-balance` makes exactly one read-only `GET https://api.puretokensx.com/api/product/desktop/account/balance` request with the active runtime's existing Pure Tokens account authentication. It reports only returned fields. If the direct request is not authenticated or fails, it reports the returned result and directs the user to the Pure Tokens client balance view; it never guesses a balance, tries another endpoint, or asks for credentials.
+`puretokens-balance` makes exactly one read-only `GET https://api.puretokensx.com/api/product/desktop/account/balance` request through the configured-credential direct runtime where available. It reports only returned fields. If the direct request fails, it reports the returned result and directs the user to the Pure Tokens client balance view; it never guesses a balance, tries another endpoint, or asks for credentials.
 
 ## Skill updates
 
@@ -130,7 +130,7 @@ For `n` images, delivery reads exactly the zero-based indexes `0` through `n-1` 
 
 Every normal image and video task uses the installed versioned selection; it never incurs a live-catalog preflight. Any requested optional field must be present with a compatible value in that selection. When the user asks for a current capability, an option or media operation absent from the selection, the Skill makes one on-demand catalog read; the same is allowed once after a model/parameter/capability rejection to explain it, never to retry automatically. Video prompt is required for normal text generation and may be omitted only when the installed or on-demand profile explicitly declares the exact single-reference exception.
 
-The installed selection, or a permitted one-time on-demand profile lookup for an unsupported or incompatible requested media operation, controls media inputs. An explicitly supplied public HTTPS URL, file ID, or voice ID is sent only in its exact declared property and permitted transport; the Skill never downloads, probes, checks accessibility, rehosts, or rewrites it. A public-URL image edit additionally requires the exact declared `image_edit` JSON operation; a reference field alone is not an edit operation. Native media explicitly attached in the current request uses only an advertised `multipart_file` operation and is sent with that one declared Images or Videos API request. Multiple native attachment types need an explicitly declared combined operation; multiple public URL/ID fields need no declared conflict. The Skill never manufactures a URL or file ID, calls a separate upload API, or silently turns a media request into text generation.
+The installed selection, or a permitted one-time on-demand profile lookup for an unsupported or incompatible requested media operation, controls media inputs. An explicitly supplied public HTTPS URL, file ID, or voice ID is sent only in its exact declared property and permitted transport; the Skill never downloads, probes, checks accessibility, rehosts, or rewrites it. A public-URL image edit additionally requires the exact declared `image_edit` JSON operation; a reference field alone is not an edit operation. Native media explicitly attached in the current request uses only an advertised `multipart_file` operation and is sent with that one declared Images or Videos API request by the verified runtime. It accepts only explicit regular media files, limits attachment count and size, and never calls a separate upload API. Multiple native attachment types need an explicitly declared combined operation; multiple public URL/ID fields need no declared conflict. The Skill never manufactures a URL or file ID or silently turns a media request into text generation.
 
 On submit, continuation, reconciliation, completion, and failure, media Skills return a consistent receipt: exact model ID when returned, task ID when returned, current state, requested operation, requested count, requested size/parameters, delivered count on completion, and the next action. A failure contains its phase, `api_error_code` only when the public API explicitly returned that exact code (otherwise “not returned”), the returned HTTP status or “not returned”, and a safe user-facing message; HTTP 429 receipts include a valid `Retry-After` value when available. The receipt never exposes raw response bodies, upstream identifiers, internal URLs, stacks, request data, credentials, or user media. The receipt's `task_id` is normalized from the selected lifecycle's declared top-level ID field, or only top-level `task_id` / `id` when no lifecycle is declared; it is never inferred from a URL or nested response data. Missing task metadata is reported as not returned, never guessed.
 
@@ -138,7 +138,7 @@ On submit, continuation, reconciliation, completion, and failure, media Skills r
 
 Media polling begins only after submission returns a normalized `task_id` and runs only within the submission turn or a user turn that explicitly continues that same task ID. It first treats `reconciliation_required: true` as a terminal operational state regardless of its lifecycle status: ordinary polling stops, the same task ID is retained, and the Skill neither submits a replacement nor infers a refund. Otherwise it uses the selected model's declared lifecycle states when available; otherwise it recognizes only `pending`, `queued`, `running`, and `in_progress` as processing states. An unrecognized or missing state is reported as such and stops automatic polling. There is at most one status request in flight per task and never a background timer, queue, or worker. When a status read returns HTTP 429, the Skill honors a valid positive `Retry-After` and continues the same task only if it fits the remaining automatic-polling budget; otherwise it stops that window without resubmission. Otherwise an image task waits `3, 6, 12, 24, 30, 30` seconds before at most six same-task status reads; a video task waits `5, 10, 20, 40, 60, 60` seconds before at most seven reads. Each bounded window lasts at most 120 seconds for images or 300 seconds for videos. A non-429 5xx response, transport error, or timeout stops that window immediately. A still-processing task is reported with its task ID. When the user explicitly asks to continue it, the Skill opens one new bounded window for that same task only; it never treats a deadline or read error as failure and never submits a replacement task.
 
-Media bytes are not cached in Skill state, prompts, or logs. Content is read only after terminal success, with one content read in flight; the active runtime hands off the native bytes before another read. If it cannot do that without unbounded background work, duplicate reads, or cached copies, the Skill reports same-task delivery as unavailable instead of substituting a URL or submitting a new task.
+Media bytes are not cached in Skill state, prompts, or logs. Content is read only after terminal success, with one content read in flight; the active runtime hands off the native bytes before another read. It accepts only native image, video, audio, or octet-stream content responses and enforces a bounded delivery size; unsupported or oversized responses fail without a substitute URL or a replacement task. If it cannot hand off bytes without unbounded background work, duplicate reads, or cached copies, the Skill reports same-task delivery as unavailable instead of substituting a URL or submitting a new task.
 
 ## Usage examples
 

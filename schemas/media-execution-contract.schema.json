@@ -142,12 +142,14 @@
   "$defs": {
     "directTransport": {
       "type": "object",
-      "required": ["fixedApiOrigin", "usesFullApiUrls", "usesRuntimeManagedAuthentication", "doesNotReadCredentialsOrHostConfiguration", "doesNotUseMcpOrFallbackTransport"],
+      "required": ["fixedApiOrigin", "usesFullApiUrls", "usesRuntimeManagedAuthentication", "usesNarrowConfiguredCredentialResolver", "verifiedManagedRuntimeHosts", "neverExposesCredentialsOrHostConfiguration", "doesNotUseMcpOrFallbackTransport"],
       "properties": {
         "fixedApiOrigin": { "const": "https://api.puretokensx.com" },
         "usesFullApiUrls": { "const": true },
         "usesRuntimeManagedAuthentication": { "const": true },
-        "doesNotReadCredentialsOrHostConfiguration": { "const": true },
+        "usesNarrowConfiguredCredentialResolver": { "const": true },
+        "verifiedManagedRuntimeHosts": { "const": ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode"] },
+        "neverExposesCredentialsOrHostConfiguration": { "const": true },
         "doesNotUseMcpOrFallbackTransport": { "const": true },
         "requiresNativeMediaByteDelivery": { "const": true }
       },

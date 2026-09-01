@@ -4,6 +4,25 @@
 
 # 更新日志
 
+## 0.13.3 — 2026-09-01
+
+- 将受管固定端点凭据运行器扩展至所有具备已批准、可审计本地连接契约的受支持宿主：Claude Code、Codex、WorkBuddy、Gemini CLI、Grok Build、OpenCode。每个解析器只接受精确匹配的 Pure Tokens 配置，只在内存中为允许的固定 API 请求保留一个无歧义凭据，绝不展示、保存或索取凭据。
+- 所有 API 专项 Skill、安装载荷契约、宿主矩阵和校验现在统一使用这六个受管运行器执行 API 身份检查、模型目录、余额、Images、Videos、同任务状态查询和原生媒体交付。
+- 将 Trae 明确标记为唯一的手动凭据配置例外。其产品契约没有已批准的本地凭据解析器，因此 Skill 会安全停止，不会扫描或推断 Trae 用户状态。
+
+## 0.13.2 — 2026-09-01
+
+- 新增已验证的 WorkBuddy 受管直连运行器绑定。它只在内存中从 WorkBuddy 模型配置狭义匹配 `https://api.puretokensx.com/v1` 的模型凭据，只用于允许的固定 API 路径，绝不展示、保存或索取凭据。
+- 明确宿主矩阵：七个宿主都可安装，但目前只有 Grok Build 和 WorkBuddy 已验证可执行带认证的直连媒体请求。其他宿主会安全停止，不再暗示通用 HTTP 请求会继承聊天模型凭据。
+- 为已验证运行器补齐受限、按资料声明的 multipart 附件提交，并加固原生媒体交付：固定路径白名单、仅常规文件附件、附件数量和大小限制、内容类型检查、交付大小上限、禁止覆盖以及失败部分文件清理。
+- 清除“Skill 不读取配置”与“受管运行器在内存中狭义绑定凭据”之间的矛盾描述。Skill 仍不会展示、比较或报告宿主配置。
+
+## 0.13.1 — 2026-09-01
+
+- 新增受管的 Grok Build 直连 API 运行器。它只在内存中狭义解析已配置的 Pure Tokens 模型凭据，只发送到允许的固定 Pure Tokens API 路径，绝不打印、保存或索取该凭据。
+- `sync`、`install` 和 `upgrade` 现在会在专项 Skill 同级安装或原子升级受管 `.puretokens-runtime`；若存在非受管运行器冲突，会在改动任何 Skill 前停止。
+- 移除“所有宿主都会向通用 HTTP 请求自动注入模型凭据”的错误假设。Grok Build 的 API 身份、模型目录、余额、Images、Videos、任务状态和媒体内容请求现在使用受管直连运行器，而不是通用 Fetch/WebFetch。
+
 ## 0.13.0 — 2026-09-01
 
 - 六个可安装 Skill 的名称和目录统一为 Agent Skills 标准 kebab-case：`puretokens-balance`、`puretokens-connection`、`puretokens-models`、`puretokens-image`、`puretokens-video`、`puretokens-update`。

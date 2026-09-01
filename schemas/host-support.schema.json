@@ -17,11 +17,12 @@
   "$defs": {
     "supportedHost": {
       "type": "object",
-      "required": ["id", "delivery", "guidance"],
+      "required": ["id", "delivery", "guidance", "directMediaExecution"],
       "properties": {
         "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
         "delivery": { "const": "manual-source" },
         "globalSkillDirectory": { "type": "string", "pattern": "^~/(?:\\.[a-z-]+/)*(?:[a-z-]+/)?skills$" },
+        "directMediaExecution": { "enum": ["verified-managed-local-runtime", "manual-credential-setup"] },
         "guidance": { "type": "string", "minLength": 1 },
         "directApiOrigin": { "const": "https://api.puretokensx.com" }
       },

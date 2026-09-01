@@ -3,8 +3,10 @@
   "schemaVersion": 1,
   "apiOrigin": "https://api.puretokensx.com",
   "authentication": {
-    "usesRuntimeManagedExistingAuthentication": true,
-    "skillNeverReadsOrConstructsCredentials": true
+    "usesConfiguredConnectionCredential": true,
+    "managedRuntimeHosts": ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode"],
+    "credentialUse": "in_memory_only_for_fixed_puretokens_api_requests",
+    "neverDisplaysCopiesStoresOrRequestsCredentials": true
   },
   "transport": {
     "usesFullApiUrls": true,
@@ -12,7 +14,7 @@
     "doesNotUseLocalProxyOrSidecar": true,
     "doesNotUseFallbackEndpoint": true
   },
-  "supportedHosts": [
+  "installableHosts": [
     "claude-code",
     "codex",
     "workbuddy",
@@ -21,6 +23,7 @@
     "opencode",
     "trae"
   ],
+  "verifiedManagedRuntimeHosts": ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode"],
   "requiredRuntimeCapabilities": [
     "authenticated_full_url_request",
     "json_task_response",

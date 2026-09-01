@@ -9,6 +9,18 @@ import { checkMediaCatalogFreshness } from "../scripts/check-media-catalog-fresh
 import { collectSkillRecords, repositoryRoot, validateRepository } from "../scripts/skill-registry.mjs";
 import { sourceRows, buildPublishedCatalog } from "../scripts/sync-media-model-catalog-from-service.mjs";
 import { buildSelection } from "../scripts/sync-skill-model-selection.mjs";
+import {
+  parseCodexConnection,
+  parseDotEnv,
+  parseGrokModelEntries,
+  parseWorkBuddyModelEntries,
+  resolveClaudeCodeCredential,
+  resolveCodexCredential,
+  resolveConfiguredCredential,
+  resolveGeminiCliCredential,
+  resolveOpenCodeCredential,
+  resolveWorkBuddyCredential
+} from "../runtime/puretokens-direct-api.mjs";
 
 const names = ["puretokens-balance", "puretokens-connection", "puretokens-models", "puretokens-image", "puretokens-video", "puretokens-update"];
 
@@ -16,14 +28,16 @@ test("registry exposes exactly the six specialist Skills", async () => {
   const { registry, records } = await collectSkillRecords();
   assert.deepEqual(registry.skills.map((skill) => skill.name), names);
   assert.equal(records.length, 6);
-  assert.deepEqual([...new Set(records.map((record) => record.manifest.version))], ["0.13.0"]);
+  assert.deepEqual([...new Set(records.map((record) => record.manifest.version))], ["0.13.3"]);
   assert.deepEqual(await validateRepository(), []);
 });
 
 test("specialist policies use the fixed direct API without MCP fallback", async () => {
   const [balance, connection, models, image, video] = await Promise.all(names.map((name) => readFile(path.join(repositoryRoot, "skills", name, "SKILL.md"), "utf8")));
   assert.match(connection, /GET https:\/\/api\.puretokensx\.com\/v1/);
-  assert.match(connection, /不读取、扫描、展示、复制或索取真实 Base URL、凭据、provider 标签或宿主配置/);
+  assert.match(connection, /Claude Code、Codex、WorkBuddy、Gemini CLI、Grok Build 和 OpenCode/);
+  assert.match(connection, /--host claude-code/);
+  assert.match(connection, /--host opencode/);
   assert.match(models, /GET https:\/\/api\.puretokensx\.com\/v1\/media\/models/);
   assert.match(models, /不得调用 Images\/Videos 提交、任务状态、内容、余额或其他路径/);
   assert.match(models, /`input_schema\.constraints`/);
@@ -34,7 +48,9 @@ test("specialist policies use the fixed direct API without MCP fallback", async 
   const policy = balance + connection + models + image + video;
   assert.match(policy, /https:\/\/api\.puretokensx\.com/);
   assert.doesNotMatch(policy, /internal-upstream|当前连接不是 Pure Tokens|无法确认归属/i);
-  assert.match(policy, /不构造认证头/);
+  assert.match(policy, /\.puretokens-runtime\/puretokens-direct-api\.mjs/);
+  assert.match(policy, /--multipart-stdin/);
+  assert.doesNotMatch(policy, /自动携带认证/);
 });
 
 test("bilingual READMEs include safe copyable Agent installation prompts", async () => {
@@ -90,20 +106,22 @@ test("bilingual READMEs include safe copyable Agent installation prompts", async
   assert.match(chinese, /不得读取、展示、复制、修改或索取 API Key、Base URL、认证文件、模型配置、MCP 配置/);
 });
 
-test("specialist manifests use the fixed direct API without credential inspection", async () => {
+test("specialist manifests use the fixed direct API with a narrow configured-credential resolver", async () => {
   for (const name of names) {
     const manifest = JSON.parse(await readFile(path.join(repositoryRoot, "skills", name, "skill.json"), "utf8"));
-    assert.equal(manifest.rules.doesNotReadCredentialsOrHostConfiguration, true);
     assert.equal(manifest.rules.doesNotUseMcpOrFallbackTransport, true);
     if (name === "puretokens-update") {
       assert.equal(manifest.rules.usesOfficialMainBranch, true);
       assert.equal(manifest.rules.usesManagedSkillSync, true);
       assert.equal(manifest.rules.neverOverwritesUnmanagedDirectories, true);
       assert.equal(manifest.rules.archivesVerifiedRetiredSkills, true);
+      assert.equal(manifest.rules.doesNotReadCredentialsOrHostConfiguration, true);
     } else {
       assert.equal(manifest.rules.usesFixedPureTokensApiOrigin, true);
       assert.equal(manifest.rules.usesFullApiUrls, true);
       assert.equal(manifest.rules.usesRuntimeManagedAuthentication, true);
+      assert.equal(manifest.rules.usesNarrowConfiguredCredentialResolver, true);
+      assert.equal(manifest.rules.neverExposesCredentialsOrHostConfiguration, true);
     }
   }
 });
@@ -176,7 +194,9 @@ test("installed contracts cover bounded requests, task recovery, and user-facing
     fixedApiOrigin: "https://api.puretokensx.com",
     usesFullApiUrls: true,
     usesRuntimeManagedAuthentication: true,
-    doesNotReadCredentialsOrHostConfiguration: true,
+    usesNarrowConfiguredCredentialResolver: true,
+    verifiedManagedRuntimeHosts: ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode"],
+    neverExposesCredentialsOrHostConfiguration: true,
     requiresNativeMediaByteDelivery: true,
     doesNotUseMcpOrFallbackTransport: true
   });
@@ -312,12 +332,23 @@ test("distribution matrix and fixed direct API contract match every specialist m
     opencode: "~/.config/opencode/skills",
     trae: "~/.trae/skills"
   });
+  assert.deepEqual(Object.fromEntries(hostSupport.supported.map((host) => [host.id, host.directMediaExecution])), {
+    "claude-code": "verified-managed-local-runtime",
+    codex: "verified-managed-local-runtime",
+    workbuddy: "verified-managed-local-runtime",
+    "gemini-cli": "verified-managed-local-runtime",
+    "grok-build": "verified-managed-local-runtime",
+    opencode: "verified-managed-local-runtime",
+    trae: "manual-credential-setup"
+  });
   assert.equal(hostSupport.directApiOrigin, "https://api.puretokensx.com");
   const directContract = JSON.parse(await readFile(path.join(repositoryRoot, "references", "direct-api-execution-contract.json"), "utf8"));
   assert.equal(directContract.apiOrigin, "https://api.puretokensx.com");
   assert.deepEqual(directContract.authentication, {
-    usesRuntimeManagedExistingAuthentication: true,
-    skillNeverReadsOrConstructsCredentials: true
+    usesConfiguredConnectionCredential: true,
+    managedRuntimeHosts: ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode"],
+    credentialUse: "in_memory_only_for_fixed_puretokens_api_requests",
+    neverDisplaysCopiesStoresOrRequestsCredentials: true
   });
   assert.deepEqual(directContract.transport, {
     usesFullApiUrls: true,
@@ -325,7 +356,8 @@ test("distribution matrix and fixed direct API contract match every specialist m
     doesNotUseLocalProxyOrSidecar: true,
     doesNotUseFallbackEndpoint: true
   });
-  assert.deepEqual(directContract.supportedHosts, ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae"]);
+  assert.deepEqual(directContract.installableHosts, ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae"]);
+  assert.deepEqual(directContract.verifiedManagedRuntimeHosts, ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode"]);
   assert.deepEqual(directContract.requiredRuntimeCapabilities, ["authenticated_full_url_request", "json_task_response", "same_task_status_read", "native_media_byte_delivery"]);
   assert.deepEqual(directContract.acceptanceScenarios.map((scenario) => scenario.id), ["api-identity-read", "catalog-read", "media-submit", "same-task-status", "native-media-delivery"]);
   assert.equal(directContract.acceptanceScenarios.find((scenario) => scenario.id === "api-identity-read").request, "GET https://api.puretokensx.com/v1");
@@ -428,6 +460,144 @@ test("formal reference schemas ship with the package", async () => {
   }
 });
 
+test("Grok Build direct runtime resolves only matching configured model credentials", () => {
+  const config = [
+    '[model."puretokens-a"]',
+    'base_url = "https://api.puretokensx.com/v1"',
+    'api_key = "test-direct-key"',
+    "",
+    '[model."other"]',
+    'base_url = "https://example.com/v1"',
+    'api_key = "other-key"',
+    "",
+    '[model."puretokens-env"]',
+    'base_url = "https://api.puretokensx.com/v1"',
+    'env_key = "PURETOKENS_TEST_KEY"'
+  ].join("\n");
+  const records = parseGrokModelEntries(config, { PURETOKENS_TEST_KEY: "test-direct-key" });
+  assert.deepEqual(records.map((record) => ({ baseUrl: record.baseUrl, hasCredential: Boolean(record.credential) })), [
+    { baseUrl: "https://api.puretokensx.com/v1", hasCredential: true },
+    { baseUrl: "https://example.com/v1", hasCredential: true },
+    { baseUrl: "https://api.puretokensx.com/v1", hasCredential: true }
+  ]);
+});
+
+test("Claude Code direct runtime accepts only an exact configured Pure Tokens origin", async (t) => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), "puretokens-claude-runtime-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const settingsPath = path.join(directory, "settings.json");
+  await writeFile(settingsPath, JSON.stringify({
+    env: {
+      ANTHROPIC_BASE_URL: "https://api.puretokensx.com/",
+      ANTHROPIC_AUTH_TOKEN: "test-claude-key"
+    }
+  }));
+  assert.equal(await resolveClaudeCodeCredential(settingsPath), "test-claude-key");
+  await writeFile(settingsPath, JSON.stringify({
+    env: {
+      ANTHROPIC_BASE_URL: "https://example.com",
+      ANTHROPIC_AUTH_TOKEN: "test-claude-key"
+    }
+  }));
+  await assert.rejects(resolveClaudeCodeCredential(settingsPath), /No usable Pure Tokens API credential/);
+});
+
+test("Codex direct runtime resolves only the active exact Pure Tokens provider", async (t) => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), "puretokens-codex-runtime-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const configPath = path.join(directory, "config.toml");
+  const authPath = path.join(directory, "auth.json");
+  const activeConfig = [
+    'model_provider = "puretokens"',
+    "",
+    "[model_providers.puretokens]",
+    'base_url = "https://api.puretokensx.com/v1"',
+    'experimental_bearer_token = "test-codex-key"',
+    "",
+    "[model_providers.other]",
+    'base_url = "https://example.com/v1"',
+    'experimental_bearer_token = "other-key"'
+  ].join("\n");
+  assert.deepEqual(parseCodexConnection(activeConfig), {
+    baseUrl: "https://api.puretokensx.com/v1",
+    credential: "test-codex-key"
+  });
+  await writeFile(configPath, activeConfig);
+  await writeFile(authPath, JSON.stringify({ OPENAI_API_KEY: "fallback-key" }));
+  assert.equal(await resolveCodexCredential(configPath, authPath), "test-codex-key");
+  await writeFile(configPath, activeConfig.replace('experimental_bearer_token = "test-codex-key"', ""));
+  assert.equal(await resolveCodexCredential(configPath, authPath), "fallback-key");
+  await writeFile(configPath, activeConfig.replace("https://api.puretokensx.com/v1", "https://example.com/v1"));
+  await assert.rejects(resolveCodexCredential(configPath, authPath), /No usable Pure Tokens API credential/);
+});
+
+test("Gemini CLI direct runtime requires the selected exact Pure Tokens API-key connection", async (t) => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), "puretokens-gemini-runtime-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const envPath = path.join(directory, ".env");
+  const settingsPath = path.join(directory, "settings.json");
+  const source = [
+    "# current managed connection",
+    "GOOGLE_GEMINI_BASE_URL=https://api.puretokensx.com",
+    "GEMINI_API_KEY=test-gemini-key"
+  ].join("\n");
+  assert.equal(parseDotEnv(source).get("GEMINI_API_KEY"), "test-gemini-key");
+  await writeFile(envPath, source);
+  await writeFile(settingsPath, JSON.stringify({ security: { auth: { selectedType: "gemini-api-key" } } }));
+  assert.equal(await resolveGeminiCliCredential(envPath, settingsPath), "test-gemini-key");
+  await writeFile(settingsPath, JSON.stringify({ security: { auth: { selectedType: "oauth" } } }));
+  await assert.rejects(resolveGeminiCliCredential(envPath, settingsPath), /No usable Pure Tokens API-key connection/);
+});
+
+test("OpenCode direct runtime accepts only its exact Pure Tokens provider entry", async (t) => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), "puretokens-opencode-runtime-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const configPath = path.join(directory, "opencode.json");
+  await writeFile(configPath, JSON.stringify({
+    provider: {
+      puretokens: { options: { baseURL: "https://api.puretokensx.com/v1/", apiKey: "test-opencode-key" } },
+      other: { options: { baseURL: "https://example.com/v1", apiKey: "other-key" } }
+    }
+  }));
+  assert.equal(await resolveOpenCodeCredential(configPath), "test-opencode-key");
+  await writeFile(configPath, JSON.stringify({ provider: { puretokens: { options: { baseURL: "https://example.com/v1", apiKey: "test-opencode-key" } } } }));
+  await assert.rejects(resolveOpenCodeCredential(configPath), /No usable Pure Tokens API credential/);
+});
+
+test("Trae has no local credential resolver", async () => {
+  await assert.rejects(resolveConfiguredCredential("trae"), /manual connection setup/);
+});
+
+test("WorkBuddy direct runtime parses only model URL and credential fields", () => {
+  const entries = parseWorkBuddyModelEntries([
+    { id: "puretokens", url: "https://api.puretokensx.com/v1", apiKey: "test-direct-key", vendor: "openai" },
+    { id: "other", url: "https://example.com/v1", apiKey: "other-key" },
+    { id: "missing" }
+  ]);
+  assert.deepEqual(entries.map((entry) => ({ baseUrl: entry.baseUrl, hasCredential: Boolean(entry.credential) })), [
+    { baseUrl: "https://api.puretokensx.com/v1", hasCredential: true },
+    { baseUrl: "https://example.com/v1", hasCredential: true },
+    { baseUrl: undefined, hasCredential: false }
+  ]);
+});
+
+test("WorkBuddy direct runtime resolves only one exact Pure Tokens model credential", async (t) => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), "puretokens-workbuddy-runtime-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const configPath = path.join(directory, "models.json");
+  await writeFile(configPath, JSON.stringify([
+    { url: "https://example.com/v1", apiKey: "other-key" },
+    { url: "https://api.puretokensx.com/v1?unexpected=query", apiKey: "not-a-match" },
+    { url: "https://api.puretokensx.com/v1/", apiKey: "test-direct-key" }
+  ]));
+  assert.equal(await resolveWorkBuddyCredential(configPath), "test-direct-key");
+  await writeFile(configPath, JSON.stringify([
+    { url: "https://api.puretokensx.com/v1", apiKey: "first-key" },
+    { url: "https://api.puretokensx.com/v1", apiKey: "second-key" }
+  ]));
+  await assert.rejects(resolveWorkBuddyCredential(configPath), /Multiple different Pure Tokens API credentials/);
+});
+
 test("CLI installs each specialist Skill", async (t) => {
   const target = await mkdtemp(path.join(os.tmpdir(), "puretokens-skill-cli-"));
   t.after(() => rm(target, { recursive: true, force: true }));
@@ -441,6 +611,7 @@ test("CLI installs each specialist Skill", async (t) => {
       assert.equal(JSON.parse(await readFile(path.join(target, name, manifest.taskReceipt), "utf8")).kind, name.replace("puretokens-", ""));
     }
   }
+  assert.equal(JSON.parse(await readFile(path.join(target, ".puretokens-runtime", "runtime.json"), "utf8")).name, "puretokens-direct-api-runtime");
 });
 
 test("CLI sync installs missing Skills and refuses unmanaged conflicts before writing", async (t) => {
@@ -455,11 +626,28 @@ test("CLI sync installs missing Skills and refuses unmanaged conflicts before wr
     /unmanaged Skill conflicts/
   );
   await assert.rejects(readFile(path.join(target, "puretokens-balance", "skill.json"), "utf8"));
+  await assert.rejects(readFile(path.join(target, ".puretokens-runtime", "runtime.json"), "utf8"));
   await rm(conflict, { recursive: true, force: true });
   await run(process.execPath, [path.join(repositoryRoot, "bin", "puretokens-skill.js"), "sync", "--target", target], { cwd: repositoryRoot });
   for (const name of names) {
     assert.equal(JSON.parse(await readFile(path.join(target, name, "skill.json"), "utf8")).name, name);
   }
+  assert.equal(JSON.parse(await readFile(path.join(target, ".puretokens-runtime", "runtime.json"), "utf8")).version, "0.13.3");
+});
+
+test("CLI refuses an unmanaged direct runtime before changing Skills", async (t) => {
+  const target = await mkdtemp(path.join(os.tmpdir(), "puretokens-runtime-conflict-"));
+  t.after(() => rm(target, { recursive: true, force: true }));
+  const run = promisify(execFile);
+  const runtime = path.join(target, ".puretokens-runtime");
+  await mkdir(runtime);
+  await writeFile(path.join(runtime, "runtime.json"), JSON.stringify({ name: "another-runtime" }));
+  await assert.rejects(
+    run(process.execPath, [path.join(repositoryRoot, "bin", "puretokens-skill.js"), "sync", "--target", target], { cwd: repositoryRoot }),
+    /unmanaged Pure Tokens runtime conflicts/
+  );
+  await assert.rejects(readFile(path.join(target, "puretokens-image", "skill.json"), "utf8"));
+  assert.equal(JSON.parse(await readFile(path.join(runtime, "runtime.json"), "utf8")).name, "another-runtime");
 });
 
 test("CLI sync archives verified retired managed Skills without deleting them", async (t) => {

@@ -6,7 +6,9 @@
     "fixedApiOrigin": "https://api.puretokensx.com",
     "usesFullApiUrls": true,
     "usesRuntimeManagedAuthentication": true,
-    "doesNotReadCredentialsOrHostConfiguration": true,
+    "usesNarrowConfiguredCredentialResolver": true,
+    "verifiedManagedRuntimeHosts": ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode"],
+    "neverExposesCredentialsOrHostConfiguration": true,
     "requiresNativeMediaByteDelivery": true,
     "doesNotUseMcpOrFallbackTransport": true
   },

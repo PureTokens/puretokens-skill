@@ -6,10 +6,12 @@ import { fileURLToPath } from "node:url";
 export const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const skillsRoot = path.join(repositoryRoot, "skills");
 
-const forbiddenPattern = /(BEGIN [A-Z ]*PRIVATE|api[_-]?key|authorization:|bearer\s+|127\.0\.0\.1:|\/Users\/)/i;
+const forbiddenPattern = /(BEGIN [A-Z ]*PRIVATE|127\.0\.0\.1:|\/Users\/)/i;
 const directApiOrigin = "https://api.puretokensx.com";
 const directAcceptanceScenarioIds = ["api-identity-read", "catalog-read", "media-submit", "same-task-status", "native-media-delivery"];
 const directRuntimeCapabilities = ["authenticated_full_url_request", "json_task_response", "same_task_status_read", "native_media_byte_delivery"];
+const managedRuntimeHostIds = ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode"];
+const manualCredentialSetupHostIds = ["trae"];
 const receiptCoreFields = ["exact_model_id", "task_id", "returned_state", "requested_operation", "requested_count", "requested_size_or_parameters", "next_action"];
 const failureReceiptRequiredFields = ["failure_phase", "api_error_code", "http_status", "error_message", "next_action"];
 const failureReceiptPhases = ["validation", "submission", "status", "content"];
@@ -51,6 +53,7 @@ export async function validateRepository() {
   if (!/^\d+\.\d+\.\d+$/.test(packageManifest?.version || "")) {
     errors.push("package.json must contain a semver version");
   }
+  await validateManagedRuntime(errors, packageManifest?.version);
   await validateSchemaDocuments(errors);
   const hostSupport = await readHostSupport(errors);
   const directApiExecutionContract = await readDirectApiExecutionContract(errors);
@@ -137,7 +140,8 @@ async function readHostSupport(errors) {
       if (!host || typeof host.guidance !== "string" || !host.guidance) {
         errors.push(`references/host-support.json: ${host?.id || "unnamed host"} needs guidance`);
       }
-      if (host?.delivery !== "manual-source" || typeof host.globalSkillDirectory !== "string" || !/^~\/(?:\.[a-z-]+\/)*(?:[a-z-]+\/)?skills$/.test(host.globalSkillDirectory)) {
+      if (host?.delivery !== "manual-source" || typeof host.globalSkillDirectory !== "string" || !/^~\/(?:\.[a-z-]+\/)*(?:[a-z-]+\/)?skills$/.test(host.globalSkillDirectory) ||
+        !["verified-managed-local-runtime", "manual-credential-setup"].includes(host.directMediaExecution)) {
         errors.push(`references/host-support.json: ${host?.id || "unnamed host"} needs a manual-source global Skill directory`);
       }
     }
@@ -180,18 +184,25 @@ function validateDirectApiExecutionContract(errors, contract, hostSupport) {
   }
   const transport = contract.transport;
   if (contract.apiOrigin !== directApiOrigin || !contract.authentication ||
-    contract.authentication.usesRuntimeManagedExistingAuthentication !== true ||
-    contract.authentication.skillNeverReadsOrConstructsCredentials !== true ||
+    contract.authentication.usesConfiguredConnectionCredential !== true ||
+    !sameArray(contract.authentication.managedRuntimeHosts, managedRuntimeHostIds) ||
+    contract.authentication.credentialUse !== "in_memory_only_for_fixed_puretokens_api_requests" ||
+    contract.authentication.neverDisplaysCopiesStoresOrRequestsCredentials !== true ||
     !transport || transport.usesFullApiUrls !== true || transport.doesNotUseMcp !== true ||
     transport.doesNotUseLocalProxyOrSidecar !== true || transport.doesNotUseFallbackEndpoint !== true) {
-    errors.push(`${label} must use the fixed full API origin with runtime-managed authentication and no MCP, proxy, sidecar, or fallback`);
+    errors.push(`${label} must use the fixed full API origin with the configured-credential direct runtime and no MCP, proxy, sidecar, or fallback`);
   }
   if (!Array.isArray(contract.acceptanceScenarios) || !sameArray(contract.acceptanceScenarios.map((scenario) => scenario?.id), directAcceptanceScenarioIds)) {
     errors.push(`${label} must define the ordered direct-API acceptance scenarios`);
   }
-  const supportedHostIds = hostSupport.supported.map((host) => host.id);
-  if (!sameArray(contract.supportedHosts, supportedHostIds) || !sameArray(contract.requiredRuntimeCapabilities, directRuntimeCapabilities)) {
-    errors.push(`${label} must define the seven supported hosts and their four required direct-API runtime capabilities`);
+  const installableHostIds = hostSupport.supported.map((host) => host.id);
+  const verifiedRuntimeHostIds = hostSupport.supported
+    .filter((host) => host.directMediaExecution === "verified-managed-local-runtime")
+    .map((host) => host.id)
+    .sort();
+  if (!sameArray(contract.installableHosts, installableHostIds) || !sameArray([...contract.verifiedManagedRuntimeHosts].sort(), verifiedRuntimeHostIds) ||
+    !sameArray(contract.requiredRuntimeCapabilities, directRuntimeCapabilities)) {
+    errors.push(`${label} must distinguish all installable hosts from the verified managed direct runtimes and define the four required direct-API runtime capabilities`);
   }
   const balance = contract.balance;
   if (!balance || balance.method !== "GET" || balance.url !== `${directApiOrigin}/api/product/desktop/account/balance` ||
@@ -409,9 +420,11 @@ function validateUpdateContract(errors, label, contract) {
 
 function validateDirectTransport(errors, label, transport, requiresNativeMediaByteDelivery) {
   if (!transport || transport.fixedApiOrigin !== directApiOrigin || transport.usesFullApiUrls !== true ||
-    transport.usesRuntimeManagedAuthentication !== true || transport.doesNotReadCredentialsOrHostConfiguration !== true ||
+    transport.usesRuntimeManagedAuthentication !== true || transport.usesNarrowConfiguredCredentialResolver !== true ||
+    !sameArray(transport.verifiedManagedRuntimeHosts, managedRuntimeHostIds) ||
+    transport.neverExposesCredentialsOrHostConfiguration !== true ||
     transport.doesNotUseMcpOrFallbackTransport !== true || (requiresNativeMediaByteDelivery && transport.requiresNativeMediaByteDelivery !== true)) {
-    errors.push(`${label} must use the fixed full API origin, runtime-managed authentication, and no MCP or fallback transport`);
+    errors.push(`${label} must use the fixed full API origin, configured-credential direct runtime, and no MCP or fallback transport`);
   }
 }
 
@@ -576,6 +589,23 @@ async function validateSchemaDocuments(errors) {
     "schemas/task-receipt.schema.json"
   ];
   for (const schema of schemas) await verifyJsonFile(errors, schema, `schema ${schema}`);
+}
+
+async function validateManagedRuntime(errors, packageVersion) {
+  const runtimeDirectory = path.join(repositoryRoot, "runtime");
+  const manifestPath = path.join(runtimeDirectory, "runtime.json");
+  const entryPath = path.join(runtimeDirectory, "puretokens-direct-api.mjs");
+  try {
+    const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+    if (manifest?.schemaVersion !== 1 || manifest?.name !== "puretokens-direct-api-runtime" || manifest?.version !== packageVersion ||
+      !sameArray(manifest?.managedRuntimeHosts, managedRuntimeHostIds) ||
+      !sameArray(manifest?.manualCredentialSetupHosts, manualCredentialSetupHostIds)) {
+      errors.push("runtime/runtime.json must identify the current managed Pure Tokens direct API runtime");
+    }
+    if (!(await stat(entryPath)).isFile()) errors.push("runtime/puretokens-direct-api.mjs is required");
+  } catch {
+    errors.push("managed Pure Tokens direct API runtime is missing or invalid");
+  }
 }
 
 function readFrontmatter(text) {

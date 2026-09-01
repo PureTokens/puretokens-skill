@@ -5,7 +5,9 @@ description: 通过当前 Pure Tokens 连接生成图片、选择图片模型、
 
 # Pure Tokens Image
 
-直接调用固定的 Pure Tokens Images API：`https://api.puretokensx.com`。每个请求都使用完整 URL；运行环境会为已配置的 Pure Tokens 请求自动携带认证。Skill 绝不读取、扫描、展示、复制或索取 API Key、Base URL、认证文件或宿主配置，也不构造认证头、调用 MCP、本地代理或备用服务。
+直接调用固定的 Pure Tokens Images API：`https://api.puretokensx.com`。每个请求都使用完整 URL；不得用未认证的通用 Fetch/WebFetch 猜测认证。Claude Code、Codex、WorkBuddy、Gemini CLI、Grok Build 和 OpenCode 都使用受管直连运行器；它只从当前宿主的固定已配置位置狭义匹配 `https://api.puretokensx.com/v1` 的 Pure Tokens 凭据，且只在内存中为这一次固定 Images API 请求构造认证头。不得显示、复制、保存、索取或输出 API Key、Base URL 或完整宿主配置；不得调用 MCP、本地代理、sidecar、备用服务或手工认证请求。
+
+根据当前宿主运行对应命令：Claude Code：`node ~/.claude/skills/.puretokens-runtime/puretokens-direct-api.mjs request --host claude-code --method <GET|POST> --path <允许的固定路径>`；Codex：`node ~/.agents/skills/.puretokens-runtime/puretokens-direct-api.mjs request --host codex --method <GET|POST> --path <允许的固定路径>`；WorkBuddy：`node ~/.workbuddy/skills/.puretokens-runtime/puretokens-direct-api.mjs request --host workbuddy --method <GET|POST> --path <允许的固定路径>`；Gemini CLI：`node ~/.gemini/skills/.puretokens-runtime/puretokens-direct-api.mjs request --host gemini-cli --method <GET|POST> --path <允许的固定路径>`；Grok Build：`node ~/.grok/skills/.puretokens-runtime/puretokens-direct-api.mjs request --host grok-build --method <GET|POST> --path <允许的固定路径>`；OpenCode：`node ~/.config/opencode/skills/.puretokens-runtime/puretokens-direct-api.mjs request --host opencode --method <GET|POST> --path <允许的固定路径>`。JSON POST 将唯一 JSON body 通过标准输入传入并带 `--json-stdin`；已声明的原生附件 multipart POST 将一个受限 JSON 文件描述对象通过标准输入传入并带 `--multipart-stdin`，只允许当前请求明确附带的绝对文件路径、声明字段与普通文本字段。完成后读取内容时，传 `--output-file <新的绝对本地路径>` 取得原生字节；仅在运行器实际交付该文件时才报告为已交付。Trae 目前只有手动连接配置，尚无批准的本地凭据读取契约；在 Trae 计费前停止并说明无法安全执行已认证 Images API 请求，绝不改用通用 Fetch、手工读取 Key 或猜测配置。不得打印运行器输出中的请求头、凭据或未清理响应正文。
 
 先读取已安装的 `references/model-selection.json`、`references/execution-contract.json`、`references/task-receipt.json` 和 `references/behavior-scenarios.json`；它们是模型别名、请求/结果约束、用户回执和特殊场景的绑定规则。
 

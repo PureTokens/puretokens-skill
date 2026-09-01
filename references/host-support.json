@@ -7,43 +7,50 @@
       "id": "claude-code",
       "delivery": "manual-source",
       "globalSkillDirectory": "~/.claude/skills",
-      "guidance": "Install each specialist Skill into ~/.claude/skills. Skills call the fixed Pure Tokens API directly."
+      "directMediaExecution": "verified-managed-local-runtime",
+      "guidance": "Install each specialist Skill into ~/.claude/skills. The managed runtime uses only the matching Pure Tokens Claude Code connection fields for fixed API requests."
     },
     {
       "id": "codex",
       "delivery": "manual-source",
       "globalSkillDirectory": "~/.agents/skills",
-      "guidance": "Install each specialist Skill into ~/.agents/skills. Skills call the fixed Pure Tokens API directly."
+      "directMediaExecution": "verified-managed-local-runtime",
+      "guidance": "Install each specialist Skill into ~/.agents/skills. The managed runtime uses only the active matching Pure Tokens Codex connection credential for fixed API requests."
     },
     {
       "id": "workbuddy",
       "delivery": "manual-source",
       "globalSkillDirectory": "~/.workbuddy/skills",
-      "guidance": "Install each specialist Skill into ~/.workbuddy/skills. Skills call the fixed Pure Tokens API directly."
+      "directMediaExecution": "verified-managed-local-runtime",
+      "guidance": "Install each specialist Skill into ~/.workbuddy/skills. The managed runtime uses only matching Pure Tokens model credentials from WorkBuddy model configuration for fixed API requests."
     },
     {
       "id": "gemini-cli",
       "delivery": "manual-source",
       "globalSkillDirectory": "~/.gemini/skills",
-      "guidance": "Install each specialist Skill into ~/.gemini/skills. Skills call the fixed Pure Tokens API directly."
+      "directMediaExecution": "verified-managed-local-runtime",
+      "guidance": "Install each specialist Skill into ~/.gemini/skills. The managed runtime uses only the matching Pure Tokens Gemini CLI API-key connection for fixed API requests."
     },
     {
       "id": "grok-build",
       "delivery": "manual-source",
       "globalSkillDirectory": "~/.grok/skills",
-      "guidance": "Install each specialist Skill into ~/.grok/skills. Skills call the fixed Pure Tokens API directly."
+      "directMediaExecution": "verified-managed-local-runtime",
+      "guidance": "Install each specialist Skill into ~/.grok/skills. The managed runtime uses only matching Pure Tokens model credentials from Grok Build model configuration for fixed API requests."
     },
     {
       "id": "opencode",
       "delivery": "manual-source",
       "globalSkillDirectory": "~/.config/opencode/skills",
-      "guidance": "Install each specialist Skill into ~/.config/opencode/skills. Skills call the fixed Pure Tokens API directly."
+      "directMediaExecution": "verified-managed-local-runtime",
+      "guidance": "Install each specialist Skill into ~/.config/opencode/skills. The managed runtime uses only the matching Pure Tokens OpenCode provider credential for fixed API requests."
     },
     {
       "id": "trae",
       "delivery": "manual-source",
       "globalSkillDirectory": "~/.trae/skills",
-      "guidance": "Install each specialist Skill into ~/.trae/skills. Skills call the fixed Pure Tokens API directly."
+      "directMediaExecution": "manual-credential-setup",
+      "guidance": "Install each specialist Skill into ~/.trae/skills. Trae is manual-configuration-only and has no approved local credential resolver for direct Skill API requests."
     }
   ]
 }

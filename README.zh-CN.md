@@ -9,7 +9,7 @@
 | Skill | 用途 |
 | --- | --- |
 | `puretokens-balance` | 通过固定的 Pure Tokens API 读取当前余额快照。 |
-| `puretokens-connection` | 不读取连接配置，检查固定 Pure Tokens API 的身份声明。 |
+| `puretokens-connection` | 检查固定 Pure Tokens API 的身份声明，不展示连接配置。 |
 | `puretokens-models` | 查询固定 API 的认证模型目录，并说明已声明的模型能力、参数和媒体操作。 |
 | `puretokens-image` | 通过固定的 Pure Tokens Images API 生图，并按 profile 支持图片编辑。 |
 | `puretokens-video` | 通过固定的 Pure Tokens Videos API 生视频，并按 profile 支持图生视频、参考图/视频/音频视频和视频编辑。 |
@@ -74,27 +74,27 @@ node bin/puretokens-skill.js sync --target ~/.trae/skills
 
 ## 宿主支持
 
-CC Switch 是连接配置工具，不是 Skill 宿主。CC Switch、Pure Tokens Desktop 或用户手动设置可以让当前运行环境获得已有的 Pure Tokens 请求认证；Skill 自身始终调用固定的公开 Pure Tokens API origin，绝不读取用户连接配置。
+CC Switch 是连接配置工具，不是 Skill 宿主。Skill 自身始终调用固定的公开 Pure Tokens API origin。受管直连运行器只会为本次固定请求在内存中狭义匹配已配置的 Pure Tokens 模型凭据；绝不展示、复制、保存或索取该凭据。
 
-| 宿主 | 当前专项 Skill 交付方式 | 用户操作 |
-| --- | --- | --- |
-| Claude Code | 手动安装源文件 | 将所需 Skill 安装到 `~/.claude/skills`。 |
-| Codex | 手动安装源文件 | 将所需 Skill 安装到 `~/.agents/skills`。 |
-| WorkBuddy | 手动安装源文件 | 将所需 Skill 安装到 `~/.workbuddy/skills`。 |
-| Gemini CLI | 手动安装源文件 | 将所需 Skill 安装到 `~/.gemini/skills`。 |
-| Grok Build | 手动安装源文件 | 将所需 Skill 安装到 `~/.grok/skills`。 |
-| OpenCode | 手动安装源文件 | 将所需 Skill 安装到 `~/.config/opencode/skills`。 |
-| Trae | 手动安装源文件 | 将所需 Skill 安装到 `~/.trae/skills`。 |
+| 宿主 | 当前专项 Skill 交付方式 | 直连 API 执行 | 用户操作 |
+| --- | --- | --- | --- |
+| Claude Code | 手动安装源文件 | 已验证的受管运行器 | 将所需 Skill 安装到 `~/.claude/skills`。 |
+| Codex | 手动安装源文件 | 已验证的受管运行器 | 将所需 Skill 安装到 `~/.agents/skills`。 |
+| WorkBuddy | 手动安装源文件 | 已验证的受管运行器 | 将所需 Skill 安装到 `~/.workbuddy/skills`。 |
+| Gemini CLI | 手动安装源文件 | 已验证的受管运行器 | 将所需 Skill 安装到 `~/.gemini/skills`。 |
+| Grok Build | 手动安装源文件 | 已验证的受管运行器 | 将所需 Skill 安装到 `~/.grok/skills`。 |
+| OpenCode | 手动安装源文件 | 已验证的受管运行器 | 将所需 Skill 安装到 `~/.config/opencode/skills`。 |
+| Trae | 手动安装源文件 | 手动凭据配置 | 将所需 Skill 安装到 `~/.trae/skills`。 |
 
 唯一事实来源是 `references/host-support.json`。CLI 刻意不会猜测宿主目录。
 
 ## 直连 API 契约
 
-面向 API 的 Skill 都调用固定的公开 API origin：`https://api.puretokensx.com`。请求使用完整 URL，不使用用户配置的 Base URL，也不依赖相对路径宿主执行器。当前运行环境会为已有的 Pure Tokens 请求认证自动附带认证；Skill 绝不读取、扫描、索取、打印、复制或保存 API Key、Base URL、认证文件、provider 标签或客户端配置，也不构造认证头，不使用 MCP、本地代理、sidecar 或其他 endpoint。`puretokens-update` 只处理本机更新，不调用 API endpoint。
+面向 API 的 Skill 都调用固定的公开 API origin：`https://api.puretokensx.com`。请求使用完整 URL，不使用用户选择的 Base URL 或备用 endpoint。安装在 Skill 同级目录的受管 `.puretokens-runtime/puretokens-direct-api.mjs` 会在 Claude Code、Codex、WorkBuddy、Gemini CLI、Grok Build 和 OpenCode 中，只从各宿主已记录的固定配置位置狭义匹配一个指向 `https://api.puretokensx.com/v1`（或规定的仅 origin 形式）的 Pure Tokens 凭据。它只在内存中保留该凭据，并且只用于允许的固定 Pure Tokens API 路径认证。它绝不打印、复制、保存或索取 Key；不接受任意 URL，不使用 MCP、代理或 sidecar。`puretokens-update` 只处理本机更新，不调用 API endpoint。
 
-七个受支持宿主共用这一份直连契约：当前运行环境必须能够使用已有认证发起完整 URL 的 HTTPS 请求、接收 JSON 任务响应、查询同一任务状态并交付原生媒体字节；不存在宿主专用连接器、路由器或替代生成路径。
+直连契约要求已认证的完整 URL HTTPS 请求、JSON 任务响应、同任务状态查询和原生媒体字节交付。Claude Code、Codex、WorkBuddy、Gemini CLI、Grok Build 和 OpenCode 通过受管本地运行器完成认证绑定。Trae 是手动配置例外：当前没有已批准的本地凭据读取契约，Skill 会安全停止，而不会读取或猜测其用户状态。
 
-`puretokens-connection` 只调用一次 `GET https://api.puretokensx.com/v1`。只有固定端点明确返回 `status: "ok"`、`name: "Pure Tokens API"` 与 `base_url: "/v1"` 时，才确认该固定 API 的标识。它不会读取或验证用户实际配置的 Base URL；这只是端点公开声明检查，不是密码学防伪证明。
+`puretokens-connection` 只调用一次 `GET https://api.puretokensx.com/v1`。只有固定端点明确返回 `status: "ok"`、`name: "Pure Tokens API"` 与 `base_url: "/v1"` 时，才确认该固定 API 的标识。受管运行器可在内部为该请求使用凭据，但 Skill 不会展示或报告用户实际配置的 Base URL 或凭据；这只是端点公开声明检查，不是密码学防伪证明。
 
 `puretokens-models` 只调用一次 `GET https://api.puretokensx.com/v1/media/models`。它将认证目录转换为用户可读的信息：精确模型 ID、实际返回的能力、已声明可选参数和媒体操作。用户可以问图生视频、参考媒体、时长、画幅或分辨率等明确技术要求有哪些兼容模型；Skill 只会根据实时 profile 实际声明的字段和值筛选，不会提交媒体任务、重试目录请求、回退到 README 静态目录，或编造质量、价格、速度和可用性排序。
 
@@ -106,7 +106,7 @@ CC Switch 是连接配置工具，不是 Skill 宿主。CC Switch、Pure Tokens 
 
 ## 余额
 
-`puretokens-balance` 只执行一次 `GET https://api.puretokensx.com/api/product/desktop/account/balance`，使用当前运行环境已有的 Pure Tokens 账户认证。它只报告接口返回的字段。若直连请求未获认证或失败，会报告实际返回的结果并引导用户到 Pure Tokens 客户端余额入口；绝不会猜余额、尝试其他路径或索取凭据。
+`puretokens-balance` 只执行一次 `GET https://api.puretokensx.com/api/product/desktop/account/balance`，在可用时使用已配置凭据的直连运行器。它只报告接口返回的字段。若直连请求失败，会报告实际返回的结果并引导用户到 Pure Tokens 客户端余额入口；绝不会猜余额、尝试其他路径或索取凭据。
 
 ## Skill 升级
 
@@ -130,7 +130,7 @@ Skill 会将自然语言整理为简洁的图片简报，同时保留已说明�
 
 普通图片和视频任务使用已安装的版本化选择资料，不会因实时目录预检增加一次请求。任何可选字段都必须在该资料中存在且值兼容。只有用户明确查询当前能力、要求安装资料缺失的参数或媒体操作时，Skill 才按需读取一次目录；模型/参数/capability 被拒绝后，也只允许为解释读取一次，绝不会自动重试。普通文生视频必须提供提示词；只有已安装或按需资料明确声明精确单参考例外时才可省略。
 
-媒体输入由已安装资料控制；只有用户明确要求安装资料未声明或当前资料不兼容的媒体操作时，才按需读取一次 profile。用户明确提供的公网 HTTPS URL、file ID 或 voice ID 只能写入资料声明的精确字段和允许 transport；Skill 不会下载、探测、检查可访问性、转存或改写它。公网 URL 图片编辑还必须有精确声明的 JSON `image_edit` operation；仅有参考图字段不等于支持编辑。用户当前请求附带的原生媒体则只能走已声明的 `multipart_file` operation，并且只会随这一条 Images 或 Videos API 请求发送。多个原生附件类型需要明确的组合 operation；多个公网 URL/ID 字段则不能与已声明的互斥或模式限制冲突。Skill 不会伪造 URL 或 file ID、调用独立上传 API，或把媒体请求静默改为纯文生。
+媒体输入由已安装资料控制；只有用户明确要求安装资料未声明或当前资料不兼容的媒体操作时，才按需读取一次 profile。用户明确提供的公网 HTTPS URL、file ID 或 voice ID 只能写入资料声明的精确字段和允许 transport；Skill 不会下载、探测、检查可访问性、转存或改写它。公网 URL 图片编辑还必须有精确声明的 JSON `image_edit` operation；仅有参考图字段不等于支持编辑。用户当前请求附带的原生媒体则只能走已声明的 `multipart_file` operation，并由已验证运行器随这一条 Images 或 Videos API 请求发送。运行器只接受当前请求明确指定的常规媒体文件，并限制附件数量与大小，不会调用独立上传 API。多个原生附件类型需要明确的组合 operation；多个公网 URL/ID 字段则不能与已声明的互斥或模式限制冲突。Skill 不会伪造 URL 或 file ID，也不会把媒体请求静默改为纯文生。
 
 媒体 Skill 在提交、继续查询、核验、完成和失败时统一返回回执：已返回的精确模型 ID、已返回的任务 ID、当前状态、请求操作、请求数量、尺寸/参数、完成时的已交付数量和下一步。失败时只有 API 明确返回公开机器码才会在 `api_error_code` 中原样显示，否则写“未返回”；同时会返回失败阶段、API 返回的 HTTP 状态（未返回时写“未返回”）和安全错误信息。HTTP 429 且存在有效 `Retry-After` 时会给出等待秒数。回执绝不暴露原始响应正文、上游标识、内部 URL、堆栈、请求数据、凭据或用户媒体。回执中的 `task_id` 会优先从所选模型 lifecycle 声明的顶层 ID 字段规范化；未声明 lifecycle 时只接受顶层 `task_id` 或 `id`，绝不从 URL 或嵌套响应数据猜测。任务元数据未返回时会明确写“未返回”。
 
@@ -138,7 +138,7 @@ Skill 会将自然语言整理为简洁的图片简报，同时保留已说明�
 
 只有提交返回规范化 `task_id` 后才开始轮询；自动轮询只在本次提交所在的用户回合，或用户明确继续查询同一 `task_id` 的用户回合内运行。每次状态响应先检查 `reconciliation_required: true`：无论生命周期状态是什么，都将其视为终止性的运营状态，停止常规轮询、保留同一任务 ID，不提交替代任务、不推断退款。否则优先使用所选模型声明的 lifecycle 状态；未声明时只把 `pending`、`queued`、`running`、`in_progress` 视为处理中。状态缺失或未识别时会如实报告并停止自动轮询。同一任务最多一个状态请求在途，绝不会创建后台计时器、队列或工作器。状态查询收到 HTTP 429 时，只有有效正数 `Retry-After` 未超出本轮剩余预算才会等待并继续查询**同一任务**；否则停止本轮且绝不重提。正常处理中，生图依次等待 `3、6、12、24、30、30` 秒，最多读取同一任务状态 6 次；生视频依次等待 `5、10、20、40、60、60` 秒，最多读取 7 次。每个有界轮询窗口最多持续：生图 120 秒，生视频 300 秒。非 429 的 5xx、传输错误或超时时立即停止本轮。如仍在处理中会连同任务 ID 如实报告；用户明确继续查询时，才会为**同一任务**开启一个新的有界轮询窗口。Skill 不会把到期或读取错误当失败，也不会提交替代任务。
 
-媒体字节不会缓存到 Skill 状态、提示词或日志中。只有任务终态成功后才读取内容，每个任务最多一个内容读取在途；运行环境交付原生字节后才会进行下一次读取。如果运行环境无法在不创建无界后台工作、重复读取或缓存副本的前提下交付，Skill 会报告同任务交付不可用，不会用 URL 代替或重提任务。
+媒体字节不会缓存到 Skill 状态、提示词或日志中。只有任务终态成功后才读取内容，每个任务最多一个内容读取在途；运行环境交付原生字节后才会进行下一次读取。运行器只接受原生图片、视频、音频或 octet-stream 内容响应，并限制可交付的总字节；不支持或超限时会失败，绝不改用 URL 或重提任务。如果运行环境无法在不创建无界后台工作、重复读取或缓存副本的前提下交付，Skill 会报告同任务交付不可用，不会用 URL 代替或重提任务。
 
 ## 使用示例
 

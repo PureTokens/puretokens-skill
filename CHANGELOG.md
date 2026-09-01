@@ -4,6 +4,25 @@
 
 # Changelog
 
+## 0.13.3 — 2026-09-01
+
+- Extended the managed fixed-endpoint credential runtime to every supported host with an approved, auditable local connection contract: Claude Code, Codex, WorkBuddy, Gemini CLI, Grok Build, and OpenCode. Each resolver accepts only an exact Pure Tokens configuration match, keeps one unambiguous credential only in memory for an allowed fixed API request, and never displays, persists, or requests it.
+- Updated all API-facing Skills, installed contracts, host matrix, and validation to use those six managed runtimes consistently for API identity, catalog, balance, Images, Videos, same-task status, and native-media delivery.
+- Marked Trae explicitly as the single manual-credential-setup exception. Its product contract has no approved local credential resolver, so the Skill stops safely instead of scanning or inferring Trae user state.
+
+## 0.13.2 — 2026-09-01
+
+- Added the verified WorkBuddy managed direct-runtime binding. It narrowly resolves only a matching `https://api.puretokensx.com/v1` model credential from WorkBuddy's model configuration in memory, uses it only for the fixed allowed API paths, and never displays, persists, or requests it.
+- Made the host matrix explicit: all seven hosts remain installable, while only Grok Build and WorkBuddy are verified for authenticated direct media execution. Other hosts now stop safely instead of implying that generic HTTP requests inherit their chat-model credentials.
+- Added bounded declared multipart attachment submission for the verified runtime and hardened native media delivery: fixed request-path allowlists, regular-file-only attachments, attachment count and size limits, content-type checks, bounded output, no overwrite, and cleanup of partial failed downloads.
+- Removed contradictory wording that said a Skill could not read configuration while its managed runtime performed the narrow in-memory credential binding. The Skill still never displays, compares, or reports host configuration.
+
+## 0.13.1 — 2026-09-01
+
+- Added the managed Grok Build direct API runtime. It narrowly resolves the configured Pure Tokens model credential only in memory, sends it only to fixed allowed Pure Tokens API paths, and never prints, stores, or requests the credential.
+- `sync`, `install`, and `upgrade` now install or atomically upgrade the managed `.puretokens-runtime` beside the specialist Skills, refusing an unmanaged runtime conflict before changing Skill directories.
+- Replaced the incorrect assumption that every host automatically injects a configured model credential into generic HTTP requests. Grok Build Skills now use the managed direct runtime rather than generic Fetch/WebFetch for API identity, media catalog, balance, Images, Videos, task status, and media content reads.
+
 ## 0.13.0 — 2026-09-01
 
 - Standardized the six installable Skill names and directories to Agent Skills kebab-case: `puretokens-balance`, `puretokens-connection`, `puretokens-models`, `puretokens-image`, `puretokens-video`, and `puretokens-update`.

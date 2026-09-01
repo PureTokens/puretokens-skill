@@ -7,6 +7,8 @@ import process from "node:process";
 import { collectSkillRecords, repositoryRoot, skillsRoot, validateRepository } from "../scripts/skill-registry.mjs";
 
 const [command, ...argumentsList] = process.argv.slice(2);
+const managedRuntimeDirectoryName = ".puretokens-runtime";
+const runtimeSource = path.join(repositoryRoot, "runtime");
 const retiredSkillNames = [
   "puretokens_media",
   "puretokens_balance",
@@ -73,7 +75,9 @@ async function installSkill(args) {
   if (await exists(destination)) {
     throw new Error(`Refusing to overwrite existing skill: ${destination}`);
   }
+  const runtimePlan = await planManagedRuntime(root);
   await mkdir(root, { recursive: true });
+  await applyManagedRuntime(runtimePlan);
   await cp(source, destination, { recursive: true, errorOnExist: true, force: false });
   process.stdout.write(`Installed ${options.name} to ${destination}\n`);
 }
@@ -87,7 +91,8 @@ async function upgradeSkill(args) {
   if (!(await isManagedSkill(destination, options.name))) {
     throw new Error(`Cannot upgrade missing or unmanaged skill: ${destination}`);
   }
-
+  const runtimePlan = await planManagedRuntime(root);
+  await applyManagedRuntime(runtimePlan);
   await replaceManagedSkill(source, root, destination, options.name);
   process.stdout.write(`Upgraded ${options.name} at ${destination}\n`);
 }
@@ -99,7 +104,7 @@ async function syncSkills(args) {
   const errors = await validateRepository();
   if (errors.length) throw new Error(`Repository validation failed:\n${errors.map((error) => `- ${error}`).join("\n")}`);
 
-  const plan = [];
+  const plan = [await planManagedRuntime(root)];
   for (const retiredName of retiredSkillNames) {
     const destination = path.join(root, retiredName);
     ensureChildPath(root, destination);
@@ -124,7 +129,9 @@ async function syncSkills(args) {
 
   await mkdir(root, { recursive: true });
   for (const item of plan) {
-    if (item.action === "retire") {
+    if (item.kind === "runtime") {
+      await applyManagedRuntime(item);
+    } else if (item.action === "retire") {
       const backup = await archiveRetiredSkill(root, item.destination, item.name);
       process.stdout.write(`Archived retired ${item.name} to ${backup}\n`);
     } else if (item.action === "install") {
@@ -142,6 +149,24 @@ async function archiveRetiredSkill(root, destination, name) {
   ensureChildPath(root, backup);
   await rename(destination, backup);
   return backup;
+}
+
+async function planManagedRuntime(root) {
+  const destination = path.join(root, managedRuntimeDirectoryName);
+  ensureChildPath(root, destination);
+  if (!(await exists(destination))) return { kind: "runtime", action: "install", source: runtimeSource, root, destination };
+  if (await isManagedRuntime(destination)) return { kind: "runtime", action: "upgrade", source: runtimeSource, root, destination };
+  throw new Error(`Refusing to install because an unmanaged Pure Tokens runtime conflicts: ${destination}`);
+}
+
+async function applyManagedRuntime(plan) {
+  if (plan.action === "install") {
+    await cp(plan.source, plan.destination, { recursive: true, errorOnExist: true, force: false });
+    process.stdout.write(`Installed managed runtime to ${plan.destination}\n`);
+    return;
+  }
+  await replaceManagedDirectory(plan.source, plan.root, plan.destination, managedRuntimeDirectoryName);
+  process.stdout.write(`Upgraded managed runtime at ${plan.destination}\n`);
 }
 
 async function uninstallSkill(args) {
@@ -233,7 +258,21 @@ async function isManagedSkill(directory, name) {
   }
 }
 
+async function isManagedRuntime(directory) {
+  if (!(await existsDirectory(directory))) return false;
+  try {
+    const manifest = JSON.parse(await readFile(path.join(directory, "runtime.json"), "utf8"));
+    return manifest?.name === "puretokens-direct-api-runtime" && (await exists(path.join(directory, "puretokens-direct-api.mjs")));
+  } catch {
+    return false;
+  }
+}
+
 async function replaceManagedSkill(source, root, destination, name) {
+  await replaceManagedDirectory(source, root, destination, name);
+}
+
+async function replaceManagedDirectory(source, root, destination, name) {
   const staging = path.join(root, `.${name}.upgrade-${randomUUID()}`);
   const backup = path.join(root, `.${name}.backup-${randomUUID()}`);
   await cp(source, staging, { recursive: true, errorOnExist: true, force: false });
