@@ -104,6 +104,12 @@ CC Switch 是连接配置工具，不是 Skill 宿主。Skill 自身始终调用
 
 完整直连 API 契约见 `references/direct-api-execution-contract.json`。若任务被接受前的直连请求失败，Skill 只报告实际返回的失败，不会猜测用户的 Base URL、认证或路由原因；不会切换执行路径，也不识别或分支处理其他中转服务。
 
+## 模型访问分组
+
+`GET https://api.puretokensx.com/v1/media/models` 只返回当前受管 Key 已覆盖的模型。如果在允许的一次诊断后，用户指定的精确模型（例如 `minimax-h3`）仍未返回，Skill 会说明当前连接未返回该模型，不会提交或静默切换模型。若用户预期可以使用它，Skill 会引导用户在 Pure Tokens 客户端配置中勾选包含该精确模型的分组，创建或选择覆盖所选分组的受管 Key，执行“验证并应用”，然后新开当前宿主会话并明确重试。
+
+Skill 绝不猜测分组名称，也不会声称某模型属于哪个分组；除非认证 API 明确返回模型到分组的映射，认证媒体目录本身不能提供这项结论。
+
 ## 余额
 
 `puretokens-balance` 只执行一次 `GET https://api.puretokensx.com/api/product/desktop/account/balance`，在可用时使用已配置凭据的直连运行器。它只报告接口返回的字段。若直连请求失败，会报告实际返回的结果并引导用户到 Pure Tokens 客户端余额入口；绝不会猜余额、尝试其他路径或索取凭据。

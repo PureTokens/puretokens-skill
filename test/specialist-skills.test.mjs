@@ -28,7 +28,7 @@ test("registry exposes exactly the six specialist Skills", async () => {
   const { registry, records } = await collectSkillRecords();
   assert.deepEqual(registry.skills.map((skill) => skill.name), names);
   assert.equal(records.length, 6);
-  assert.deepEqual([...new Set(records.map((record) => record.manifest.version))], ["0.13.3"]);
+  assert.deepEqual([...new Set(records.map((record) => record.manifest.version))], ["0.13.4"]);
   assert.deepEqual(await validateRepository(), []);
 });
 
@@ -41,10 +41,13 @@ test("specialist policies use the fixed direct API without MCP fallback", async 
   assert.match(models, /GET https:\/\/api\.puretokensx\.com\/v1\/media\/models/);
   assert.match(models, /不得调用 Images\/Videos 提交、任务状态、内容、余额或其他路径/);
   assert.match(models, /`input_schema\.constraints`/);
+  assert.match(models, /勾选包含该模型的分组/);
   assert.match(image, /POST https:\/\/api\.puretokensx\.com\/v1\/images\/generations/);
   assert.match(image, /`200cm × 230cm`/);
   assert.match(video, /POST https:\/\/api\.puretokensx\.com\/v1\/videos/);
   assert.match(video, /`grok-imagine-video-1.5-preview`/);
+  assert.match(video, /`minimax-h3`/);
+  assert.match(video, /勾选包含该精确模型的分组/);
   const policy = balance + connection + models + image + video;
   assert.match(policy, /https:\/\/api\.puretokensx\.com/);
   assert.doesNotMatch(policy, /internal-upstream|当前连接不是 Pure Tokens|无法确认归属/i);
@@ -81,6 +84,8 @@ test("bilingual READMEs include safe copyable Agent installation prompts", async
   assert.match(english, /Sync all six Skills/);
   assert.match(english, /puretokens-update/);
   assert.match(english, /never read, display, copy, change, or ask for API keys, Base URLs, authentication files, model settings, MCP settings/);
+  assert.match(english, /## Model access groups/);
+  assert.match(english, /select a group containing that exact model/);
   assert.match(chinese, /## 让 Agent 协助安装/);
   assert.match(chinese, /^### 直接复制给具备本机终端的 Agent\n\n```text$/m);
   assert.equal((chinese.match(/^### 直接复制给具备本机终端的 Agent$/gm) ?? []).length, 1);
@@ -104,6 +109,8 @@ test("bilingual READMEs include safe copyable Agent installation prompts", async
   assert.match(chinese, /同步全部六个 Skill/);
   assert.match(chinese, /puretokens-update/);
   assert.match(chinese, /不得读取、展示、复制、修改或索取 API Key、Base URL、认证文件、模型配置、MCP 配置/);
+  assert.match(chinese, /## 模型访问分组/);
+  assert.match(chinese, /勾选包含该精确模型的分组/);
 });
 
 test("specialist manifests use the fixed direct API with a narrow configured-credential resolver", async () => {
@@ -161,6 +168,17 @@ test("installed contracts cover bounded requests, task recovery, and user-facing
     assert.equal(contract.result.neverAutoResubmit ?? false, ["puretokens-image", "puretokens-video"].includes(name));
     const ids = new Set(scenarios.scenarios.map((scenario) => scenario.id));
     for (const id of requiredScenarios[name]) assert.ok(ids.has(id), `${name} missing ${id}`);
+    if (["puretokens-image", "puretokens-video"].includes(name)) {
+      const unavailable = scenarios.scenarios.find((scenario) => scenario.id === `${name.replace("puretokens-", "")}-model-unavailable`);
+      assert.match(unavailable.then, /select a group that contains that exact model/);
+      assert.match(unavailable.then, /create or select a managed key covering the selected groups/);
+      assert.match(unavailable.then, /Do not claim which group contains the model/);
+    }
+    if (name === "puretokens-models") {
+      const unavailable = scenarios.scenarios.find((scenario) => scenario.id === "models-exact-id-unavailable");
+      assert.match(unavailable.then, /select a group containing that exact model/);
+      assert.match(unavailable.then, /Do not infer an alias, substitute another model, or claim which group contains the model/);
+    }
   }
   const image = JSON.parse(await readFile(path.join(repositoryRoot, "skills", "puretokens-image", "references", "execution-contract.json"), "utf8"));
   assert.equal(image.operations.submit.conditionalBodyFields.all_user_optional_fields, "only_when_the_installed_exact_model_selection_or_an_on_demand_live_input_schema_declares_the_field_and_value");
@@ -632,7 +650,7 @@ test("CLI sync installs missing Skills and refuses unmanaged conflicts before wr
   for (const name of names) {
     assert.equal(JSON.parse(await readFile(path.join(target, name, "skill.json"), "utf8")).name, name);
   }
-  assert.equal(JSON.parse(await readFile(path.join(target, ".puretokens-runtime", "runtime.json"), "utf8")).version, "0.13.3");
+  assert.equal(JSON.parse(await readFile(path.join(target, ".puretokens-runtime", "runtime.json"), "utf8")).version, "0.13.4");
 });
 
 test("CLI refuses an unmanaged direct runtime before changing Skills", async (t) => {

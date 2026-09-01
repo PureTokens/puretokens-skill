@@ -4,6 +4,11 @@
 
 # Changelog
 
+## 0.13.4 — 2026-09-01
+
+- Added a deterministic model-access-group recovery path. When an exact requested image or video model is not returned by the current authenticated catalog after the permitted diagnosis, the Skill directs the user to select a group containing that model in Pure Tokens client configuration, ensure the managed key covers the selected groups, verify and apply it, then start a new host conversation and explicitly retry.
+- The Skill does not guess a group name or claim model-to-group membership unless an authenticated API response explicitly provides that mapping.
+
 ## 0.13.3 — 2026-09-01
 
 - Extended the managed fixed-endpoint credential runtime to every supported host with an approved, auditable local connection contract: Claude Code, Codex, WorkBuddy, Gemini CLI, Grok Build, and OpenCode. Each resolver accepts only an exact Pure Tokens configuration match, keeps one unambiguous credential only in memory for an allowed fixed API request, and never displays, persists, or requests it.

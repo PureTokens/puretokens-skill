@@ -104,6 +104,12 @@ The direct contract requires authenticated full-URL HTTPS requests, JSON task re
 
 The full direct-API contract is `references/direct-api-execution-contract.json`. If a direct request fails before a task is accepted, the Skill reports the returned failure and does not guess a Base URL, authentication, or routing cause. It never falls back to another execution path or identifies another relay.
 
+## Model access groups
+
+`GET https://api.puretokensx.com/v1/media/models` returns only models covered by the current managed key. If a requested exact model such as `minimax-h3` is not returned after the permitted diagnosis, the Skill says that the current connection did not return that model and does not submit or silently switch models. When the user expects access, it directs them to the Pure Tokens client configuration to select a group containing that exact model, create or select a managed key covering the selected groups, verify and apply it to the current host, then start a new host conversation and explicitly retry.
+
+The Skill never guesses a group name or claims which group contains a model: the authenticated media catalog does not expose that mapping unless the API explicitly returns it.
+
 ## Balance
 
 `puretokens-balance` makes exactly one read-only `GET https://api.puretokensx.com/api/product/desktop/account/balance` request through the configured-credential direct runtime where available. It reports only returned fields. If the direct request fails, it reports the returned result and directs the user to the Pure Tokens client balance view; it never guesses a balance, tries another endpoint, or asks for credentials.
