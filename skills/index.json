@@ -2,50 +2,50 @@
   "schemaVersion": 1,
   "skills": [
     {
-      "name": "puretokens_balance",
-      "version": "0.12.0",
-      "entry": "skills/puretokens_balance/SKILL.md",
-      "manifest": "skills/puretokens_balance/skill.json",
+      "name": "puretokens-balance",
+      "version": "0.13.0",
+      "entry": "skills/puretokens-balance/SKILL.md",
+      "manifest": "skills/puretokens-balance/skill.json",
       "summary": "Read a balance from the fixed Pure Tokens API.",
       "distribution": "cross-client-source"
     },
     {
-      "name": "puretokens_connection",
-      "version": "0.12.0",
-      "entry": "skills/puretokens_connection/SKILL.md",
-      "manifest": "skills/puretokens_connection/skill.json",
+      "name": "puretokens-connection",
+      "version": "0.13.0",
+      "entry": "skills/puretokens-connection/SKILL.md",
+      "manifest": "skills/puretokens-connection/skill.json",
       "summary": "Check the fixed Pure Tokens API identity declaration.",
       "distribution": "cross-client-source"
     },
     {
-      "name": "puretokens_models",
-      "version": "0.12.0",
-      "entry": "skills/puretokens_models/SKILL.md",
-      "manifest": "skills/puretokens_models/skill.json",
+      "name": "puretokens-models",
+      "version": "0.13.0",
+      "entry": "skills/puretokens-models/SKILL.md",
+      "manifest": "skills/puretokens-models/skill.json",
       "summary": "Inspect the fixed Pure Tokens API's authenticated media catalog and declared capabilities.",
       "distribution": "cross-client-source"
     },
     {
-      "name": "puretokens_image",
-      "version": "0.12.0",
-      "entry": "skills/puretokens_image/SKILL.md",
-      "manifest": "skills/puretokens_image/skill.json",
+      "name": "puretokens-image",
+      "version": "0.13.0",
+      "entry": "skills/puretokens-image/SKILL.md",
+      "manifest": "skills/puretokens-image/skill.json",
       "summary": "Generate and profile-gated edit images through the fixed Pure Tokens Images API.",
       "distribution": "cross-client-source"
     },
     {
-      "name": "puretokens_video",
-      "version": "0.12.0",
-      "entry": "skills/puretokens_video/SKILL.md",
-      "manifest": "skills/puretokens_video/skill.json",
+      "name": "puretokens-video",
+      "version": "0.13.0",
+      "entry": "skills/puretokens-video/SKILL.md",
+      "manifest": "skills/puretokens-video/skill.json",
       "summary": "Generate and profile-gated animate, reference, or edit video through the fixed Pure Tokens Videos API.",
       "distribution": "cross-client-source"
     },
     {
-      "name": "puretokens_update",
-      "version": "0.12.0",
-      "entry": "skills/puretokens_update/SKILL.md",
-      "manifest": "skills/puretokens_update/skill.json",
+      "name": "puretokens-update",
+      "version": "0.13.0",
+      "entry": "skills/puretokens-update/SKILL.md",
+      "manifest": "skills/puretokens-update/skill.json",
       "summary": "Install or safely upgrade local official Pure Tokens Skills.",
       "distribution": "cross-client-source"
     }

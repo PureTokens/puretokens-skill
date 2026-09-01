@@ -8,39 +8,36 @@ This repository provides six independent Skills:
 
 | Skill | What it does |
 | --- | --- |
-| `puretokens_balance` | Reads a current-balance snapshot from the fixed Pure Tokens API. |
-| `puretokens_connection` | Checks the fixed Pure Tokens API identity declaration, without reading connection configuration. |
-| `puretokens_models` | Reads the fixed API's authenticated media catalog and explains declared model capabilities, parameters, and media operations. |
-| `puretokens_image` | Generates images and performs profile-gated image edits through the fixed Pure Tokens Images API. |
-| `puretokens_video` | Generates videos and performs profile-gated image, video, or audio reference generation and video edits through the fixed Pure Tokens Videos API. |
-| `puretokens_update` | Installs or safely upgrades local official Pure Tokens Skills. |
+| `puretokens-balance` | Reads a current-balance snapshot from the fixed Pure Tokens API. |
+| `puretokens-connection` | Checks the fixed Pure Tokens API identity declaration, without reading connection configuration. |
+| `puretokens-models` | Reads the fixed API's authenticated media catalog and explains declared model capabilities, parameters, and media operations. |
+| `puretokens-image` | Generates images and performs profile-gated image edits through the fixed Pure Tokens Images API. |
+| `puretokens-video` | Generates videos and performs profile-gated image, video, or audio reference generation and video edits through the fixed Pure Tokens Videos API. |
+| `puretokens-update` | Installs or safely upgrades local official Pure Tokens Skills. |
 
 Install the Skills you need into the supported host's documented global Skill directory:
 
 ```bash
-# Codex
-node bin/puretokens-skill.js install puretokens_balance --target ~/.agents/skills
-node bin/puretokens-skill.js install puretokens_connection --target ~/.agents/skills
-node bin/puretokens-skill.js install puretokens_models --target ~/.agents/skills
-node bin/puretokens-skill.js install puretokens_image --target ~/.agents/skills
-node bin/puretokens-skill.js install puretokens_video --target ~/.agents/skills
-node bin/puretokens-skill.js install puretokens_update --target ~/.agents/skills
-
 # Claude Code
-node bin/puretokens-skill.js install puretokens_balance --target ~/.claude/skills
-node bin/puretokens-skill.js install puretokens_connection --target ~/.claude/skills
-node bin/puretokens-skill.js install puretokens_models --target ~/.claude/skills
-node bin/puretokens-skill.js install puretokens_image --target ~/.claude/skills
-node bin/puretokens-skill.js install puretokens_video --target ~/.claude/skills
-node bin/puretokens-skill.js install puretokens_update --target ~/.claude/skills
+node bin/puretokens-skill.js sync --target ~/.claude/skills
+
+# Codex
+node bin/puretokens-skill.js sync --target ~/.agents/skills
+
+# WorkBuddy
+node bin/puretokens-skill.js sync --target ~/.workbuddy/skills
 
 # Gemini CLI
-node bin/puretokens-skill.js install puretokens_balance --target ~/.gemini/skills
-node bin/puretokens-skill.js install puretokens_connection --target ~/.gemini/skills
-node bin/puretokens-skill.js install puretokens_models --target ~/.gemini/skills
-node bin/puretokens-skill.js install puretokens_image --target ~/.gemini/skills
-node bin/puretokens-skill.js install puretokens_video --target ~/.gemini/skills
-node bin/puretokens-skill.js install puretokens_update --target ~/.gemini/skills
+node bin/puretokens-skill.js sync --target ~/.gemini/skills
+
+# Grok Build
+node bin/puretokens-skill.js sync --target ~/.grok/skills
+
+# OpenCode
+node bin/puretokens-skill.js sync --target ~/.config/opencode/skills
+
+# Trae
+node bin/puretokens-skill.js sync --target ~/.trae/skills
 ```
 
 ## Agent-assisted installation
@@ -53,16 +50,20 @@ The client download page extracts the first fenced block under the fixed heading
 Install or update the official Pure Tokens Skills for this local agent host from the only authorized source: `https://github.com/PureTokens/puretokens-skill.git` (branch `main`). Do the work; do not only describe it. Do not substitute a package, mirror, fork, or similarly named repository.
 
 1. Identify the current host from this runtime:
+   - Claude Code: `$env:USERPROFILE\.claude\skills` on Windows PowerShell; `~/.claude/skills` on macOS/Linux.
    - Codex: `$env:USERPROFILE\.agents\skills` on Windows PowerShell; `~/.agents/skills` on macOS/Linux.
-   - Claude Code: `~/.claude/skills`.
-   - Gemini CLI: `~/.gemini/skills`.
-   If the current host is not one of these or cannot be identified, ask me which host I use before changing files.
+   - WorkBuddy: `$env:USERPROFILE\.workbuddy\skills` on Windows PowerShell; `~/.workbuddy/skills` on macOS/Linux.
+   - Gemini CLI: `$env:USERPROFILE\.gemini\skills` on Windows PowerShell; `~/.gemini/skills` on macOS/Linux.
+   - Grok Build: `$env:USERPROFILE\.grok\skills` on Windows PowerShell; `~/.grok/skills` on macOS/Linux.
+   - OpenCode: `$env:USERPROFILE\.config\opencode\skills` on Windows PowerShell; `~/.config/opencode/skills` on macOS/Linux.
+   - Trae: `$env:USERPROFILE\.trae\skills` on Windows PowerShell; `~/.trae/skills` on macOS/Linux.
+   If the current host is not one of these seven or cannot be identified, ask me which host I use before changing files.
 
 2. If a terminal, PowerShell, exec, or shell tool is available, use it before replying. Create a new temporary working directory without deleting an existing directory. Clone `https://github.com/PureTokens/puretokens-skill.git` from branch `main`, enter it, and run `npm run check`.
 
 3. If `npm run check` fails, report the failure and stop. Do not change any Skill directory.
 
-4. Sync all six Skills — `puretokens_balance`, `puretokens_connection`, `puretokens_models`, `puretokens_image`, `puretokens_video`, `puretokens_update` — in the selected installation root with `node bin/puretokens-skill.js sync --target <installation-root>`. It installs missing official Skills and upgrades only matching managed Skills. If any same-name existing destination is not a managed Skill, it must stop before changing anything, leave the conflict untouched, and report it.
+4. Sync all six Skills — `puretokens-balance`, `puretokens-connection`, `puretokens-models`, `puretokens-image`, `puretokens-video`, `puretokens-update` — in the selected installation root with `node bin/puretokens-skill.js sync --target <installation-root>`. It archives verified retired managed Skills to a recoverable hidden backup in that root, installs missing official Skills, and upgrades only matching managed Skills. If any current or retired same-name destination is not a managed Skill, it must stop before changing anything, leave the conflict untouched, and report it.
 
 5. Run `npm run check` again. Verify every requested destination has `SKILL.md` and `skill.json`, and each manifest name matches its directory name. Report installed or upgraded paths and any conflicts. Tell me to start a new host conversation before testing.
 
@@ -77,39 +78,49 @@ CC Switch is a connection-configuration tool, not a Skill host. CC Switch, Pure 
 
 | Host | Current specialist-Skill delivery | What the user does |
 | --- | --- | --- |
-| Codex | Manual source install | Install the required Skill into `~/.agents/skills`. |
 | Claude Code | Manual source install | Install the required Skill into `~/.claude/skills`. |
-| Claude Desktop | ZIP bundle | Bundle the required specialist Skill and upload/enable it in Claude Desktop Skills settings. |
+| Codex | Manual source install | Install the required Skill into `~/.agents/skills`. |
+| WorkBuddy | Manual source install | Install the required Skill into `~/.workbuddy/skills`. |
 | Gemini CLI | Manual source install | Install the required Skill into `~/.gemini/skills`. |
-| WorkBuddy, Grok Build, OpenCode, Trae | Not currently distributed | Their Desktop Router/configuration adapters do not imply a compatible specialist-Skill delivery. |
+| Grok Build | Manual source install | Install the required Skill into `~/.grok/skills`. |
+| OpenCode | Manual source install | Install the required Skill into `~/.config/opencode/skills`. |
+| Trae | Manual source install | Install the required Skill into `~/.trae/skills`. |
 
 The canonical matrix is `references/host-support.json`. The CLI intentionally never guesses a host directory.
 
 ## Direct API contract
 
-The API-facing Skills call the fixed public API origin `https://api.puretokensx.com`. They use full URLs, never a configured Base URL or a relative-path host executor. The active runtime supplies its existing Pure Tokens request authentication automatically; Skills never read, scan, ask for, print, copy, or store API keys, Base URLs, authentication files, provider labels, or client configuration. They never construct an authorization header, use MCP, a local proxy, a sidecar, or another endpoint. `puretokens_update` is local-only and does not call API endpoints.
+The API-facing Skills call the fixed public API origin `https://api.puretokensx.com`. They use full URLs, never a configured Base URL or a relative-path host executor. The active runtime supplies its existing Pure Tokens request authentication automatically; Skills never read, scan, ask for, print, copy, or store API keys, Base URLs, authentication files, provider labels, or client configuration. They never construct an authorization header, use MCP, a local proxy, a sidecar, or another endpoint. `puretokens-update` is local-only and does not call API endpoints.
 
-`puretokens_connection` makes exactly one read-only `GET https://api.puretokensx.com/v1` request. It confirms the fixed API only when that endpoint declares `status: "ok"`, `name: "Pure Tokens API"`, and `base_url: "/v1"`. This does not reveal or validate the user's configured Base URL, and it is not cryptographic anti-spoof verification.
+All seven supported hosts use this same direct contract. Their active runtime must provide existing authenticated full-URL HTTPS requests, JSON task responses, same-task status reads, and native-media byte delivery; there is one shared generation path.
 
-`puretokens_models` makes exactly one read-only `GET https://api.puretokensx.com/v1/media/models` request. It exposes the authenticated catalog in a user-readable form: exact model IDs, returned capabilities, declared optional parameters, and declared media operations. It can shortlist models for an explicit technical requirement such as image-to-video, a reference medium, duration, aspect ratio, or resolution, but only when that requirement is explicitly declared by the live model profile. It never submits media work, retries the catalog request, falls back to the static README catalog, or ranks unreturned quality, price, speed, or availability information.
+`puretokens-connection` makes exactly one read-only `GET https://api.puretokensx.com/v1` request. It confirms the fixed API only when that endpoint declares `status: "ok"`, `name: "Pure Tokens API"`, and `base_url: "/v1"`. This does not reveal or validate the user's configured Base URL, and it is not cryptographic anti-spoof verification.
 
-`puretokens_image` submits normal text-to-image work directly to `POST https://api.puretokensx.com/v1/images/generations` with `async: true`; it does not read the model catalog first. The installed versioned selection resolves the default `gpt-image-2`, unique aliases, and known image parameters. The live catalog is read once only when the user explicitly asks for current model information, asks for an option or media operation absent from the installed selection, or needs a diagnosis after a model/parameter/capability rejection. A failed catalog read never blocks an otherwise valid core text-to-image submission, and it never causes automatic resubmission.
+`puretokens-models` makes exactly one read-only `GET https://api.puretokensx.com/v1/media/models` request. It exposes the authenticated catalog in a user-readable form: exact model IDs, returned capabilities, declared optional parameters, and declared media operations. It can shortlist models for an explicit technical requirement such as image-to-video, a reference medium, duration, aspect ratio, or resolution, but only when that requirement is explicitly declared by the live model profile. It never submits media work, retries the catalog request, falls back to the static README catalog, or ranks unreturned quality, price, speed, or availability information.
 
-`puretokens_video` submits normal text-to-video work directly to `POST https://api.puretokensx.com/v1/videos`; it does not read the model catalog first. Its installed selection resolves the default `grok-imagine-video-1.5-preview`, unique aliases, and known parameters and media operations. The live catalog is read once only for explicit current-model discovery, an installed-profile gap needed to honor a requested option or media operation, or post-rejection diagnosis. A catalog failure never blocks an otherwise valid core text-to-video submission, and it never causes automatic resubmission. The Skill polls and delivers only the same task's native bytes.
+`puretokens-image` submits normal text-to-image work directly to `POST https://api.puretokensx.com/v1/images/generations` with `async: true`; it does not read the model catalog first. The installed versioned selection resolves the default `gpt-image-2`, unique aliases, and known image parameters. The live catalog is read once only when the user explicitly asks for current model information, asks for an option or media operation absent from the installed selection, or needs a diagnosis after a model/parameter/capability rejection. A failed catalog read never blocks an otherwise valid core text-to-image submission, and it never causes automatic resubmission.
+
+`puretokens-video` submits normal text-to-video work directly to `POST https://api.puretokensx.com/v1/videos`; it does not read the model catalog first. Its installed selection resolves the default `grok-imagine-video-1.5-preview`, unique aliases, and known parameters and media operations. The live catalog is read once only for explicit current-model discovery, an installed-profile gap needed to honor a requested option or media operation, or post-rejection diagnosis. A catalog failure never blocks an otherwise valid core text-to-video submission, and it never causes automatic resubmission. The Skill polls and delivers only the same task's native bytes.
 
 The full direct-API contract is `references/direct-api-execution-contract.json`. If a direct request fails before a task is accepted, the Skill reports the returned failure and does not guess a Base URL, authentication, or routing cause. It never falls back to another execution path or identifies another relay.
 
 ## Balance
 
-`puretokens_balance` makes exactly one read-only `GET https://api.puretokensx.com/api/product/desktop/account/balance` request with the active runtime's existing Pure Tokens account authentication. It reports only returned fields. If the direct request is not authenticated or fails, it reports the returned result and directs the user to the Pure Tokens client balance view; it never guesses a balance, tries another endpoint, or asks for credentials.
+`puretokens-balance` makes exactly one read-only `GET https://api.puretokensx.com/api/product/desktop/account/balance` request with the active runtime's existing Pure Tokens account authentication. It reports only returned fields. If the direct request is not authenticated or fails, it reports the returned result and directs the user to the Pure Tokens client balance view; it never guesses a balance, tries another endpoint, or asks for credentials.
 
 ## Skill updates
 
-`puretokens_update` handles explicit requests to install, update, or synchronize local official Skills. On Codex, Claude Code, and Gemini CLI it validates a fresh `main` checkout, then runs `node bin/puretokens-skill.js sync --target <installation-root>`. The command installs missing official Skills and upgrades only managed matching Skill directories; an unmanaged same-name directory stops the whole sync before any target is changed. On Claude Desktop it builds new ZIP bundles and guides the user through uploading and enabling them. It never reads connection settings or credentials, and it never runs automatically during media work.
+`puretokens-update` handles explicit requests to install, update, or synchronize local official Skills. On any of the seven supported hosts it validates a fresh `main` checkout, then runs `node bin/puretokens-skill.js sync --target <installation-root>`. The command moves verified retired managed Skill directories into a recoverable hidden backup, installs missing official Skills, and upgrades only managed matching Skill directories; an unmanaged current or retired same-name directory stops the whole sync before any target is changed. It never reads connection settings or credentials, and it never runs automatically during media work.
 
 ## Image sizes and count
 
 An image request is never split into several paid submissions. Count and every size control are model-specific: `n`, `size`, `image_size`, `aspect_ratio`, `width`, and `height` may be sent only when the installed exact-model selection, or a permitted one-time live lookup for a missing requested option, declares that field and value. If `n` is not declared, the Skill does not invent it.
+
+## Image request experience
+
+`puretokens-image` distinguishes a new image, an image used as a visual reference, and an image to edit before submission. If a supplied URL or attachment has no stated role, it asks whether it is a reference or the edit target instead of guessing. `n` means variants of one complete brief, never several different assets: a request for a poster, avatar, and banner asks the user to choose the first asset rather than creating several paid tasks.
+
+The Skill turns a natural-language request into a concise image brief while preserving stated purpose, subject, scene, style, composition, exact text, and constraints. It does not invent brands, copy, subjects, or a different operation. At completion, it reports an attachment or local path only when the active runtime confirms it; otherwise it reports native-byte delivery through that host without inventing a preview or download location.
 
 Physical dimensions such as `200cm × 230cm` cannot be guaranteed and are never passed as `n`, `size`, or another API field. The Skill explains the limitation and lists the installed or on-demand-declared pixel or semantic-size choices.
 
@@ -119,13 +130,13 @@ For `n` images, delivery reads exactly the zero-based indexes `0` through `n-1` 
 
 Every normal image and video task uses the installed versioned selection; it never incurs a live-catalog preflight. Any requested optional field must be present with a compatible value in that selection. When the user asks for a current capability, an option or media operation absent from the selection, the Skill makes one on-demand catalog read; the same is allowed once after a model/parameter/capability rejection to explain it, never to retry automatically. Video prompt is required for normal text generation and may be omitted only when the installed or on-demand profile explicitly declares the exact single-reference exception.
 
-The installed selection, or a permitted one-time on-demand profile lookup for an unsupported requested media operation, controls media inputs. An explicitly supplied public HTTPS URL, file ID, or voice ID is sent only in its exact declared property and permitted transport; the Skill never downloads, probes, checks accessibility, rehosts, or rewrites it. Native media explicitly attached in the current request uses only an advertised `multipart_file` operation. The Skill sends those bytes with the one declared Images or Videos API request; the Pure Tokens gateway then performs short-lived internal R2 staging, verifies its provider-facing HTTPS URL, and does not return that URL. Multiple native attachment types need an explicitly declared combined operation; multiple public URL/ID fields need no declared conflict. The Skill never manufactures a URL or file ID, calls a separate upload API, or silently turns a media request into text generation.
+The installed selection, or a permitted one-time on-demand profile lookup for an unsupported or incompatible requested media operation, controls media inputs. An explicitly supplied public HTTPS URL, file ID, or voice ID is sent only in its exact declared property and permitted transport; the Skill never downloads, probes, checks accessibility, rehosts, or rewrites it. A public-URL image edit additionally requires the exact declared `image_edit` JSON operation; a reference field alone is not an edit operation. Native media explicitly attached in the current request uses only an advertised `multipart_file` operation and is sent with that one declared Images or Videos API request. Multiple native attachment types need an explicitly declared combined operation; multiple public URL/ID fields need no declared conflict. The Skill never manufactures a URL or file ID, calls a separate upload API, or silently turns a media request into text generation.
 
-On submit, continuation, completion, and failure, media Skills return a consistent receipt: exact model ID when returned, task ID when returned, current state, requested operation, requested count, requested size/parameters, delivered count on completion, and the next action. The receipt's `task_id` is normalized from the selected lifecycle's declared top-level ID field, or only top-level `task_id` / `id` when no lifecycle is declared; it is never inferred from a URL or nested response data. Missing task metadata is reported as not returned, never guessed.
+On submit, continuation, reconciliation, completion, and failure, media Skills return a consistent receipt: exact model ID when returned, task ID when returned, current state, requested operation, requested count, requested size/parameters, delivered count on completion, and the next action. A failure contains its phase, `api_error_code` only when the public API explicitly returned that exact code (otherwise “not returned”), the returned HTTP status or “not returned”, and a safe user-facing message; HTTP 429 receipts include a valid `Retry-After` value when available. The receipt never exposes raw response bodies, upstream identifiers, internal URLs, stacks, request data, credentials, or user media. The receipt's `task_id` is normalized from the selected lifecycle's declared top-level ID field, or only top-level `task_id` / `id` when no lifecycle is declared; it is never inferred from a URL or nested response data. Missing task metadata is reported as not returned, never guessed.
 
 ## Asynchronous polling
 
-Media polling begins only after submission returns a normalized `task_id` and runs only within the submission turn or a user turn that explicitly continues that same task ID. It uses the selected model's declared lifecycle states when available; otherwise it recognizes only `pending`, `queued`, `running`, and `in_progress` as processing states. An unrecognized or missing state is reported as such and stops automatic polling. There is at most one status request in flight per task and never a background timer, queue, or worker. A valid positive HTTP `Retry-After` is used only while time remains in the automatic-polling budget. Otherwise an image task waits `3, 6, 12, 24, 30, 30` seconds before at most six same-task status reads; a video task waits `5, 10, 20, 40, 60, 60` seconds before at most seven reads. Each bounded window lasts at most 120 seconds for images or 300 seconds for videos. A rate limit, 5xx response, transport error, or timeout stops that window immediately. A still-processing task is reported with its task ID. When the user explicitly asks to continue it, the Skill opens one new bounded window for that same task only; it never treats a deadline or read error as failure and never submits a replacement task.
+Media polling begins only after submission returns a normalized `task_id` and runs only within the submission turn or a user turn that explicitly continues that same task ID. It first treats `reconciliation_required: true` as a terminal operational state regardless of its lifecycle status: ordinary polling stops, the same task ID is retained, and the Skill neither submits a replacement nor infers a refund. Otherwise it uses the selected model's declared lifecycle states when available; otherwise it recognizes only `pending`, `queued`, `running`, and `in_progress` as processing states. An unrecognized or missing state is reported as such and stops automatic polling. There is at most one status request in flight per task and never a background timer, queue, or worker. When a status read returns HTTP 429, the Skill honors a valid positive `Retry-After` and continues the same task only if it fits the remaining automatic-polling budget; otherwise it stops that window without resubmission. Otherwise an image task waits `3, 6, 12, 24, 30, 30` seconds before at most six same-task status reads; a video task waits `5, 10, 20, 40, 60, 60` seconds before at most seven reads. Each bounded window lasts at most 120 seconds for images or 300 seconds for videos. A non-429 5xx response, transport error, or timeout stops that window immediately. A still-processing task is reported with its task ID. When the user explicitly asks to continue it, the Skill opens one new bounded window for that same task only; it never treats a deadline or read error as failure and never submits a replacement task.
 
 Media bytes are not cached in Skill state, prompts, or logs. Content is read only after terminal success, with one content read in flight; the active runtime hands off the native bytes before another read. If it cannot do that without unbounded background work, duplicate reads, or cached copies, the Skill reports same-task delivery as unavailable instead of substituting a URL or submitting a new task.
 
@@ -147,7 +158,7 @@ Media bytes are not cached in Skill state, prompts, or logs. Content is read onl
 
 ## Model discovery
 
-Use `puretokens_models` when the user asks what is actually available through Pure Tokens, which models support a media operation, or which models accept a particular declared parameter. Its authenticated `GET https://api.puretokensx.com/v1/media/models` response is the runtime source of truth: it reports exact model IDs, capabilities, optional parameter schema, and `input_schema.operations` without guessing missing fields. A compatibility shortlist is technical only; it matches declared capability, field/value, and operation metadata and does not make subjective quality or price claims.
+Use `puretokens-models` when the user asks what is actually available through Pure Tokens, which models support a media operation, or which models accept a particular declared parameter. Its authenticated `GET https://api.puretokensx.com/v1/media/models` response is the runtime source of truth: it reports exact model IDs, capabilities, optional parameter schema, and `input_schema.operations` without guessing missing fields. A compatibility shortlist is technical only; it matches declared capability, field/value, and operation metadata and does not make subjective quality or price claims.
 
 The README is discovery-only. Capabilities are taken only from the base model catalog's explicit image/video declarations, never inferred from a model name. Each installed image/video Skill includes its capability-specific `references/model-selection.json`, generated from this same catalog; an alias is usable only when it resolves to one exact model ID.
 
@@ -195,13 +206,7 @@ README is generated only from base-catalog models with explicit image/video capa
 Pull the current repository and run the matching command for each installed Skill:
 
 ```bash
-node bin/puretokens-skill.js upgrade puretokens_image --target ~/.agents/skills
-```
-
-For Claude Desktop, bundle and upload the required specialist Skill:
-
-```bash
-node bin/puretokens-skill.js bundle puretokens_image --format claude-desktop --out ./puretokens_image.zip
+node bin/puretokens-skill.js upgrade puretokens-image --target ~/.agents/skills
 ```
 
 Before publishing a release:

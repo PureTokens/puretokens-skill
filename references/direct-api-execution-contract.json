@@ -12,6 +12,21 @@
     "doesNotUseLocalProxyOrSidecar": true,
     "doesNotUseFallbackEndpoint": true
   },
+  "supportedHosts": [
+    "claude-code",
+    "codex",
+    "workbuddy",
+    "gemini-cli",
+    "grok-build",
+    "opencode",
+    "trae"
+  ],
+  "requiredRuntimeCapabilities": [
+    "authenticated_full_url_request",
+    "json_task_response",
+    "same_task_status_read",
+    "native_media_byte_delivery"
+  ],
   "acceptanceScenarios": [
     {
       "id": "api-identity-read",
@@ -42,10 +57,18 @@
   "userMediaInput": {
     "onlyCurrentUserExplicitMedia": true,
     "publicUrlOrDeclaredIdRequiresInstalledOrOnDemandProfilePropertyAndTransport": true,
+    "publicUrlImageEditRequiresExactDeclaredJsonOperation": true,
     "requiresInstalledOrOnDemandDeclaredTransport": true,
     "skillNeverDownloadsOrRehosts": true,
-    "pureTokensGatewayStagesMultipartAttachments": true,
+    "apiHandlesDeclaredMultipartAttachments": true,
     "fallback": "If the active runtime cannot send an explicitly attached file as the declared multipart representation, stop before submission, explain the declared transport, and do not invent a URL, file ID, or upload path. A public HTTPS URL, file ID, or voice ID explicitly supplied by the user may be sent only in the exact installed or on-demand-profile field whose declared transport permits it; the Skill never downloads, validates, or rehosts it."
+  },
+  "asyncTaskHandling": {
+    "reconciliationRequiredPrecedesLifecycle": true,
+    "reconciliationOutcome": "stop_ordinary_polling_retain_same_task_id_do_not_submit_replacement_or_infer_refund",
+    "statusHttp429": "honor_valid_positive_retry_after_then_continue_same_task_if_remaining_budget",
+    "non429StatusReadFailure": "stop_bounded_window_without_replacement_task",
+    "doesNotInventApiErrorCode": true
   },
   "mediaDeliveryResourceBounds": {
     "oneInFlightStatusReadPerTask": true,

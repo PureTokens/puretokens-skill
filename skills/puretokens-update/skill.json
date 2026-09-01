@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "name": "puretokens-update",
+  "version": "0.13.0",
+  "entry": "SKILL.md",
+  "displayName": "Pure Tokens Update",
+  "description": "Install or safely upgrade local official Pure Tokens Skills.",
+  "executionContract": "references/execution-contract.json",
+  "behaviorScenarios": "references/behavior-scenarios.json",
+  "distribution": {
+    "codex": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.agents/skills",
+      "requiresPluginFeature": false
+    },
+    "claudeCode": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.claude/skills"
+    },
+    "geminiCli": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.gemini/skills"
+    },
+    "workbuddy": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.workbuddy/skills"
+    },
+    "grokBuild": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.grok/skills"
+    },
+    "opencode": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.config/opencode/skills"
+    },
+    "trae": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.trae/skills"
+    }
+  },
+  "supportedClients": [
+    "claude-code",
+    "codex",
+    "workbuddy",
+    "gemini-cli",
+    "grok-build",
+    "opencode",
+    "trae"
+  ],
+  "rules": {
+    "usesOfficialMainBranch": true,
+    "usesManagedSkillSync": true,
+    "installsMissingOfficialSkills": true,
+    "neverOverwritesUnmanagedDirectories": true,
+    "archivesVerifiedRetiredSkills": true,
+    "requiresPreflightValidation": true,
+    "doesNotReadCredentialsOrHostConfiguration": true,
+    "doesNotCallMediaOrAccountApis": true,
+    "doesNotUseMcpOrFallbackTransport": true,
+    "requiresNewHostConversationAfterUpdate": true
+  }
+}

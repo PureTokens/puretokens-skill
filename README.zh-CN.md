@@ -8,39 +8,36 @@
 
 | Skill | 用途 |
 | --- | --- |
-| `puretokens_balance` | 通过固定的 Pure Tokens API 读取当前余额快照。 |
-| `puretokens_connection` | 不读取连接配置，检查固定 Pure Tokens API 的身份声明。 |
-| `puretokens_models` | 查询固定 API 的认证模型目录，并说明已声明的模型能力、参数和媒体操作。 |
-| `puretokens_image` | 通过固定的 Pure Tokens Images API 生图，并按 profile 支持图片编辑。 |
-| `puretokens_video` | 通过固定的 Pure Tokens Videos API 生视频，并按 profile 支持图生视频、参考图/视频/音频视频和视频编辑。 |
-| `puretokens_update` | 安装或安全升级本机官方 Pure Tokens Skills。 |
+| `puretokens-balance` | 通过固定的 Pure Tokens API 读取当前余额快照。 |
+| `puretokens-connection` | 不读取连接配置，检查固定 Pure Tokens API 的身份声明。 |
+| `puretokens-models` | 查询固定 API 的认证模型目录，并说明已声明的模型能力、参数和媒体操作。 |
+| `puretokens-image` | 通过固定的 Pure Tokens Images API 生图，并按 profile 支持图片编辑。 |
+| `puretokens-video` | 通过固定的 Pure Tokens Videos API 生视频，并按 profile 支持图生视频、参考图/视频/音频视频和视频编辑。 |
+| `puretokens-update` | 安装或安全升级本机官方 Pure Tokens Skills。 |
 
 按需安装到受支持宿主已声明的全局 Skill 目录：
 
 ```bash
-# Codex
-node bin/puretokens-skill.js install puretokens_balance --target ~/.agents/skills
-node bin/puretokens-skill.js install puretokens_connection --target ~/.agents/skills
-node bin/puretokens-skill.js install puretokens_models --target ~/.agents/skills
-node bin/puretokens-skill.js install puretokens_image --target ~/.agents/skills
-node bin/puretokens-skill.js install puretokens_video --target ~/.agents/skills
-node bin/puretokens-skill.js install puretokens_update --target ~/.agents/skills
-
 # Claude Code
-node bin/puretokens-skill.js install puretokens_balance --target ~/.claude/skills
-node bin/puretokens-skill.js install puretokens_connection --target ~/.claude/skills
-node bin/puretokens-skill.js install puretokens_models --target ~/.claude/skills
-node bin/puretokens-skill.js install puretokens_image --target ~/.claude/skills
-node bin/puretokens-skill.js install puretokens_video --target ~/.claude/skills
-node bin/puretokens-skill.js install puretokens_update --target ~/.claude/skills
+node bin/puretokens-skill.js sync --target ~/.claude/skills
+
+# Codex
+node bin/puretokens-skill.js sync --target ~/.agents/skills
+
+# WorkBuddy
+node bin/puretokens-skill.js sync --target ~/.workbuddy/skills
 
 # Gemini CLI
-node bin/puretokens-skill.js install puretokens_balance --target ~/.gemini/skills
-node bin/puretokens-skill.js install puretokens_connection --target ~/.gemini/skills
-node bin/puretokens-skill.js install puretokens_models --target ~/.gemini/skills
-node bin/puretokens-skill.js install puretokens_image --target ~/.gemini/skills
-node bin/puretokens-skill.js install puretokens_video --target ~/.gemini/skills
-node bin/puretokens-skill.js install puretokens_update --target ~/.gemini/skills
+node bin/puretokens-skill.js sync --target ~/.gemini/skills
+
+# Grok Build
+node bin/puretokens-skill.js sync --target ~/.grok/skills
+
+# OpenCode
+node bin/puretokens-skill.js sync --target ~/.config/opencode/skills
+
+# Trae
+node bin/puretokens-skill.js sync --target ~/.trae/skills
 ```
 
 ## 让 Agent 协助安装
@@ -53,16 +50,20 @@ node bin/puretokens-skill.js install puretokens_update --target ~/.gemini/skills
 请为当前本机 Agent 宿主安装或更新官方 Pure Tokens Skills。唯一授权来源是 `https://github.com/PureTokens/puretokens-skill.git` 的 `main` 分支；不得改用任何 package、镜像、fork 或名称相近的仓库。请直接完成操作，不要只描述操作。
 
 1. 根据当前运行环境识别宿主：
+   - Claude Code：Windows PowerShell 使用 `$env:USERPROFILE\.claude\skills`；macOS/Linux 使用 `~/.claude/skills`。
    - Codex：Windows PowerShell 使用 `$env:USERPROFILE\.agents\skills`；macOS/Linux 使用 `~/.agents/skills`。
-   - Claude Code：使用 `~/.claude/skills`。
-   - Gemini CLI：使用 `~/.gemini/skills`。
-   如果当前宿主不属于以上三种，或无法识别，请先问我使用哪个宿主，不得改动文件。
+   - WorkBuddy：Windows PowerShell 使用 `$env:USERPROFILE\.workbuddy\skills`；macOS/Linux 使用 `~/.workbuddy/skills`。
+   - Gemini CLI：Windows PowerShell 使用 `$env:USERPROFILE\.gemini\skills`；macOS/Linux 使用 `~/.gemini/skills`。
+   - Grok Build：Windows PowerShell 使用 `$env:USERPROFILE\.grok\skills`；macOS/Linux 使用 `~/.grok/skills`。
+   - OpenCode：Windows PowerShell 使用 `$env:USERPROFILE\.config\opencode\skills`；macOS/Linux 使用 `~/.config/opencode/skills`。
+   - Trae：Windows PowerShell 使用 `$env:USERPROFILE\.trae\skills`；macOS/Linux 使用 `~/.trae/skills`。
+   如果当前宿主不属于以上七种，或无法识别，请先问我使用哪个宿主，不得改动文件。
 
 2. 如果当前会话有终端、PowerShell、exec 或 shell 工具，必须在回复前先调用。新建临时工作目录，但不得删除已有目录；克隆 `https://github.com/PureTokens/puretokens-skill.git` 的 `main` 分支，进入仓库后执行 `npm run check`。
 
 3. 如果 `npm run check` 失败，报告失败并停止；不得改动任何 Skill 目录。
 
-4. 使用 `node bin/puretokens-skill.js sync --target <installation-root>` 在选定安装根目录中同步全部六个 Skill：`puretokens_balance`、`puretokens_connection`、`puretokens_models`、`puretokens_image`、`puretokens_video`、`puretokens_update`。它会安装缺失的官方 Skill，只升级同名受管 Skill；只要存在任一同名但非受管目录，就必须在改动前停止、保持冲突目录不变并报告。
+4. 使用 `node bin/puretokens-skill.js sync --target <installation-root>` 在选定安装根目录中同步全部六个 Skill：`puretokens-balance`、`puretokens-connection`、`puretokens-models`、`puretokens-image`、`puretokens-video`、`puretokens-update`。它会将已验证的旧受管 Skill 移到该根目录内可恢复的隐藏备份，安装缺失的官方 Skill，只升级同名受管 Skill；只要存在任一当前或旧同名但非受管目录，就必须在改动前停止、保持冲突目录不变并报告。
 
 5. 再执行一次 `npm run check`。验证每个目标目录都有 `SKILL.md` 和 `skill.json`，且 manifest 名称与目录名一致。报告已安装或升级的路径和全部冲突；提醒我新开对应宿主会话再测试。
 
@@ -77,39 +78,49 @@ CC Switch 是连接配置工具，不是 Skill 宿主。CC Switch、Pure Tokens 
 
 | 宿主 | 当前专项 Skill 交付方式 | 用户操作 |
 | --- | --- | --- |
-| Codex | 手动安装源文件 | 将所需 Skill 安装到 `~/.agents/skills`。 |
 | Claude Code | 手动安装源文件 | 将所需 Skill 安装到 `~/.claude/skills`。 |
-| Claude Desktop | ZIP 包 | 打包所需专项 Skill，在 Claude Desktop 的 Skills 设置中上传并启用。 |
+| Codex | 手动安装源文件 | 将所需 Skill 安装到 `~/.agents/skills`。 |
+| WorkBuddy | 手动安装源文件 | 将所需 Skill 安装到 `~/.workbuddy/skills`。 |
 | Gemini CLI | 手动安装源文件 | 将所需 Skill 安装到 `~/.gemini/skills`。 |
-| WorkBuddy、Grok Build、OpenCode、Trae | 当前不提供交付 | 它们的 Desktop Router/连接配置 Adapter 不代表已提供兼容的专项 Skill 交付。 |
+| Grok Build | 手动安装源文件 | 将所需 Skill 安装到 `~/.grok/skills`。 |
+| OpenCode | 手动安装源文件 | 将所需 Skill 安装到 `~/.config/opencode/skills`。 |
+| Trae | 手动安装源文件 | 将所需 Skill 安装到 `~/.trae/skills`。 |
 
 唯一事实来源是 `references/host-support.json`。CLI 刻意不会猜测宿主目录。
 
 ## 直连 API 契约
 
-面向 API 的 Skill 都调用固定的公开 API origin：`https://api.puretokensx.com`。请求使用完整 URL，不使用用户配置的 Base URL，也不依赖相对路径宿主执行器。当前运行环境会为已有的 Pure Tokens 请求认证自动附带认证；Skill 绝不读取、扫描、索取、打印、复制或保存 API Key、Base URL、认证文件、provider 标签或客户端配置，也不构造认证头，不使用 MCP、本地代理、sidecar 或其他 endpoint。`puretokens_update` 只处理本机更新，不调用 API endpoint。
+面向 API 的 Skill 都调用固定的公开 API origin：`https://api.puretokensx.com`。请求使用完整 URL，不使用用户配置的 Base URL，也不依赖相对路径宿主执行器。当前运行环境会为已有的 Pure Tokens 请求认证自动附带认证；Skill 绝不读取、扫描、索取、打印、复制或保存 API Key、Base URL、认证文件、provider 标签或客户端配置，也不构造认证头，不使用 MCP、本地代理、sidecar 或其他 endpoint。`puretokens-update` 只处理本机更新，不调用 API endpoint。
 
-`puretokens_connection` 只调用一次 `GET https://api.puretokensx.com/v1`。只有固定端点明确返回 `status: "ok"`、`name: "Pure Tokens API"` 与 `base_url: "/v1"` 时，才确认该固定 API 的标识。它不会读取或验证用户实际配置的 Base URL；这只是端点公开声明检查，不是密码学防伪证明。
+七个受支持宿主共用这一份直连契约：当前运行环境必须能够使用已有认证发起完整 URL 的 HTTPS 请求、接收 JSON 任务响应、查询同一任务状态并交付原生媒体字节；不存在宿主专用连接器、路由器或替代生成路径。
 
-`puretokens_models` 只调用一次 `GET https://api.puretokensx.com/v1/media/models`。它将认证目录转换为用户可读的信息：精确模型 ID、实际返回的能力、已声明可选参数和媒体操作。用户可以问图生视频、参考媒体、时长、画幅或分辨率等明确技术要求有哪些兼容模型；Skill 只会根据实时 profile 实际声明的字段和值筛选，不会提交媒体任务、重试目录请求、回退到 README 静态目录，或编造质量、价格、速度和可用性排序。
+`puretokens-connection` 只调用一次 `GET https://api.puretokensx.com/v1`。只有固定端点明确返回 `status: "ok"`、`name: "Pure Tokens API"` 与 `base_url: "/v1"` 时，才确认该固定 API 的标识。它不会读取或验证用户实际配置的 Base URL；这只是端点公开声明检查，不是密码学防伪证明。
 
-`puretokens_image` 的普通文生图会直接调用 `POST https://api.puretokensx.com/v1/images/generations` 并传 `async: true`，不会先读取模型目录。已安装的版本化选择资料负责默认 `gpt-image-2`、唯一别名和已知图片参数。只有用户明确查询当前模型、要求安装资料未声明的参数或媒体操作，或模型/参数/capability 被 API 拒绝后需要解释时，才读取一次实时目录。目录读取失败绝不能阻止原本有效的核心文生图，也绝不会触发自动重提。
+`puretokens-models` 只调用一次 `GET https://api.puretokensx.com/v1/media/models`。它将认证目录转换为用户可读的信息：精确模型 ID、实际返回的能力、已声明可选参数和媒体操作。用户可以问图生视频、参考媒体、时长、画幅或分辨率等明确技术要求有哪些兼容模型；Skill 只会根据实时 profile 实际声明的字段和值筛选，不会提交媒体任务、重试目录请求、回退到 README 静态目录，或编造质量、价格、速度和可用性排序。
 
-`puretokens_video` 的普通文生视频会直接调用 `POST https://api.puretokensx.com/v1/videos`，不会先读取模型目录。已安装选择资料负责默认 `grok-imagine-video-1.5-preview`、唯一别名、已知参数和媒体操作。只有明确查询当前模型、为满足安装资料未声明的参数或媒体操作，或 API 因模型/参数/capability 拒绝后需要解释时，才读取一次实时目录。目录读取失败绝不能阻止原本有效的核心文生视频，也绝不会触发自动重提。Skill 只轮询并交付同一任务的原生字节。
+`puretokens-image` 的普通文生图会直接调用 `POST https://api.puretokensx.com/v1/images/generations` 并传 `async: true`，不会先读取模型目录。已安装的版本化选择资料负责默认 `gpt-image-2`、唯一别名和已知图片参数。只有用户明确查询当前模型、要求安装资料未声明的参数或媒体操作，或模型/参数/capability 被 API 拒绝后需要解释时，才读取一次实时目录。目录读取失败绝不能阻止原本有效的核心文生图，也绝不会触发自动重提。
+
+`puretokens-video` 的普通文生视频会直接调用 `POST https://api.puretokensx.com/v1/videos`，不会先读取模型目录。已安装选择资料负责默认 `grok-imagine-video-1.5-preview`、唯一别名、已知参数和媒体操作。只有明确查询当前模型、为满足安装资料未声明的参数或媒体操作，或模型/参数/capability 被 API 拒绝后需要解释时，才读取一次实时目录。目录读取失败绝不能阻止原本有效的核心文生视频，也绝不会触发自动重提。Skill 只轮询并交付同一任务的原生字节。
 
 完整直连 API 契约见 `references/direct-api-execution-contract.json`。若任务被接受前的直连请求失败，Skill 只报告实际返回的失败，不会猜测用户的 Base URL、认证或路由原因；不会切换执行路径，也不识别或分支处理其他中转服务。
 
 ## 余额
 
-`puretokens_balance` 只执行一次 `GET https://api.puretokensx.com/api/product/desktop/account/balance`，使用当前运行环境已有的 Pure Tokens 账户认证。它只报告接口返回的字段。若直连请求未获认证或失败，会报告实际返回的结果并引导用户到 Pure Tokens 客户端余额入口；绝不会猜余额、尝试其他路径或索取凭据。
+`puretokens-balance` 只执行一次 `GET https://api.puretokensx.com/api/product/desktop/account/balance`，使用当前运行环境已有的 Pure Tokens 账户认证。它只报告接口返回的字段。若直连请求未获认证或失败，会报告实际返回的结果并引导用户到 Pure Tokens 客户端余额入口；绝不会猜余额、尝试其他路径或索取凭据。
 
 ## Skill 升级
 
-`puretokens_update` 专门处理用户明确提出的安装、更新或同步本机官方 Skills 的请求。对于 Codex、Claude Code 和 Gemini CLI，它会先校验新克隆的官方 `main`，再执行 `node bin/puretokens-skill.js sync --target <installation-root>`。该命令会安装缺失官方 Skill，只升级受管且同名的 Skill 目录；只要遇到非受管同名目录，整个同步会在改动前停止。对于 Claude Desktop，它会生成新 ZIP 包并引导用户在设置中上传、启用。它绝不读取连接设置或凭据，也绝不会在媒体任务中自行运行。
+`puretokens-update` 专门处理用户明确提出的安装、更新或同步本机官方 Skills 的请求。它会在任一受支持宿主先校验新克隆的官方 `main`，再执行 `node bin/puretokens-skill.js sync --target <installation-root>`。该命令会将已验证的旧受管 Skill 目录移到可恢复的隐藏备份，安装缺失官方 Skill，只升级受管且同名的当前 Skill 目录；只要遇到当前或旧的非受管同名目录，整个同步会在改动前停止。它绝不读取连接设置或凭据，也绝不会在媒体任务中自行运行。
 
 ## 图片尺寸和数量
 
 一个生图请求绝不会拆成多次付费提交。数量和所有尺寸控制都是模型级的：`n`、`size`、`image_size`、`aspect_ratio`、`width`、`height` 只有已安装的精确模型资料，或为安装资料缺失的明确需求按需读取一次的目录，声明字段和值时才会发送。未声明 `n` 时，Skill 不会自行补充。
+
+## 图片请求体验
+
+`puretokens-image` 会在提交前区分文生图、将图片作为视觉参考、以及编辑现有图片。用户提供 URL 或附件却没有说明角色时，它只会询问“这是参考图还是待编辑图片？”，不会猜测。`n` 只表示同一完整简报的变体，绝不表示多个不同资产：海报、头像、横幅等多项请求会请用户先选定本次要生成的第一项，而不是创建多笔付费任务。
+
+Skill 会将自然语言整理为简洁的图片简报，同时保留已说明的用途、主体、场景、风格、构图、逐字文本和限制；不会擅自添加品牌、文案、主体或改变操作。完成时只有宿主实际确认附件或本地路径，才会报告它；否则只说明原生图片字节已通过当前宿主交付，不编造预览或下载位置。
 
 `200cm × 230cm` 这类物理尺寸无法精确保证，也绝不会传给 `n`、`size` 或其他 API 字段。Skill 会说明限制，并列出已安装资料或按需目录查询声明的像素或语义尺寸选项。
 
@@ -119,13 +130,13 @@ CC Switch 是连接配置工具，不是 Skill 宿主。CC Switch、Pure Tokens 
 
 普通图片和视频任务使用已安装的版本化选择资料，不会因实时目录预检增加一次请求。任何可选字段都必须在该资料中存在且值兼容。只有用户明确查询当前能力、要求安装资料缺失的参数或媒体操作时，Skill 才按需读取一次目录；模型/参数/capability 被拒绝后，也只允许为解释读取一次，绝不会自动重试。普通文生视频必须提供提示词；只有已安装或按需资料明确声明精确单参考例外时才可省略。
 
-媒体输入由已安装资料控制；只有用户明确要求安装资料未声明的媒体操作时，才按需读取一次 profile。用户明确提供的公网 HTTPS URL、file ID 或 voice ID 只能写入资料声明的精确字段和允许 transport；Skill 不会下载、探测、检查可访问性、转存或改写它。用户当前请求附带的原生媒体则只能走已声明的 `multipart_file` operation；Skill 只会将字节随这一条 Images 或 Videos API 请求发送，Pure Tokens 网关会内部短期 R2 暂存、验证上游可读 URL，且不返回 URL。多个原生附件类型需要明确的组合 operation；多个公网 URL/ID 字段则不能与已声明的互斥或模式限制冲突。Skill 不会伪造 URL 或 file ID、调用独立上传 API，或把媒体请求静默改为纯文生。
+媒体输入由已安装资料控制；只有用户明确要求安装资料未声明或当前资料不兼容的媒体操作时，才按需读取一次 profile。用户明确提供的公网 HTTPS URL、file ID 或 voice ID 只能写入资料声明的精确字段和允许 transport；Skill 不会下载、探测、检查可访问性、转存或改写它。公网 URL 图片编辑还必须有精确声明的 JSON `image_edit` operation；仅有参考图字段不等于支持编辑。用户当前请求附带的原生媒体则只能走已声明的 `multipart_file` operation，并且只会随这一条 Images 或 Videos API 请求发送。多个原生附件类型需要明确的组合 operation；多个公网 URL/ID 字段则不能与已声明的互斥或模式限制冲突。Skill 不会伪造 URL 或 file ID、调用独立上传 API，或把媒体请求静默改为纯文生。
 
-媒体 Skill 在提交、继续查询、完成和失败时统一返回回执：已返回的精确模型 ID、已返回的任务 ID、当前状态、请求操作、请求数量、尺寸/参数、完成时的已交付数量和下一步。回执中的 `task_id` 会优先从所选模型 lifecycle 声明的顶层 ID 字段规范化；未声明 lifecycle 时只接受顶层 `task_id` 或 `id`，绝不从 URL 或嵌套响应数据猜测。任务元数据未返回时会明确写“未返回”。
+媒体 Skill 在提交、继续查询、核验、完成和失败时统一返回回执：已返回的精确模型 ID、已返回的任务 ID、当前状态、请求操作、请求数量、尺寸/参数、完成时的已交付数量和下一步。失败时只有 API 明确返回公开机器码才会在 `api_error_code` 中原样显示，否则写“未返回”；同时会返回失败阶段、API 返回的 HTTP 状态（未返回时写“未返回”）和安全错误信息。HTTP 429 且存在有效 `Retry-After` 时会给出等待秒数。回执绝不暴露原始响应正文、上游标识、内部 URL、堆栈、请求数据、凭据或用户媒体。回执中的 `task_id` 会优先从所选模型 lifecycle 声明的顶层 ID 字段规范化；未声明 lifecycle 时只接受顶层 `task_id` 或 `id`，绝不从 URL 或嵌套响应数据猜测。任务元数据未返回时会明确写“未返回”。
 
 ## 异步轮询
 
-只有提交返回规范化 `task_id` 后才开始轮询；自动轮询只在本次提交所在的用户回合，或用户明确继续查询同一 `task_id` 的用户回合内运行。优先使用所选模型声明的 lifecycle 状态；未声明时只把 `pending`、`queued`、`running`、`in_progress` 视为处理中。状态缺失或未识别时会如实报告并停止自动轮询。同一任务最多一个状态请求在途，绝不会创建后台计时器、队列或工作器。状态响应有有效的正数 HTTP `Retry-After` 且自动轮询预算尚有剩余时优先遵循；否则生图依次等待 `3、6、12、24、30、30` 秒，最多读取同一任务状态 6 次；生视频依次等待 `5、10、20、40、60、60` 秒，最多读取 7 次。每个有界轮询窗口最多持续：生图 120 秒，生视频 300 秒。遇到限流、5xx、传输错误或超时时立即停止本轮。如仍在处理中会连同任务 ID 如实报告；用户明确继续查询时，才会为**同一任务**开启一个新的有界轮询窗口。Skill 不会把到期或读取错误当失败，也不会提交替代任务。
+只有提交返回规范化 `task_id` 后才开始轮询；自动轮询只在本次提交所在的用户回合，或用户明确继续查询同一 `task_id` 的用户回合内运行。每次状态响应先检查 `reconciliation_required: true`：无论生命周期状态是什么，都将其视为终止性的运营状态，停止常规轮询、保留同一任务 ID，不提交替代任务、不推断退款。否则优先使用所选模型声明的 lifecycle 状态；未声明时只把 `pending`、`queued`、`running`、`in_progress` 视为处理中。状态缺失或未识别时会如实报告并停止自动轮询。同一任务最多一个状态请求在途，绝不会创建后台计时器、队列或工作器。状态查询收到 HTTP 429 时，只有有效正数 `Retry-After` 未超出本轮剩余预算才会等待并继续查询**同一任务**；否则停止本轮且绝不重提。正常处理中，生图依次等待 `3、6、12、24、30、30` 秒，最多读取同一任务状态 6 次；生视频依次等待 `5、10、20、40、60、60` 秒，最多读取 7 次。每个有界轮询窗口最多持续：生图 120 秒，生视频 300 秒。非 429 的 5xx、传输错误或超时时立即停止本轮。如仍在处理中会连同任务 ID 如实报告；用户明确继续查询时，才会为**同一任务**开启一个新的有界轮询窗口。Skill 不会把到期或读取错误当失败，也不会提交替代任务。
 
 媒体字节不会缓存到 Skill 状态、提示词或日志中。只有任务终态成功后才读取内容，每个任务最多一个内容读取在途；运行环境交付原生字节后才会进行下一次读取。如果运行环境无法在不创建无界后台工作、重复读取或缓存副本的前提下交付，Skill 会报告同任务交付不可用，不会用 URL 代替或重提任务。
 
@@ -147,7 +158,7 @@ CC Switch 是连接配置工具，不是 Skill 宿主。CC Switch、Pure Tokens 
 
 ## 模型发现
 
-用户想知道 Pure Tokens 实际可用哪些模型、哪些模型支持某项媒体操作，或哪些模型接受某个已声明参数时，应使用 `puretokens_models`。它读取认证后的 `GET https://api.puretokensx.com/v1/media/models`，只展示精确模型 ID、能力、可选参数资料和 `input_schema.operations`，不补全缺失字段。兼容模型清单只是技术匹配：只根据已声明 capability、字段/值和 operation 筛选，不做主观质量或价格推荐。
+用户想知道 Pure Tokens 实际可用哪些模型、哪些模型支持某项媒体操作，或哪些模型接受某个已声明参数时，应使用 `puretokens-models`。它读取认证后的 `GET https://api.puretokensx.com/v1/media/models`，只展示精确模型 ID、能力、可选参数资料和 `input_schema.operations`，不补全缺失字段。兼容模型清单只是技术匹配：只根据已声明 capability、字段/值和 operation 筛选，不做主观质量或价格推荐。
 
 README 仅用于发现能力。模型能力只来自基础模型目录明确声明的图片/视频能力，绝不通过名称推断。每个安装后的图片/视频 Skill 都携带从同一目录生成的、按能力拆分的 `references/model-selection.json`；别名只有唯一对应一个精确模型 ID 时才可使用。
 
@@ -195,13 +206,7 @@ README 只从基础目录中带有明确图片/视频能力的模型生成，不
 拉取最新仓库后，分别升级已经安装的 Skill：
 
 ```bash
-node bin/puretokens-skill.js upgrade puretokens_image --target ~/.agents/skills
-```
-
-Claude Desktop 需要打包并上传对应的专项 Skill：
-
-```bash
-node bin/puretokens-skill.js bundle puretokens_image --format claude-desktop --out ./puretokens_image.zip
+node bin/puretokens-skill.js upgrade puretokens-image --target ~/.agents/skills
 ```
 
 发布前运行：

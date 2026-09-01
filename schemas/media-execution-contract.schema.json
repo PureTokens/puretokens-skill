@@ -31,7 +31,8 @@
     "polling": { "type": "object", "additionalProperties": true },
     "taskIdentity": { "type": "object", "additionalProperties": true },
     "taskState": { "type": "object", "additionalProperties": true },
-    "submissionFailure": { "type": "object", "additionalProperties": true }
+    "submissionFailure": { "type": "object", "additionalProperties": true },
+    "failureReceipt": { "$ref": "#/$defs/failureReceipt" }
   },
   "allOf": [
     {
@@ -61,7 +62,7 @@
     {
       "if": { "properties": { "kind": { "const": "image" } } },
       "then": {
-        "required": ["operations", "unsupportedInput", "parameterValidation", "inputMediaValidation", "contentRetrieval", "polling", "taskIdentity", "taskState", "submissionFailure"],
+        "required": ["operations", "unsupportedInput", "parameterValidation", "inputMediaValidation", "contentRetrieval", "polling", "taskIdentity", "taskState", "submissionFailure", "failureReceipt"],
         "properties": {
           "operations": {
             "required": ["catalog", "submit", "edit", "status", "content"],
@@ -78,7 +79,7 @@
     {
       "if": { "properties": { "kind": { "const": "video" } } },
       "then": {
-        "required": ["operations", "unsupportedInput", "parameterValidation", "inputMediaValidation", "contentRetrieval", "polling", "taskIdentity", "taskState", "submissionFailure"],
+        "required": ["operations", "unsupportedInput", "parameterValidation", "inputMediaValidation", "contentRetrieval", "polling", "taskIdentity", "taskState", "submissionFailure", "failureReceipt"],
         "properties": {
           "operations": {
             "required": ["catalog", "submit", "edit", "status", "content"],
@@ -125,11 +126,12 @@
             }
           },
           "result": {
-            "required": ["installsMissingOfficialSkills", "upgradesOnlyManagedMatchingSkills", "neverOverwritesUnmanagedDirectories", "requiresNewHostConversationAfterSuccess"],
+            "required": ["installsMissingOfficialSkills", "upgradesOnlyManagedMatchingSkills", "neverOverwritesUnmanagedDirectories", "archivesVerifiedRetiredManagedSkills", "requiresNewHostConversationAfterSuccess"],
             "properties": {
               "installsMissingOfficialSkills": { "const": true },
               "upgradesOnlyManagedMatchingSkills": { "const": true },
               "neverOverwritesUnmanagedDirectories": { "const": true },
+              "archivesVerifiedRetiredManagedSkills": { "const": true },
               "requiresNewHostConversationAfterSuccess": { "const": true }
             }
           }
@@ -192,6 +194,26 @@
         "sourceRepository": { "const": "https://github.com/PureTokens/puretokens-skill.git" },
         "sourceBranch": { "const": "main" },
         "validationCommand": { "const": "npm run check" }
+      },
+      "additionalProperties": false
+    },
+    "failureReceipt": {
+      "type": "object",
+      "required": ["requiredFields", "allowedFailurePhases", "httpStatus", "apiErrorCode", "errorMessage", "retryAfterSeconds", "forbiddenDisclosure"],
+      "properties": {
+        "requiredFields": {
+          "const": ["failure_phase", "api_error_code", "http_status", "error_message", "next_action"]
+        },
+        "allowedFailurePhases": {
+          "const": ["validation", "submission", "status", "content"]
+        },
+        "httpStatus": { "const": "numeric_when_returned_otherwise_not_returned" },
+        "apiErrorCode": { "const": "exact_explicit_public_api_error_code_otherwise_not_returned" },
+        "errorMessage": { "const": "safe_user_facing_summary_using_only_sanitized_public_api_detail_or_a_fixed_local_explanation" },
+        "retryAfterSeconds": { "const": "include_only_for_http_429_when_a_valid_positive_retry_after_is_returned" },
+        "forbiddenDisclosure": {
+          "const": ["raw_response_body", "upstream_or_provider_identifier", "internal_hostname_or_url", "stack_trace", "request_headers", "request_body", "credentials_or_session_data", "user_reference_url_or_attachment_bytes"]
+        }
       },
       "additionalProperties": false
     }

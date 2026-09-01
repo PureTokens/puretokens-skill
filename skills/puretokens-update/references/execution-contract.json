@@ -1,0 +1,26 @@
+{
+  "$schema": "https://puretokensx.com/schemas/media-execution-contract.schema.json",
+  "schemaVersion": 1,
+  "kind": "update",
+  "transport": {
+    "localSkillManager": true,
+    "usesOfficialMainBranch": true,
+    "doesNotReadCredentialsOrHostConfiguration": true,
+    "doesNotUseMediaApiOrMcp": true
+  },
+  "operations": {
+    "sync": {
+      "commandTemplate": "node bin/puretokens-skill.js sync --target <installation-root>",
+      "sourceRepository": "https://github.com/PureTokens/puretokens-skill.git",
+      "sourceBranch": "main",
+      "validationCommand": "npm run check"
+    }
+  },
+  "result": {
+    "installsMissingOfficialSkills": true,
+    "upgradesOnlyManagedMatchingSkills": true,
+    "neverOverwritesUnmanagedDirectories": true,
+    "archivesVerifiedRetiredManagedSkills": true,
+    "requiresNewHostConversationAfterSuccess": true
+  }
+}

@@ -3,7 +3,7 @@
   "$id": "https://puretokensx.com/schemas/direct-api-execution-contract.schema.json",
   "title": "Pure Tokens direct API execution contract",
   "type": "object",
-  "required": ["schemaVersion", "apiOrigin", "authentication", "transport", "acceptanceScenarios", "userMediaInput", "mediaDeliveryResourceBounds", "balance"],
+  "required": ["schemaVersion", "apiOrigin", "authentication", "transport", "supportedHosts", "requiredRuntimeCapabilities", "acceptanceScenarios", "userMediaInput", "asyncTaskHandling", "mediaDeliveryResourceBounds", "balance"],
   "properties": {
     "$schema": { "const": "https://puretokensx.com/schemas/direct-api-execution-contract.schema.json" },
     "schemaVersion": { "const": 1 },
@@ -28,8 +28,28 @@
       },
       "additionalProperties": false
     },
+    "supportedHosts": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" }
+    },
+    "requiredRuntimeCapabilities": {
+      "type": "array",
+      "minItems": 4,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "authenticated_full_url_request",
+          "json_task_response",
+          "same_task_status_read",
+          "native_media_byte_delivery"
+        ]
+      }
+    },
     "acceptanceScenarios": { "type": "array", "minItems": 5 },
     "userMediaInput": { "type": "object" },
+    "asyncTaskHandling": { "type": "object" },
     "mediaDeliveryResourceBounds": { "type": "object" },
     "balance": { "type": "object" }
   },

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pure Tokens Balance"
+  short_description: "Check the current Pure Tokens balance."
+  default_prompt: "Use $puretokens-balance to check my current Pure Tokens balance."

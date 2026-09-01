@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -10,13 +10,13 @@ import { collectSkillRecords, repositoryRoot, validateRepository } from "../scri
 import { sourceRows, buildPublishedCatalog } from "../scripts/sync-media-model-catalog-from-service.mjs";
 import { buildSelection } from "../scripts/sync-skill-model-selection.mjs";
 
-const names = ["puretokens_balance", "puretokens_connection", "puretokens_models", "puretokens_image", "puretokens_video", "puretokens_update"];
+const names = ["puretokens-balance", "puretokens-connection", "puretokens-models", "puretokens-image", "puretokens-video", "puretokens-update"];
 
 test("registry exposes exactly the six specialist Skills", async () => {
   const { registry, records } = await collectSkillRecords();
   assert.deepEqual(registry.skills.map((skill) => skill.name), names);
   assert.equal(records.length, 6);
-  assert.deepEqual([...new Set(records.map((record) => record.manifest.version))], ["0.12.0"]);
+  assert.deepEqual([...new Set(records.map((record) => record.manifest.version))], ["0.13.0"]);
   assert.deepEqual(await validateRepository(), []);
 });
 
@@ -53,7 +53,7 @@ test("bilingual READMEs include safe copyable Agent installation prompts", async
   assert.match(englishPrompt[1], /Do not substitute a package, mirror, fork, or similarly named repository/);
   assert.match(english, /\$env:USERPROFILE\\\.agents\\skills/);
   assert.match(english, /`~\/\.agents\/skills` on macOS\/Linux/);
-  assert.match(english, /Claude Code: `~\/\.claude\/skills`[\s\S]*Gemini CLI: `~\/\.gemini\/skills`/);
+  assert.match(english, /Claude Code: `\$env:USERPROFILE\\\.claude\\skills`[\s\S]*Trae: `\$env:USERPROFILE\\\.trae\\skills`/);
   assert.doesNotMatch(english, /current `develop` test build|branch `develop`/);
   assert.match(english, /Identify the current host from this runtime/);
   assert.match(english, /If a terminal, PowerShell, exec, or shell tool is available, use it before replying/);
@@ -63,7 +63,7 @@ test("bilingual READMEs include safe copyable Agent installation prompts", async
   assert.match(english, /Do not use third-party package mirrors or delete files/);
   assert.match(english, /leave the conflict untouched, and report it/);
   assert.match(english, /Sync all six Skills/);
-  assert.match(english, /puretokens_update/);
+  assert.match(english, /puretokens-update/);
   assert.match(english, /never read, display, copy, change, or ask for API keys, Base URLs, authentication files, model settings, MCP settings/);
   assert.match(chinese, /## 让 Agent 协助安装/);
   assert.match(chinese, /^### 直接复制给具备本机终端的 Agent\n\n```text$/m);
@@ -76,7 +76,7 @@ test("bilingual READMEs include safe copyable Agent installation prompts", async
   assert.match(chinese, /^<p align="center">\n  <img src="\.\/assets\/brand\/puretokens-skill-hero\.png" alt="Pure Tokens 官方 Skills" width="100%" \/>\n<\/p>/);
   assert.match(chinese, /\$env:USERPROFILE\\\.agents\\skills/);
   assert.match(chinese, /macOS\/Linux 使用 `~\/\.agents\/skills`/);
-  assert.match(chinese, /Claude Code：使用 `~\/\.claude\/skills`[\s\S]*Gemini CLI：使用 `~\/\.gemini\/skills`/);
+  assert.match(chinese, /Claude Code：Windows PowerShell 使用 `\$env:USERPROFILE\\\.claude\\skills`[\s\S]*Trae：Windows PowerShell 使用 `\$env:USERPROFILE\\\.trae\\skills`/);
   assert.doesNotMatch(chinese, /当前 `develop` 测试版本|`develop` 分支/);
   assert.match(chinese, /根据当前运行环境识别宿主/);
   assert.match(chinese, /必须在回复前先调用/);
@@ -86,7 +86,7 @@ test("bilingual READMEs include safe copyable Agent installation prompts", async
   assert.match(chinese, /不得使用第三方包镜像或删除文件/);
   assert.match(chinese, /保持冲突目录不变并报告/);
   assert.match(chinese, /同步全部六个 Skill/);
-  assert.match(chinese, /puretokens_update/);
+  assert.match(chinese, /puretokens-update/);
   assert.match(chinese, /不得读取、展示、复制、修改或索取 API Key、Base URL、认证文件、模型配置、MCP 配置/);
 });
 
@@ -95,10 +95,11 @@ test("specialist manifests use the fixed direct API without credential inspectio
     const manifest = JSON.parse(await readFile(path.join(repositoryRoot, "skills", name, "skill.json"), "utf8"));
     assert.equal(manifest.rules.doesNotReadCredentialsOrHostConfiguration, true);
     assert.equal(manifest.rules.doesNotUseMcpOrFallbackTransport, true);
-    if (name === "puretokens_update") {
+    if (name === "puretokens-update") {
       assert.equal(manifest.rules.usesOfficialMainBranch, true);
       assert.equal(manifest.rules.usesManagedSkillSync, true);
       assert.equal(manifest.rules.neverOverwritesUnmanagedDirectories, true);
+      assert.equal(manifest.rules.archivesVerifiedRetiredSkills, true);
     } else {
       assert.equal(manifest.rules.usesFixedPureTokensApiOrigin, true);
       assert.equal(manifest.rules.usesFullApiUrls, true);
@@ -109,7 +110,7 @@ test("specialist manifests use the fixed direct API without credential inspectio
 
 test("installed model selections are generated from the published media catalog", async () => {
   const catalog = JSON.parse(await readFile(path.join(repositoryRoot, "references", "media-model-catalog.json"), "utf8"));
-  for (const [skill, capability] of [["puretokens_image", "image"], ["puretokens_video", "video"]]) {
+  for (const [skill, capability] of [["puretokens-image", "image"], ["puretokens-video", "video"]]) {
     const selection = JSON.parse(await readFile(path.join(repositoryRoot, "skills", skill, "references", "model-selection.json"), "utf8"));
     const expected = catalog.models
       .filter((model) => model.capabilities.includes(capability))
@@ -124,12 +125,12 @@ test("installed model selections are generated from the published media catalog"
 
 test("installed contracts cover bounded requests, task recovery, and user-facing failure guidance", async () => {
   const requiredScenarios = {
-    puretokens_balance: ["balance-account-session-unavailable", "balance-response"],
-    puretokens_connection: ["connection-identity-confirmed", "connection-identity-unconfirmed", "connection-identity-unavailable", "connection-base-url-request", "connection-identity-assurance"],
-    puretokens_models: ["models-catalog-unavailable", "models-catalog-empty", "models-exact-id-unavailable", "models-capability-filter-empty", "models-parameter-profile-absent", "models-operation-profile-absent", "models-requirement-ambiguous", "models-catalog-response"],
-    puretokens_image: ["image-model-alias-ambiguous", "image-normal-submission-skips-catalog", "image-submission-model-parameter-rejected", "image-submission-rate-limited", "image-submission-outcome-unknown", "image-model-unavailable", "image-model-parameter-profile-unavailable", "image-model-parameter-unsupported", "image-catalog-on-demand-unavailable", "image-execution-unavailable", "image-count-invalid", "image-pixel-size-invalid", "image-physical-size", "image-edit-profile-unavailable", "image-public-url-reference-profile-unavailable", "image-public-url-reference-invalid", "image-public-url-reference-not-public", "image-public-url-reference-ambiguous", "image-edit-attachment-unavailable", "image-edit-input-unsupported", "image-task-id-normalization", "image-task-id-missing", "image-task-id-invalid", "image-task-state-unrecognized", "image-task-request-count-unknown", "image-task-pending", "image-task-poll-delay", "image-task-poll-resource-bound", "image-task-polling-deadline", "image-task-explicit-continuation", "image-task-terminal-failure", "image-task-timeout-or-unknown", "image-content-delivery-failure", "image-content-index-missing", "image-content-resource-bound"],
-    puretokens_video: ["video-model-alias-ambiguous", "video-normal-submission-skips-catalog", "video-submission-model-parameter-rejected", "video-submission-rate-limited", "video-submission-outcome-unknown", "video-model-unavailable", "video-model-parameter-profile-unavailable", "video-model-parameter-unsupported", "video-catalog-on-demand-unavailable", "video-execution-unavailable", "video-parameter-unsupported", "video-resolution-mode-unsupported", "video-image-operation-profile-unavailable", "video-media-operation-profile-unavailable", "video-image-transport-unavailable", "video-public-url-reference-profile-unavailable", "video-public-url-reference-invalid", "video-public-url-reference-not-public", "video-public-url-reference-ambiguous", "video-prompt-requirement", "video-image-count-unsupported", "video-media-combination-unsupported", "video-input-media-unsupported", "video-task-id-normalization", "video-task-id-missing", "video-task-id-invalid", "video-task-state-unrecognized", "video-task-pending", "video-task-poll-delay", "video-task-poll-resource-bound", "video-task-polling-deadline", "video-task-explicit-continuation", "video-task-terminal-failure", "video-task-timeout-or-unknown", "video-content-delivery-failure", "video-content-resource-bound"],
-    puretokens_update: ["update-host-unknown", "update-terminal-unavailable", "update-validation-failed", "update-unmanaged-conflict", "update-managed-sync", "update-claude-desktop-bundle"]
+    "puretokens-balance": ["balance-account-session-unavailable", "balance-response"],
+    "puretokens-connection": ["connection-identity-confirmed", "connection-identity-unconfirmed", "connection-identity-unavailable", "connection-base-url-request", "connection-identity-assurance"],
+    "puretokens-models": ["models-catalog-unavailable", "models-catalog-empty", "models-exact-id-unavailable", "models-capability-filter-empty", "models-parameter-profile-absent", "models-operation-profile-absent", "models-requirement-ambiguous", "models-catalog-response"],
+    "puretokens-image": ["image-model-alias-ambiguous", "image-normal-submission-skips-catalog", "image-failure-receipt-safe", "image-content-safety-failure", "image-input-role-ambiguous", "image-distinct-assets", "image-prompt-shaping", "image-submission-model-parameter-rejected", "image-submission-rate-limited", "image-submission-outcome-unknown", "image-model-unavailable", "image-model-parameter-profile-unavailable", "image-model-parameter-unsupported", "image-catalog-on-demand-unavailable", "image-execution-unavailable", "image-count-invalid", "image-pixel-size-invalid", "image-physical-size", "image-edit-profile-unavailable", "image-public-url-reference-profile-unavailable", "image-public-url-edit-profile-unavailable", "image-public-url-reference-invalid", "image-public-url-reference-not-public", "image-public-url-reference-ambiguous", "image-edit-attachment-unavailable", "image-edit-attachment-direct-api", "image-edit-input-unsupported", "image-task-id-normalization", "image-task-id-missing", "image-task-id-invalid", "image-task-state-unrecognized", "image-task-reconciliation-required", "image-task-request-count-unknown", "image-task-pending", "image-task-poll-delay", "image-task-poll-rate-limited", "image-task-poll-resource-bound", "image-task-polling-deadline", "image-task-explicit-continuation", "image-task-terminal-failure", "image-task-timeout-or-unknown", "image-content-delivery-failure", "image-content-delivery-location", "image-content-index-missing", "image-content-resource-bound"],
+    "puretokens-video": ["video-model-alias-ambiguous", "video-normal-submission-skips-catalog", "video-failure-receipt-safe", "video-content-safety-failure", "video-submission-model-parameter-rejected", "video-submission-rate-limited", "video-submission-outcome-unknown", "video-model-unavailable", "video-model-parameter-profile-unavailable", "video-model-parameter-unsupported", "video-catalog-on-demand-unavailable", "video-execution-unavailable", "video-parameter-unsupported", "video-resolution-mode-unsupported", "video-image-operation-profile-unavailable", "video-media-operation-profile-unavailable", "video-image-transport-unavailable", "video-public-url-reference-profile-unavailable", "video-public-url-reference-invalid", "video-public-url-reference-not-public", "video-public-url-reference-ambiguous", "video-prompt-requirement", "video-attachment-direct-api", "video-image-count-unsupported", "video-media-combination-unsupported", "video-input-media-unsupported", "video-task-id-normalization", "video-task-id-missing", "video-task-id-invalid", "video-task-state-unrecognized", "video-task-reconciliation-required", "video-task-pending", "video-task-poll-delay", "video-task-poll-rate-limited", "video-task-poll-resource-bound", "video-task-polling-deadline", "video-task-explicit-continuation", "video-task-terminal-failure", "video-task-timeout-or-unknown", "video-content-delivery-failure", "video-content-resource-bound"],
+    "puretokens-update": ["update-host-unknown", "update-terminal-unavailable", "update-validation-failed", "update-unmanaged-conflict", "update-managed-retired-skill", "update-managed-sync"]
   };
   for (const name of names) {
     const root = path.join(repositoryRoot, "skills", name, "references");
@@ -139,20 +140,21 @@ test("installed contracts cover bounded requests, task recovery, and user-facing
     assert.equal(contract.$schema, "https://puretokensx.com/schemas/media-execution-contract.schema.json");
     assert.equal(scenarios.schemaVersion, 1);
     assert.equal(scenarios.$schema, "https://puretokensx.com/schemas/media-behavior-scenarios.schema.json");
-    assert.equal(contract.result.neverAutoResubmit ?? false, ["puretokens_image", "puretokens_video"].includes(name));
+    assert.equal(contract.result.neverAutoResubmit ?? false, ["puretokens-image", "puretokens-video"].includes(name));
     const ids = new Set(scenarios.scenarios.map((scenario) => scenario.id));
     for (const id of requiredScenarios[name]) assert.ok(ids.has(id), `${name} missing ${id}`);
   }
-  const image = JSON.parse(await readFile(path.join(repositoryRoot, "skills", "puretokens_image", "references", "execution-contract.json"), "utf8"));
+  const image = JSON.parse(await readFile(path.join(repositoryRoot, "skills", "puretokens-image", "references", "execution-contract.json"), "utf8"));
   assert.equal(image.operations.submit.conditionalBodyFields.all_user_optional_fields, "only_when_the_installed_exact_model_selection_or_an_on_demand_live_input_schema_declares_the_field_and_value");
   assert.equal(image.operations.submit.fixedBody.async, true);
   assert.equal(image.operations.catalog.url, "https://api.puretokensx.com/v1/media/models");
   assert.deepEqual(image.operations.edit.allowedPaths, ["/v1/images/generations", "/v1/images/edits"]);
   assert.equal(image.operations.edit.pathSource, "installed_model_selection_or_on_demand_live_profile_operation_path");
-  assert.equal(image.operations.edit.contentType, "multipart/form-data");
+  assert.equal(image.operations.edit.contentType, "profile_declared_json_or_multipart");
   assert.equal(image.operations.edit.requiresDeclaredProfileOperation, "image_edit");
-  assert.deepEqual(image.operations.edit.requiredBodyFields, ["model", "prompt", "image", "async"]);
+  assert.deepEqual(image.operations.edit.requiredBodyFields, ["model", "prompt", "async"]);
   assert.equal(image.inputMediaValidation.publicUrlReferenceRequires, "installed_model_selection_or_on_demand_live_profile_property_and_declared_reference_transport");
+  assert.equal(image.inputMediaValidation.publicUrlEditRequires, "installed_model_selection_or_on_demand_live_profile_image_edit_operation_with_application_json_exact_field_and_public_url_transport");
   assert.equal(image.inputMediaValidation.nativeAttachmentRequires, "installed_model_selection_or_on_demand_live_profile_operation");
   assert.equal(image.inputMediaValidation.imageEditOperation, "image_edit");
   assert.equal(image.inputMediaValidation.onlyCurrentUserExplicitMedia, true);
@@ -162,6 +164,14 @@ test("installed contracts cover bounded requests, task recovery, and user-facing
   assert.equal(image.inputMediaValidation.requiresRuntimeNativeAttachmentByteDelivery, true);
   assert.equal(image.result.sameTaskOnly, true);
   assert.equal(image.result.neverAutoResubmit, true);
+  assert.equal(image.result.deliveryReceipt, "report_a_local_path_or_attachment_only_when_confirmed_by_the_runtime_otherwise_report_native_byte_handoff_without_inventing_a_location");
+  assert.deepEqual(image.failureReceipt.requiredFields, ["failure_phase", "api_error_code", "http_status", "error_message", "next_action"]);
+  assert.deepEqual(image.failureReceipt.allowedFailurePhases, ["validation", "submission", "status", "content"]);
+  assert.equal(image.failureReceipt.httpStatus, "numeric_when_returned_otherwise_not_returned");
+  assert.equal(image.failureReceipt.apiErrorCode, "exact_explicit_public_api_error_code_otherwise_not_returned");
+  assert.equal(image.failureReceipt.errorMessage, "safe_user_facing_summary_using_only_sanitized_public_api_detail_or_a_fixed_local_explanation");
+  assert.equal(image.failureReceipt.retryAfterSeconds, "include_only_for_http_429_when_a_valid_positive_retry_after_is_returned");
+  assert.deepEqual(image.failureReceipt.forbiddenDisclosure, ["raw_response_body", "upstream_or_provider_identifier", "internal_hostname_or_url", "stack_trace", "request_headers", "request_body", "credentials_or_session_data", "user_reference_url_or_attachment_bytes"]);
   assert.deepEqual(image.transport, {
     fixedApiOrigin: "https://api.puretokensx.com",
     usesFullApiUrls: true,
@@ -177,6 +187,9 @@ test("installed contracts cover bounded requests, task recovery, and user-facing
   assert.deepEqual(image.taskIdentity.fallbackTopLevelResponseFields, ["task_id", "id"]);
   assert.equal(image.taskIdentity.neverDerivesIdFromUrlsNestedObjectsOrPrompt, true);
   assert.deepEqual(image.taskState.fallbackPendingStates, ["pending", "queued", "running", "in_progress"]);
+  assert.equal(image.taskState.reconciliationRequiredField, "reconciliation_required");
+  assert.equal(image.taskState.reconciliationPrecedesLifecycle, true);
+  assert.equal(image.taskState.whenReconciliationRequired, "stop_ordinary_polling_retain_same_task_id_do_not_submit_replacement_or_infer_refund");
   assert.equal(image.submissionFailure.rateLimit, "report_retry_after_when_returned_and_require_explicit_retry");
   assert.equal(image.contentRetrieval.indexBase, 0);
   assert.equal(image.contentRetrieval.allowedIndexes, "0..requestedCount-1");
@@ -189,15 +202,16 @@ test("installed contracts cover bounded requests, task recovery, and user-facing
   assert.deepEqual(image.polling.fallbackDelaysSeconds, [3, 6, 12, 24, 30]);
   assert.equal(image.polling.serverDelay, "honor_valid_positive_retry_after_before_fallback");
   assert.equal(image.polling.serverDelayMustFitRemainingAutomaticDeadline, true);
+  assert.equal(image.polling.afterHttp429, "honor_valid_positive_retry_after_then_continue_same_task_if_remaining_budget");
   assert.equal(image.polling.steadyDelaySeconds, 30);
   assert.equal(image.polling.automaticDeadlineSeconds, 120);
   assert.equal(image.polling.maxAutomaticStatusReads, 6);
   assert.equal(image.polling.oneInFlightStatusReadPerTask, true);
   assert.equal(image.polling.automaticPollingScope, "submission_or_explicit_same_task_continuation_turn_only_no_background_timer_or_queue");
-  assert.equal(image.polling.afterStatusReadError, "stop_automatic_polling_and_require_explicit_same_task_continuation");
+  assert.equal(image.polling.afterStatusReadError, "stop_on_5xx_transport_or_timeout_and_require_explicit_same_task_continuation");
   assert.equal(image.polling.explicitContinuation, "new_bounded_same_task_polling_window_only_when_explicitly_requested");
   assert.equal(image.polling.afterDeadline, "report_pending_and_require_explicit_same_task_continuation");
-  const video = JSON.parse(await readFile(path.join(repositoryRoot, "skills", "puretokens_video", "references", "execution-contract.json"), "utf8"));
+  const video = JSON.parse(await readFile(path.join(repositoryRoot, "skills", "puretokens-video", "references", "execution-contract.json"), "utf8"));
   assert.equal(video.operations.catalog.url, "https://api.puretokensx.com/v1/media/models");
   assert.equal(video.operations.submit.url, "https://api.puretokensx.com/v1/videos");
   assert.deepEqual(video.operations.submit.requiredBodyFields, ["model"]);
@@ -205,6 +219,7 @@ test("installed contracts cover bounded requests, task recovery, and user-facing
   assert.equal(video.operations.edit.requiresDeclaredProfileOperation, "video_edit");
   assert.equal(video.result.sameTaskOnly, true);
   assert.equal(video.result.neverAutoResubmit, true);
+  assert.deepEqual(video.failureReceipt, image.failureReceipt);
   assert.equal(video.parameterValidation.normalSubmissionUsesInstalledModelSelection, true);
   assert.equal(video.parameterValidation.exactModelCoreSubmissionDoesNotRequireCatalogPreflight, true);
   assert.equal(video.parameterValidation.onDemandLiveCatalogRead, "only_for_explicit_discovery_installed_profile_gap_or_post_rejection_diagnosis");
@@ -214,6 +229,9 @@ test("installed contracts cover bounded requests, task recovery, and user-facing
   assert.deepEqual(video.taskIdentity.fallbackTopLevelResponseFields, ["task_id", "id"]);
   assert.equal(video.taskIdentity.neverDerivesIdFromUrlsNestedObjectsOrPrompt, true);
   assert.deepEqual(video.taskState.fallbackPendingStates, ["pending", "queued", "running", "in_progress"]);
+  assert.equal(video.taskState.reconciliationRequiredField, "reconciliation_required");
+  assert.equal(video.taskState.reconciliationPrecedesLifecycle, true);
+  assert.equal(video.taskState.whenReconciliationRequired, "stop_ordinary_polling_retain_same_task_id_do_not_submit_replacement_or_infer_refund");
   assert.equal(video.submissionFailure.rateLimit, "report_retry_after_when_returned_and_require_explicit_retry");
   assert.equal(video.inputMediaValidation.imageToVideoOperation, "image_to_video");
   assert.equal(video.inputMediaValidation.referenceImageVideoOperation, "reference_image_video");
@@ -235,21 +253,22 @@ test("installed contracts cover bounded requests, task recovery, and user-facing
   assert.deepEqual(video.polling.fallbackDelaysSeconds, [5, 10, 20, 40, 60]);
   assert.equal(video.polling.serverDelay, "honor_valid_positive_retry_after_before_fallback");
   assert.equal(video.polling.serverDelayMustFitRemainingAutomaticDeadline, true);
+  assert.equal(video.polling.afterHttp429, "honor_valid_positive_retry_after_then_continue_same_task_if_remaining_budget");
   assert.equal(video.polling.steadyDelaySeconds, 60);
   assert.equal(video.polling.automaticDeadlineSeconds, 300);
   assert.equal(video.polling.maxAutomaticStatusReads, 7);
   assert.equal(video.polling.oneInFlightStatusReadPerTask, true);
   assert.equal(video.polling.automaticPollingScope, "submission_or_explicit_same_task_continuation_turn_only_no_background_timer_or_queue");
-  assert.equal(video.polling.afterStatusReadError, "stop_automatic_polling_and_require_explicit_same_task_continuation");
+  assert.equal(video.polling.afterStatusReadError, "stop_on_5xx_transport_or_timeout_and_require_explicit_same_task_continuation");
   assert.equal(video.polling.explicitContinuation, "new_bounded_same_task_polling_window_only_when_explicitly_requested");
   assert.equal(video.polling.afterDeadline, "report_pending_and_require_explicit_same_task_continuation");
 
-  const balance = JSON.parse(await readFile(path.join(repositoryRoot, "skills", "puretokens_balance", "references", "execution-contract.json"), "utf8"));
+  const balance = JSON.parse(await readFile(path.join(repositoryRoot, "skills", "puretokens-balance", "references", "execution-contract.json"), "utf8"));
   assert.equal(balance.operations.read.url, "https://api.puretokensx.com/api/product/desktop/account/balance");
   assert.equal(balance.operations.read.requiresExistingAuthenticatedAccountSession, true);
   assert.equal(balance.operations.read.responseSchema, "https://puretokensx.com/schemas/balance-snapshot.schema.json");
 
-  const connection = JSON.parse(await readFile(path.join(repositoryRoot, "skills", "puretokens_connection", "references", "execution-contract.json"), "utf8"));
+  const connection = JSON.parse(await readFile(path.join(repositoryRoot, "skills", "puretokens-connection", "references", "execution-contract.json"), "utf8"));
   assert.equal(connection.kind, "connection");
   assert.equal(connection.operations.identity.url, "https://api.puretokensx.com/v1");
   assert.deepEqual(connection.result, {
@@ -262,7 +281,7 @@ test("installed contracts cover bounded requests, task recovery, and user-facing
     unconfirmedDoesNotProveOtherService: true
   });
 
-  const models = JSON.parse(await readFile(path.join(repositoryRoot, "skills", "puretokens_models", "references", "execution-contract.json"), "utf8"));
+  const models = JSON.parse(await readFile(path.join(repositoryRoot, "skills", "puretokens-models", "references", "execution-contract.json"), "utf8"));
   assert.equal(models.kind, "models");
   assert.equal(models.operations.catalog.url, "https://api.puretokensx.com/v1/media/models");
   assert.equal(models.result.reportOnlyAuthenticatedCatalog, true);
@@ -271,22 +290,27 @@ test("installed contracts cover bounded requests, task recovery, and user-facing
   assert.equal(models.result.noStaticCatalogFallback, true);
   assert.equal(models.result.compatibilityShortlistsRequireDeclaredCapabilityAndInputSchema, true);
 
-  const update = JSON.parse(await readFile(path.join(repositoryRoot, "skills", "puretokens_update", "references", "execution-contract.json"), "utf8"));
+  const update = JSON.parse(await readFile(path.join(repositoryRoot, "skills", "puretokens-update", "references", "execution-contract.json"), "utf8"));
   assert.equal(update.kind, "update");
   assert.equal(update.operations.sync.commandTemplate, "node bin/puretokens-skill.js sync --target <installation-root>");
   assert.equal(update.operations.sync.sourceBranch, "main");
   assert.equal(update.result.neverOverwritesUnmanagedDirectories, true);
+  assert.equal(update.result.archivesVerifiedRetiredManagedSkills, true);
 });
 
 test("distribution matrix and fixed direct API contract match every specialist manifest", async () => {
   const hostSupport = JSON.parse(await readFile(path.join(repositoryRoot, "references", "host-support.json"), "utf8"));
   assert.equal(hostSupport.$schema, "https://puretokensx.com/schemas/host-support.schema.json");
   const supported = hostSupport.supported.map((host) => host.id).sort();
-  assert.deepEqual(supported, ["claude-code", "claude-desktop", "codex", "gemini-cli"]);
-  assert.deepEqual(Object.fromEntries(hostSupport.supported.filter((host) => host.delivery === "manual-source").map((host) => [host.id, host.globalSkillDirectory])), {
-    codex: "~/.agents/skills",
+  assert.deepEqual(supported, ["claude-code", "codex", "gemini-cli", "grok-build", "opencode", "trae", "workbuddy"]);
+  assert.deepEqual(Object.fromEntries(hostSupport.supported.map((host) => [host.id, host.globalSkillDirectory])), {
     "claude-code": "~/.claude/skills",
-    "gemini-cli": "~/.gemini/skills"
+    codex: "~/.agents/skills",
+    workbuddy: "~/.workbuddy/skills",
+    "gemini-cli": "~/.gemini/skills",
+    "grok-build": "~/.grok/skills",
+    opencode: "~/.config/opencode/skills",
+    trae: "~/.trae/skills"
   });
   assert.equal(hostSupport.directApiOrigin, "https://api.puretokensx.com");
   const directContract = JSON.parse(await readFile(path.join(repositoryRoot, "references", "direct-api-execution-contract.json"), "utf8"));
@@ -301,13 +325,30 @@ test("distribution matrix and fixed direct API contract match every specialist m
     doesNotUseLocalProxyOrSidecar: true,
     doesNotUseFallbackEndpoint: true
   });
+  assert.deepEqual(directContract.supportedHosts, ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae"]);
+  assert.deepEqual(directContract.requiredRuntimeCapabilities, ["authenticated_full_url_request", "json_task_response", "same_task_status_read", "native_media_byte_delivery"]);
   assert.deepEqual(directContract.acceptanceScenarios.map((scenario) => scenario.id), ["api-identity-read", "catalog-read", "media-submit", "same-task-status", "native-media-delivery"]);
   assert.equal(directContract.acceptanceScenarios.find((scenario) => scenario.id === "api-identity-read").request, "GET https://api.puretokensx.com/v1");
   assert.match(directContract.acceptanceScenarios.find((scenario) => scenario.id === "media-submit").request, /fixed Images or Videos API URL/);
+  assert.deepEqual(directContract.userMediaInput, {
+    onlyCurrentUserExplicitMedia: true,
+    publicUrlOrDeclaredIdRequiresInstalledOrOnDemandProfilePropertyAndTransport: true,
+    publicUrlImageEditRequiresExactDeclaredJsonOperation: true,
+    requiresInstalledOrOnDemandDeclaredTransport: true,
+    skillNeverDownloadsOrRehosts: true,
+    apiHandlesDeclaredMultipartAttachments: true,
+    fallback: "If the active runtime cannot send an explicitly attached file as the declared multipart representation, stop before submission, explain the declared transport, and do not invent a URL, file ID, or upload path. A public HTTPS URL, file ID, or voice ID explicitly supplied by the user may be sent only in the exact installed or on-demand-profile field whose declared transport permits it; the Skill never downloads, validates, or rehosts it."
+  });
+  assert.deepEqual(directContract.asyncTaskHandling, {
+    reconciliationRequiredPrecedesLifecycle: true,
+    reconciliationOutcome: "stop_ordinary_polling_retain_same_task_id_do_not_submit_replacement_or_infer_refund",
+    statusHttp429: "honor_valid_positive_retry_after_then_continue_same_task_if_remaining_budget",
+    non429StatusReadFailure: "stop_bounded_window_without_replacement_task",
+    doesNotInventApiErrorCode: true
+  });
   for (const name of names) {
     const manifest = JSON.parse(await readFile(path.join(repositoryRoot, "skills", name, "skill.json"), "utf8"));
     assert.deepEqual([...manifest.supportedClients].sort(), supported);
-    assert.deepEqual([...manifest.excludedClients].sort(), ["grok-build", "opencode", "trae", "workbuddy"]);
     assert.deepEqual(manifest.distribution.codex, {
       manualInstallationSupported: true,
       globalSkillDirectory: "~/.agents/skills",
@@ -321,21 +362,48 @@ test("distribution matrix and fixed direct API contract match every specialist m
       manualInstallationSupported: true,
       globalSkillDirectory: "~/.gemini/skills"
     });
+    assert.deepEqual(manifest.distribution.workbuddy, {
+      manualInstallationSupported: true,
+      globalSkillDirectory: "~/.workbuddy/skills"
+    });
+    assert.deepEqual(manifest.distribution.grokBuild, {
+      manualInstallationSupported: true,
+      globalSkillDirectory: "~/.grok/skills"
+    });
+    assert.deepEqual(manifest.distribution.opencode, {
+      manualInstallationSupported: true,
+      globalSkillDirectory: "~/.config/opencode/skills"
+    });
+    assert.deepEqual(manifest.distribution.trae, {
+      manualInstallationSupported: true,
+      globalSkillDirectory: "~/.trae/skills"
+    });
   }
-  const imageManifest = JSON.parse(await readFile(path.join(repositoryRoot, "skills", "puretokens_image", "skill.json"), "utf8"));
+  const imageManifest = JSON.parse(await readFile(path.join(repositoryRoot, "skills", "puretokens-image", "skill.json"), "utf8"));
   assert.equal(imageManifest.rules.profiledPublicUrlReferenceSupported, true);
   assert.equal(imageManifest.rules.profiledImageEditSupported, true);
+  assert.equal(imageManifest.rules.profiledPublicUrlJsonImageEditSupported, true);
+  assert.equal(imageManifest.rules.recognizesReconciliationRequired, true);
+  assert.equal(imageManifest.rules.honorsStatusRetryAfterForSameTask, true);
+  assert.equal(imageManifest.rules.reportsOnlyExplicitPublicApiErrorCodes, true);
+  const videoManifest = JSON.parse(await readFile(path.join(repositoryRoot, "skills", "puretokens-video", "skill.json"), "utf8"));
+  assert.equal(videoManifest.rules.recognizesReconciliationRequired, true);
+  assert.equal(videoManifest.rules.honorsStatusRetryAfterForSameTask, true);
+  assert.equal(videoManifest.rules.reportsOnlyExplicitPublicApiErrorCodes, true);
+  assert.equal(imageManifest.rules.usesIntentAwarePromptPreparation, true);
+  assert.equal(imageManifest.rules.doesNotSplitDistinctImageAssets, true);
+  assert.equal(imageManifest.rules.usesSafeStructuredFailureReceipts, true);
   assert.equal(imageManifest.rules.usesResourceBoundedPolling, true);
   assert.equal(imageManifest.rules.doesNotCreateBackgroundMediaWork, true);
   assert.equal(imageManifest.rules.usesSequentialNativeContentDelivery, true);
   assert.equal(Object.hasOwn(imageManifest.rules, "textToImageOnly"), false);
-  const videoManifest = JSON.parse(await readFile(path.join(repositoryRoot, "skills", "puretokens_video", "skill.json"), "utf8"));
   assert.equal(videoManifest.rules.profiledPublicUrlOrDeclaredIdReferenceSupported, true);
   assert.equal(videoManifest.rules.profiledImageToVideoSupported, true);
   assert.equal(videoManifest.rules.profiledReferenceImageVideoSupported, true);
   assert.equal(videoManifest.rules.profiledReferenceVideoSupported, true);
   assert.equal(videoManifest.rules.profiledReferenceAudioSupported, true);
   assert.equal(videoManifest.rules.profiledVideoEditSupported, true);
+  assert.equal(videoManifest.rules.usesSafeStructuredFailureReceipts, true);
   assert.equal(videoManifest.rules.modeSpecificResolutionUsesInstalledOrOnDemandConstraint, true);
   assert.equal(videoManifest.rules.usesResourceBoundedPolling, true);
   assert.equal(videoManifest.rules.doesNotCreateBackgroundMediaWork, true);
@@ -367,10 +435,10 @@ test("CLI installs each specialist Skill", async (t) => {
   for (const name of names) {
     await run(process.execPath, [path.join(repositoryRoot, "bin", "puretokens-skill.js"), "install", name, "--target", target], { cwd: repositoryRoot });
     assert.equal(JSON.parse(await readFile(path.join(target, name, "skill.json"), "utf8")).name, name);
-    if (["puretokens_image", "puretokens_video"].includes(name)) {
+    if (["puretokens-image", "puretokens-video"].includes(name)) {
       const manifest = JSON.parse(await readFile(path.join(target, name, "skill.json"), "utf8"));
       assert.equal(manifest.taskReceipt, "references/task-receipt.json");
-      assert.equal(JSON.parse(await readFile(path.join(target, name, manifest.taskReceipt), "utf8")).kind, name.replace("puretokens_", ""));
+      assert.equal(JSON.parse(await readFile(path.join(target, name, manifest.taskReceipt), "utf8")).kind, name.replace("puretokens-", ""));
     }
   }
 });
@@ -379,14 +447,14 @@ test("CLI sync installs missing Skills and refuses unmanaged conflicts before wr
   const target = await mkdtemp(path.join(os.tmpdir(), "puretokens-skill-sync-"));
   t.after(() => rm(target, { recursive: true, force: true }));
   const run = promisify(execFile);
-  const conflict = path.join(target, "puretokens_image");
+  const conflict = path.join(target, "puretokens-image");
   await mkdir(conflict);
   await writeFile(path.join(conflict, "SKILL.md"), "unmanaged\n");
   await assert.rejects(
     run(process.execPath, [path.join(repositoryRoot, "bin", "puretokens-skill.js"), "sync", "--target", target], { cwd: repositoryRoot }),
     /unmanaged Skill conflicts/
   );
-  await assert.rejects(readFile(path.join(target, "puretokens_balance", "skill.json"), "utf8"));
+  await assert.rejects(readFile(path.join(target, "puretokens-balance", "skill.json"), "utf8"));
   await rm(conflict, { recursive: true, force: true });
   await run(process.execPath, [path.join(repositoryRoot, "bin", "puretokens-skill.js"), "sync", "--target", target], { cwd: repositoryRoot });
   for (const name of names) {
@@ -394,14 +462,37 @@ test("CLI sync installs missing Skills and refuses unmanaged conflicts before wr
   }
 });
 
+test("CLI sync archives verified retired managed Skills without deleting them", async (t) => {
+  const target = await mkdtemp(path.join(os.tmpdir(), "puretokens-skill-retired-"));
+  t.after(() => rm(target, { recursive: true, force: true }));
+  const run = promisify(execFile);
+  const retired = path.join(target, "puretokens_image");
+  await mkdir(retired);
+  await writeFile(path.join(retired, "SKILL.md"), "retired managed Skill\n");
+  await writeFile(path.join(retired, "skill.json"), JSON.stringify({ name: "puretokens_image" }));
+
+  const { stdout } = await run(process.execPath, [path.join(repositoryRoot, "bin", "puretokens-skill.js"), "sync", "--target", target], { cwd: repositoryRoot });
+  assert.match(stdout, /Archived retired puretokens_image to/);
+  await assert.rejects(readFile(path.join(retired, "skill.json"), "utf8"));
+  const archived = (await readdir(target)).find((entry) => entry.startsWith(".puretokens_image.retired-"));
+  assert.ok(archived, "retired managed Skill must be preserved in a hidden backup");
+  assert.equal(JSON.parse(await readFile(path.join(target, archived, "skill.json"), "utf8")).name, "puretokens_image");
+  assert.equal(JSON.parse(await readFile(path.join(target, "puretokens-image", "skill.json"), "utf8")).name, "puretokens-image");
+});
+
 test("task receipts always expose the same core task fields", async () => {
   const core = ["exact_model_id", "task_id", "returned_state", "requested_operation", "requested_count", "requested_size_or_parameters", "next_action"];
-  for (const name of ["puretokens_image", "puretokens_video"]) {
+  const failure = ["failure_phase", "api_error_code", "http_status", "error_message"];
+  for (const name of ["puretokens-image", "puretokens-video"]) {
     const receipt = JSON.parse(await readFile(path.join(repositoryRoot, "skills", name, "references", "task-receipt.json"), "utf8"));
-    for (const phase of ["submission", "continuation", "completion", "failure"]) {
+    for (const phase of ["submission", "continuation", "reconciliation", "completion", "failure"]) {
       for (const field of core) assert.ok(receipt[phase].requiredFields.includes(field), `${name} ${phase} missing ${field}`);
     }
+    assert.ok(receipt.reconciliation.requiredFields.includes("reconciliation_required"));
     assert.ok(receipt.completion.requiredFields.includes("delivered_count"));
+    for (const field of failure) assert.ok(receipt.failure.requiredFields.includes(field), `${name} failure missing ${field}`);
+    assert.equal(receipt.failure.conditionalFields.retry_after_seconds, "Include only when the API returned HTTP 429 and a valid positive Retry-After value.");
+    assert.equal(receipt.failure.conditionalFields.api_error_code, "Use only the exact public API error code explicitly returned by the API; otherwise write not returned.");
   }
 });
 

@@ -1,0 +1,124 @@
+{
+  "$schema": "https://puretokensx.com/schemas/media-execution-contract.schema.json",
+  "schemaVersion": 1,
+  "kind": "image",
+  "transport": {
+    "fixedApiOrigin": "https://api.puretokensx.com",
+    "usesFullApiUrls": true,
+    "usesRuntimeManagedAuthentication": true,
+    "doesNotReadCredentialsOrHostConfiguration": true,
+    "requiresNativeMediaByteDelivery": true,
+    "doesNotUseMcpOrFallbackTransport": true
+  },
+  "operations": {
+    "catalog": { "method": "GET", "url": "https://api.puretokensx.com/v1/media/models" },
+    "submit": {
+      "method": "POST",
+      "url": "https://api.puretokensx.com/v1/images/generations",
+      "requiredBodyFields": ["model", "prompt", "async"],
+      "fixedBody": { "async": true },
+      "conditionalBodyFields": {
+        "all_user_optional_fields": "only_when_the_installed_exact_model_selection_or_an_on_demand_live_input_schema_declares_the_field_and_value"
+      }
+    },
+    "edit": {
+      "method": "POST",
+      "allowedPaths": ["/v1/images/generations", "/v1/images/edits"],
+      "pathSource": "installed_model_selection_or_on_demand_live_profile_operation_path",
+      "contentType": "profile_declared_json_or_multipart",
+      "requiresDeclaredProfileOperation": "image_edit",
+      "requiredBodyFields": ["model", "prompt", "async"],
+      "fixedBody": { "async": true },
+      "inputSource": "current_user_explicit_public_url_or_native_media_only",
+      "transport": "profile_declared_json_public_url_or_multipart_file"
+    },
+    "status": { "method": "GET", "urlTemplate": "https://api.puretokensx.com/v1/images/{task_id}" },
+    "content": { "method": "GET", "urlTemplate": "https://api.puretokensx.com/v1/images/{task_id}/content?index={index}" }
+  },
+  "result": {
+    "successRequires": "native_image_bytes",
+    "notSuccess": ["task_id", "status_text", "html", "svg", "component", "remote_url"],
+    "sameTaskOnly": true,
+    "neverAutoResubmit": true,
+    "deliveryReceipt": "report_a_local_path_or_attachment_only_when_confirmed_by_the_runtime_otherwise_report_native_byte_handoff_without_inventing_a_location"
+  },
+  "taskIdentity": {
+    "receiptField": "task_id",
+    "preferredResponseFieldSource": "installed_model_lifecycle_create_idField",
+    "fallbackTopLevelResponseFields": ["task_id", "id"],
+    "neverDerivesIdFromUrlsNestedObjectsOrPrompt": true,
+    "pathEncoding": "percent_encode_opaque_id_as_one_path_segment",
+    "whenMissing": "report_task_id_not_returned_and_do_not_poll_download_or_resubmit"
+  },
+  "taskState": {
+    "declaredStateSource": "installed_model_lifecycle_poll",
+    "reconciliationRequiredField": "reconciliation_required",
+    "reconciliationPrecedesLifecycle": true,
+    "whenReconciliationRequired": "stop_ordinary_polling_retain_same_task_id_do_not_submit_replacement_or_infer_refund",
+    "fallbackPendingStates": ["pending", "queued", "running", "in_progress"],
+    "fallbackSuccessStates": ["completed", "succeeded", "success"],
+    "fallbackFailureStates": ["failed", "cancelled", "canceled", "expired", "error"],
+    "whenUnrecognized": "report_raw_state_stop_automatic_polling_and_require_explicit_same_task_continuation"
+  },
+  "parameterValidation": {
+    "defaultModel": "gpt-image-2",
+    "normalSubmissionUsesInstalledModelSelection": true,
+    "exactModelCoreSubmissionDoesNotRequireCatalogPreflight": true,
+    "onDemandLiveCatalogRead": "only_for_explicit_discovery_installed_profile_gap_or_post_rejection_diagnosis",
+    "allOptionalParametersRequire": "installed_model_selection_parameter_schema_or_on_demand_live_input_schema",
+    "whenProfileIsMissing": "do_not_submit_requested_optional_parameters_or_media_operations"
+  },
+  "inputMediaValidation": {
+    "publicUrlReferenceRequires": "installed_model_selection_or_on_demand_live_profile_property_and_declared_reference_transport",
+    "publicUrlEditRequires": "installed_model_selection_or_on_demand_live_profile_image_edit_operation_with_application_json_exact_field_and_public_url_transport",
+    "nativeAttachmentRequires": "installed_model_selection_or_on_demand_live_profile_operation",
+    "imageEditOperation": "image_edit",
+    "onlyCurrentUserExplicitMedia": true,
+    "skillPassesUserProvidedPublicUrlsWithoutDownloadingOrRehosting": true,
+    "skillNeverDownloadsOrRehostsMedia": true,
+    "gatewayStagesCurrentRequestAttachment": true,
+    "requiresRuntimeNativeAttachmentByteDelivery": true,
+    "whenTransportUnavailable": "do_not_submit_and_explain_declared_transport"
+  },
+  "contentRetrieval": {
+    "indexBase": 0,
+    "requestedCount": "explicit_n_or_default_1",
+    "allowedIndexes": "0..requestedCount-1",
+    "completeDeliveryRequiresEveryRequestedIndex": true,
+    "partialOrMissingContent": "report_delivered_and_missing_indexes_without_resubmission",
+    "fetchOnlyAfterTerminalSuccess": true,
+    "sequentialByIndex": true,
+    "oneInFlightContentReadPerTask": true,
+    "neverPrefetchOrRefetchDeliveredContent": true,
+    "handoffBeforeNextContentRead": true
+  },
+  "polling": {
+    "serverDelay": "honor_valid_positive_retry_after_before_fallback",
+    "serverDelayMustFitRemainingAutomaticDeadline": true,
+    "afterHttp429": "honor_valid_positive_retry_after_then_continue_same_task_if_remaining_budget",
+    "fallbackDelaysSeconds": [3, 6, 12, 24, 30],
+    "steadyDelaySeconds": 30,
+    "automaticDeadlineSeconds": 120,
+    "maxAutomaticStatusReads": 6,
+    "oneInFlightStatusReadPerTask": true,
+    "automaticPollingScope": "submission_or_explicit_same_task_continuation_turn_only_no_background_timer_or_queue",
+    "afterStatusReadError": "stop_on_5xx_transport_or_timeout_and_require_explicit_same_task_continuation",
+    "explicitContinuation": "new_bounded_same_task_polling_window_only_when_explicitly_requested",
+    "afterDeadline": "report_pending_and_require_explicit_same_task_continuation"
+  },
+  "submissionFailure": {
+    "modelParameterOrCapabilityRejection": "one_on_demand_catalog_read_then_require_explicit_corrected_new_request",
+    "rateLimit": "report_retry_after_when_returned_and_require_explicit_retry",
+    "serverTransportOrTimeoutWithoutTaskId": "report_submission_outcome_unknown_without_declaring_task_absent_or_resubmitting"
+  },
+  "failureReceipt": {
+    "requiredFields": ["failure_phase", "api_error_code", "http_status", "error_message", "next_action"],
+    "allowedFailurePhases": ["validation", "submission", "status", "content"],
+    "httpStatus": "numeric_when_returned_otherwise_not_returned",
+    "apiErrorCode": "exact_explicit_public_api_error_code_otherwise_not_returned",
+    "errorMessage": "safe_user_facing_summary_using_only_sanitized_public_api_detail_or_a_fixed_local_explanation",
+    "retryAfterSeconds": "include_only_for_http_429_when_a_valid_positive_retry_after_is_returned",
+    "forbiddenDisclosure": ["raw_response_body", "upstream_or_provider_identifier", "internal_hostname_or_url", "stack_trace", "request_headers", "request_body", "credentials_or_session_data", "user_reference_url_or_attachment_bytes"]
+  },
+  "unsupportedInput": ["mask", "undeclared_image_edit_extensions", "non_current_user_media"]
+}

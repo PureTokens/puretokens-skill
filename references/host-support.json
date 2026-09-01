@@ -4,45 +4,46 @@
   "directApiOrigin": "https://api.puretokensx.com",
   "supported": [
     {
-      "id": "codex",
-      "delivery": "manual-source",
-      "globalSkillDirectory": "~/.agents/skills",
-      "guidance": "Install each specialist Skill into ~/.agents/skills with the explicit --target command. Skills call the fixed Pure Tokens API directly."
-    },
-    {
       "id": "claude-code",
       "delivery": "manual-source",
       "globalSkillDirectory": "~/.claude/skills",
-      "guidance": "Install each specialist Skill into ~/.claude/skills with the explicit --target command. Skills call the fixed Pure Tokens API directly."
+      "guidance": "Install each specialist Skill into ~/.claude/skills. Skills call the fixed Pure Tokens API directly."
     },
     {
-      "id": "claude-desktop",
-      "delivery": "bundle",
-      "guidance": "Bundle the required specialist Skill and upload it through Claude Desktop's Skills settings. Skills call the fixed Pure Tokens API directly."
+      "id": "codex",
+      "delivery": "manual-source",
+      "globalSkillDirectory": "~/.agents/skills",
+      "guidance": "Install each specialist Skill into ~/.agents/skills. Skills call the fixed Pure Tokens API directly."
+    },
+    {
+      "id": "workbuddy",
+      "delivery": "manual-source",
+      "globalSkillDirectory": "~/.workbuddy/skills",
+      "guidance": "Install each specialist Skill into ~/.workbuddy/skills. Skills call the fixed Pure Tokens API directly."
     },
     {
       "id": "gemini-cli",
       "delivery": "manual-source",
       "globalSkillDirectory": "~/.gemini/skills",
-      "guidance": "Install each specialist Skill into ~/.gemini/skills with the explicit --target command. Skills call the fixed Pure Tokens API directly."
-    }
-  ],
-  "notDistributed": [
-    {
-      "id": "workbuddy",
-      "reason": "No lightweight specialist-Skill delivery is currently shipped; the legacy combined always-apply media router is retired."
+      "guidance": "Install each specialist Skill into ~/.gemini/skills. Skills call the fixed Pure Tokens API directly."
     },
     {
       "id": "grok-build",
-      "reason": "The desktop Router adapter does not imply a verified specialist-Skill distribution."
+      "delivery": "manual-source",
+      "globalSkillDirectory": "~/.grok/skills",
+      "guidance": "Install each specialist Skill into ~/.grok/skills. Skills call the fixed Pure Tokens API directly."
     },
     {
       "id": "opencode",
-      "reason": "No compatible specialist-Skill delivery is currently shipped."
+      "delivery": "manual-source",
+      "globalSkillDirectory": "~/.config/opencode/skills",
+      "guidance": "Install each specialist Skill into ~/.config/opencode/skills. Skills call the fixed Pure Tokens API directly."
     },
     {
       "id": "trae",
-      "reason": "Trae remains a manual connection-configuration path, not a specialist-Skill distribution target."
+      "delivery": "manual-source",
+      "globalSkillDirectory": "~/.trae/skills",
+      "guidance": "Install each specialist Skill into ~/.trae/skills. Skills call the fixed Pure Tokens API directly."
     }
   ]
 }

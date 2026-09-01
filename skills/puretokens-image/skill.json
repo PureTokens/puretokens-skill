@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "name": "puretokens-image",
+  "version": "0.13.0",
+  "entry": "SKILL.md",
+  "displayName": "Pure Tokens Image",
+  "description": "Generate and profile-gated edit images through the fixed Pure Tokens Images API.",
+  "modelSelection": "references/model-selection.json",
+  "executionContract": "references/execution-contract.json",
+  "taskReceipt": "references/task-receipt.json",
+  "behaviorScenarios": "references/behavior-scenarios.json",
+  "distribution": {
+    "codex": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.agents/skills",
+      "requiresPluginFeature": false
+    },
+    "claudeCode": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.claude/skills"
+    },
+    "geminiCli": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.gemini/skills"
+    },
+    "workbuddy": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.workbuddy/skills"
+    },
+    "grokBuild": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.grok/skills"
+    },
+    "opencode": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.config/opencode/skills"
+    },
+    "trae": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.trae/skills"
+    }
+  },
+  "supportedClients": [
+    "claude-code",
+    "codex",
+    "workbuddy",
+    "gemini-cli",
+    "grok-build",
+    "opencode",
+    "trae"
+  ],
+  "rules": {
+    "usesFixedPureTokensApiOrigin": true,
+    "usesFullApiUrls": true,
+    "usesRuntimeManagedAuthentication": true,
+    "doesNotReadCredentialsOrHostConfiguration": true,
+    "defaultModel": "gpt-image-2",
+    "imagesAlwaysAsync": true,
+    "normalSubmissionUsesInstalledModelSelection": true,
+    "exactModelCoreSubmissionDoesNotRequireCatalogPreflight": true,
+    "optionalParametersUseInstalledOrOnDemandProfile": true,
+    "liveCatalogOnDemandOnly": true,
+    "aliasSelectionRequiresUniqueMatch": true,
+    "physicalImageDimensionsFailClosed": true,
+    "profiledPublicUrlReferenceSupported": true,
+    "profiledImageEditSupported": true,
+    "profiledPublicUrlJsonImageEditSupported": true,
+    "usesIntentAwarePromptPreparation": true,
+    "doesNotSplitDistinctImageAssets": true,
+    "usesSafeStructuredFailureReceipts": true,
+    "neverAutoResubmitAfterError": true,
+    "neverAutoSwitchModelAfterError": true,
+    "successRequiresNativeMediaResult": true,
+    "multiImageContentIndexesAreZeroBased": true,
+    "usesTaskReceipt": true,
+    "usesBoundedSameTaskPolling": true,
+    "recognizesReconciliationRequired": true,
+    "honorsStatusRetryAfterForSameTask": true,
+    "reportsOnlyExplicitPublicApiErrorCodes": true,
+    "usesResourceBoundedPolling": true,
+    "doesNotCreateBackgroundMediaWork": true,
+    "usesSequentialNativeContentDelivery": true,
+    "doesNotUseMcpOrFallbackTransport": true
+  }
+}

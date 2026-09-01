@@ -3,13 +3,14 @@
   "$id": "https://puretokensx.com/schemas/task-receipt.schema.json",
   "title": "Pure Tokens media task user receipt",
   "type": "object",
-  "required": ["schemaVersion", "kind", "submission", "continuation", "completion", "failure"],
+  "required": ["schemaVersion", "kind", "submission", "continuation", "reconciliation", "completion", "failure"],
   "properties": {
     "$schema": { "const": "https://puretokensx.com/schemas/task-receipt.schema.json" },
     "schemaVersion": { "const": 1 },
     "kind": { "enum": ["image", "video"] },
     "submission": { "$ref": "#/$defs/receipt" },
     "continuation": { "$ref": "#/$defs/receipt" },
+    "reconciliation": { "$ref": "#/$defs/receipt" },
     "completion": { "$ref": "#/$defs/receipt" },
     "failure": { "$ref": "#/$defs/receipt" }
   },
@@ -21,7 +22,11 @@
         "requiredFields": {
           "type": "array",
           "uniqueItems": true,
-          "items": { "enum": ["exact_model_id", "task_id", "returned_state", "requested_operation", "requested_count", "requested_size_or_parameters", "delivered_count", "next_action"] }
+          "items": { "enum": ["exact_model_id", "task_id", "returned_state", "requested_operation", "requested_count", "requested_size_or_parameters", "reconciliation_required", "delivered_count", "failure_phase", "api_error_code", "http_status", "error_message", "retry_after_seconds", "next_action"] }
+        },
+        "conditionalFields": {
+          "type": "object",
+          "additionalProperties": { "type": "string", "minLength": 1 }
         },
         "nextAction": { "type": "string", "minLength": 1 }
       },

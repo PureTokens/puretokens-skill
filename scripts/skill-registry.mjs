@@ -6,10 +6,14 @@ import { fileURLToPath } from "node:url";
 export const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const skillsRoot = path.join(repositoryRoot, "skills");
 
-const forbiddenPattern = /(BEGIN [A-Z ]*PRIVATE|api[_-]?key|authorization:|bearer\s+|pts-router-token|127\.0\.0\.1:|\/Users\/)/i;
+const forbiddenPattern = /(BEGIN [A-Z ]*PRIVATE|api[_-]?key|authorization:|bearer\s+|127\.0\.0\.1:|\/Users\/)/i;
 const directApiOrigin = "https://api.puretokensx.com";
 const directAcceptanceScenarioIds = ["api-identity-read", "catalog-read", "media-submit", "same-task-status", "native-media-delivery"];
+const directRuntimeCapabilities = ["authenticated_full_url_request", "json_task_response", "same_task_status_read", "native_media_byte_delivery"];
 const receiptCoreFields = ["exact_model_id", "task_id", "returned_state", "requested_operation", "requested_count", "requested_size_or_parameters", "next_action"];
+const failureReceiptRequiredFields = ["failure_phase", "api_error_code", "http_status", "error_message", "next_action"];
+const failureReceiptPhases = ["validation", "submission", "status", "content"];
+const failureReceiptForbiddenDisclosure = ["raw_response_body", "upstream_or_provider_identifier", "internal_hostname_or_url", "stack_trace", "request_headers", "request_body", "credentials_or_session_data", "user_reference_url_or_attachment_bytes"];
 
 export async function readSkillRegistry() {
   const registryPath = path.join(skillsRoot, "index.json");
@@ -51,15 +55,15 @@ export async function validateRepository() {
   const hostSupport = await readHostSupport(errors);
   const directApiExecutionContract = await readDirectApiExecutionContract(errors);
   await validateCatalogFreshnessPolicy(errors);
-  validateDirectApiExecutionContract(errors, directApiExecutionContract);
+  validateDirectApiExecutionContract(errors, directApiExecutionContract, hostSupport);
   const seen = new Set();
   const registryByName = new Map(registry.skills.map((skill) => [skill?.name, skill]));
 
   for (const record of records) {
     const { directory, skillText, manifest, frontmatter } = record;
     const name = manifest?.name;
-    if (!/^[a-z][a-z0-9_]*$/.test(directory)) errors.push(`${directory}: directory must use snake_case`);
-    if (!/^[a-z][a-z0-9_]*$/.test(name || "")) errors.push(`${directory}: manifest name must use snake_case`);
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(directory)) errors.push(`${directory}: directory must use kebab-case`);
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(name || "")) errors.push(`${directory}: manifest name must use kebab-case`);
     if (name !== directory) errors.push(`${directory}: directory and manifest name must match`);
     if (frontmatter.name !== name) errors.push(`${directory}: SKILL.md frontmatter name must match manifest`);
     if (!frontmatter.description) errors.push(`${directory}: SKILL.md needs a non-empty frontmatter description`);
@@ -89,29 +93,13 @@ export async function validateRepository() {
     if (supportedHostIds.length && JSON.stringify(declaredClients) !== JSON.stringify(supportedHostIds)) {
       errors.push(`${directory}: supportedClients must match references/host-support.json`);
     }
-    const excludedClients = Array.isArray(manifest?.excludedClients) ? [...manifest.excludedClients].sort() : [];
-    const notDistributedHostIds = hostSupport.notDistributed.map((host) => host.id).sort();
-    if (notDistributedHostIds.length && JSON.stringify(excludedClients) !== JSON.stringify(notDistributedHostIds)) {
-      errors.push(`${directory}: excludedClients must match references/host-support.json`);
-    }
-    const claudeDesktop = manifest?.distribution?.claudeDesktop;
-    if (!claudeDesktop) {
-      errors.push(`${directory}: Claude Desktop distribution is required`);
-    } else {
-      if (claudeDesktop.format !== "zip") errors.push(`${directory}: Claude Desktop distribution must use zip format`);
-      if (claudeDesktop.archiveRoot !== name) errors.push(`${directory}: Claude Desktop archive root must match the skill name`);
-      if (!Array.isArray(claudeDesktop.requiredFiles) || !claudeDesktop.requiredFiles.includes("SKILL.md")) {
-        errors.push(`${directory}: Claude Desktop bundle must include SKILL.md`);
-      }
-      if (claudeDesktop.enableAfterImport !== true) errors.push(`${directory}: Claude Desktop bundle must require explicit enablement`);
-    }
     validateHostDistributions(errors, directory, manifest, hostSupport);
     if (forbiddenPattern.test(skillText) || forbiddenPattern.test(JSON.stringify(manifest))) {
       errors.push(`${directory}: skill content contains a forbidden credential or local-runtime marker`);
     }
   }
 
-  const expected = ["puretokens_balance", "puretokens_connection", "puretokens_models", "puretokens_image", "puretokens_video", "puretokens_update"];
+  const expected = ["puretokens-balance", "puretokens-connection", "puretokens-models", "puretokens-image", "puretokens-video", "puretokens-update"];
   if (registry.skills.length !== expected.length || expected.some((name, index) => registry.skills[index]?.name !== name)) {
     errors.push("skills/index.json must list the six specialist Skills in order");
   }
@@ -133,14 +121,14 @@ async function readHostSupport(errors) {
     if (support?.$schema !== "https://puretokensx.com/schemas/host-support.schema.json") {
       errors.push("references/host-support.json must declare the host-support schema");
     }
-    if (support?.schemaVersion !== 1 || !Array.isArray(support.supported) || !Array.isArray(support.notDistributed)) {
-      errors.push("references/host-support.json must be schemaVersion=1 with supported and notDistributed arrays");
-      return { supported: [], notDistributed: [] };
+    if (support?.schemaVersion !== 1 || !Array.isArray(support.supported)) {
+      errors.push("references/host-support.json must be schemaVersion=1 with a supported array");
+      return { supported: [] };
     }
     if (support.directApiOrigin !== directApiOrigin) {
       errors.push("references/host-support.json must declare the fixed direct API origin");
     }
-    const records = [...support.supported, ...support.notDistributed];
+    const records = support.supported;
     const ids = records.map((host) => host?.id).filter((id) => typeof id === "string" && /^[a-z][a-z0-9-]*$/.test(id));
     if (ids.length !== records.length || new Set(ids).size !== ids.length) {
       errors.push("references/host-support.json must contain unique, kebab-case host IDs");
@@ -149,23 +137,14 @@ async function readHostSupport(errors) {
       if (!host || typeof host.guidance !== "string" || !host.guidance) {
         errors.push(`references/host-support.json: ${host?.id || "unnamed host"} needs guidance`);
       }
-      if (host?.delivery === "manual-source") {
-        if (typeof host.globalSkillDirectory !== "string" || !/^~\/\.[a-z-]+\/skills$/.test(host.globalSkillDirectory)) {
-          errors.push(`references/host-support.json: ${host?.id || "unnamed host"} needs a global Skill directory`);
-        }
-      } else if (host?.delivery !== "bundle") {
-        errors.push(`references/host-support.json: ${host?.id || "unnamed host"} has an unsupported delivery type`);
+      if (host?.delivery !== "manual-source" || typeof host.globalSkillDirectory !== "string" || !/^~\/(?:\.[a-z-]+\/)*(?:[a-z-]+\/)?skills$/.test(host.globalSkillDirectory)) {
+        errors.push(`references/host-support.json: ${host?.id || "unnamed host"} needs a manual-source global Skill directory`);
       }
     }
-    for (const host of support.notDistributed) {
-      if (!host || typeof host.reason !== "string" || !host.reason) {
-        errors.push(`references/host-support.json: ${host?.id || "unnamed host"} needs a not-distributed reason`);
-      }
-    }
-    return { supported: support.supported, notDistributed: support.notDistributed };
+    return { supported: support.supported };
   } catch {
     errors.push("references/host-support.json is missing or invalid JSON");
-    return { supported: [], notDistributed: [] };
+    return { supported: [] };
   }
 }
 
@@ -193,7 +172,7 @@ async function validateCatalogFreshnessPolicy(errors) {
   }
 }
 
-function validateDirectApiExecutionContract(errors, contract) {
+function validateDirectApiExecutionContract(errors, contract, hostSupport) {
   const label = "references/direct-api-execution-contract.json";
   if (!contract || typeof contract !== "object") return;
   if (contract.$schema !== "https://puretokensx.com/schemas/direct-api-execution-contract.schema.json" || contract.schemaVersion !== 1) {
@@ -210,6 +189,10 @@ function validateDirectApiExecutionContract(errors, contract) {
   if (!Array.isArray(contract.acceptanceScenarios) || !sameArray(contract.acceptanceScenarios.map((scenario) => scenario?.id), directAcceptanceScenarioIds)) {
     errors.push(`${label} must define the ordered direct-API acceptance scenarios`);
   }
+  const supportedHostIds = hostSupport.supported.map((host) => host.id);
+  if (!sameArray(contract.supportedHosts, supportedHostIds) || !sameArray(contract.requiredRuntimeCapabilities, directRuntimeCapabilities)) {
+    errors.push(`${label} must define the seven supported hosts and their four required direct-API runtime capabilities`);
+  }
   const balance = contract.balance;
   if (!balance || balance.method !== "GET" || balance.url !== `${directApiOrigin}/api/product/desktop/account/balance` ||
     balance.requiresExistingAuthenticatedAccountSession !== true || balance.responseSchema !== "schemas/balance-snapshot.schema.json" ||
@@ -218,11 +201,21 @@ function validateDirectApiExecutionContract(errors, contract) {
   }
   const userMediaInput = contract.userMediaInput;
   if (!userMediaInput || userMediaInput.onlyCurrentUserExplicitMedia !== true ||
+    userMediaInput.publicUrlOrDeclaredIdRequiresInstalledOrOnDemandProfilePropertyAndTransport !== true ||
+    userMediaInput.publicUrlImageEditRequiresExactDeclaredJsonOperation !== true ||
     userMediaInput.requiresInstalledOrOnDemandDeclaredTransport !== true ||
     userMediaInput.skillNeverDownloadsOrRehosts !== true ||
-    userMediaInput.pureTokensGatewayStagesMultipartAttachments !== true ||
+    userMediaInput.apiHandlesDeclaredMultipartAttachments !== true ||
     typeof userMediaInput.fallback !== "string" || !userMediaInput.fallback) {
     errors.push(`${label} must define the fail-closed direct user-media input contract`);
+  }
+  const asyncTaskHandling = contract.asyncTaskHandling;
+  if (!asyncTaskHandling || asyncTaskHandling.reconciliationRequiredPrecedesLifecycle !== true ||
+    asyncTaskHandling.reconciliationOutcome !== "stop_ordinary_polling_retain_same_task_id_do_not_submit_replacement_or_infer_refund" ||
+    asyncTaskHandling.statusHttp429 !== "honor_valid_positive_retry_after_then_continue_same_task_if_remaining_budget" ||
+    asyncTaskHandling.non429StatusReadFailure !== "stop_bounded_window_without_replacement_task" ||
+    asyncTaskHandling.doesNotInventApiErrorCode !== true) {
+    errors.push(`${label} must define reconciliation, status-rate-limit, and API-code handling for the same public task`);
   }
   const mediaDeliveryResourceBounds = contract.mediaDeliveryResourceBounds;
   if (!mediaDeliveryResourceBounds || mediaDeliveryResourceBounds.oneInFlightStatusReadPerTask !== true ||
@@ -241,7 +234,7 @@ function validateDirectApiExecutionContract(errors, contract) {
 async function validateSpecialistReferences(errors, record) {
   const { directory, skillDir, manifest } = record;
   const required = ["executionContract", "behaviorScenarios"];
-  if (directory === "puretokens_image" || directory === "puretokens_video") required.unshift("modelSelection", "taskReceipt");
+  if (directory === "puretokens-image" || directory === "puretokens-video") required.unshift("modelSelection", "taskReceipt");
   const references = {};
   for (const field of required) {
     const relativePath = manifest?.[field];
@@ -250,13 +243,6 @@ async function validateSpecialistReferences(errors, record) {
       continue;
     }
     references[field] = await readSkillReference(errors, skillDir, relativePath, `${directory}: ${field}`);
-  }
-  const requiredFiles = manifest?.distribution?.claudeDesktop?.requiredFiles;
-  for (const field of required) {
-    const relativePath = manifest?.[field];
-    if (typeof relativePath === "string" && !requiredFiles?.includes(relativePath)) {
-      errors.push(`${directory}: Claude Desktop bundle must include ${relativePath}`);
-    }
   }
   validateExecutionContract(errors, directory, references.executionContract);
   validateBehaviorScenarios(errors, directory, references.behaviorScenarios);
@@ -270,7 +256,7 @@ function validateHostDistributions(errors, directory, manifest, hostSupport) {
     errors.push(`${directory}: distribution is required`);
     return;
   }
-  const expectedKeys = new Set(["claudeDesktop"]);
+  const expectedKeys = new Set();
   for (const host of hostSupport.supported) {
     if (host.delivery !== "manual-source") continue;
     const key = distributionKeyForHost(host.id);
@@ -356,14 +342,14 @@ function validateExecutionContract(errors, directory, contract) {
     validateRequest(errors, `${label} content`, operations.content, "GET", `${directApiOrigin}/v1/images/{task_id}/content?index={index}`, true);
     const editPaths = Array.isArray(operations.edit?.allowedPaths) ? operations.edit.allowedPaths : [];
     if (operations.edit?.method !== "POST" || editPaths.length !== 2 || !editPaths.includes("/v1/images/generations") || !editPaths.includes("/v1/images/edits") ||
-      operations.edit?.pathSource !== "installed_model_selection_or_on_demand_live_profile_operation_path" || operations.edit?.contentType !== "multipart/form-data" ||
+      operations.edit?.pathSource !== "installed_model_selection_or_on_demand_live_profile_operation_path" || operations.edit?.contentType !== "profile_declared_json_or_multipart" ||
       operations.edit?.requiresDeclaredProfileOperation !== "image_edit") {
       errors.push(`${label} must define the fixed-origin declared image-edit operation`);
     }
-    validateRequiredBodyFields(errors, `${label} edit`, operations.edit, ["model", "prompt", "image", "async"]);
+    validateRequiredBodyFields(errors, `${label} edit`, operations.edit, ["model", "prompt", "async"]);
     if (operations.submit?.fixedBody?.async !== true || operations.edit?.fixedBody?.async !== true ||
-      operations.edit?.inputSource !== "current_user_explicit_native_media_only" || operations.edit?.transport !== "profile_declared_multipart_file") {
-      errors.push(`${label} must fix async and declare the multipart image-edit input`);
+      operations.edit?.inputSource !== "current_user_explicit_public_url_or_native_media_only" || operations.edit?.transport !== "profile_declared_json_public_url_or_multipart_file") {
+      errors.push(`${label} must fix async and declare the profile-gated JSON-URL or multipart image-edit input`);
     }
     if (contract.parameterValidation?.defaultModel !== "gpt-image-2" || contract.parameterValidation?.normalSubmissionUsesInstalledModelSelection !== true ||
       contract.parameterValidation?.exactModelCoreSubmissionDoesNotRequireCatalogPreflight !== true ||
@@ -415,8 +401,9 @@ function validateUpdateContract(errors, label, contract) {
   }
   const result = contract.result;
   if (!result || result.installsMissingOfficialSkills !== true || result.upgradesOnlyManagedMatchingSkills !== true ||
-    result.neverOverwritesUnmanagedDirectories !== true || result.requiresNewHostConversationAfterSuccess !== true) {
-    errors.push(`${label} must preserve unmanaged directories and report a new-conversation requirement`);
+    result.neverOverwritesUnmanagedDirectories !== true || result.archivesVerifiedRetiredManagedSkills !== true ||
+    result.requiresNewHostConversationAfterSuccess !== true) {
+    errors.push(`${label} must safely archive verified retired Skills, preserve unmanaged directories, and report a new-conversation requirement`);
   }
 }
 
@@ -447,6 +434,8 @@ function validateTaskIdentityStateAndSubmissionFailure(errors, label, contract, 
   }
   const state = contract.taskState;
   if (!state || state.declaredStateSource !== "installed_model_lifecycle_poll" ||
+    state.reconciliationRequiredField !== "reconciliation_required" || state.reconciliationPrecedesLifecycle !== true ||
+    state.whenReconciliationRequired !== "stop_ordinary_polling_retain_same_task_id_do_not_submit_replacement_or_infer_refund" ||
     !sameArray(state.fallbackPendingStates, ["pending", "queued", "running", "in_progress"]) ||
     !sameArray(state.fallbackSuccessStates, ["completed", "succeeded", "success"]) ||
     !sameArray(state.fallbackFailureStates, ["failed", "cancelled", "canceled", "expired", "error"]) ||
@@ -459,17 +448,31 @@ function validateTaskIdentityStateAndSubmissionFailure(errors, label, contract, 
     failure.serverTransportOrTimeoutWithoutTaskId !== "report_submission_outcome_unknown_without_declaring_task_absent_or_resubmitting") {
     errors.push(`${label} must guide rejection, rate limit, and uncertain-submission cases without automatic resubmission`);
   }
+  validateFailureReceipt(errors, label, contract.failureReceipt);
   if (image && contract.contentRetrieval?.requestedCount !== "explicit_n_or_default_1") {
     errors.push(`${label} must preserve an explicit image count for same-task delivery`);
   }
 }
 
+function validateFailureReceipt(errors, label, receipt) {
+  if (!receipt || !sameArray(receipt.requiredFields, failureReceiptRequiredFields) ||
+    !sameArray(receipt.allowedFailurePhases, failureReceiptPhases) ||
+    receipt.httpStatus !== "numeric_when_returned_otherwise_not_returned" ||
+    receipt.apiErrorCode !== "exact_explicit_public_api_error_code_otherwise_not_returned" ||
+    receipt.errorMessage !== "safe_user_facing_summary_using_only_sanitized_public_api_detail_or_a_fixed_local_explanation" ||
+    receipt.retryAfterSeconds !== "include_only_for_http_429_when_a_valid_positive_retry_after_is_returned" ||
+    !sameArray(receipt.forbiddenDisclosure, failureReceiptForbiddenDisclosure)) {
+    errors.push(`${label} must use the safe structured failure receipt without exposing internal, upstream, credential, request, or user-media data`);
+  }
+}
+
 function validatePolling(errors, label, polling, expected) {
   if (!polling || polling.serverDelay !== "honor_valid_positive_retry_after_before_fallback" || polling.serverDelayMustFitRemainingAutomaticDeadline !== true ||
+    polling.afterHttp429 !== "honor_valid_positive_retry_after_then_continue_same_task_if_remaining_budget" ||
     !sameArray(polling.fallbackDelaysSeconds, expected.fallbackDelaysSeconds) || polling.steadyDelaySeconds !== expected.steadyDelaySeconds ||
     polling.automaticDeadlineSeconds !== expected.deadlineSeconds || polling.maxAutomaticStatusReads !== expected.maxAutomaticStatusReads ||
     polling.oneInFlightStatusReadPerTask !== true || polling.automaticPollingScope !== "submission_or_explicit_same_task_continuation_turn_only_no_background_timer_or_queue" ||
-    polling.afterStatusReadError !== "stop_automatic_polling_and_require_explicit_same_task_continuation" ||
+    polling.afterStatusReadError !== "stop_on_5xx_transport_or_timeout_and_require_explicit_same_task_continuation" ||
     polling.explicitContinuation !== "new_bounded_same_task_polling_window_only_when_explicitly_requested" ||
     polling.afterDeadline !== "report_pending_and_require_explicit_same_task_continuation") {
     errors.push(`${label} must use the bounded adaptive same-task polling contract without background work or overlapping reads`);
@@ -539,7 +542,7 @@ function validateTaskReceipt(errors, directory, receipt) {
     errors.push(`${label} must be a schemaVersion=1 ${kind} task receipt`);
     return;
   }
-  for (const phase of ["submission", "continuation", "completion", "failure"]) {
+  for (const phase of ["submission", "continuation", "reconciliation", "completion", "failure"]) {
     const fields = receipt[phase]?.requiredFields;
     if (!Array.isArray(fields) || receiptCoreFields.some((field) => !fields.includes(field)) || typeof receipt[phase]?.nextAction !== "string" || !receipt[phase].nextAction) {
       errors.push(`${label} ${phase} must include the core user-visible receipt fields`);
@@ -547,11 +550,14 @@ function validateTaskReceipt(errors, directory, receipt) {
     if (phase === "completion" && !fields?.includes("delivered_count")) {
       errors.push(`${label} completion must include delivered_count`);
     }
+    if (phase === "reconciliation" && !fields?.includes("reconciliation_required")) {
+      errors.push(`${label} reconciliation must include reconciliation_required`);
+    }
   }
 }
 
 function skillKind(directory) {
-  return directory.replace("puretokens_", "");
+  return directory.replace("puretokens-", "");
 }
 
 function sameArray(actual, expected) {

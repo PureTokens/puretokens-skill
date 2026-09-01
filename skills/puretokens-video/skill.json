@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "name": "puretokens-video",
+  "version": "0.13.0",
+  "entry": "SKILL.md",
+  "displayName": "Pure Tokens Video",
+  "description": "Generate and profile-gated animate, reference, or edit video through the fixed Pure Tokens Videos API.",
+  "modelSelection": "references/model-selection.json",
+  "executionContract": "references/execution-contract.json",
+  "taskReceipt": "references/task-receipt.json",
+  "behaviorScenarios": "references/behavior-scenarios.json",
+  "distribution": {
+    "codex": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.agents/skills",
+      "requiresPluginFeature": false
+    },
+    "claudeCode": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.claude/skills"
+    },
+    "geminiCli": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.gemini/skills"
+    },
+    "workbuddy": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.workbuddy/skills"
+    },
+    "grokBuild": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.grok/skills"
+    },
+    "opencode": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.config/opencode/skills"
+    },
+    "trae": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.trae/skills"
+    }
+  },
+  "supportedClients": [
+    "claude-code",
+    "codex",
+    "workbuddy",
+    "gemini-cli",
+    "grok-build",
+    "opencode",
+    "trae"
+  ],
+  "rules": {
+    "usesFixedPureTokensApiOrigin": true,
+    "usesFullApiUrls": true,
+    "usesRuntimeManagedAuthentication": true,
+    "doesNotReadCredentialsOrHostConfiguration": true,
+    "defaultModel": "grok-imagine-video-1.5-preview",
+    "normalSubmissionUsesInstalledModelSelection": true,
+    "exactModelCoreSubmissionDoesNotRequireCatalogPreflight": true,
+    "optionalParametersUseInstalledOrOnDemandProfile": true,
+    "modeSpecificResolutionUsesInstalledOrOnDemandConstraint": true,
+    "liveCatalogOnDemandOnly": true,
+    "aliasSelectionRequiresUniqueMatch": true,
+    "videosAlwaysAsync": true,
+    "profiledPublicUrlOrDeclaredIdReferenceSupported": true,
+    "profiledImageToVideoSupported": true,
+    "profiledReferenceImageVideoSupported": true,
+    "profiledReferenceVideoSupported": true,
+    "profiledReferenceAudioSupported": true,
+    "profiledVideoEditSupported": true,
+    "usesSafeStructuredFailureReceipts": true,
+    "neverAutoResubmitAfterError": true,
+    "neverAutoSwitchModelAfterError": true,
+    "successRequiresNativeMediaResult": true,
+    "usesTaskReceipt": true,
+    "usesBoundedSameTaskPolling": true,
+    "recognizesReconciliationRequired": true,
+    "honorsStatusRetryAfterForSameTask": true,
+    "reportsOnlyExplicitPublicApiErrorCodes": true,
+    "usesResourceBoundedPolling": true,
+    "doesNotCreateBackgroundMediaWork": true,
+    "usesSequentialNativeContentDelivery": true,
+    "doesNotUseMcpOrFallbackTransport": true
+  }
+}

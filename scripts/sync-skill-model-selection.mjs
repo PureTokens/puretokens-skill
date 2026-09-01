@@ -6,8 +6,8 @@ import { repositoryRoot } from "./skill-registry.mjs";
 
 const catalogPath = path.join(repositoryRoot, "references", "media-model-catalog.json");
 const targets = [
-  { capability: "image", skill: "puretokens_image" },
-  { capability: "video", skill: "puretokens_video" }
+  { capability: "image", skill: "puretokens-image" },
+  { capability: "video", skill: "puretokens-video" }
 ];
 
 function parseMode() {

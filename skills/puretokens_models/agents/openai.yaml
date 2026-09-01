@@ -1,4 +1,0 @@
-interface:
-  display_name: "Pure Tokens Models"
-  short_description: "Inspect currently available media models and their declared capabilities."
-  default_prompt: "Use $puretokens_models to show the media models available through my current Pure Tokens connection."

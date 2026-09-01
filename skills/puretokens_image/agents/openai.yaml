@@ -1,4 +1,0 @@
-interface:
-  display_name: "Pure Tokens Image"
-  short_description: "Generate images through the current Pure Tokens connection."
-  default_prompt: "Use $puretokens_image to generate an image through my current Pure Tokens connection."
