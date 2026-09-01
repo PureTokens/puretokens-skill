@@ -24,12 +24,13 @@
     },
     "transport": {
       "type": "object",
-      "required": ["usesFullApiUrls", "doesNotUseMcp", "doesNotUseLocalProxyOrSidecar", "doesNotUseFallbackEndpoint"],
+      "required": ["usesFullApiUrls", "doesNotUseMcp", "doesNotUseLocalProxyOrSidecar", "doesNotUseFallbackEndpoint", "workBuddyPostBodyTransport"],
       "properties": {
         "usesFullApiUrls": { "const": true },
         "doesNotUseMcp": { "const": true },
         "doesNotUseLocalProxyOrSidecar": { "const": true },
-        "doesNotUseFallbackEndpoint": { "const": true }
+        "doesNotUseFallbackEndpoint": { "const": true },
+        "workBuddyPostBodyTransport": { "const": "bounded_base64_argument_never_stdin" }
       },
       "additionalProperties": false
     },

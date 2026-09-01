@@ -70,7 +70,7 @@ CC Switch 是连接配置工具，不是 Skill 宿主。Skill 自身始终调用
 
 面向 API 的 Skill 都调用固定的公开 API origin：`https://api.puretokensx.com`。请求使用完整 URL，不使用用户选择的 Base URL 或备用 endpoint。安装在 Skill 同级目录的受管 `.puretokens-runtime/puretokens-direct-api.mjs` 会在 Claude Code、Codex、WorkBuddy、Gemini CLI、Grok Build 和 OpenCode 中，只从各宿主已记录的固定配置位置狭义匹配一个 Pure Tokens 凭据。通常配置应指向 `https://api.puretokensx.com/v1`（或规定的仅 origin 形式）；WorkBuddy 也允许在相同固定 origin 下保存无 query、无 fragment 的 `/v1/...` 单模型资源 URL。它只在内存中保留该凭据，并且只用于允许的固定 Pure Tokens API 路径认证。它绝不打印、复制、保存或索取 Key；不接受任意 URL，不使用 MCP、代理或 sidecar。`puretokens-update` 只处理本机更新，不调用 API endpoint。
 
-直连契约要求已认证的完整 URL HTTPS 请求、JSON 任务响应、同任务状态查询和原生媒体字节交付。Claude Code、Codex、WorkBuddy、Gemini CLI、Grok Build 和 OpenCode 通过受管本地运行器完成认证绑定。Trae 是手动配置例外：当前没有已批准的本地凭据读取契约，Skill 会安全停止，而不会读取或猜测其用户状态。
+直连契约要求已认证的完整 URL HTTPS 请求、JSON 任务响应、同任务状态查询和原生媒体字节交付。Claude Code、Codex、WorkBuddy、Gemini CLI、Grok Build 和 OpenCode 通过受管本地运行器完成认证绑定。WorkBuddy 的 POST 请求体使用一个有界、规范的 Base64 参数，而不是标准输入，因为它的 Bash 执行链路不能可靠关闭 stdin；运行器只在内存中解码。Trae 是手动配置例外：当前没有已批准的本地凭据读取契约，Skill 会安全停止，而不会读取或猜测其用户状态。
 
 `puretokens-connection` 只调用一次 `GET https://api.puretokensx.com/v1`。只有固定端点明确返回 `status: "ok"`、`name: "Pure Tokens API"` 与 `base_url: "/v1"` 时，才确认该固定 API 的标识。受管运行器可在内部为该请求使用凭据，但 Skill 不会展示或报告用户实际配置的 Base URL 或凭据；这只是端点公开声明检查，不是密码学防伪证明。
 
@@ -118,7 +118,7 @@ Skill 会将自然语言整理为简洁的图片简报，同时保留已说明�
 
 媒体 Skill 在提交、继续查询、核验、完成和失败时统一返回回执：已返回的精确模型 ID、已返回的任务 ID、当前状态、请求操作、请求数量、尺寸/参数、完成时的已交付数量和下一步。失败时只有 API 明确返回公开机器码才会在 `api_error_code` 中原样显示，否则写“未返回”；同时会返回失败阶段、API 返回的 HTTP 状态（未返回时写“未返回”）和安全错误信息。HTTP 429 且存在有效 `Retry-After` 时会给出等待秒数。回执绝不暴露原始响应正文、上游标识、内部 URL、堆栈、请求数据、凭据或用户媒体。回执中的 `task_id` 会优先从所选模型 lifecycle 声明的顶层 ID 字段规范化；未声明 lifecycle 时只接受顶层 `task_id` 或 `id`，绝不从 URL 或嵌套响应数据猜测。任务元数据未返回时会明确写“未返回”。
 
-如果提交 `POST` 已开始，但运行器最终输出为空、截断、格式异常或无法使用，提交结果就是未知。Skill 不会为了拿到任务 ID 再发一次 `POST` 或创建替代任务，也不会声称任务未创建、未扣费或已退款。若没有任务 ID，用户可在 Pure Tokens 使用记录中核对后提供任务 ID，或稍后明确发起一次新的请求。
+如果提交 `POST` 已开始，但运行器最终输出为空、截断、格式异常或无法使用，提交结果就是未知。Skill 会输出一次失败回执后结束当前回复，不会继续调用工具、轮询或围绕同一提交反复推理；不会为了拿到任务 ID 再发一次 `POST` 或创建替代任务，也不会声称任务未创建、未扣费或已退款。没有任务 ID 时，后续只说“继续”或“再试”会要求用户明确确认要新建一次付费任务；只有确认后的下一轮才能创建一个新任务。
 
 ## 异步轮询
 

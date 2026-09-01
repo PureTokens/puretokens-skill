@@ -9,7 +9,8 @@
     "usesNarrowConfiguredCredentialResolver": true,
     "verifiedManagedRuntimeHosts": ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode"],
     "neverExposesCredentialsOrHostConfiguration": true,
-    "doesNotUseMcpOrFallbackTransport": true
+    "doesNotUseMcpOrFallbackTransport": true,
+    "workBuddyPostBodyTransport": "bounded_base64_argument_never_stdin"
   },
   "operations": {
     "identity": { "method": "GET", "url": "https://api.puretokensx.com/v1" }

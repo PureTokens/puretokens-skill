@@ -4,6 +4,19 @@
 
 # Changelog
 
+## 0.13.8 — 2026-09-01
+
+- Closed the WorkBuddy standard-input bypass in the direct runtime: every WorkBuddy POST now rejects `--json-stdin` and `--multipart-stdin` at argument validation, so only bounded Base64 request-body arguments are accepted.
+- Made native video attachments route-locked. A declared image/video/audio operation must use its declared multipart path and field; it cannot degrade into a text-only JSON video request. For Seedance 2.0 Mini reference-image video, the required route is `reference_image_video` with 1–9 `reference_images` multipart files. If the host session cannot provide the current attachment bytes, the Skill stops before billing.
+
+## 0.13.7 — 2026-09-01
+
+- Fixed WorkBuddy media submissions that stalled before any API call: its Bash route now passes each bounded JSON request body or multipart descriptor as a canonical Base64 argument, not through standard input. The runtime decodes it only in memory and continues using the same fixed authenticated API path.
+
+## 0.13.6 — 2026-09-01
+
+- Made an unknown media submission a hard response boundary: after a started POST has unusable host output and no verified task ID, the Skill returns one receipt and ends the response without additional tools, status reads, polling, or prolonged follow-up work. A later continuation without an ID now requires explicit confirmation of a new paid request.
+
 ## 0.13.5 — 2026-09-01
 
 - Simplified the client-download Agent prompt to one copyable sentence pointing to the official Pure Tokens Skill repository.

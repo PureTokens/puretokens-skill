@@ -10,7 +10,8 @@
     "verifiedManagedRuntimeHosts": ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode"],
     "neverExposesCredentialsOrHostConfiguration": true,
     "requiresNativeMediaByteDelivery": true,
-    "doesNotUseMcpOrFallbackTransport": true
+    "doesNotUseMcpOrFallbackTransport": true,
+    "workBuddyPostBodyTransport": "bounded_base64_argument_never_stdin"
   },
   "operations": {
     "catalog": { "method": "GET", "url": "https://api.puretokensx.com/v1/media/models" },
@@ -112,7 +113,9 @@
     "modelParameterOrCapabilityRejection": "one_on_demand_catalog_read_then_require_explicit_corrected_new_request",
     "rateLimit": "report_retry_after_when_returned_and_require_explicit_retry",
     "serverTransportOrTimeoutWithoutTaskId": "report_submission_outcome_unknown_without_declaring_task_absent_or_resubmitting",
-    "runtimeInvocationOutputUnknown": "treat_submission_outcome_as_unknown_do_not_repeat_post_or_submit_replacement_task"
+    "runtimeInvocationOutputUnknown": "treat_submission_outcome_as_unknown_do_not_repeat_post_or_submit_replacement_task",
+    "runtimeUnknownOutcomeResponse": "one_terminal_receipt_then_end_turn_without_followup_tool_status_or_poll_work",
+    "noTaskIdLaterContinuation": "require_explicit_confirmation_of_a_new_billable_request_before_one_new_post"
   },
   "failureReceipt": {
     "requiredFields": ["failure_phase", "api_error_code", "http_status", "error_message", "next_action"],

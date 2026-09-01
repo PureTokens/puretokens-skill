@@ -189,7 +189,8 @@ function validateDirectApiExecutionContract(errors, contract, hostSupport) {
     contract.authentication.credentialUse !== "in_memory_only_for_fixed_puretokens_api_requests" ||
     contract.authentication.neverDisplaysCopiesStoresOrRequestsCredentials !== true ||
     !transport || transport.usesFullApiUrls !== true || transport.doesNotUseMcp !== true ||
-    transport.doesNotUseLocalProxyOrSidecar !== true || transport.doesNotUseFallbackEndpoint !== true) {
+    transport.doesNotUseLocalProxyOrSidecar !== true || transport.doesNotUseFallbackEndpoint !== true ||
+    transport.workBuddyPostBodyTransport !== "bounded_base64_argument_never_stdin") {
     errors.push(`${label} must use the fixed full API origin with the configured-credential direct runtime and no MCP, proxy, sidecar, or fallback`);
   }
   if (!Array.isArray(contract.acceptanceScenarios) || !sameArray(contract.acceptanceScenarios.map((scenario) => scenario?.id), directAcceptanceScenarioIds)) {
@@ -217,6 +218,9 @@ function validateDirectApiExecutionContract(errors, contract, hostSupport) {
     userMediaInput.requiresInstalledOrOnDemandDeclaredTransport !== true ||
     userMediaInput.skillNeverDownloadsOrRehosts !== true ||
     userMediaInput.apiHandlesDeclaredMultipartAttachments !== true ||
+    userMediaInput.nativeAttachmentRouteMustMatchDeclaredOperation !== true ||
+    userMediaInput.nativeAttachmentMustNeverFallBackToJsonTextSubmission !== true ||
+    userMediaInput.workBuddyNativeAttachmentBodyMode !== "multipart_base64_descriptor_only" ||
     typeof userMediaInput.fallback !== "string" || !userMediaInput.fallback) {
     errors.push(`${label} must define the fail-closed direct user-media input contract`);
   }
@@ -388,6 +392,13 @@ function validateExecutionContract(errors, directory, contract) {
       contract.parameterValidation?.resolutionUsesInstalledOrOnDemandModeConstraint !== true || contract.result?.successRequires !== "native_video_bytes") {
       errors.push(`${label} must use its installed selection for normal video submissions, limit live catalog reads to on-demand cases, and require native video bytes`);
     }
+    const mediaInput = contract.inputMediaValidation;
+    if (!mediaInput || mediaInput.nativeAttachmentRouteMustMatchDeclaredOperation !== true ||
+      mediaInput.nativeAttachmentMustNeverFallBackToJsonTextSubmission !== true ||
+      mediaInput.workBuddyNativeAttachmentBodyMode !== "multipart_base64_descriptor_only" ||
+      mediaInput.whenCurrentAttachmentPathUnavailable !== "stop_before_post_and_explain_declared_multipart_requirement") {
+      errors.push(`${label} must lock native attachments to their declared multipart operation and stop before POST when a current attachment path is unavailable`);
+    }
     validateTaskIdentityStateAndSubmissionFailure(errors, label, contract, false);
     const retrieval = contract.contentRetrieval;
     if (!retrieval || retrieval.fetchOnlyAfterTerminalSuccess !== true || retrieval.oneInFlightContentReadPerTask !== true || retrieval.neverPrefetchOrRefetchDeliveredContent !== true || retrieval.handoffBeforeNextContentRead !== true) {
@@ -425,7 +436,9 @@ function validateDirectTransport(errors, label, transport, requiresNativeMediaBy
     transport.usesRuntimeManagedAuthentication !== true || transport.usesNarrowConfiguredCredentialResolver !== true ||
     !sameArray(transport.verifiedManagedRuntimeHosts, managedRuntimeHostIds) ||
     transport.neverExposesCredentialsOrHostConfiguration !== true ||
-    transport.doesNotUseMcpOrFallbackTransport !== true || (requiresNativeMediaByteDelivery && transport.requiresNativeMediaByteDelivery !== true)) {
+    transport.doesNotUseMcpOrFallbackTransport !== true ||
+    transport.workBuddyPostBodyTransport !== "bounded_base64_argument_never_stdin" ||
+    (requiresNativeMediaByteDelivery && transport.requiresNativeMediaByteDelivery !== true)) {
     errors.push(`${label} must use the fixed full API origin, configured-credential direct runtime, and no MCP or fallback transport`);
   }
 }
@@ -461,8 +474,10 @@ function validateTaskIdentityStateAndSubmissionFailure(errors, label, contract, 
   if (!failure || failure.modelParameterOrCapabilityRejection !== "one_on_demand_catalog_read_then_require_explicit_corrected_new_request" ||
     failure.rateLimit !== "report_retry_after_when_returned_and_require_explicit_retry" ||
     failure.serverTransportOrTimeoutWithoutTaskId !== "report_submission_outcome_unknown_without_declaring_task_absent_or_resubmitting" ||
-    failure.runtimeInvocationOutputUnknown !== "treat_submission_outcome_as_unknown_do_not_repeat_post_or_submit_replacement_task") {
-    errors.push(`${label} must guide rejection, rate limit, and uncertain submission/runtime-output cases without automatic resubmission`);
+    failure.runtimeInvocationOutputUnknown !== "treat_submission_outcome_as_unknown_do_not_repeat_post_or_submit_replacement_task" ||
+    failure.runtimeUnknownOutcomeResponse !== "one_terminal_receipt_then_end_turn_without_followup_tool_status_or_poll_work" ||
+    failure.noTaskIdLaterContinuation !== "require_explicit_confirmation_of_a_new_billable_request_before_one_new_post") {
+    errors.push(`${label} must stop uncertain submission/runtime-output handling without automatic resubmission or continued work`);
   }
   validateFailureReceipt(errors, label, contract.failureReceipt);
   if (image && contract.contentRetrieval?.requestedCount !== "explicit_n_or_default_1") {

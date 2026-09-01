@@ -21,6 +21,7 @@ const openCodeConfigPath = path.join(os.homedir(), ".config", "opencode", "openc
 const workBuddyModelConfigPath = path.join(os.homedir(), ".workbuddy", "models.json");
 const maxMultipartFiles = 8;
 const maxMultipartFileBytes = 512 * 1024 * 1024;
+const maxJsonBodyBytes = 1024 * 1024;
 const maxImageMediaBytes = 128 * 1024 * 1024;
 const maxVideoOrAudioMediaBytes = 2 * 1024 * 1024 * 1024;
 const allowedMultipartContentTypes = new Set([
@@ -54,13 +55,18 @@ export async function main(argv = process.argv.slice(2), environment = process.e
   const headers = { authorization: `Bearer ${credential}` };
   const request = { method: options.method, headers, signal: AbortSignal.timeout(90_000) };
 
-  if (options.jsonStdin) {
-    const body = await readJsonStandardInput();
+  if (options.jsonStdin || options.jsonBase64 !== undefined) {
+    const body = options.jsonBase64 !== undefined
+      ? readJsonBase64Argument(options.jsonBase64)
+      : await readJsonStandardInput();
     headers["content-type"] = "application/json";
     request.body = JSON.stringify(body);
   }
-  if (options.multipartStdin) {
-    request.body = await readMultipartStandardInput();
+  if (options.multipartStdin || options.multipartBase64 !== undefined) {
+    const specification = options.multipartBase64 !== undefined
+      ? readJsonBase64Argument(options.multipartBase64)
+      : await readJsonStandardInput();
+    request.body = await createMultipartRequestBody(specification);
   }
 
   const response = await fetch(target, request);
@@ -234,22 +240,39 @@ export function parseDotEnv(source) {
   return bindings;
 }
 
-function parseArguments(argv) {
-  if (argv.shift() !== "request") throw new Error(`Usage: puretokens-direct-api request --host <${managedRuntimeHosts.join("|")}> --method <GET|POST> --path <fixed-api-path> [--json-stdin|--multipart-stdin] [--output-file <absolute-path>]`);
-  const options = { host: undefined, method: undefined, path: undefined, jsonStdin: false, multipartStdin: false, outputFile: undefined };
-  while (argv.length) {
-    const flag = argv.shift();
+export function parseArguments(argv) {
+  const args = [...argv];
+  if (args.shift() !== "request") throw new Error(`Usage: puretokens-direct-api request --host <${managedRuntimeHosts.join("|")}> --method <GET|POST> --path <fixed-api-path> [--json-stdin|--json-base64 <base64>|--multipart-stdin|--multipart-base64 <base64>] [--output-file <absolute-path>]`);
+  const options = {
+    host: undefined,
+    method: undefined,
+    path: undefined,
+    jsonStdin: false,
+    jsonBase64: undefined,
+    multipartStdin: false,
+    multipartBase64: undefined,
+    outputFile: undefined
+  };
+  while (args.length) {
+    const flag = args.shift();
     if (flag === "--json-stdin") {
       options.jsonStdin = true;
+      continue;
+    }
+    if (flag === "--json-base64") {
+      options.jsonBase64 = requiredArgumentValue(args, flag);
       continue;
     }
     if (flag === "--multipart-stdin") {
       options.multipartStdin = true;
       continue;
     }
+    if (flag === "--multipart-base64") {
+      options.multipartBase64 = requiredArgumentValue(args, flag);
+      continue;
+    }
     if (!["--host", "--method", "--path", "--output-file"].includes(flag)) throw new Error(`Unknown option: ${flag}`);
-    const value = argv.shift();
-    if (!value || value.startsWith("--")) throw new Error(`${flag} requires a value`);
+    const value = requiredArgumentValue(args, flag);
     if (flag === "--host") options.host = value;
     if (flag === "--method") options.method = value.toUpperCase();
     if (flag === "--path") options.path = value;
@@ -258,14 +281,27 @@ function parseArguments(argv) {
   if (!managedRuntimeHosts.includes(options.host)) throw new Error("The requested host does not have a managed Pure Tokens credential runtime.");
   if (!["GET", "POST"].includes(options.method)) throw new Error("--method must be GET or POST");
   if (!isAllowedPath(options.method, options.path)) throw new Error("The requested API path is not allowed by the Pure Tokens direct API contract.");
-  if (options.jsonStdin && options.multipartStdin) throw new Error("Use only one request-body mode.");
-  if (options.method === "POST" && !(options.jsonStdin || options.multipartStdin)) throw new Error("POST requests require --json-stdin or --multipart-stdin.");
-  if (options.method === "GET" && (options.jsonStdin || options.multipartStdin)) throw new Error("GET requests cannot use a request body.");
+  if (options.host === "workbuddy" && (options.jsonStdin || options.multipartStdin)) {
+    throw new Error("WorkBuddy POST request bodies must use --json-base64 or --multipart-base64; standard input is not supported.");
+  }
+  const requestBodyModeCount = Number(options.jsonStdin) + Number(options.jsonBase64 !== undefined) +
+    Number(options.multipartStdin) + Number(options.multipartBase64 !== undefined);
+  if (requestBodyModeCount !== (options.method === "POST" ? 1 : 0)) {
+    throw new Error(options.method === "POST"
+      ? "POST requests require exactly one JSON or multipart request-body mode."
+      : "GET requests cannot use a request body.");
+  }
   if (options.outputFile && !path.isAbsolute(options.outputFile)) throw new Error("--output-file must be an absolute path.");
   if (options.outputFile && (options.method !== "GET" || !isContentPath(options.path))) {
     throw new Error("--output-file is allowed only for a fixed completed media content path.");
   }
   return options;
+}
+
+function requiredArgumentValue(args, flag) {
+  const value = args.shift();
+  if (!value || value.startsWith("--")) throw new Error(`${flag} requires a value`);
+  return value;
 }
 
 function isAllowedPath(method, value) {
@@ -392,7 +428,12 @@ function resolveEnvironmentCredential(rawValue, environment) {
 
 async function readJsonStandardInput() {
   const chunks = [];
-  for await (const chunk of process.stdin) chunks.push(chunk);
+  let bytes = 0;
+  for await (const chunk of process.stdin) {
+    bytes += Buffer.byteLength(chunk);
+    if (bytes > maxJsonBodyBytes) throw new Error("JSON request body must be no more than 1 MiB.");
+    chunks.push(chunk);
+  }
   const value = Buffer.concat(chunks).toString("utf8");
   if (!value.trim()) throw new Error("JSON request body is required on standard input.");
   try {
@@ -402,15 +443,39 @@ async function readJsonStandardInput() {
   }
 }
 
-async function readMultipartStandardInput() {
-  const specification = await readJsonStandardInput();
+export function readJsonBase64Argument(value) {
+  if (typeof value !== "string" || !value || value.length > encodedBodyLengthLimit() || value.length % 4 !== 0 || !/^[A-Za-z0-9+/]*={0,2}$/.test(value)) {
+    throw new Error("Base64 request body must be one bounded canonical UTF-8 JSON value.");
+  }
+  const bytes = Buffer.from(value, "base64");
+  if (!bytes.length || bytes.length > maxJsonBodyBytes || bytes.toString("base64") !== value) {
+    throw new Error("Base64 request body must be one bounded canonical UTF-8 JSON value.");
+  }
+  let json;
+  try {
+    json = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    throw new Error("Base64 request body must be valid UTF-8 JSON.");
+  }
+  try {
+    return JSON.parse(json);
+  } catch {
+    throw new Error("Base64 request body must contain one valid JSON value.");
+  }
+}
+
+function encodedBodyLengthLimit() {
+  return Math.ceil(maxJsonBodyBytes / 3) * 4;
+}
+
+async function createMultipartRequestBody(specification) {
   if (!specification || typeof specification !== "object" || Array.isArray(specification)) {
-    throw new Error("Multipart standard input must contain one object.");
+    throw new Error("Multipart request body must contain one object.");
   }
   const fields = specification.fields ?? {};
   const files = specification.files ?? [];
   if (!isPlainObject(fields) || !Array.isArray(files) || files.length === 0 || files.length > maxMultipartFiles) {
-    throw new Error("Multipart input must contain up to eight explicit files and an optional fields object.");
+    throw new Error("Multipart request body must contain up to eight explicit files and an optional fields object.");
   }
   const form = new FormData();
   for (const [field, value] of Object.entries(fields)) {

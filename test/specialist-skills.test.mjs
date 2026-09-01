@@ -13,7 +13,9 @@ import {
   parseCodexConnection,
   parseDotEnv,
   parseGrokModelEntries,
+  parseArguments,
   parseWorkBuddyModelEntries,
+  readJsonBase64Argument,
   resolveClaudeCodeCredential,
   resolveCodexCredential,
   resolveConfiguredCredential,
@@ -28,7 +30,7 @@ test("registry exposes exactly the six specialist Skills", async () => {
   const { registry, records } = await collectSkillRecords();
   assert.deepEqual(registry.skills.map((skill) => skill.name), names);
   assert.equal(records.length, 6);
-  assert.deepEqual([...new Set(records.map((record) => record.manifest.version))], ["0.13.5"]);
+  assert.deepEqual([...new Set(records.map((record) => record.manifest.version))], ["0.13.8"]);
   assert.deepEqual(await validateRepository(), []);
 });
 
@@ -53,6 +55,11 @@ test("specialist policies use the fixed direct API without MCP fallback", async 
   assert.doesNotMatch(policy, /internal-upstream|当前连接不是 Pure Tokens|无法确认归属/i);
   assert.match(policy, /\.puretokens-runtime\/puretokens-direct-api\.mjs/);
   assert.match(policy, /--multipart-stdin/);
+  assert.match(image, /WorkBuddy 的 Bash 不可靠地传递并关闭标准输入/);
+  assert.match(image, /--json-base64 <值>/);
+  assert.match(video, /--multipart-base64 <值>/);
+  assert.match(video, /原生媒体请求绝不能退化为只含 `model`、`prompt` 的 JSON 文生视频/);
+  assert.match(video, /seedance-2\.0-mini.*reference_image_video/s);
   assert.doesNotMatch(policy, /自动携带认证/);
 });
 
@@ -121,8 +128,8 @@ test("installed contracts cover bounded requests, task recovery, and user-facing
     "puretokens-balance": ["balance-account-session-unavailable", "balance-response"],
     "puretokens-connection": ["connection-identity-confirmed", "connection-identity-unconfirmed", "connection-identity-unavailable", "connection-base-url-request", "connection-identity-assurance"],
     "puretokens-models": ["models-catalog-unavailable", "models-catalog-empty", "models-exact-id-unavailable", "models-capability-filter-empty", "models-parameter-profile-absent", "models-operation-profile-absent", "models-requirement-ambiguous", "models-catalog-response"],
-    "puretokens-image": ["image-model-alias-ambiguous", "image-normal-submission-skips-catalog", "image-failure-receipt-safe", "image-content-safety-failure", "image-input-role-ambiguous", "image-distinct-assets", "image-prompt-shaping", "image-submission-model-parameter-rejected", "image-submission-rate-limited", "image-submission-outcome-unknown", "image-submission-runtime-output-unknown", "image-model-unavailable", "image-model-parameter-profile-unavailable", "image-model-parameter-unsupported", "image-catalog-on-demand-unavailable", "image-execution-unavailable", "image-count-invalid", "image-pixel-size-invalid", "image-physical-size", "image-edit-profile-unavailable", "image-public-url-reference-profile-unavailable", "image-public-url-edit-profile-unavailable", "image-public-url-reference-invalid", "image-public-url-reference-not-public", "image-public-url-reference-ambiguous", "image-edit-attachment-unavailable", "image-edit-attachment-direct-api", "image-edit-input-unsupported", "image-task-id-normalization", "image-task-id-missing", "image-task-id-invalid", "image-task-state-unrecognized", "image-task-reconciliation-required", "image-task-request-count-unknown", "image-task-pending", "image-task-poll-delay", "image-task-poll-rate-limited", "image-task-poll-resource-bound", "image-task-polling-deadline", "image-task-explicit-continuation", "image-task-terminal-failure", "image-task-timeout-or-unknown", "image-content-delivery-failure", "image-content-delivery-location", "image-content-index-missing", "image-content-resource-bound"],
-    "puretokens-video": ["video-model-alias-ambiguous", "video-normal-submission-skips-catalog", "video-failure-receipt-safe", "video-content-safety-failure", "video-submission-model-parameter-rejected", "video-submission-rate-limited", "video-submission-outcome-unknown", "video-submission-runtime-output-unknown", "video-model-unavailable", "video-model-parameter-profile-unavailable", "video-model-parameter-unsupported", "video-catalog-on-demand-unavailable", "video-execution-unavailable", "video-parameter-unsupported", "video-resolution-mode-unsupported", "video-image-operation-profile-unavailable", "video-media-operation-profile-unavailable", "video-image-transport-unavailable", "video-public-url-reference-profile-unavailable", "video-public-url-reference-invalid", "video-public-url-reference-not-public", "video-public-url-reference-ambiguous", "video-prompt-requirement", "video-attachment-direct-api", "video-image-count-unsupported", "video-media-combination-unsupported", "video-input-media-unsupported", "video-task-id-normalization", "video-task-id-missing", "video-task-id-invalid", "video-task-state-unrecognized", "video-task-reconciliation-required", "video-task-pending", "video-task-poll-delay", "video-task-poll-rate-limited", "video-task-poll-resource-bound", "video-task-polling-deadline", "video-task-explicit-continuation", "video-task-terminal-failure", "video-task-timeout-or-unknown", "video-content-delivery-failure", "video-content-resource-bound"],
+    "puretokens-image": ["image-model-alias-ambiguous", "image-normal-submission-skips-catalog", "image-failure-receipt-safe", "image-content-safety-failure", "image-input-role-ambiguous", "image-distinct-assets", "image-prompt-shaping", "image-submission-model-parameter-rejected", "image-submission-rate-limited", "image-submission-outcome-unknown", "image-submission-runtime-output-unknown", "image-unknown-submission-continuation-without-id", "image-model-unavailable", "image-model-parameter-profile-unavailable", "image-model-parameter-unsupported", "image-catalog-on-demand-unavailable", "image-execution-unavailable", "image-count-invalid", "image-pixel-size-invalid", "image-physical-size", "image-edit-profile-unavailable", "image-public-url-reference-profile-unavailable", "image-public-url-edit-profile-unavailable", "image-public-url-reference-invalid", "image-public-url-reference-not-public", "image-public-url-reference-ambiguous", "image-edit-attachment-unavailable", "image-edit-attachment-direct-api", "image-edit-input-unsupported", "image-task-id-normalization", "image-task-id-missing", "image-task-id-invalid", "image-task-state-unrecognized", "image-task-reconciliation-required", "image-task-request-count-unknown", "image-task-pending", "image-task-poll-delay", "image-task-poll-rate-limited", "image-task-poll-resource-bound", "image-task-polling-deadline", "image-task-explicit-continuation", "image-task-terminal-failure", "image-task-timeout-or-unknown", "image-content-delivery-failure", "image-content-delivery-location", "image-content-index-missing", "image-content-resource-bound"],
+    "puretokens-video": ["video-model-alias-ambiguous", "video-normal-submission-skips-catalog", "video-failure-receipt-safe", "video-content-safety-failure", "video-submission-model-parameter-rejected", "video-submission-rate-limited", "video-submission-outcome-unknown", "video-submission-runtime-output-unknown", "video-unknown-submission-continuation-without-id", "video-model-unavailable", "video-model-parameter-profile-unavailable", "video-model-parameter-unsupported", "video-catalog-on-demand-unavailable", "video-execution-unavailable", "video-parameter-unsupported", "video-resolution-mode-unsupported", "video-image-operation-profile-unavailable", "video-media-operation-profile-unavailable", "video-image-transport-unavailable", "video-native-attachment-route-locked", "video-native-attachment-path-unavailable", "video-public-url-reference-profile-unavailable", "video-public-url-reference-invalid", "video-public-url-reference-not-public", "video-public-url-reference-ambiguous", "video-prompt-requirement", "video-attachment-direct-api", "video-image-count-unsupported", "video-media-combination-unsupported", "video-input-media-unsupported", "video-task-id-normalization", "video-task-id-missing", "video-task-id-invalid", "video-task-state-unrecognized", "video-task-reconciliation-required", "video-task-pending", "video-task-poll-delay", "video-task-poll-rate-limited", "video-task-poll-resource-bound", "video-task-polling-deadline", "video-task-explicit-continuation", "video-task-terminal-failure", "video-task-timeout-or-unknown", "video-content-delivery-failure", "video-content-resource-bound"],
     "puretokens-update": ["update-host-unknown", "update-terminal-unavailable", "update-validation-failed", "update-unmanaged-conflict", "update-managed-retired-skill", "update-managed-sync"]
   };
   for (const name of names) {
@@ -144,6 +151,10 @@ test("installed contracts cover bounded requests, task recovery, and user-facing
       const runtimeOutputUnknown = scenarios.scenarios.find((scenario) => scenario.id === `${name.replace("puretokens-", "")}-submission-runtime-output-unknown`);
       assert.match(runtimeOutputUnknown.then, /do not invoke POST again, submit a replacement task/);
       assert.match(runtimeOutputUnknown.then, /claim the task was not created, charged, or refunded/);
+      assert.match(runtimeOutputUnknown.then, /end the current response without further tool, status, polling, or deliberation work/);
+      const noIdContinuation = scenarios.scenarios.find((scenario) => scenario.id === `${name.replace("puretokens-", "")}-unknown-submission-continuation-without-id`);
+      assert.match(noIdContinuation.then, /explicitly confirm a new paid/);
+      assert.match(noIdContinuation.then, /do not submit until that confirmation arrives in a new user turn/);
     }
     if (name === "puretokens-models") {
       const unavailable = scenarios.scenarios.find((scenario) => scenario.id === "models-exact-id-unavailable");
@@ -187,7 +198,8 @@ test("installed contracts cover bounded requests, task recovery, and user-facing
     verifiedManagedRuntimeHosts: ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode"],
     neverExposesCredentialsOrHostConfiguration: true,
     requiresNativeMediaByteDelivery: true,
-    doesNotUseMcpOrFallbackTransport: true
+    doesNotUseMcpOrFallbackTransport: true,
+    workBuddyPostBodyTransport: "bounded_base64_argument_never_stdin"
   });
   assert.equal(image.parameterValidation.normalSubmissionUsesInstalledModelSelection, true);
   assert.equal(image.parameterValidation.exactModelCoreSubmissionDoesNotRequireCatalogPreflight, true);
@@ -201,6 +213,8 @@ test("installed contracts cover bounded requests, task recovery, and user-facing
   assert.equal(image.taskState.whenReconciliationRequired, "stop_ordinary_polling_retain_same_task_id_do_not_submit_replacement_or_infer_refund");
   assert.equal(image.submissionFailure.rateLimit, "report_retry_after_when_returned_and_require_explicit_retry");
   assert.equal(image.submissionFailure.runtimeInvocationOutputUnknown, "treat_submission_outcome_as_unknown_do_not_repeat_post_or_submit_replacement_task");
+  assert.equal(image.submissionFailure.runtimeUnknownOutcomeResponse, "one_terminal_receipt_then_end_turn_without_followup_tool_status_or_poll_work");
+  assert.equal(image.submissionFailure.noTaskIdLaterContinuation, "require_explicit_confirmation_of_a_new_billable_request_before_one_new_post");
   assert.equal(image.contentRetrieval.indexBase, 0);
   assert.equal(image.contentRetrieval.allowedIndexes, "0..requestedCount-1");
   assert.equal(image.contentRetrieval.completeDeliveryRequiresEveryRequestedIndex, true);
@@ -244,6 +258,8 @@ test("installed contracts cover bounded requests, task recovery, and user-facing
   assert.equal(video.taskState.whenReconciliationRequired, "stop_ordinary_polling_retain_same_task_id_do_not_submit_replacement_or_infer_refund");
   assert.equal(video.submissionFailure.rateLimit, "report_retry_after_when_returned_and_require_explicit_retry");
   assert.equal(video.submissionFailure.runtimeInvocationOutputUnknown, "treat_submission_outcome_as_unknown_do_not_repeat_post_or_submit_replacement_task");
+  assert.equal(video.submissionFailure.runtimeUnknownOutcomeResponse, "one_terminal_receipt_then_end_turn_without_followup_tool_status_or_poll_work");
+  assert.equal(video.submissionFailure.noTaskIdLaterContinuation, "require_explicit_confirmation_of_a_new_billable_request_before_one_new_post");
   assert.equal(video.inputMediaValidation.imageToVideoOperation, "image_to_video");
   assert.equal(video.inputMediaValidation.referenceImageVideoOperation, "reference_image_video");
   assert.equal(video.inputMediaValidation.referenceVideoOperation, "reference_video");
@@ -255,6 +271,10 @@ test("installed contracts cover bounded requests, task recovery, and user-facing
   assert.equal(video.inputMediaValidation.skillPassesUserProvidedPublicUrlsOrDeclaredIdsWithoutDownloadingOrRehosting, true);
   assert.equal(video.inputMediaValidation.skillNeverDownloadsOrRehostsMedia, true);
   assert.equal(video.inputMediaValidation.gatewayStagesCurrentRequestAttachment, true);
+  assert.equal(video.inputMediaValidation.nativeAttachmentRouteMustMatchDeclaredOperation, true);
+  assert.equal(video.inputMediaValidation.nativeAttachmentMustNeverFallBackToJsonTextSubmission, true);
+  assert.equal(video.inputMediaValidation.workBuddyNativeAttachmentBodyMode, "multipart_base64_descriptor_only");
+  assert.equal(video.inputMediaValidation.whenCurrentAttachmentPathUnavailable, "stop_before_post_and_explain_declared_multipart_requirement");
   assert.equal(video.inputMediaValidation.multipleNativeAttachmentTypesRequireOneDeclaredCombinedOperation, true);
   assert.equal(video.inputMediaValidation.multiplePublicUrlOrIdFieldsRequireNoDeclaredConflict, true);
   assert.equal(video.contentRetrieval.fetchOnlyAfterTerminalSuccess, true);
@@ -351,7 +371,8 @@ test("distribution matrix and fixed direct API contract match every specialist m
     usesFullApiUrls: true,
     doesNotUseMcp: true,
     doesNotUseLocalProxyOrSidecar: true,
-    doesNotUseFallbackEndpoint: true
+    doesNotUseFallbackEndpoint: true,
+    workBuddyPostBodyTransport: "bounded_base64_argument_never_stdin"
   });
   assert.deepEqual(directContract.installableHosts, ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae"]);
   assert.deepEqual(directContract.verifiedManagedRuntimeHosts, ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode"]);
@@ -366,6 +387,9 @@ test("distribution matrix and fixed direct API contract match every specialist m
     requiresInstalledOrOnDemandDeclaredTransport: true,
     skillNeverDownloadsOrRehosts: true,
     apiHandlesDeclaredMultipartAttachments: true,
+    nativeAttachmentRouteMustMatchDeclaredOperation: true,
+    nativeAttachmentMustNeverFallBackToJsonTextSubmission: true,
+    workBuddyNativeAttachmentBodyMode: "multipart_base64_descriptor_only",
     fallback: "If the active runtime cannot send an explicitly attached file as the declared multipart representation, stop before submission, explain the declared transport, and do not invent a URL, file ID, or upload path. A public HTTPS URL, file ID, or voice ID explicitly supplied by the user may be sent only in the exact installed or on-demand-profile field whose declared transport permits it; the Skill never downloads, validates, or rehosts it."
   });
   assert.deepEqual(directContract.asyncTaskHandling, {
@@ -433,6 +457,9 @@ test("distribution matrix and fixed direct API contract match every specialist m
   assert.equal(videoManifest.rules.profiledReferenceVideoSupported, true);
   assert.equal(videoManifest.rules.profiledReferenceAudioSupported, true);
   assert.equal(videoManifest.rules.profiledVideoEditSupported, true);
+  assert.equal(videoManifest.rules.nativeAttachmentsMustUseExactDeclaredMultipartOperation, true);
+  assert.equal(videoManifest.rules.workBuddyNativeAttachmentsUseMultipartBase64, true);
+  assert.equal(videoManifest.rules.nativeAttachmentNeverFallsBackToTextSubmission, true);
   assert.equal(videoManifest.rules.usesSafeStructuredFailureReceipts, true);
   assert.equal(videoManifest.rules.modeSpecificResolutionUsesInstalledOrOnDemandConstraint, true);
   assert.equal(videoManifest.rules.usesResourceBoundedPolling, true);
@@ -478,6 +505,44 @@ test("Grok Build direct runtime resolves only matching configured model credenti
     { baseUrl: "https://example.com/v1", hasCredential: true },
     { baseUrl: "https://api.puretokensx.com/v1", hasCredential: true }
   ]);
+});
+
+test("direct runtime accepts bounded base64 request bodies without standard input", () => {
+  const jsonBody = { model: "gpt-image-2", prompt: "test image", async: true };
+  const jsonBase64 = Buffer.from(JSON.stringify(jsonBody), "utf8").toString("base64");
+  assert.deepEqual(readJsonBase64Argument(jsonBase64), jsonBody);
+  assert.deepEqual(
+    parseArguments(["request", "--host", "workbuddy", "--method", "POST", "--path", "/v1/images/generations", "--json-base64", jsonBase64]),
+    {
+      host: "workbuddy",
+      method: "POST",
+      path: "/v1/images/generations",
+      jsonStdin: false,
+      jsonBase64,
+      multipartStdin: false,
+      multipartBase64: undefined,
+      outputFile: undefined
+    }
+  );
+  const multipartBase64 = Buffer.from(JSON.stringify({ fields: { model: "seedance-2.0-mini", prompt: "test" }, files: [{ field: "reference_images", path: "/tmp/reference.png" }] }), "utf8").toString("base64");
+  assert.deepEqual(
+    parseArguments(["request", "--host", "workbuddy", "--method", "POST", "--path", "/v1/videos", "--multipart-base64", multipartBase64]).multipartBase64,
+    multipartBase64
+  );
+  assert.throws(
+    () => parseArguments(["request", "--host", "codex", "--method", "POST", "--path", "/v1/images/generations", "--json-stdin", "--json-base64", jsonBase64]),
+    /exactly one JSON or multipart request-body mode/
+  );
+  assert.throws(
+    () => parseArguments(["request", "--host", "workbuddy", "--method", "POST", "--path", "/v1/videos", "--json-stdin"]),
+    /WorkBuddy POST request bodies must use --json-base64 or --multipart-base64/
+  );
+  assert.throws(
+    () => parseArguments(["request", "--host", "workbuddy", "--method", "POST", "--path", "/v1/videos", "--multipart-stdin"]),
+    /WorkBuddy POST request bodies must use --json-base64 or --multipart-base64/
+  );
+  assert.throws(() => readJsonBase64Argument("eyJ4IjoxfQ"), /canonical UTF-8 JSON/);
+  assert.throws(() => readJsonBase64Argument(Buffer.from("not json", "utf8").toString("base64")), /valid JSON/);
 });
 
 test("Claude Code direct runtime accepts only an exact configured Pure Tokens origin", async (t) => {
@@ -632,7 +697,7 @@ test("CLI sync installs missing Skills and refuses unmanaged conflicts before wr
   for (const name of names) {
     assert.equal(JSON.parse(await readFile(path.join(target, name, "skill.json"), "utf8")).name, name);
   }
-  assert.equal(JSON.parse(await readFile(path.join(target, ".puretokens-runtime", "runtime.json"), "utf8")).version, "0.13.5");
+  assert.equal(JSON.parse(await readFile(path.join(target, ".puretokens-runtime", "runtime.json"), "utf8")).version, "0.13.8");
 });
 
 test("CLI refuses an unmanaged direct runtime before changing Skills", async (t) => {
