@@ -68,6 +68,8 @@
     "nativeAttachmentRouteMustMatchDeclaredOperation": true,
     "nativeAttachmentMustNeverFallBackToJsonTextSubmission": true,
     "workBuddyNativeAttachmentBodyMode": "multipart_base64_descriptor_only",
+    "untransportableNativeReferenceMustNeverBeConvertedToTextPrompt": true,
+    "currentRequestScopeOnly": true,
     "fallback": "If the active runtime cannot send an explicitly attached file as the declared multipart representation, stop before submission, explain the declared transport, and do not invent a URL, file ID, or upload path. A public HTTPS URL, file ID, or voice ID explicitly supplied by the user may be sent only in the exact installed or on-demand-profile field whose declared transport permits it; the Skill never downloads, validates, or rehosts it."
   },
   "asyncTaskHandling": {
@@ -87,6 +89,7 @@
     "neverPrefetchOrRefetchDeliveredContent": true,
     "handoffNativeBytesBeforeNextRead": true,
     "doesNotPersistMediaBytesInSkillStateOrLogs": true,
+    "confirmedDeliveryEndsCurrentResponse": true,
     "fallback": "If native media bytes cannot be handed off, report same-task delivery as unavailable. Do not substitute a URL, HTML, SVG, status text, or a re-submitted task."
   },
   "balance": {

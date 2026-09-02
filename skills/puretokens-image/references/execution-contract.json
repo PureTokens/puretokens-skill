@@ -43,6 +43,7 @@
     "notSuccess": ["task_id", "status_text", "html", "svg", "component", "remote_url"],
     "sameTaskOnly": true,
     "neverAutoResubmit": true,
+    "afterConfirmedDelivery": "return_one_completion_receipt_and_end_turn_without_quality_review_history_search_or_new_media_submission",
     "deliveryReceipt": "report_a_local_path_or_attachment_only_when_confirmed_by_the_runtime_otherwise_report_native_byte_handoff_without_inventing_a_location"
   },
   "taskIdentity": {
@@ -81,6 +82,10 @@
     "skillNeverDownloadsOrRehostsMedia": true,
     "gatewayStagesCurrentRequestAttachment": true,
     "requiresRuntimeNativeAttachmentByteDelivery": true,
+    "nativeReferenceAttachmentRequires": "installed_model_selection_or_on_demand_profile_property_or_operation_with_multipart_file_transport",
+    "untransportableNativeReferenceMustNeverBeConvertedToTextPrompt": true,
+    "whenNativeReferenceTransportUnavailable": "stop_before_post_and_require_public_https_url_or_explicit_new_text_only_request",
+    "requestScope": "current_user_request_only_no_unrelated_skill_history_workspace_search_or_quality_review",
     "whenTransportUnavailable": "do_not_submit_and_explain_declared_transport"
   },
   "contentRetrieval": {

@@ -4,6 +4,11 @@
 
 # Changelog
 
+## 0.13.9 — 2026-09-02
+
+- Made an untransportable current local reference image fail closed. If the selected model does not declare a compatible native multipart reference transport, the Skill stops before any paid request and requires either the user's public HTTPS URL or a new explicit text-only request that ignores the attachment. It never inspects, summarizes, recreates, uploads, searches for, or silently converts that image into a text prompt.
+- Made confirmed native-media delivery a hard turn boundary. After delivering the requested result, the Skill returns one completion receipt and stops; it does not inspect the output, search history or the workspace, invoke unrelated Skills, or start another media task without a new explicit user request.
+
 ## 0.13.8 — 2026-09-01
 
 - Closed the WorkBuddy standard-input bypass in the direct runtime: every WorkBuddy POST now rejects `--json-stdin` and `--multipart-stdin` at argument validation, so only bounded Base64 request-body arguments are accepted.

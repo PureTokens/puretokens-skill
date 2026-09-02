@@ -221,6 +221,8 @@ function validateDirectApiExecutionContract(errors, contract, hostSupport) {
     userMediaInput.nativeAttachmentRouteMustMatchDeclaredOperation !== true ||
     userMediaInput.nativeAttachmentMustNeverFallBackToJsonTextSubmission !== true ||
     userMediaInput.workBuddyNativeAttachmentBodyMode !== "multipart_base64_descriptor_only" ||
+    userMediaInput.untransportableNativeReferenceMustNeverBeConvertedToTextPrompt !== true ||
+    userMediaInput.currentRequestScopeOnly !== true ||
     typeof userMediaInput.fallback !== "string" || !userMediaInput.fallback) {
     errors.push(`${label} must define the fail-closed direct user-media input contract`);
   }
@@ -242,6 +244,7 @@ function validateDirectApiExecutionContract(errors, contract, hostSupport) {
     mediaDeliveryResourceBounds.neverPrefetchOrRefetchDeliveredContent !== true ||
     mediaDeliveryResourceBounds.handoffNativeBytesBeforeNextRead !== true ||
     mediaDeliveryResourceBounds.doesNotPersistMediaBytesInSkillStateOrLogs !== true ||
+    mediaDeliveryResourceBounds.confirmedDeliveryEndsCurrentResponse !== true ||
     typeof mediaDeliveryResourceBounds.fallback !== "string" || !mediaDeliveryResourceBounds.fallback) {
     errors.push(`${label} must define bounded same-task polling and native-media delivery without skill-state or log persistence`);
   }
@@ -372,6 +375,14 @@ function validateExecutionContract(errors, directory, contract) {
       contract.parameterValidation?.onDemandLiveCatalogRead !== "only_for_explicit_discovery_installed_profile_gap_or_post_rejection_diagnosis" ||
       contract.parameterValidation?.allOptionalParametersRequire !== "installed_model_selection_parameter_schema_or_on_demand_live_input_schema") {
       errors.push(`${label} must use its installed selection for normal image submissions and limit live catalog reads to on-demand cases`);
+    }
+    const mediaInput = contract.inputMediaValidation;
+    if (!mediaInput || mediaInput.nativeReferenceAttachmentRequires !== "installed_model_selection_or_on_demand_profile_property_or_operation_with_multipart_file_transport" ||
+      mediaInput.untransportableNativeReferenceMustNeverBeConvertedToTextPrompt !== true ||
+      mediaInput.whenNativeReferenceTransportUnavailable !== "stop_before_post_and_require_public_https_url_or_explicit_new_text_only_request" ||
+      mediaInput.requestScope !== "current_user_request_only_no_unrelated_skill_history_workspace_search_or_quality_review" ||
+      contract.result?.afterConfirmedDelivery !== "return_one_completion_receipt_and_end_turn_without_quality_review_history_search_or_new_media_submission") {
+      errors.push(`${label} must fail closed for untransportable native reference attachments and end after confirmed delivery`);
     }
     validateTaskIdentityStateAndSubmissionFailure(errors, label, contract, true);
     validateImageRetrieval(errors, label, contract);
