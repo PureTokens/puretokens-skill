@@ -442,8 +442,8 @@ function validateUpdateContract(errors, label, contract) {
     errors.push(`${label} must use the local official Skill manager without credentials, media APIs, or MCP`);
   }
   const sync = contract.operations?.sync;
-  if (!sync || sync.commandTemplate !== "node bin/puretokens-skill.js sync --target <installation-root>" ||
-    sync.sourceRepository !== "https://github.com/PureTokens/puretokens-skill.git" || sync.sourceBranch !== "main" || sync.validationCommand !== "npm run check") {
+  if (!sync || sync.commandTemplate !== "native_platform_installer sync --target <installation-root>" ||
+    sync.sourceRepository !== "https://github.com/PureTokens/puretokens-skill.git" || sync.sourceBranch !== "main" || sync.validationCommand !== "native_installer_downloads_official_main_and_performs_static_validation_before_sync") {
     errors.push(`${label} must define the validated official-main sync operation`);
   }
   const result = contract.result;
@@ -637,6 +637,8 @@ async function validateManagedRuntime(errors, packageVersion) {
   const runtimeDirectory = path.join(repositoryRoot, "runtime");
   const manifestPath = path.join(runtimeDirectory, "runtime.json");
   const entryPath = path.join(runtimeDirectory, "puretokens-direct-api.mjs");
+  const shellInstallerPath = path.join(runtimeDirectory, "puretokens-skill-install.sh");
+  const powerShellInstallerPath = path.join(runtimeDirectory, "puretokens-skill-install.ps1");
   try {
     const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
     if (manifest?.schemaVersion !== 1 || manifest?.name !== "puretokens-direct-api-runtime" || manifest?.version !== packageVersion ||
@@ -645,6 +647,8 @@ async function validateManagedRuntime(errors, packageVersion) {
       errors.push("runtime/runtime.json must identify the current managed Pure Tokens direct API runtime");
     }
     if (!(await stat(entryPath)).isFile()) errors.push("runtime/puretokens-direct-api.mjs is required");
+    if (!(await stat(shellInstallerPath)).isFile()) errors.push("runtime/puretokens-skill-install.sh is required");
+    if (!(await stat(powerShellInstallerPath)).isFile()) errors.push("runtime/puretokens-skill-install.ps1 is required");
   } catch {
     errors.push("managed Pure Tokens direct API runtime is missing or invalid");
   }

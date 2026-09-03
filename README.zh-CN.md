@@ -15,30 +15,28 @@
 | `puretokens-video` | 通过固定的 Pure Tokens Videos API 生视频，并按 profile 支持图生视频、参考图/视频/音频视频和视频编辑。 |
 | `puretokens-update` | 安装或安全升级本机官方 Pure Tokens Skills。 |
 
-按需安装到受支持宿主已声明的全局 Skill 目录：
+按需安装到受支持宿主已声明的全局 Skill 目录。用户不需要安装 Node、npm、Git 或任何依赖：
 
 ```bash
-# Claude Code
-node bin/puretokens-skill.js sync --target ~/.claude/skills
-
-# Codex
-node bin/puretokens-skill.js sync --target ~/.agents/skills
-
-# WorkBuddy
-node bin/puretokens-skill.js sync --target ~/.workbuddy/skills
-
-# Gemini CLI
-node bin/puretokens-skill.js sync --target ~/.gemini/skills
-
-# Grok Build
-node bin/puretokens-skill.js sync --target ~/.grok/skills
-
-# OpenCode
-node bin/puretokens-skill.js sync --target ~/.config/opencode/skills
-
-# Trae
-node bin/puretokens-skill.js sync --target ~/.trae/skills
+# macOS 或 Linux：将下方 target 替换为对应宿主目录。
+installer_dir="$(mktemp -d)"
+curl --fail --location --proto '=https' --tlsv1.2 \
+  https://raw.githubusercontent.com/PureTokens/puretokens-skill/main/runtime/puretokens-skill-install.sh \
+  --output "$installer_dir/puretokens-skill-install.sh"
+sh "$installer_dir/puretokens-skill-install.sh" sync --target "$HOME/.agents/skills"
+rm -rf "$installer_dir"
 ```
+
+```powershell
+# Windows PowerShell：将下方 target 替换为对应宿主目录。
+$installerDir = Join-Path ([System.IO.Path]::GetTempPath()) ("puretokens-skill-" + [Guid]::NewGuid().ToString("N"))
+New-Item -ItemType Directory -Path $installerDir | Out-Null
+Invoke-WebRequest https://raw.githubusercontent.com/PureTokens/puretokens-skill/main/runtime/puretokens-skill-install.ps1 -OutFile "$installerDir\puretokens-skill-install.ps1"
+& "$installerDir\puretokens-skill-install.ps1" sync -Target "$env:USERPROFILE\.agents\skills"
+Remove-Item -LiteralPath $installerDir -Recurse -Force
+```
+
+Claude Code 使用 `~/.claude/skills`，Codex 使用 `~/.agents/skills`，WorkBuddy 使用 `~/.workbuddy/skills`，Gemini CLI 使用 `~/.gemini/skills`，Grok Build 使用 `~/.grok/skills`，OpenCode 使用 `~/.config/opencode/skills`，Trae 使用 `~/.trae/skills`。
 
 ## 让 Agent 协助安装
 
@@ -94,7 +92,7 @@ Skill 绝不猜测分组名称，也不会声称某模型属于哪个分组；�
 
 ## Skill 升级
 
-`puretokens-update` 专门处理用户明确提出的安装、更新或同步本机官方 Skills 的请求。它会在任一受支持宿主先校验新克隆的官方 `main`，再执行 `node bin/puretokens-skill.js sync --target <installation-root>`。该命令会将已验证的旧受管 Skill 目录移到可恢复的隐藏备份，安装缺失官方 Skill，只升级受管且同名的当前 Skill 目录；只要遇到当前或旧的非受管同名目录，整个同步会在改动前停止。它绝不读取连接设置或凭据，也绝不会在媒体任务中自行运行。
+`puretokens-update` 专门处理用户明确提出的安装、更新或同步本机官方 Skills 的请求。macOS/Linux 使用已安装的原生 Shell 安装器，Windows 使用已安装的 PowerShell 安装器。安装器通过 HTTPS 下载官方 `main` 源码，在改动目标目录前对完整安装载荷做静态校验，然后执行同步。用户无需安装 Node、npm、包管理器、Git 或依赖。它会将已验证的旧受管 Skill 目录移到可恢复的隐藏备份，安装缺失官方 Skill，只升级受管且同名的当前 Skill 目录；只要遇到当前或旧的非受管同名目录，或非受管运行器目录，整个同步会在改动前停止。它绝不读取连接设置或凭据，也绝不会在媒体任务中自行运行。
 
 ## 图片尺寸和数量
 

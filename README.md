@@ -15,30 +15,28 @@ This repository provides six independent Skills:
 | `puretokens-video` | Generates videos and performs profile-gated image, video, or audio reference generation and video edits through the fixed Pure Tokens Videos API. |
 | `puretokens-update` | Installs or safely upgrades local official Pure Tokens Skills. |
 
-Install the Skills you need into the supported host's documented global Skill directory:
+Install the Skills you need into the supported host's documented global Skill directory. This does not require Node, npm, Git, or package installation:
 
 ```bash
-# Claude Code
-node bin/puretokens-skill.js sync --target ~/.claude/skills
-
-# Codex
-node bin/puretokens-skill.js sync --target ~/.agents/skills
-
-# WorkBuddy
-node bin/puretokens-skill.js sync --target ~/.workbuddy/skills
-
-# Gemini CLI
-node bin/puretokens-skill.js sync --target ~/.gemini/skills
-
-# Grok Build
-node bin/puretokens-skill.js sync --target ~/.grok/skills
-
-# OpenCode
-node bin/puretokens-skill.js sync --target ~/.config/opencode/skills
-
-# Trae
-node bin/puretokens-skill.js sync --target ~/.trae/skills
+# macOS or Linux — replace the target with your host's directory below.
+installer_dir="$(mktemp -d)"
+curl --fail --location --proto '=https' --tlsv1.2 \
+  https://raw.githubusercontent.com/PureTokens/puretokens-skill/main/runtime/puretokens-skill-install.sh \
+  --output "$installer_dir/puretokens-skill-install.sh"
+sh "$installer_dir/puretokens-skill-install.sh" sync --target "$HOME/.agents/skills"
+rm -rf "$installer_dir"
 ```
+
+```powershell
+# Windows PowerShell — replace the target with your host's directory below.
+$installerDir = Join-Path ([System.IO.Path]::GetTempPath()) ("puretokens-skill-" + [Guid]::NewGuid().ToString("N"))
+New-Item -ItemType Directory -Path $installerDir | Out-Null
+Invoke-WebRequest https://raw.githubusercontent.com/PureTokens/puretokens-skill/main/runtime/puretokens-skill-install.ps1 -OutFile "$installerDir\puretokens-skill-install.ps1"
+& "$installerDir\puretokens-skill-install.ps1" sync -Target "$env:USERPROFILE\.agents\skills"
+Remove-Item -LiteralPath $installerDir -Recurse -Force
+```
+
+Use `~/.claude/skills` for Claude Code, `~/.agents/skills` for Codex, `~/.workbuddy/skills` for WorkBuddy, `~/.gemini/skills` for Gemini CLI, `~/.grok/skills` for Grok Build, `~/.config/opencode/skills` for OpenCode, and `~/.trae/skills` for Trae.
 
 ## Agent-assisted installation
 
@@ -94,7 +92,7 @@ The Skill never guesses a group name or claims which group contains a model: the
 
 ## Skill updates
 
-`puretokens-update` handles explicit requests to install, update, or synchronize local official Skills. On any of the seven supported hosts it validates a fresh `main` checkout, then runs `node bin/puretokens-skill.js sync --target <installation-root>`. The command moves verified retired managed Skill directories into a recoverable hidden backup, installs missing official Skills, and upgrades only managed matching Skill directories; an unmanaged current or retired same-name directory stops the whole sync before any target is changed. It never reads connection settings or credentials, and it never runs automatically during media work.
+`puretokens-update` handles explicit requests to install, update, or synchronize local official Skills. On macOS/Linux it runs the installed native shell installer; on Windows it runs the installed PowerShell installer. The installer downloads the official `main` source over HTTPS, statically validates the complete install payload before any target changes, then synchronizes it. It requires no user-installed Node, npm, package manager, Git, or dependency installation. It moves verified retired managed Skill directories into a recoverable hidden backup, installs missing official Skills, and upgrades only managed matching Skill directories; an unmanaged current or retired same-name directory, or an unmanaged runtime directory, stops the whole sync before any target is changed. It never reads connection settings or credentials, and it never runs automatically during media work.
 
 ## Image sizes and count
 

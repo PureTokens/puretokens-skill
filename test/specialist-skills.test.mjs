@@ -30,7 +30,7 @@ test("registry exposes exactly the six specialist Skills", async () => {
   const { registry, records } = await collectSkillRecords();
   assert.deepEqual(registry.skills.map((skill) => skill.name), names);
   assert.equal(records.length, 6);
-  assert.deepEqual([...new Set(records.map((record) => record.manifest.version))], ["0.13.11"]);
+  assert.deepEqual([...new Set(records.map((record) => record.manifest.version))], ["0.13.13"]);
   assert.deepEqual(await validateRepository(), []);
 });
 
@@ -155,7 +155,7 @@ test("installed contracts cover bounded requests, task recovery, and user-facing
     "puretokens-models": ["models-catalog-unavailable", "models-catalog-empty", "models-exact-id-unavailable", "models-capability-filter-empty", "models-parameter-profile-absent", "models-operation-profile-absent", "models-requirement-ambiguous", "models-catalog-response"],
     "puretokens-image": ["image-model-alias-ambiguous", "image-normal-submission-skips-catalog", "image-failure-receipt-safe", "image-content-safety-failure", "image-input-role-ambiguous", "image-request-scope-boundary", "image-distinct-assets", "image-prompt-shaping", "image-submission-model-parameter-rejected", "image-submission-rate-limited", "image-submission-outcome-unknown", "image-submission-runtime-output-unknown", "image-unknown-submission-continuation-without-id", "image-model-unavailable", "image-model-parameter-profile-unavailable", "image-model-parameter-unsupported", "image-size-expression-constraints", "image-catalog-on-demand-unavailable", "image-execution-unavailable", "image-count-invalid", "image-pixel-size-invalid", "image-physical-size", "image-edit-profile-unavailable", "image-public-url-reference-profile-unavailable", "image-public-url-edit-profile-unavailable", "image-public-url-reference-invalid", "image-public-url-reference-not-public", "image-public-url-reference-ambiguous", "image-native-reference-attachment-direct-api", "image-native-reference-attachment-unavailable", "image-edit-attachment-unavailable", "image-edit-attachment-direct-api", "image-edit-input-unsupported", "image-task-id-normalization", "image-task-id-missing", "image-task-id-invalid", "image-task-state-unrecognized", "image-task-reconciliation-required", "image-task-request-count-unknown", "image-task-pending", "image-task-poll-delay", "image-task-poll-rate-limited", "image-task-poll-resource-bound", "image-task-polling-deadline", "image-task-explicit-continuation", "image-task-terminal-failure", "image-task-timeout-or-unknown", "image-content-delivery-failure", "image-content-delivery-location", "image-delivery-terminal-boundary", "image-content-index-missing", "image-content-resource-bound"],
     "puretokens-video": ["video-model-alias-ambiguous", "video-normal-submission-skips-catalog", "video-failure-receipt-safe", "video-content-safety-failure", "video-submission-model-parameter-rejected", "video-submission-rate-limited", "video-submission-outcome-unknown", "video-submission-runtime-output-unknown", "video-unknown-submission-continuation-without-id", "video-model-unavailable", "video-model-parameter-profile-unavailable", "video-model-parameter-unsupported", "video-catalog-on-demand-unavailable", "video-execution-unavailable", "video-parameter-unsupported", "video-first-frame-operation-mapping", "video-generate-audio-intent-mapping", "video-resolution-mode-unsupported", "video-image-operation-profile-unavailable", "video-media-operation-profile-unavailable", "video-image-transport-unavailable", "video-native-attachment-route-locked", "video-native-attachment-path-unavailable", "video-public-url-reference-profile-unavailable", "video-public-url-reference-invalid", "video-public-url-reference-not-public", "video-public-url-reference-ambiguous", "video-prompt-requirement", "video-attachment-direct-api", "video-image-count-unsupported", "video-media-combination-unsupported", "video-input-media-unsupported", "video-task-id-normalization", "video-task-id-missing", "video-task-id-invalid", "video-task-state-unrecognized", "video-task-reconciliation-required", "video-task-pending", "video-task-poll-delay", "video-task-poll-rate-limited", "video-task-poll-resource-bound", "video-task-polling-deadline", "video-task-explicit-continuation", "video-task-terminal-failure", "video-task-timeout-or-unknown", "video-content-delivery-failure", "video-content-resource-bound"],
-    "puretokens-update": ["update-host-unknown", "update-terminal-unavailable", "update-validation-failed", "update-unmanaged-conflict", "update-managed-retired-skill", "update-managed-sync"]
+    "puretokens-update": ["update-host-unknown", "update-terminal-unavailable", "update-native-installer-bootstrap", "update-validation-failed", "update-unmanaged-conflict", "update-managed-retired-skill", "update-managed-sync"]
   };
   for (const name of names) {
     const root = path.join(repositoryRoot, "skills", name, "references");
@@ -359,16 +359,19 @@ test("installed contracts cover bounded requests, task recovery, and user-facing
 
   const update = JSON.parse(await readFile(path.join(repositoryRoot, "skills", "puretokens-update", "references", "execution-contract.json"), "utf8"));
   assert.equal(update.kind, "update");
-  assert.equal(update.operations.sync.commandTemplate, "node bin/puretokens-skill.js sync --target <installation-root>");
+  assert.equal(update.operations.sync.commandTemplate, "native_platform_installer sync --target <installation-root>");
+  assert.equal(update.operations.sync.validationCommand, "native_installer_downloads_official_main_and_performs_static_validation_before_sync");
   assert.equal(update.operations.sync.sourceBranch, "main");
   assert.equal(update.result.neverOverwritesUnmanagedDirectories, true);
   assert.equal(update.result.archivesVerifiedRetiredManagedSkills, true);
   assert.equal(update.result.neverModifiesOfficialCheckout, true);
   const updateScenarios = JSON.parse(await readFile(path.join(repositoryRoot, "skills", "puretokens-update", "references", "behavior-scenarios.json"), "utf8"));
-  assert.match(updateScenarios.scenarios.find((scenario) => scenario.id === "update-validation-failed").then, /Do not run generators, docs sync, formatters, repair commands, Git writes/);
+  assert.match(updateScenarios.scenarios.find((scenario) => scenario.id === "update-validation-failed").then, /Do not install Node, npm packages, Git, generators, docs sync, formatters, repair commands, Git writes/);
   const updateSkill = await readFile(path.join(repositoryRoot, "skills", "puretokens-update", "SKILL.md"), "utf8");
-  assert.match(updateSkill, /官方克隆是只读安装载荷/);
-  assert.match(updateSkill, /不得运行 `docs:sync-\*`、任何 `--write`、生成器、修复器/);
+  assert.match(updateSkill, /不能要求用户安装 Node、npm、包管理器、Git 或开发环境/);
+  assert.match(updateSkill, /puretokens-skill-install\.sh/);
+  assert.match(updateSkill, /puretokens-skill-install\.ps1/);
+  assert.match(updateSkill, /不得把远程内容直接管道给 Shell\/PowerShell/);
 });
 
 test("distribution matrix and fixed direct API contract match every specialist manifest", async () => {
@@ -537,6 +540,23 @@ test("formal reference schemas ship with the package", async () => {
     assert.equal(document.$schema, "https://json-schema.org/draft/2020-12/schema");
     assert.match(document.$id, /^https:\/\/puretokensx\.com\/schemas\//);
   }
+});
+
+test("native platform Skill installers ship with the managed runtime", async () => {
+  const shellInstaller = path.join(repositoryRoot, "runtime", "puretokens-skill-install.sh");
+  const powerShellInstaller = path.join(repositoryRoot, "runtime", "puretokens-skill-install.ps1");
+  const run = promisify(execFile);
+  await run("sh", ["-n", shellInstaller], { cwd: repositoryRoot });
+  const [shellSource, powerShellSource] = await Promise.all([readFile(shellInstaller, "utf8"), readFile(powerShellInstaller, "utf8")]);
+  assert.match(shellSource, /repository_archive_url="https:\/\/github\.com\/PureTokens\/puretokens-skill\/archive\/refs\/heads\/main\.zip"/);
+  assert.match(shellSource, /curl --fail --location --proto '=https'/);
+  assert.match(shellSource, /unzip -q/);
+  assert.match(shellSource, /unmanaged Skill conflicts/);
+  assert.doesNotMatch(shellSource, /node|npm|git clone/i);
+  assert.match(powerShellSource, /Invoke-WebRequest -Uri \$archiveUrl/);
+  assert.match(powerShellSource, /Expand-Archive/);
+  assert.match(powerShellSource, /unmanaged Skill conflicts/);
+  assert.doesNotMatch(powerShellSource, /node|npm|git clone/i);
 });
 
 test("Grok Build direct runtime resolves only matching configured model credentials", () => {
@@ -751,7 +771,7 @@ test("CLI sync installs missing Skills and refuses unmanaged conflicts before wr
   for (const name of names) {
     assert.equal(JSON.parse(await readFile(path.join(target, name, "skill.json"), "utf8")).name, name);
   }
-  assert.equal(JSON.parse(await readFile(path.join(target, ".puretokens-runtime", "runtime.json"), "utf8")).version, "0.13.11");
+  assert.equal(JSON.parse(await readFile(path.join(target, ".puretokens-runtime", "runtime.json"), "utf8")).version, "0.13.13");
 });
 
 test("CLI refuses an unmanaged direct runtime before changing Skills", async (t) => {

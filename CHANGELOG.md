@@ -4,6 +4,10 @@
 
 # Changelog
 
+## 0.13.13 — 2026-09-03
+
+- Replaced the user-facing Node-based Skill updater with official native platform installers: Shell on macOS/Linux and PowerShell on Windows. Installation and upgrades now download and statically validate the official `main` payload before synchronization, without requiring users to install Node, npm, Git, a package manager, or dependencies.
+
 ## 0.13.11 — 2026-09-03
 
 - Made a current local visual-reference image use the selected model's declared multipart `image_edit` operation directly, while preserving the user's reference-image intent in the prompt. It never uploads, rehosts, invents a URL, or turns an unavailable attachment into text-only generation.

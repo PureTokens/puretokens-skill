@@ -10,10 +10,10 @@
   },
   "operations": {
     "sync": {
-      "commandTemplate": "node bin/puretokens-skill.js sync --target <installation-root>",
+      "commandTemplate": "native_platform_installer sync --target <installation-root>",
       "sourceRepository": "https://github.com/PureTokens/puretokens-skill.git",
       "sourceBranch": "main",
-      "validationCommand": "npm run check"
+      "validationCommand": "native_installer_downloads_official_main_and_performs_static_validation_before_sync"
     }
   },
   "result": {
