@@ -2,7 +2,7 @@
 
 set -eu
 
-repository_archive_url="https://github.com/PureTokens/puretokens-skill/archive/refs/heads/main.zip"
+payload_archive_url="https://raw.githubusercontent.com/PureTokens/puretokens-skill/main/dist/puretokens-skill-install-payload.zip"
 current_skills="puretokens-balance puretokens-connection puretokens-models puretokens-image puretokens-video puretokens-update"
 retired_skills="puretokens_media puretokens_balance puretokens_connection puretokens_models puretokens_image puretokens_video puretokens_update puretokens_get_balance puretokens_get_model_price puretokens_workbuddy_router"
 
@@ -77,11 +77,11 @@ validate_source() {
 
 download_source() {
   workspace=$1
-  archive="$workspace/puretokens-skill-main.zip"
+  archive="$workspace/puretokens-skill-install-payload.zip"
   unpacked="$workspace/unpacked"
   mkdir -p "$unpacked"
-  curl --fail --location --proto '=https' --proto-redir '=https' --tlsv1.2 \
-    "$repository_archive_url" --output "$archive" || fail "could not download the official Pure Tokens Skill source"
+  curl --fail --location --proto '=https' --proto-redir '=https' --tlsv1.2 --connect-timeout 10 --max-time 45 \
+    "$payload_archive_url" --output "$archive" || fail "could not download the compact official Pure Tokens Skill install payload within 45 seconds"
   unzip -q "$archive" -d "$unpacked" || fail "could not unpack the official Pure Tokens Skill source"
   source_root="$unpacked/puretokens-skill-main"
   [ -d "$source_root" ] || fail "official source archive has an unexpected layout"

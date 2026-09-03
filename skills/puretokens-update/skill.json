@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "name": "puretokens-update",
-  "version": "0.13.16",
+  "version": "0.13.17",
   "entry": "SKILL.md",
   "displayName": "Pure Tokens Update",
   "description": "Install or safely upgrade local official Pure Tokens Skills.",
@@ -51,6 +51,9 @@
     "usesOfficialMainBranch": true,
     "usesManagedSkillSync": true,
     "usesNativePlatformInstaller": true,
+    "usesCompactInstallPayload": true,
+    "payloadDownloadDeadlineSeconds": 45,
+    "doesNotClaimSuccessWithoutVersionReceipt": true,
     "doesNotRequireNodeOrNpm": true,
     "installsMissingOfficialSkills": true,
     "neverOverwritesUnmanagedDirectories": true,

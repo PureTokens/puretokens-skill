@@ -438,19 +438,21 @@ function validateExecutionContract(errors, directory, contract) {
 function validateUpdateContract(errors, label, contract) {
   const transport = contract.transport;
   if (!transport || transport.localSkillManager !== true || transport.usesOfficialMainBranch !== true ||
+    transport.usesCompactInstallPayload !== true || transport.payloadDownloadDeadlineSeconds !== 45 ||
     transport.doesNotReadCredentialsOrHostConfiguration !== true || transport.doesNotUseMediaApiOrMcp !== true) {
     errors.push(`${label} must use the local official Skill manager without credentials, media APIs, or MCP`);
   }
   const sync = contract.operations?.sync;
   if (!sync || sync.commandTemplate !== "native_platform_installer sync --target <installation-root>" ||
-    sync.sourceRepository !== "https://github.com/PureTokens/puretokens-skill.git" || sync.sourceBranch !== "main" || sync.validationCommand !== "native_installer_downloads_official_main_and_performs_static_validation_before_sync") {
-    errors.push(`${label} must define the validated official-main sync operation`);
+    sync.sourceRepository !== "https://github.com/PureTokens/puretokens-skill.git" || sync.sourceBranch !== "main" || sync.validationCommand !== "native_installer_downloads_compact_official_payload_and_performs_static_validation_before_sync") {
+    errors.push(`${label} must define the validated compact official-payload sync operation`);
   }
   const result = contract.result;
   if (!result || result.installsMissingOfficialSkills !== true || result.upgradesOnlyManagedMatchingSkills !== true ||
     result.neverOverwritesUnmanagedDirectories !== true || result.removesVerifiedRetiredManagedSkills !== true ||
     result.reportsSynchronizedVersion !== true ||
     result.removesLegacyCodexPluginWhenPresent !== true || result.reportsLegacyCodexPluginManualActionWhenUnavailable !== true ||
+    result.doesNotClaimSuccessWithoutVersionReceipt !== true ||
     result.neverModifiesOfficialCheckout !== true ||
     result.requiresNewHostConversationAfterSuccess !== true) {
     errors.push(`${label} must preserve the official checkout, remove only verified retired Skills and the exact legacy Codex plugin, preserve unmanaged directories, report the synchronized version and unavailable plugin migration, and report a new-conversation requirement`);

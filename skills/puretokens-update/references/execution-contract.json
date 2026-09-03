@@ -5,6 +5,8 @@
   "transport": {
     "localSkillManager": true,
     "usesOfficialMainBranch": true,
+    "usesCompactInstallPayload": true,
+    "payloadDownloadDeadlineSeconds": 45,
     "doesNotReadCredentialsOrHostConfiguration": true,
     "doesNotUseMediaApiOrMcp": true
   },
@@ -13,7 +15,7 @@
       "commandTemplate": "native_platform_installer sync --target <installation-root>",
       "sourceRepository": "https://github.com/PureTokens/puretokens-skill.git",
       "sourceBranch": "main",
-      "validationCommand": "native_installer_downloads_official_main_and_performs_static_validation_before_sync"
+      "validationCommand": "native_installer_downloads_compact_official_payload_and_performs_static_validation_before_sync"
     }
   },
   "result": {
@@ -24,6 +26,7 @@
     "reportsSynchronizedVersion": true,
     "removesLegacyCodexPluginWhenPresent": true,
     "reportsLegacyCodexPluginManualActionWhenUnavailable": true,
+    "doesNotClaimSuccessWithoutVersionReceipt": true,
     "neverModifiesOfficialCheckout": true,
     "requiresNewHostConversationAfterSuccess": true
   }

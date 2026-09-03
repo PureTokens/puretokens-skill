@@ -8,7 +8,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$archiveUrl = "https://github.com/PureTokens/puretokens-skill/archive/refs/heads/main.zip"
+$archiveUrl = "https://raw.githubusercontent.com/PureTokens/puretokens-skill/main/dist/puretokens-skill-install-payload.zip"
 $currentSkills = @("puretokens-balance", "puretokens-connection", "puretokens-models", "puretokens-image", "puretokens-video", "puretokens-update")
 $retiredSkills = @("puretokens_media", "puretokens_balance", "puretokens_connection", "puretokens_models", "puretokens_image", "puretokens_video", "puretokens_update", "puretokens_get_balance", "puretokens_get_model_price", "puretokens_workbuddy_router")
 
@@ -86,8 +86,8 @@ function Remove-LegacyCodexPlugin([string]$TargetRoot) {
 $workspace = Join-Path ([System.IO.Path]::GetTempPath()) ("puretokens-skill-" + [Guid]::NewGuid().ToString("N"))
 try {
   New-Item -ItemType Directory -Path $workspace | Out-Null
-  $archive = Join-Path $workspace "puretokens-skill-main.zip"
-  Invoke-WebRequest -Uri $archiveUrl -OutFile $archive
+  $archive = Join-Path $workspace "puretokens-skill-install-payload.zip"
+  Invoke-WebRequest -Uri $archiveUrl -OutFile $archive -TimeoutSec 45
   $unpacked = Join-Path $workspace "unpacked"
   Expand-Archive -LiteralPath $archive -DestinationPath $unpacked
   $sourceRoot = Join-Path $unpacked "puretokens-skill-main"

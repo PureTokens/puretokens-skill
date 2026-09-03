@@ -2,6 +2,9 @@ node_modules/
 .DS_Store
 coverage/
 dist/
+!dist/
+dist/*
+!dist/puretokens-skill-install-payload.zip
 .env
 .env.*
 !.env.example

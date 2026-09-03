@@ -4,6 +4,10 @@
 
 # Changelog
 
+## 0.13.17 — 2026-09-03
+
+- Optimized `puretokens-update` for hosts with short command windows. Native installers now download a compact, static-validated official install payload that excludes documentation and brand assets, instead of the full repository archive; each payload download has a 45-second hard limit. A host timeout or interruption is now explicitly an unconfirmed result, never a claimed upgrade or guessed version.
+
 ## 0.13.16 — 2026-09-03
 
 - Added a Codex-only legacy-plugin migration to `puretokens-update`. When synchronizing Codex's `~/.agents/skills`, it uses only the official Codex plugin interface to detect and remove the exact installed `puretokens-media` plugin after Skill synchronization. If the plugin cannot be inspected or removed, including workspace-managed cases, it reports the required Plugins or administrator action instead of claiming success.

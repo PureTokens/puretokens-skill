@@ -120,13 +120,13 @@
                   "commandTemplate": { "const": "native_platform_installer sync --target <installation-root>" },
                   "sourceRepository": { "const": "https://github.com/PureTokens/puretokens-skill.git" },
                   "sourceBranch": { "const": "main" },
-                  "validationCommand": { "const": "native_installer_downloads_official_main_and_performs_static_validation_before_sync" }
+                  "validationCommand": { "const": "native_installer_downloads_compact_official_payload_and_performs_static_validation_before_sync" }
                 }
               }
             }
           },
           "result": {
-            "required": ["installsMissingOfficialSkills", "upgradesOnlyManagedMatchingSkills", "neverOverwritesUnmanagedDirectories", "removesVerifiedRetiredManagedSkills", "reportsSynchronizedVersion", "removesLegacyCodexPluginWhenPresent", "reportsLegacyCodexPluginManualActionWhenUnavailable", "neverModifiesOfficialCheckout", "requiresNewHostConversationAfterSuccess"],
+            "required": ["installsMissingOfficialSkills", "upgradesOnlyManagedMatchingSkills", "neverOverwritesUnmanagedDirectories", "removesVerifiedRetiredManagedSkills", "reportsSynchronizedVersion", "removesLegacyCodexPluginWhenPresent", "reportsLegacyCodexPluginManualActionWhenUnavailable", "doesNotClaimSuccessWithoutVersionReceipt", "neverModifiesOfficialCheckout", "requiresNewHostConversationAfterSuccess"],
             "properties": {
               "installsMissingOfficialSkills": { "const": true },
               "upgradesOnlyManagedMatchingSkills": { "const": true },
@@ -135,6 +135,7 @@
               "reportsSynchronizedVersion": { "const": true },
               "removesLegacyCodexPluginWhenPresent": { "const": true },
               "reportsLegacyCodexPluginManualActionWhenUnavailable": { "const": true },
+              "doesNotClaimSuccessWithoutVersionReceipt": { "const": true },
               "neverModifiesOfficialCheckout": { "const": true },
               "requiresNewHostConversationAfterSuccess": { "const": true }
             }
@@ -162,10 +163,12 @@
     },
     "updateTransport": {
       "type": "object",
-      "required": ["localSkillManager", "usesOfficialMainBranch", "doesNotReadCredentialsOrHostConfiguration", "doesNotUseMediaApiOrMcp"],
+      "required": ["localSkillManager", "usesOfficialMainBranch", "usesCompactInstallPayload", "payloadDownloadDeadlineSeconds", "doesNotReadCredentialsOrHostConfiguration", "doesNotUseMediaApiOrMcp"],
       "properties": {
         "localSkillManager": { "const": true },
         "usesOfficialMainBranch": { "const": true },
+        "usesCompactInstallPayload": { "const": true },
+        "payloadDownloadDeadlineSeconds": { "const": 45 },
         "doesNotReadCredentialsOrHostConfiguration": { "const": true },
         "doesNotUseMediaApiOrMcp": { "const": true }
       },
@@ -200,7 +203,7 @@
         "commandTemplate": { "const": "native_platform_installer sync --target <installation-root>" },
         "sourceRepository": { "const": "https://github.com/PureTokens/puretokens-skill.git" },
         "sourceBranch": { "const": "main" },
-        "validationCommand": { "const": "native_installer_downloads_official_main_and_performs_static_validation_before_sync" }
+        "validationCommand": { "const": "native_installer_downloads_compact_official_payload_and_performs_static_validation_before_sync" }
       },
       "additionalProperties": false
     },
