@@ -30,7 +30,7 @@ test("registry exposes exactly the six specialist Skills", async () => {
   const { registry, records } = await collectSkillRecords();
   assert.deepEqual(registry.skills.map((skill) => skill.name), names);
   assert.equal(records.length, 6);
-  assert.deepEqual([...new Set(records.map((record) => record.manifest.version))], ["0.13.13"]);
+  assert.deepEqual([...new Set(records.map((record) => record.manifest.version))], ["0.13.14"]);
   assert.deepEqual(await validateRepository(), []);
 });
 
@@ -102,7 +102,7 @@ test("specialist manifests use the fixed direct API with a narrow configured-cre
       assert.equal(manifest.rules.usesOfficialMainBranch, true);
       assert.equal(manifest.rules.usesManagedSkillSync, true);
       assert.equal(manifest.rules.neverOverwritesUnmanagedDirectories, true);
-      assert.equal(manifest.rules.archivesVerifiedRetiredSkills, true);
+      assert.equal(manifest.rules.removesVerifiedRetiredSkills, true);
       assert.equal(manifest.rules.doesNotReadCredentialsOrHostConfiguration, true);
     } else {
       assert.equal(manifest.rules.usesFixedPureTokensApiOrigin, true);
@@ -363,7 +363,7 @@ test("installed contracts cover bounded requests, task recovery, and user-facing
   assert.equal(update.operations.sync.validationCommand, "native_installer_downloads_official_main_and_performs_static_validation_before_sync");
   assert.equal(update.operations.sync.sourceBranch, "main");
   assert.equal(update.result.neverOverwritesUnmanagedDirectories, true);
-  assert.equal(update.result.archivesVerifiedRetiredManagedSkills, true);
+  assert.equal(update.result.removesVerifiedRetiredManagedSkills, true);
   assert.equal(update.result.neverModifiesOfficialCheckout, true);
   const updateScenarios = JSON.parse(await readFile(path.join(repositoryRoot, "skills", "puretokens-update", "references", "behavior-scenarios.json"), "utf8"));
   assert.match(updateScenarios.scenarios.find((scenario) => scenario.id === "update-validation-failed").then, /Do not install Node, npm packages, Git, generators, docs sync, formatters, repair commands, Git writes/);
@@ -771,7 +771,7 @@ test("CLI sync installs missing Skills and refuses unmanaged conflicts before wr
   for (const name of names) {
     assert.equal(JSON.parse(await readFile(path.join(target, name, "skill.json"), "utf8")).name, name);
   }
-  assert.equal(JSON.parse(await readFile(path.join(target, ".puretokens-runtime", "runtime.json"), "utf8")).version, "0.13.13");
+  assert.equal(JSON.parse(await readFile(path.join(target, ".puretokens-runtime", "runtime.json"), "utf8")).version, "0.13.14");
 });
 
 test("CLI refuses an unmanaged direct runtime before changing Skills", async (t) => {
@@ -789,7 +789,7 @@ test("CLI refuses an unmanaged direct runtime before changing Skills", async (t)
   assert.equal(JSON.parse(await readFile(path.join(runtime, "runtime.json"), "utf8")).name, "another-runtime");
 });
 
-test("CLI sync archives verified retired managed Skills without deleting them", async (t) => {
+test("CLI sync removes verified retired managed Skills and stale retired backups", async (t) => {
   const target = await mkdtemp(path.join(os.tmpdir(), "puretokens-skill-retired-"));
   t.after(() => rm(target, { recursive: true, force: true }));
   const run = promisify(execFile);
@@ -797,13 +797,16 @@ test("CLI sync archives verified retired managed Skills without deleting them", 
   await mkdir(retired);
   await writeFile(path.join(retired, "SKILL.md"), "retired managed Skill\n");
   await writeFile(path.join(retired, "skill.json"), JSON.stringify({ name: "puretokens_image" }));
+  const staleBackup = path.join(target, ".puretokens_image.retired-prior-update");
+  await mkdir(staleBackup);
+  await writeFile(path.join(staleBackup, "SKILL.md"), "retired managed Skill\n");
+  await writeFile(path.join(staleBackup, "skill.json"), JSON.stringify({ name: "puretokens_image" }));
 
   const { stdout } = await run(process.execPath, [path.join(repositoryRoot, "bin", "puretokens-skill.js"), "sync", "--target", target], { cwd: repositoryRoot });
-  assert.match(stdout, /Archived retired puretokens_image to/);
+  assert.equal((stdout.match(/Removed retired managed puretokens_image from/g) ?? []).length, 2);
   await assert.rejects(readFile(path.join(retired, "skill.json"), "utf8"));
-  const archived = (await readdir(target)).find((entry) => entry.startsWith(".puretokens_image.retired-"));
-  assert.ok(archived, "retired managed Skill must be preserved in a hidden backup");
-  assert.equal(JSON.parse(await readFile(path.join(target, archived, "skill.json"), "utf8")).name, "puretokens_image");
+  await assert.rejects(readFile(path.join(staleBackup, "skill.json"), "utf8"));
+  assert.equal((await readdir(target)).some((entry) => entry.startsWith(".puretokens_image.retired-")), false);
   assert.equal(JSON.parse(await readFile(path.join(target, "puretokens-image", "skill.json"), "utf8")).name, "puretokens-image");
 });
 

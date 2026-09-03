@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { randomUUID } from "node:crypto";
-import { cp, mkdir, readFile, rename, rm, stat } from "node:fs/promises";
+import { cp, mkdir, readFile, readdir, rename, rm, stat } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { collectSkillRecords, repositoryRoot, skillsRoot, validateRepository } from "../scripts/skill-registry.mjs";
@@ -106,13 +106,12 @@ async function syncSkills(args) {
 
   const plan = [await planManagedRuntime(root)];
   for (const retiredName of retiredSkillNames) {
-    const destination = path.join(root, retiredName);
-    ensureChildPath(root, destination);
-    if (!(await exists(destination))) continue;
-    if (!(await isManagedSkill(destination, retiredName))) {
-      throw new Error(`Refusing to sync because an unmanaged retired Skill conflicts: ${destination}`);
+    for (const destination of await retiredSkillDestinations(root, retiredName)) {
+      if (!(await isManagedSkill(destination, retiredName))) {
+        throw new Error(`Refusing to sync because an unmanaged retired Skill conflicts: ${destination}`);
+      }
+      plan.push({ action: "remove-retired", name: retiredName, destination });
     }
-    plan.push({ action: "retire", name: retiredName, destination });
   }
   for (const entry of registry.skills) {
     const source = path.join(skillsRoot, entry.name);
@@ -129,11 +128,9 @@ async function syncSkills(args) {
 
   await mkdir(root, { recursive: true });
   for (const item of plan) {
+    if (item.action === "remove-retired") continue;
     if (item.kind === "runtime") {
       await applyManagedRuntime(item);
-    } else if (item.action === "retire") {
-      const backup = await archiveRetiredSkill(root, item.destination, item.name);
-      process.stdout.write(`Archived retired ${item.name} to ${backup}\n`);
     } else if (item.action === "install") {
       await cp(item.source, item.destination, { recursive: true, errorOnExist: true, force: false });
       process.stdout.write(`Installed ${item.name} to ${item.destination}\n`);
@@ -142,13 +139,29 @@ async function syncSkills(args) {
       process.stdout.write(`Upgraded ${item.name} at ${item.destination}\n`);
     }
   }
+  for (const item of plan) {
+    if (item.action !== "remove-retired") continue;
+    await rm(item.destination, { recursive: true, force: false });
+    process.stdout.write(`Removed retired managed ${item.name} from ${item.destination}\n`);
+  }
 }
 
-async function archiveRetiredSkill(root, destination, name) {
-  const backup = path.join(root, `.${name}.retired-${randomUUID()}`);
-  ensureChildPath(root, backup);
-  await rename(destination, backup);
-  return backup;
+async function retiredSkillDestinations(root, name) {
+  const destinations = [path.join(root, name)];
+  ensureChildPath(root, destinations[0]);
+  if (await existsDirectory(root)) {
+    const retiredPrefix = `.${name}.retired-`;
+    const entries = await readdir(root, { withFileTypes: true });
+    for (const entry of entries) {
+      if (!entry.name.startsWith(retiredPrefix)) continue;
+      const destination = path.join(root, entry.name);
+      ensureChildPath(root, destination);
+      destinations.push(destination);
+    }
+  }
+  return (await Promise.all(destinations.map(async (destination) => ({ destination, present: await exists(destination) }))))
+    .filter(({ present }) => present)
+    .map(({ destination }) => destination);
 }
 
 async function planManagedRuntime(root) {
@@ -315,5 +328,5 @@ async function existsDirectory(value) {
 }
 
 function printHelp() {
-  process.stdout.write(`Pure Tokens Skill Manager\n\nUsage:\n  puretokens-skill list\n  puretokens-skill validate\n  puretokens-skill install <skill-name> --target <directory>\n  puretokens-skill upgrade <skill-name> --target <directory>\n  puretokens-skill sync --target <directory>\n  puretokens-skill uninstall <skill-name> --target <directory> --yes\n\nSync archives verified retired managed Skills, installs missing official Skills, and upgrades only managed matching Skills. It refuses before changing anything when an unmanaged directory conflicts. Every install target is explicit. Use the seven supported host directories in README.md.\n\nRepository: ${repositoryRoot}\n`);
+  process.stdout.write(`Pure Tokens Skill Manager\n\nUsage:\n  puretokens-skill list\n  puretokens-skill validate\n  puretokens-skill install <skill-name> --target <directory>\n  puretokens-skill upgrade <skill-name> --target <directory>\n  puretokens-skill sync --target <directory>\n  puretokens-skill uninstall <skill-name> --target <directory> --yes\n\nSync removes verified retired managed Skills (including stale retired backups), installs missing official Skills, and upgrades only managed matching Skills. It refuses before changing anything when an unmanaged directory conflicts. Every install target is explicit. Use the seven supported host directories in README.md.\n\nRepository: ${repositoryRoot}\n`);
 }

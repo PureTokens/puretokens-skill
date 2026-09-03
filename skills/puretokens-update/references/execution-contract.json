@@ -20,7 +20,7 @@
     "installsMissingOfficialSkills": true,
     "upgradesOnlyManagedMatchingSkills": true,
     "neverOverwritesUnmanagedDirectories": true,
-    "archivesVerifiedRetiredManagedSkills": true,
+    "removesVerifiedRetiredManagedSkills": true,
     "neverModifiesOfficialCheckout": true,
     "requiresNewHostConversationAfterSuccess": true
   }

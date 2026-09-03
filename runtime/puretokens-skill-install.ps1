@@ -72,8 +72,11 @@ try {
   New-Item -ItemType Directory -Path $Target -Force | Out-Null
   $targetRoot = (Resolve-Path -LiteralPath $Target).Path
   foreach ($name in $retiredSkills) {
-    $destination = Join-Path $targetRoot $name
-    if ((Test-Path -LiteralPath $destination) -and -not (Test-ManagedSkill $destination $name)) { Fail "unmanaged retired Skill conflicts: $destination" }
+    $retiredDestinations = @((Join-Path $targetRoot $name))
+    $retiredDestinations += @(Get-ChildItem -LiteralPath $targetRoot -Force | Where-Object { $_.Name -like ("." + $name + ".retired-*") } | ForEach-Object { $_.FullName })
+    foreach ($destination in $retiredDestinations) {
+      if ((Test-Path -LiteralPath $destination) -and -not (Test-ManagedSkill $destination $name)) { Fail "unmanaged retired Skill conflicts: $destination" }
+    }
   }
   $runtimeDestination = Join-Path $targetRoot ".puretokens-runtime"
   if ((Test-Path -LiteralPath $runtimeDestination) -and -not (Test-ManagedRuntime $runtimeDestination)) { Fail "unmanaged Pure Tokens runtime conflicts: $runtimeDestination" }
@@ -108,11 +111,13 @@ try {
     throw
   }
   foreach ($name in $retiredSkills) {
-    $destination = Join-Path $targetRoot $name
-    if (-not (Test-Path -LiteralPath $destination)) { continue }
-    $archived = Join-Path $targetRoot ("." + $name + ".retired-" + [Guid]::NewGuid().ToString("N"))
-    Move-Item -LiteralPath $destination -Destination $archived
-    Write-Output "Archived retired $name to $archived"
+    $retiredDestinations = @((Join-Path $targetRoot $name))
+    $retiredDestinations += @(Get-ChildItem -LiteralPath $targetRoot -Force | Where-Object { $_.Name -like ("." + $name + ".retired-*") } | ForEach-Object { $_.FullName })
+    foreach ($destination in $retiredDestinations) {
+      if (-not (Test-Path -LiteralPath $destination)) { continue }
+      Remove-Item -LiteralPath $destination -Recurse -Force
+      Write-Output "Removed retired managed $name from $destination"
+    }
   }
   Remove-Item -LiteralPath $stageRoot -Recurse -Force
   Write-Output "Installed or upgraded official Pure Tokens Skills at $targetRoot"

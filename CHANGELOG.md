@@ -4,6 +4,10 @@
 
 # Changelog
 
+## 0.13.14 — 2026-09-03
+
+- Changed `puretokens-update` and both native installers to remove verified retired managed Skill directories after all current Skills have synchronized successfully. It also removes hidden retired backups left by earlier installers, so hosts cannot keep discovering obsolete `puretokens_media` instructions. Any unmanaged current, retired, or backup directory remains a preflight conflict and is never removed.
+
 ## 0.13.13 — 2026-09-03
 
 - Replaced the user-facing Node-based Skill updater with official native platform installers: Shell on macOS/Linux and PowerShell on Windows. Installation and upgrades now download and statically validate the official `main` payload before synchronization, without requiring users to install Node, npm, Git, a package manager, or dependencies.

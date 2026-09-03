@@ -82,9 +82,10 @@ sync_target() {
   target_root=$(cd "$target_root" && pwd -P)
 
   for name in $retired_skills; do
-    destination="$target_root/$name"
-    [ ! -e "$destination" ] || managed_skill "$destination" "$name" ||
-      fail "unmanaged retired Skill conflicts: $destination"
+    for destination in "$target_root/$name" "$target_root/.$name.retired-"*; do
+      [ ! -e "$destination" ] || managed_skill "$destination" "$name" ||
+        fail "unmanaged retired Skill conflicts: $destination"
+    done
   done
   [ ! -e "$target_root/.puretokens-runtime" ] || managed_runtime "$target_root/.puretokens-runtime" ||
     fail "unmanaged Pure Tokens runtime conflicts: $target_root/.puretokens-runtime"
@@ -127,11 +128,11 @@ sync_target() {
     fi
   done
   for name in $retired_skills; do
-    destination="$target_root/$name"
-    [ ! -e "$destination" ] && continue
-    backup="$target_root/.${name}.retired-$(date +%s)-$$"
-    mv "$destination" "$backup" || fail "could not archive retired Skill: $name"
-    printf '%s\n' "Archived retired $name to $backup"
+    for destination in "$target_root/$name" "$target_root/.$name.retired-"*; do
+      [ ! -e "$destination" ] && continue
+      rm -rf -- "$destination" || fail "could not remove retired Skill: $name"
+      printf '%s\n' "Removed retired managed $name from $destination"
+    done
   done
   rm -rf -- "$stage_root"
   printf '%s\n' "Installed or upgraded official Pure Tokens Skills at $target_root"
