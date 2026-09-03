@@ -30,7 +30,7 @@ test("registry exposes exactly the six specialist Skills", async () => {
   const { registry, records } = await collectSkillRecords();
   assert.deepEqual(registry.skills.map((skill) => skill.name), names);
   assert.equal(records.length, 6);
-  assert.deepEqual([...new Set(records.map((record) => record.manifest.version))], ["0.13.20"]);
+  assert.deepEqual([...new Set(records.map((record) => record.manifest.version))], ["0.13.21"]);
   assert.deepEqual(await validateRepository(), []);
 });
 
@@ -80,7 +80,7 @@ test("bilingual READMEs include safe copyable Agent installation prompts", async
   assert.equal((english.match(/^### Copy this to a terminal-capable local agent$/gm) ?? []).length, 1);
   const englishPrompt = english.match(/^### Copy this to a terminal-capable local agent\n\n```text\n([\s\S]*?)\n```$/m);
   assert.ok(englishPrompt, "English client-download prompt must be the first bounded text block under the fixed heading");
-  assert.equal(englishPrompt[1], "Install or update the official Pure Tokens Skills from https://github.com/PureTokens/puretokens-skill.");
+  assert.equal(englishPrompt[1], "Install or update the official Pure Tokens Skills from https://github.com/PureTokens/puretokens-skill; for an update, do not run an installed Pure Tokens updater—first download the latest platform installer from that repository's main/runtime and run it locally.");
   assert.match(english, /## Model access groups/);
   assert.match(english, /select a group containing that exact model/);
   assert.match(chinese, /## 让 Agent 协助安装/);
@@ -88,7 +88,7 @@ test("bilingual READMEs include safe copyable Agent installation prompts", async
   assert.equal((chinese.match(/^### 直接复制给具备本机终端的 Agent$/gm) ?? []).length, 1);
   const chinesePrompt = chinese.match(/^### 直接复制给具备本机终端的 Agent\n\n```text\n([\s\S]*?)\n```$/m);
   assert.ok(chinesePrompt, "Chinese client-download prompt must be the first bounded text block under the fixed heading");
-  assert.equal(chinesePrompt[1], "请从 https://github.com/PureTokens/puretokens-skill 安装或更新官方 Pure Tokens Skills。");
+  assert.equal(chinesePrompt[1], "请从 https://github.com/PureTokens/puretokens-skill 安装或更新官方 Pure Tokens Skills；如为更新，不得运行已安装的 Pure Tokens 更新器，先下载该仓库 main/runtime 中的最新平台安装器并在本机执行。");
   assert.match(chinese, /^<p align="center">\n  <img src="\.\/assets\/brand\/puretokens-skill-hero\.png" alt="Pure Tokens 官方 Skills" width="100%" \/>\n<\/p>/);
   assert.match(chinese, /## 模型访问分组/);
   assert.match(chinese, /勾选包含该精确模型的分组/);
@@ -804,7 +804,7 @@ test("CLI sync installs missing Skills and refuses unmanaged conflicts before wr
   for (const name of names) {
     assert.equal(JSON.parse(await readFile(path.join(target, name, "skill.json"), "utf8")).name, name);
   }
-  assert.equal(JSON.parse(await readFile(path.join(target, ".puretokens-runtime", "runtime.json"), "utf8")).version, "0.13.20");
+  assert.equal(JSON.parse(await readFile(path.join(target, ".puretokens-runtime", "runtime.json"), "utf8")).version, "0.13.21");
 });
 
 test("CLI refuses an unmanaged direct runtime before changing Skills", async (t) => {
@@ -867,7 +867,7 @@ test("CLI sync removes verified retired managed Skills and stale retired backups
 
   const { stdout } = await run(process.execPath, [path.join(repositoryRoot, "bin", "puretokens-skill.js"), "sync", "--target", target], { cwd: repositoryRoot });
   assert.equal((stdout.match(/Removed retired managed puretokens_image from/g) ?? []).length, 2);
-  assert.match(stdout, /Pure Tokens Skills 0\.13\.20 synchronized at/);
+  assert.match(stdout, /Pure Tokens Skills 0\.13\.21 synchronized at/);
   await assert.rejects(readFile(path.join(retired, "skill.json"), "utf8"));
   await assert.rejects(readFile(path.join(staleBackup, "skill.json"), "utf8"));
   assert.equal((await readdir(target)).some((entry) => entry.startsWith(".puretokens_image.retired-")), false);

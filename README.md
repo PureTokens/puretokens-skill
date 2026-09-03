@@ -56,7 +56,7 @@ The client download page extracts the first fenced block under the fixed heading
 ### Copy this to a terminal-capable local agent
 
 ```text
-Install or update the official Pure Tokens Skills from https://github.com/PureTokens/puretokens-skill.
+Install or update the official Pure Tokens Skills from https://github.com/PureTokens/puretokens-skill; for an update, do not run an installed Pure Tokens updater—first download the latest platform installer from that repository's main/runtime and run it locally.
 ```
 
 ## Host support

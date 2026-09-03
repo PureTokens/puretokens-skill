@@ -4,6 +4,10 @@
 
 # Changelog
 
+## 0.13.21 — 2026-09-03
+
+- Made the copyable Agent installation prompt explicitly bootstrap the latest platform installer from this repository's `main/runtime` on updates, instead of letting an already-installed older updater run. This closes the old-updater self-update loop.
+
 ## 0.13.20 — 2026-09-03
 
 - Made native Skill updates fit short host command windows more reliably. The compact payload now gets one 20-second attempt through GitHub's official API raw-content endpoint and, only if that fails, one further 20-second attempt from GitHub raw content. Each update also bootstraps the latest platform installer before execution, so an older installed installer cannot retain an obsolete network path. No third-party mirror, repeated source retry, or target synchronization occurs before static payload validation succeeds.

@@ -56,7 +56,7 @@ Claude Code 使用 `~/.claude/skills`，Codex 使用 `~/.agents/skills`，WorkBu
 ### 直接复制给具备本机终端的 Agent
 
 ```text
-请从 https://github.com/PureTokens/puretokens-skill 安装或更新官方 Pure Tokens Skills。
+请从 https://github.com/PureTokens/puretokens-skill 安装或更新官方 Pure Tokens Skills；如为更新，不得运行已安装的 Pure Tokens 更新器，先下载该仓库 main/runtime 中的最新平台安装器并在本机执行。
 ```
 
 ## 宿主支持
