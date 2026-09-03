@@ -117,10 +117,10 @@
               "sync": {
                 "required": ["commandTemplate", "sourceRepository", "sourceBranch", "validationCommand"],
                 "properties": {
-                  "commandTemplate": { "const": "native_platform_installer sync --target <installation-root>" },
+                  "commandTemplate": { "const": "native_platform_installer sync --source <latest-unpacked-official-source> --target <installation-root>" },
                   "sourceRepository": { "const": "https://github.com/PureTokens/puretokens-skill.git" },
                   "sourceBranch": { "const": "main" },
-                  "validationCommand": { "const": "native_installer_downloads_compact_official_payload_and_performs_static_validation_before_sync" }
+                  "validationCommand": { "const": "native_installer_validates_explicit_compact_official_payload_source_before_sync" }
                 }
               }
             }
@@ -202,10 +202,10 @@
       "type": "object",
       "required": ["commandTemplate", "sourceRepository", "sourceBranch", "validationCommand"],
       "properties": {
-        "commandTemplate": { "const": "native_platform_installer sync --target <installation-root>" },
+        "commandTemplate": { "const": "native_platform_installer sync --source <latest-unpacked-official-source> --target <installation-root>" },
         "sourceRepository": { "const": "https://github.com/PureTokens/puretokens-skill.git" },
         "sourceBranch": { "const": "main" },
-        "validationCommand": { "const": "native_installer_downloads_compact_official_payload_and_performs_static_validation_before_sync" }
+        "validationCommand": { "const": "native_installer_validates_explicit_compact_official_payload_source_before_sync" }
       },
       "additionalProperties": false
     },

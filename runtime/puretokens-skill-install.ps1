@@ -4,7 +4,9 @@ param(
   [ValidateSet("check", "sync")]
   [string]$Command,
   [Parameter(Mandatory = $true)]
-  [string]$Target
+  [string]$Target,
+  [Parameter(Mandatory = $false)]
+  [string]$Source
 )
 
 $ErrorActionPreference = "Stop"
@@ -100,15 +102,22 @@ function Remove-LegacyCodexPlugin([string]$TargetRoot) {
   }
 }
 
-$workspace = Join-Path ([System.IO.Path]::GetTempPath()) ("puretokens-skill-" + [Guid]::NewGuid().ToString("N"))
+$workspace = $null
 try {
-  New-Item -ItemType Directory -Path $workspace | Out-Null
-  $archive = Join-Path $workspace "puretokens-skill-install-payload.zip"
-  Download-OfficialPayload $archive
-  $unpacked = Join-Path $workspace "unpacked"
-  Expand-Archive -LiteralPath $archive -DestinationPath $unpacked
-  $sourceRoot = Join-Path $unpacked "puretokens-skill-main"
-  if (-not (Test-Path -LiteralPath $sourceRoot -PathType Container)) { Fail "official source archive has an unexpected layout" }
+  if ([string]::IsNullOrWhiteSpace($Source)) {
+    $workspace = Join-Path ([System.IO.Path]::GetTempPath()) ("puretokens-skill-" + [Guid]::NewGuid().ToString("N"))
+    New-Item -ItemType Directory -Path $workspace | Out-Null
+    $archive = Join-Path $workspace "puretokens-skill-install-payload.zip"
+    Download-OfficialPayload $archive
+    $unpacked = Join-Path $workspace "unpacked"
+    Expand-Archive -LiteralPath $archive -DestinationPath $unpacked
+    $sourceRoot = Join-Path $unpacked "puretokens-skill-main"
+    if (-not (Test-Path -LiteralPath $sourceRoot -PathType Container)) { Fail "official source archive has an unexpected layout" }
+  } else {
+    if (-not [System.IO.Path]::IsPathRooted($Source)) { Fail "-Source must be an absolute official source directory" }
+    if (-not (Test-Path -LiteralPath $Source -PathType Container)) { Fail "-Source does not exist: $Source" }
+    $sourceRoot = (Resolve-Path -LiteralPath $Source).Path
+  }
   Test-OfficialSource $sourceRoot
   if ($Command -eq "check") {
     Write-Output "Official Pure Tokens Skill source passed native static validation."
@@ -171,5 +180,5 @@ try {
   Remove-LegacyCodexPlugin $targetRoot
   Write-Output "Pure Tokens Skills $releaseVersion synchronized at $targetRoot"
 } finally {
-  if (Test-Path -LiteralPath $workspace) { Remove-Item -LiteralPath $workspace -Recurse -Force }
+  if ($null -ne $workspace -and (Test-Path -LiteralPath $workspace)) { Remove-Item -LiteralPath $workspace -Recurse -Force }
 }

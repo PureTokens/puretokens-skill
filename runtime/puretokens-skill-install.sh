@@ -9,7 +9,7 @@ current_skills="puretokens-balance puretokens-connection puretokens-models puret
 retired_skills="puretokens_media puretokens_balance puretokens_connection puretokens_models puretokens_image puretokens_video puretokens_update puretokens_get_balance puretokens_get_model_price puretokens_workbuddy_router"
 
 usage() {
-  printf '%s\n' "Usage: puretokens-skill-install.sh <check|sync> --target <absolute-skill-directory>"
+  printf '%s\n' "Usage: puretokens-skill-install.sh <check|sync> --target <absolute-skill-directory> [--source <absolute-official-source-directory>]"
 }
 
 fail() {
@@ -184,11 +184,17 @@ command_name=${1:-}
 [ -n "$command_name" ] || { usage; exit 2; }
 shift
 target=
+source=
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --target)
       [ "$#" -ge 2 ] || fail "--target requires an absolute directory"
       target=$2
+      shift 2
+      ;;
+    --source)
+      [ "$#" -ge 2 ] || fail "--source requires an absolute official source directory"
+      source=$2
       shift 2
       ;;
     *)
@@ -198,15 +204,22 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 [ -n "$target" ] && [ "${target#/}" != "$target" ] || fail "--target must be an absolute Skill directory"
+[ -z "$source" ] || [ "${source#/}" != "$source" ] || fail "--source must be an absolute official source directory"
 case "$command_name" in check|sync) ;; *) usage; exit 2 ;; esac
 
-require_command curl
-require_command unzip
 require_command mktemp
-workspace=$(mktemp -d "${TMPDIR:-/tmp}/puretokens-skill.XXXXXX") || fail "could not create a private temporary directory"
-cleanup_workspace() { rm -rf -- "$workspace"; }
-trap cleanup_workspace EXIT HUP INT TERM
-source_root=$(download_source "$workspace")
+if [ -n "$source" ]; then
+  [ -d "$source" ] || fail "--source does not exist: $source"
+  source_root=$(cd "$source" && pwd -P) || fail "could not resolve --source"
+  validate_source "$source_root"
+else
+  require_command curl
+  require_command unzip
+  workspace=$(mktemp -d "${TMPDIR:-/tmp}/puretokens-skill.XXXXXX") || fail "could not create a private temporary directory"
+  cleanup_workspace() { rm -rf -- "$workspace"; }
+  trap cleanup_workspace EXIT HUP INT TERM
+  source_root=$(download_source "$workspace")
+fi
 if [ "$command_name" = "check" ]; then
   printf '%s\n' "Official Pure Tokens Skill source passed native static validation."
 else

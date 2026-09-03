@@ -4,6 +4,10 @@
 
 # Changelog
 
+## 0.13.22 — 2026-09-03
+
+- Replaced the two-download Agent bootstrap with a one-download compact-payload flow. The unpacked latest native installer now accepts that validated source explicitly, so it synchronizes without first fetching a runtime installer and then fetching the payload again.
+
 ## 0.13.21 — 2026-09-03
 
 - Made the copyable Agent installation prompt explicitly bootstrap the latest platform installer from this repository's `main/runtime` on updates, instead of letting an already-installed older updater run. This closes the old-updater self-update loop.

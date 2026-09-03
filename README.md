@@ -18,33 +18,38 @@ This repository provides six independent Skills:
 Install the Skills you need into the supported host's documented global Skill directory. This does not require Node, npm, Git, or package installation:
 
 ```bash
-# macOS or Linux — replace the target with your host's directory below.
-installer_dir="$(mktemp -d)"
-installer_file="$installer_dir/puretokens-skill-install.sh"
+# macOS or Linux — replace the target with your host's directory below. This downloads the compact payload once.
+set -eu
+payload_dir="$(mktemp -d)"
+payload_file="$payload_dir/puretokens-skill-install-payload.zip"
 if ! curl --fail --location --proto '=https' --proto-redir '=https' --tlsv1.2 --connect-timeout 7 --max-time 20 \
   --header 'Accept: application/vnd.github.raw+json' --header 'X-GitHub-Api-Version: 2022-11-28' \
-  'https://api.github.com/repos/PureTokens/puretokens-skill/contents/runtime/puretokens-skill-install.sh?ref=main' \
-  --output "$installer_file"; then
+  'https://api.github.com/repos/PureTokens/puretokens-skill/contents/dist/puretokens-skill-install-payload.zip?ref=main' \
+  --output "$payload_file"; then
   curl --fail --location --proto '=https' --proto-redir '=https' --tlsv1.2 --connect-timeout 7 --max-time 20 \
-    'https://raw.githubusercontent.com/PureTokens/puretokens-skill/main/runtime/puretokens-skill-install.sh' \
-    --output "$installer_file"
+    'https://raw.githubusercontent.com/PureTokens/puretokens-skill/main/dist/puretokens-skill-install-payload.zip' \
+    --output "$payload_file"
 fi
-sh "$installer_file" sync --target "$HOME/.agents/skills"
-rm -rf "$installer_dir"
+unzip -q "$payload_file" -d "$payload_dir/unpacked"
+source_root="$payload_dir/unpacked/puretokens-skill-main"
+sh "$source_root/runtime/puretokens-skill-install.sh" sync --source "$source_root" --target "$HOME/.agents/skills"
+rm -rf "$payload_dir"
 ```
 
 ```powershell
-# Windows PowerShell — replace the target with your host's directory below.
-$installerDir = Join-Path ([System.IO.Path]::GetTempPath()) ("puretokens-skill-" + [Guid]::NewGuid().ToString("N"))
-New-Item -ItemType Directory -Path $installerDir | Out-Null
-$installerFile = Join-Path $installerDir "puretokens-skill-install.ps1"
+# Windows PowerShell — replace the target with your host's directory below. This downloads the compact payload once.
+$payloadDir = Join-Path ([System.IO.Path]::GetTempPath()) ("puretokens-skill-" + [Guid]::NewGuid().ToString("N"))
+New-Item -ItemType Directory -Path $payloadDir | Out-Null
+$payloadFile = Join-Path $payloadDir "puretokens-skill-install-payload.zip"
 try {
-  Invoke-WebRequest 'https://api.github.com/repos/PureTokens/puretokens-skill/contents/runtime/puretokens-skill-install.ps1?ref=main' -Headers @{ Accept = "application/vnd.github.raw+json"; "X-GitHub-Api-Version" = "2022-11-28" } -OutFile $installerFile -TimeoutSec 20
+  Invoke-WebRequest 'https://api.github.com/repos/PureTokens/puretokens-skill/contents/dist/puretokens-skill-install-payload.zip?ref=main' -Headers @{ Accept = "application/vnd.github.raw+json"; "X-GitHub-Api-Version" = "2022-11-28" } -OutFile $payloadFile -TimeoutSec 20
 } catch {
-  Invoke-WebRequest 'https://raw.githubusercontent.com/PureTokens/puretokens-skill/main/runtime/puretokens-skill-install.ps1' -OutFile $installerFile -TimeoutSec 20
+  Invoke-WebRequest 'https://raw.githubusercontent.com/PureTokens/puretokens-skill/main/dist/puretokens-skill-install-payload.zip' -OutFile $payloadFile -TimeoutSec 20
 }
-& $installerFile sync -Target "$env:USERPROFILE\.agents\skills"
-Remove-Item -LiteralPath $installerDir -Recurse -Force
+Expand-Archive -LiteralPath $payloadFile -DestinationPath (Join-Path $payloadDir "unpacked")
+$sourceRoot = Join-Path $payloadDir "unpacked\puretokens-skill-main"
+& (Join-Path $sourceRoot "runtime\puretokens-skill-install.ps1") sync -Source $sourceRoot -Target "$env:USERPROFILE\.agents\skills"
+Remove-Item -LiteralPath $payloadDir -Recurse -Force
 ```
 
 Use `~/.claude/skills` for Claude Code, `~/.agents/skills` for Codex, `~/.workbuddy/skills` for WorkBuddy, `~/.gemini/skills` for Gemini CLI, `~/.grok/skills` for Grok Build, `~/.config/opencode/skills` for OpenCode, and `~/.trae/skills` for Trae.
@@ -56,7 +61,7 @@ The client download page extracts the first fenced block under the fixed heading
 ### Copy this to a terminal-capable local agent
 
 ```text
-Install or update the official Pure Tokens Skills from https://github.com/PureTokens/puretokens-skill; for an update, do not run an installed Pure Tokens updater—first download the latest platform installer from that repository's main/runtime and run it locally.
+Actually install or update the official Pure Tokens Skills from https://github.com/PureTokens/puretokens-skill in the local terminal. Identify the current host and use the README's one-download compact-payload flow: download `dist/puretokens-skill-install-payload.zip` once, unpack it, then run its native installer with `--source` (Windows: `-Source`) and that host's Skill directory. Do not run an installed updater or download a runtime installer that then downloads a second payload. Report completion only after `Pure Tokens Skills <version> synchronized at <directory>` appears.
 ```
 
 ## Host support
@@ -103,7 +108,7 @@ The Skill never guesses a group name or claims which group contains a model: the
 
 ## Skill updates
 
-`puretokens-update` handles explicit requests to install, update, or synchronize local official Skills. Each update first downloads the latest platform installer into a private temporary directory and runs that local file, so an older installed installer cannot keep an obsolete network path. The installer downloads a compact official install payload over HTTPS, excluding documentation and brand assets, then statically validates it before synchronization. It first gives GitHub's official API raw-content path 20 seconds; only if that fails, it gives GitHub's raw-content path one further 20-second attempt. It never uses a third-party mirror, retries either source again, or starts synchronization until a payload validates. It requires no user-installed Node, npm, package manager, Git, or dependency installation. After every current official Skill installs or upgrades successfully, it removes verified retired managed Skill directories and old matching hidden retired backups, installs missing official Skills, and upgrades only managed matching Skill directories; an unmanaged current or retired same-name directory, or an unmanaged runtime directory, stops the whole sync before any target is changed. For the Codex target only, it uses the official Codex plugin interface to remove the exact installed legacy `puretokens-media` plugin; if that cannot be done, it tells the user to remove it in Codex Plugins or ask the workspace administrator. Only the exact versioned success receipt confirms completion. It never reads connection settings or credentials, and it never runs automatically during media work.
+`puretokens-update` handles explicit requests to install, update, or synchronize local official Skills. Each update downloads the compact official install payload, excluding documentation and brand assets, once; it then runs the matching native installer from that unpacked latest source with the source directory supplied. It does not run an installed older updater or download a runtime installer that triggers a second payload download. The installer statically validates the payload before synchronization. It first gives GitHub's official API raw-content path 20 seconds; only if that fails, it gives GitHub raw content one further 20-second attempt. It never uses a third-party mirror, retries either source again, or starts synchronization until a payload validates. It requires no user-installed Node, npm, package manager, Git, or dependency installation. After every current official Skill installs or upgrades successfully, it removes verified retired managed Skill directories and old matching hidden retired backups, installs missing official Skills, and upgrades only managed matching Skill directories; an unmanaged current or retired same-name directory, or an unmanaged runtime directory, stops the whole sync before any target is changed. For the Codex target only, it uses the official Codex plugin interface to remove the exact installed legacy `puretokens-media` plugin; if that cannot be done, it tells the user to remove it in Codex Plugins or ask the workspace administrator. Only the exact versioned success receipt confirms completion. It never reads connection settings or credentials, and it never runs automatically during media work.
 
 ## Image sizes and count
 

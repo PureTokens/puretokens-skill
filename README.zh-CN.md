@@ -18,33 +18,38 @@
 按需安装到受支持宿主已声明的全局 Skill 目录。用户不需要安装 Node、npm、Git 或任何依赖：
 
 ```bash
-# macOS 或 Linux：将下方 target 替换为对应宿主目录。
-installer_dir="$(mktemp -d)"
-installer_file="$installer_dir/puretokens-skill-install.sh"
+# macOS 或 Linux：将下方 target 替换为对应宿主目录。只下载一次紧凑安装载荷。
+set -eu
+payload_dir="$(mktemp -d)"
+payload_file="$payload_dir/puretokens-skill-install-payload.zip"
 if ! curl --fail --location --proto '=https' --proto-redir '=https' --tlsv1.2 --connect-timeout 7 --max-time 20 \
   --header 'Accept: application/vnd.github.raw+json' --header 'X-GitHub-Api-Version: 2022-11-28' \
-  'https://api.github.com/repos/PureTokens/puretokens-skill/contents/runtime/puretokens-skill-install.sh?ref=main' \
-  --output "$installer_file"; then
+  'https://api.github.com/repos/PureTokens/puretokens-skill/contents/dist/puretokens-skill-install-payload.zip?ref=main' \
+  --output "$payload_file"; then
   curl --fail --location --proto '=https' --proto-redir '=https' --tlsv1.2 --connect-timeout 7 --max-time 20 \
-    'https://raw.githubusercontent.com/PureTokens/puretokens-skill/main/runtime/puretokens-skill-install.sh' \
-    --output "$installer_file"
+    'https://raw.githubusercontent.com/PureTokens/puretokens-skill/main/dist/puretokens-skill-install-payload.zip' \
+    --output "$payload_file"
 fi
-sh "$installer_file" sync --target "$HOME/.agents/skills"
-rm -rf "$installer_dir"
+unzip -q "$payload_file" -d "$payload_dir/unpacked"
+source_root="$payload_dir/unpacked/puretokens-skill-main"
+sh "$source_root/runtime/puretokens-skill-install.sh" sync --source "$source_root" --target "$HOME/.agents/skills"
+rm -rf "$payload_dir"
 ```
 
 ```powershell
-# Windows PowerShell：将下方 target 替换为对应宿主目录。
-$installerDir = Join-Path ([System.IO.Path]::GetTempPath()) ("puretokens-skill-" + [Guid]::NewGuid().ToString("N"))
-New-Item -ItemType Directory -Path $installerDir | Out-Null
-$installerFile = Join-Path $installerDir "puretokens-skill-install.ps1"
+# Windows PowerShell：将下方 target 替换为对应宿主目录。只下载一次紧凑安装载荷。
+$payloadDir = Join-Path ([System.IO.Path]::GetTempPath()) ("puretokens-skill-" + [Guid]::NewGuid().ToString("N"))
+New-Item -ItemType Directory -Path $payloadDir | Out-Null
+$payloadFile = Join-Path $payloadDir "puretokens-skill-install-payload.zip"
 try {
-  Invoke-WebRequest 'https://api.github.com/repos/PureTokens/puretokens-skill/contents/runtime/puretokens-skill-install.ps1?ref=main' -Headers @{ Accept = "application/vnd.github.raw+json"; "X-GitHub-Api-Version" = "2022-11-28" } -OutFile $installerFile -TimeoutSec 20
+  Invoke-WebRequest 'https://api.github.com/repos/PureTokens/puretokens-skill/contents/dist/puretokens-skill-install-payload.zip?ref=main' -Headers @{ Accept = "application/vnd.github.raw+json"; "X-GitHub-Api-Version" = "2022-11-28" } -OutFile $payloadFile -TimeoutSec 20
 } catch {
-  Invoke-WebRequest 'https://raw.githubusercontent.com/PureTokens/puretokens-skill/main/runtime/puretokens-skill-install.ps1' -OutFile $installerFile -TimeoutSec 20
+  Invoke-WebRequest 'https://raw.githubusercontent.com/PureTokens/puretokens-skill/main/dist/puretokens-skill-install-payload.zip' -OutFile $payloadFile -TimeoutSec 20
 }
-& $installerFile sync -Target "$env:USERPROFILE\.agents\skills"
-Remove-Item -LiteralPath $installerDir -Recurse -Force
+Expand-Archive -LiteralPath $payloadFile -DestinationPath (Join-Path $payloadDir "unpacked")
+$sourceRoot = Join-Path $payloadDir "unpacked\puretokens-skill-main"
+& (Join-Path $sourceRoot "runtime\puretokens-skill-install.ps1") sync -Source $sourceRoot -Target "$env:USERPROFILE\.agents\skills"
+Remove-Item -LiteralPath $payloadDir -Recurse -Force
 ```
 
 Claude Code 使用 `~/.claude/skills`，Codex 使用 `~/.agents/skills`，WorkBuddy 使用 `~/.workbuddy/skills`，Gemini CLI 使用 `~/.gemini/skills`，Grok Build 使用 `~/.grok/skills`，OpenCode 使用 `~/.config/opencode/skills`，Trae 使用 `~/.trae/skills`。
@@ -56,7 +61,7 @@ Claude Code 使用 `~/.claude/skills`，Codex 使用 `~/.agents/skills`，WorkBu
 ### 直接复制给具备本机终端的 Agent
 
 ```text
-请从 https://github.com/PureTokens/puretokens-skill 安装或更新官方 Pure Tokens Skills；如为更新，不得运行已安装的 Pure Tokens 更新器，先下载该仓库 main/runtime 中的最新平台安装器并在本机执行。
+请在本机终端实际安装或更新 https://github.com/PureTokens/puretokens-skill 的官方 Pure Tokens Skills。识别当前宿主并使用 README 的“单次紧凑载荷”流程：下载一次 `dist/puretokens-skill-install-payload.zip`，解压后执行其中的原生安装器，并传入 `--source`（Windows 为 `-Source`）和该宿主的 Skill 目录；不要运行已安装的更新器，也不要先下载 runtime 安装器再让它第二次下载载荷。只有看到 `Pure Tokens Skills <版本> synchronized at <目录>` 才能报告完成。
 ```
 
 ## 宿主支持
@@ -103,7 +108,7 @@ Skill 绝不猜测分组名称，也不会声称某模型属于哪个分组；�
 
 ## Skill 升级
 
-`puretokens-update` 专门处理用户明确提出的安装、更新或同步本机官方 Skills 的请求。每次更新都会先把最新平台安装器下载到私有临时目录，再执行该本地文件，避免旧安装器持续使用过期网络路径。安装器通过 HTTPS 下载不含文档和品牌资源的紧凑官方安装载荷，并在同步前做静态校验。它先给 GitHub 官方 API raw-content 路径 20 秒；仅当该路径失败时，才通过 GitHub raw-content 路径再尝试一次、最多 20 秒。绝不使用第三方镜像、不再重试任一路径，也不会在载荷校验成功前开始同步。用户无需安装 Node、npm、包管理器、Git 或依赖。当前官方 Skill 全部安装或升级成功后，它会删除已验证的旧受管 Skill 目录，以及同名的旧隐藏备份，安装缺失官方 Skill，只升级受管且同名的当前 Skill 目录；只要遇到当前或旧的非受管同名目录，或非受管运行器目录，整个同步会在改动前停止。仅当目标是 Codex 目录时，它会通过官方 Codex 插件接口移除精确匹配且已安装的旧 `puretokens-media` 插件；无法移除时会明确提示用户到 Codex Plugins 卸载或联系工作区管理员。只有精确的带版本成功回执才能确认同步完成。它绝不读取连接设置或凭据，也绝不会在媒体任务中自行运行。
+`puretokens-update` 专门处理用户明确提出的安装、更新或同步本机官方 Skills 的请求。每次更新都只下载一次不含文档和品牌资源的紧凑官方安装载荷，然后从解压后的最新源目录执行对应平台安装器，并传入该源目录；不会运行已安装的旧更新器，也不会先下载 runtime 安装器再触发第二次载荷下载。安装器先做静态校验，再在同一次运行中同步。它先给 GitHub 官方 API raw-content 路径 20 秒；仅当该路径失败时，才通过 GitHub raw-content 路径再尝试一次、最多 20 秒。绝不使用第三方镜像、不再重试任一路径，也不会在载荷校验成功前开始同步。用户无需安装 Node、npm、包管理器、Git 或依赖。当前官方 Skill 全部安装或升级成功后，它会删除已验证的旧受管 Skill 目录，以及同名的旧隐藏备份，安装缺失官方 Skill，只升级受管且同名的当前 Skill 目录；只要遇到当前或旧的非受管同名目录，或非受管运行器目录，整个同步会在改动前停止。仅当目标是 Codex 目录时，它会通过官方 Codex 插件接口移除精确匹配且已安装的旧 `puretokens-media` 插件；无法移除时会明确提示用户到 Codex Plugins 卸载或联系工作区管理员。只有精确的带版本成功回执才能确认同步完成。它绝不读取连接设置或凭据，也绝不会在媒体任务中自行运行。
 
 ## 图片尺寸和数量
 

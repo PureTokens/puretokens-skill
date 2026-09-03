@@ -446,8 +446,8 @@ function validateUpdateContract(errors, label, contract) {
     errors.push(`${label} must use the local official Skill manager without credentials, media APIs, or MCP`);
   }
   const sync = contract.operations?.sync;
-  if (!sync || sync.commandTemplate !== "native_platform_installer sync --target <installation-root>" ||
-    sync.sourceRepository !== "https://github.com/PureTokens/puretokens-skill.git" || sync.sourceBranch !== "main" || sync.validationCommand !== "native_installer_downloads_compact_official_payload_and_performs_static_validation_before_sync") {
+  if (!sync || sync.commandTemplate !== "native_platform_installer sync --source <latest-unpacked-official-source> --target <installation-root>" ||
+    sync.sourceRepository !== "https://github.com/PureTokens/puretokens-skill.git" || sync.sourceBranch !== "main" || sync.validationCommand !== "native_installer_validates_explicit_compact_official_payload_source_before_sync") {
     errors.push(`${label} must define the validated compact official-payload sync operation`);
   }
   const result = contract.result;

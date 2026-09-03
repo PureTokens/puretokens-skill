@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "name": "puretokens-direct-api-runtime",
-  "version": "0.13.21",
+  "version": "0.13.22",
   "managedRuntimeHosts": ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode"],
   "manualCredentialSetupHosts": ["trae"]
 }
