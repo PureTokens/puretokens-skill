@@ -1,21 +1,21 @@
 {
   "schemaVersion": 2,
-  "updatedAt": "2026-08-29",
+  "updatedAt": "2026-09-03",
   "serviceCatalog": {
     "source": "Pure Tokens base model catalog",
     "path": "/api/product/docs/model-catalog",
-    "capturedAt": "2026-08-29T05:03:13.833Z"
+    "capturedAt": "2026-09-03T04:00:37.535Z"
   },
   "availabilityNotice": {
-    "en": "This list is generated from Pure Tokens' base model catalog using explicit image/video capabilities. Normal generation uses the installed versioned selection directly; GET /v1/media/models is an on-demand lookup only for explicit discovery, an installed-profile gap, or post-rejection diagnosis.",
-    "zh": "这份清单由 Pure Tokens 基础模型目录中的明确图片/视频能力生成。普通生成直接使用已安装的版本化选择资料；只有明确查询、安装资料缺口或提交被拒后需要解释时，才按需调用 GET /v1/media/models。"
+    "en": "This list is generated from Pure Tokens' base model catalog using explicit image/video capabilities. At execution time, the exact model and required capability must still appear in the authenticated GET https://api.puretokensx.com/v1/media/models response.",
+    "zh": "这份清单由 Pure Tokens 基础模型目录中的明确图片/视频能力生成。实际执行时，精确模型和所需能力仍必须出现在认证后的 GET https://api.puretokensx.com/v1/media/models 响应中。"
   },
   "models": [
     {
       "id": "gpt-image-2",
       "name": "gpt-image-2",
       "provider": "OpenAI",
-      "vendorId": 15,
+      "vendorId": 1,
       "capabilities": [
         "image"
       ],
@@ -104,6 +104,31 @@
               "content_urls"
             ]
           }
+        },
+        "operations": {
+          "image_edit": {
+            "request": {
+              "method": "POST",
+              "path": "/v1/images/edits",
+              "contentType": "multipart/form-data"
+            },
+            "requiredBodyFields": [
+              "model",
+              "prompt",
+              "image"
+            ],
+            "inputs": {
+              "image": {
+                "field": "image",
+                "required": true,
+                "minItems": 1,
+                "maxItems": 6,
+                "transports": [
+                  "multipart_file"
+                ]
+              }
+            }
+          }
         }
       }
     },
@@ -111,7 +136,7 @@
       "id": "grok-imagine-image",
       "name": "grok-imagine-image",
       "provider": "xAI",
-      "vendorId": 17,
+      "vendorId": 8,
       "capabilities": [
         "image"
       ],
@@ -186,7 +211,7 @@
       "id": "grok-imagine-image-2.0",
       "name": "grok-imagine-image-2.0",
       "provider": "xAI",
-      "vendorId": 17,
+      "vendorId": 8,
       "capabilities": [
         "image"
       ],
@@ -261,7 +286,7 @@
       "id": "grok-imagine-image-quality",
       "name": "grok-imagine-image-quality",
       "provider": "xAI",
-      "vendorId": 17,
+      "vendorId": 8,
       "capabilities": [
         "image"
       ],
@@ -334,7 +359,7 @@
       "id": "grok-imagine-video",
       "name": "grok-imagine-video",
       "provider": "xAI",
-      "vendorId": 17,
+      "vendorId": 8,
       "capabilities": [
         "video"
       ],
@@ -477,7 +502,7 @@
       "id": "grok-imagine-video-1.5",
       "name": "grok-imagine-video-1.5",
       "provider": "xAI",
-      "vendorId": 17,
+      "vendorId": 8,
       "capabilities": [
         "video"
       ],
@@ -621,7 +646,7 @@
       "id": "grok-imagine-video-1.5-preview",
       "name": "grok-imagine-video-1.5-preview",
       "provider": "xAI",
-      "vendorId": 17,
+      "vendorId": 8,
       "capabilities": [
         "video"
       ],
@@ -767,7 +792,7 @@
       "id": "minimax-h3",
       "name": "minimax-h3",
       "provider": "MiniMax",
-      "vendorId": 34,
+      "vendorId": 13,
       "capabilities": [
         "video"
       ],
@@ -945,7 +970,7 @@
       "id": "nano-banana-2",
       "name": "nano-banana-2",
       "provider": "Google",
-      "vendorId": 18,
+      "vendorId": 4,
       "capabilities": [
         "image"
       ],
@@ -1031,6 +1056,31 @@
               "content_urls"
             ]
           }
+        },
+        "operations": {
+          "image_edit": {
+            "request": {
+              "method": "POST",
+              "path": "/v1/images/edits",
+              "contentType": "multipart/form-data"
+            },
+            "requiredBodyFields": [
+              "model",
+              "prompt",
+              "image"
+            ],
+            "inputs": {
+              "image": {
+                "field": "image",
+                "required": true,
+                "minItems": 1,
+                "maxItems": 6,
+                "transports": [
+                  "multipart_file"
+                ]
+              }
+            }
+          }
         }
       }
     },
@@ -1038,7 +1088,7 @@
       "id": "nano-banana-2-lite",
       "name": "nano-banana-2-lite",
       "provider": "Google",
-      "vendorId": 18,
+      "vendorId": 4,
       "capabilities": [
         "image"
       ],
@@ -1120,6 +1170,31 @@
               "content_urls"
             ]
           }
+        },
+        "operations": {
+          "image_edit": {
+            "request": {
+              "method": "POST",
+              "path": "/v1/images/edits",
+              "contentType": "multipart/form-data"
+            },
+            "requiredBodyFields": [
+              "model",
+              "prompt",
+              "image"
+            ],
+            "inputs": {
+              "image": {
+                "field": "image",
+                "required": true,
+                "minItems": 1,
+                "maxItems": 6,
+                "transports": [
+                  "multipart_file"
+                ]
+              }
+            }
+          }
         }
       }
     },
@@ -1127,7 +1202,7 @@
       "id": "nano-banana-pro",
       "name": "nano-banana-pro",
       "provider": "Google",
-      "vendorId": 18,
+      "vendorId": 4,
       "capabilities": [
         "image"
       ],
@@ -1214,6 +1289,31 @@
               "content_urls"
             ]
           }
+        },
+        "operations": {
+          "image_edit": {
+            "request": {
+              "method": "POST",
+              "path": "/v1/images/edits",
+              "contentType": "multipart/form-data"
+            },
+            "requiredBodyFields": [
+              "model",
+              "prompt",
+              "image"
+            ],
+            "inputs": {
+              "image": {
+                "field": "image",
+                "required": true,
+                "minItems": 1,
+                "maxItems": 6,
+                "transports": [
+                  "multipart_file"
+                ]
+              }
+            }
+          }
         }
       }
     },
@@ -1221,7 +1321,7 @@
       "id": "seedance-2.0",
       "name": "seedance-2.0",
       "provider": "ByteDance",
-      "vendorId": 53,
+      "vendorId": 15,
       "capabilities": [
         "video"
       ],
@@ -1378,7 +1478,7 @@
       "id": "seedance-2.0-fast",
       "name": "seedance-2.0-fast",
       "provider": "ByteDance",
-      "vendorId": 53,
+      "vendorId": 15,
       "capabilities": [
         "video"
       ],
@@ -1533,7 +1633,7 @@
       "id": "seedance-2.0-mini",
       "name": "seedance-2.0-mini",
       "provider": "ByteDance",
-      "vendorId": 53,
+      "vendorId": 15,
       "capabilities": [
         "video"
       ],
@@ -1688,7 +1788,7 @@
       "id": "seedance-2.5",
       "name": "seedance-2.5",
       "provider": "ByteDance",
-      "vendorId": 53,
+      "vendorId": 15,
       "capabilities": [
         "video"
       ],
@@ -1859,7 +1959,7 @@
       "id": "seedream-5.0-pro",
       "name": "seedream-5.0-pro",
       "provider": "ByteDance",
-      "vendorId": 53,
+      "vendorId": 15,
       "capabilities": [
         "image"
       ],
@@ -2020,6 +2120,31 @@
               "content_urls"
             ]
           }
+        },
+        "operations": {
+          "image_edit": {
+            "request": {
+              "method": "POST",
+              "path": "/v1/images/edits",
+              "contentType": "multipart/form-data"
+            },
+            "requiredBodyFields": [
+              "model",
+              "prompt",
+              "image"
+            ],
+            "inputs": {
+              "image": {
+                "field": "image",
+                "required": true,
+                "minItems": 1,
+                "maxItems": 10,
+                "transports": [
+                  "multipart_file"
+                ]
+              }
+            }
+          }
         }
       }
     },
@@ -2027,7 +2152,7 @@
       "id": "wan3.0-video",
       "name": "wan3.0-video",
       "provider": "Qwen",
-      "vendorId": 51,
+      "vendorId": 10,
       "capabilities": [
         "video"
       ],
@@ -2240,7 +2365,7 @@
       "id": "wan3.0-video-prime",
       "name": "wan3.0-video-prime",
       "provider": "Qwen",
-      "vendorId": 51,
+      "vendorId": 10,
       "capabilities": [
         "video"
       ],

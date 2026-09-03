@@ -2,8 +2,8 @@
   "$schema": "https://puretokensx.com/schemas/model-selection.schema.json",
   "schemaVersion": 1,
   "capability": "image",
-  "catalogUpdatedAt": "2026-08-29",
-  "catalogCapturedAt": "2026-08-29T05:03:13.833Z",
+  "catalogUpdatedAt": "2026-09-03",
+  "catalogCapturedAt": "2026-09-03T04:00:37.535Z",
   "models": [
     {
       "id": "gpt-image-2",
@@ -83,6 +83,31 @@
               "content_url",
               "content_urls"
             ]
+          }
+        },
+        "operations": {
+          "image_edit": {
+            "request": {
+              "method": "POST",
+              "path": "/v1/images/edits",
+              "contentType": "multipart/form-data"
+            },
+            "requiredBodyFields": [
+              "model",
+              "prompt",
+              "image"
+            ],
+            "inputs": {
+              "image": {
+                "field": "image",
+                "required": true,
+                "minItems": 1,
+                "maxItems": 6,
+                "transports": [
+                  "multipart_file"
+                ]
+              }
+            }
           }
         }
       }
@@ -344,6 +369,31 @@
               "content_urls"
             ]
           }
+        },
+        "operations": {
+          "image_edit": {
+            "request": {
+              "method": "POST",
+              "path": "/v1/images/edits",
+              "contentType": "multipart/form-data"
+            },
+            "requiredBodyFields": [
+              "model",
+              "prompt",
+              "image"
+            ],
+            "inputs": {
+              "image": {
+                "field": "image",
+                "required": true,
+                "minItems": 1,
+                "maxItems": 6,
+                "transports": [
+                  "multipart_file"
+                ]
+              }
+            }
+          }
         }
       }
     },
@@ -418,6 +468,31 @@
               "content_url",
               "content_urls"
             ]
+          }
+        },
+        "operations": {
+          "image_edit": {
+            "request": {
+              "method": "POST",
+              "path": "/v1/images/edits",
+              "contentType": "multipart/form-data"
+            },
+            "requiredBodyFields": [
+              "model",
+              "prompt",
+              "image"
+            ],
+            "inputs": {
+              "image": {
+                "field": "image",
+                "required": true,
+                "minItems": 1,
+                "maxItems": 6,
+                "transports": [
+                  "multipart_file"
+                ]
+              }
+            }
           }
         }
       }
@@ -498,6 +573,31 @@
               "content_url",
               "content_urls"
             ]
+          }
+        },
+        "operations": {
+          "image_edit": {
+            "request": {
+              "method": "POST",
+              "path": "/v1/images/edits",
+              "contentType": "multipart/form-data"
+            },
+            "requiredBodyFields": [
+              "model",
+              "prompt",
+              "image"
+            ],
+            "inputs": {
+              "image": {
+                "field": "image",
+                "required": true,
+                "minItems": 1,
+                "maxItems": 6,
+                "transports": [
+                  "multipart_file"
+                ]
+              }
+            }
           }
         }
       }
@@ -652,6 +752,31 @@
               "content_url",
               "content_urls"
             ]
+          }
+        },
+        "operations": {
+          "image_edit": {
+            "request": {
+              "method": "POST",
+              "path": "/v1/images/edits",
+              "contentType": "multipart/form-data"
+            },
+            "requiredBodyFields": [
+              "model",
+              "prompt",
+              "image"
+            ],
+            "inputs": {
+              "image": {
+                "field": "image",
+                "required": true,
+                "minItems": 1,
+                "maxItems": 10,
+                "transports": [
+                  "multipart_file"
+                ]
+              }
+            }
           }
         }
       }

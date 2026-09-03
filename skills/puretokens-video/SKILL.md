@@ -13,6 +13,8 @@ description: 通过当前 Pure Tokens 连接生成视频、选择视频模型或
 
 在构造任何 Videos API 命令前，先完成不可跳过的媒体输入分流：当前请求附带原生图片、视频或音频时，必须先选定资料已声明的精确 operation，再据此构造请求。原生媒体请求绝不能退化为只含 `model`、`prompt` 的 JSON 文生视频。以 `seedance-2.0-mini` 的参考图视频为例，必须选择 `parameterSchema.operations.reference_image_video`，发送 `POST /v1/videos` 的 `multipart/form-data`，将 1–9 张当前请求附件以 `reference_images` 文件字段提交。WorkBuddy 上该 multipart 描述对象只能通过 `--multipart-base64` 传给运行器，结构为 `{ "fields": { ... }, "files": [{ "field": "资料声明字段", "path": "当前附件的绝对本地路径" }] }`；不得使用 `--json-base64`、标准输入、管道、重定向或 here-document。若当前宿主没有提供可用的当前附件绝对路径，或无法满足资料声明的字段、数量或 transport，必须在 `POST` 前停止并说明该限制；不得删除附件、改为文生视频、生成 URL 或另行上传。
 
+用户意图与 operation 必须一一对应：明确说“图生视频”“让这张图动起来”“首帧/第一帧”时选择 `image_to_video`，并严格使用该 operation 声明的字段（例如 Wan 的 `first_frame_image`）；明确说“参考图/角色或风格参考”时选择 `reference_image_video`；明确说“参考视频”或“参考音频”时分别选择 `reference_video` 或 `reference_audio`；明确说“编辑/修改这段视频”时选择 `video_edit`。用户只附一张图片却未说明它是首帧还是参考图时，在计费前询问这两者之一，绝不按模型名猜测。用户要求“带声音/生成声音”或“静音/不要声音”时，只有模型声明布尔 `generate_audio` 字段才分别传 `true` 或 `false`；这不等于用户提供参考音频，后者仍必须选择 `reference_audio` operation。
+
 ## 模型与提交
 
 - 普通文生视频不得在提交前读取 `GET https://api.puretokensx.com/v1/media/models`。未指定模型时使用已安装选择中的 `grok-imagine-video-1.5-preview`。用户给出别名时，仅在 `model-selection.json` 中唯一匹配时解析；零个或多个候选时，列出候选精确 ID 并请用户选择。当前 `grok video` 唯一解析为 `grok-imagine-video`；`grok 1.5 video` 唯一解析为 `grok-imagine-video-1.5-preview`。

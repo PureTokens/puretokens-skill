@@ -30,7 +30,7 @@ test("registry exposes exactly the six specialist Skills", async () => {
   const { registry, records } = await collectSkillRecords();
   assert.deepEqual(registry.skills.map((skill) => skill.name), names);
   assert.equal(records.length, 6);
-  assert.deepEqual([...new Set(records.map((record) => record.manifest.version))], ["0.13.9"]);
+  assert.deepEqual([...new Set(records.map((record) => record.manifest.version))], ["0.13.11"]);
   assert.deepEqual(await validateRepository(), []);
 });
 
@@ -45,11 +45,17 @@ test("specialist policies use the fixed direct API without MCP fallback", async 
   assert.match(models, /`input_schema\.constraints`/);
   assert.match(models, /勾选包含该模型的分组/);
   assert.match(image, /POST https:\/\/api\.puretokensx\.com\/v1\/images\/generations/);
+  assert.match(image, /未指定模型时，普通文生图、当前请求明确附带的本地图片参考和本地图片编辑都优先使用已安装选择中的 `gpt-image-2`/);
+  assert.match(image, /本地图片附件.*`image_edit` multipart operation/s);
+  assert.match(image, /`requires_together`/);
+  assert.match(image, /`size_expression_precedence`/);
   assert.match(image, /`200cm × 230cm`/);
   assert.match(video, /POST https:\/\/api\.puretokensx\.com\/v1\/videos/);
   assert.match(video, /`grok-imagine-video-1.5-preview`/);
   assert.match(video, /`minimax-h3`/);
   assert.match(video, /勾选包含该精确模型的分组/);
+  assert.match(video, /首帧\/第一帧.*`image_to_video`/s);
+  assert.match(video, /`generate_audio`/);
   const policy = balance + connection + models + image + video;
   assert.match(policy, /https:\/\/api\.puretokensx\.com/);
   assert.doesNotMatch(policy, /internal-upstream|当前连接不是 Pure Tokens|无法确认归属/i);
@@ -123,13 +129,32 @@ test("installed model selections are generated from the published media catalog"
   }
 });
 
+test("gpt-image-2 publishes its declared native image-edit operation", async () => {
+  const selection = JSON.parse(await readFile(path.join(repositoryRoot, "skills", "puretokens-image", "references", "model-selection.json"), "utf8"));
+  const gptImage2 = selection.models.find((model) => model.id === "gpt-image-2");
+  assert.ok(gptImage2, "gpt-image-2 must remain in the installed image selection");
+  assert.deepEqual(gptImage2.parameterSchema.operations.image_edit, {
+    request: { method: "POST", path: "/v1/images/edits", contentType: "multipart/form-data" },
+    requiredBodyFields: ["model", "prompt", "image"],
+    inputs: {
+      image: {
+        field: "image",
+        required: true,
+        minItems: 1,
+        maxItems: 6,
+        transports: ["multipart_file"]
+      }
+    }
+  });
+});
+
 test("installed contracts cover bounded requests, task recovery, and user-facing failure guidance", async () => {
   const requiredScenarios = {
     "puretokens-balance": ["balance-account-session-unavailable", "balance-response"],
     "puretokens-connection": ["connection-identity-confirmed", "connection-identity-unconfirmed", "connection-identity-unavailable", "connection-base-url-request", "connection-identity-assurance"],
     "puretokens-models": ["models-catalog-unavailable", "models-catalog-empty", "models-exact-id-unavailable", "models-capability-filter-empty", "models-parameter-profile-absent", "models-operation-profile-absent", "models-requirement-ambiguous", "models-catalog-response"],
-    "puretokens-image": ["image-model-alias-ambiguous", "image-normal-submission-skips-catalog", "image-failure-receipt-safe", "image-content-safety-failure", "image-input-role-ambiguous", "image-request-scope-boundary", "image-distinct-assets", "image-prompt-shaping", "image-submission-model-parameter-rejected", "image-submission-rate-limited", "image-submission-outcome-unknown", "image-submission-runtime-output-unknown", "image-unknown-submission-continuation-without-id", "image-model-unavailable", "image-model-parameter-profile-unavailable", "image-model-parameter-unsupported", "image-catalog-on-demand-unavailable", "image-execution-unavailable", "image-count-invalid", "image-pixel-size-invalid", "image-physical-size", "image-edit-profile-unavailable", "image-public-url-reference-profile-unavailable", "image-public-url-edit-profile-unavailable", "image-public-url-reference-invalid", "image-public-url-reference-not-public", "image-public-url-reference-ambiguous", "image-native-reference-attachment-unavailable", "image-edit-attachment-unavailable", "image-edit-attachment-direct-api", "image-edit-input-unsupported", "image-task-id-normalization", "image-task-id-missing", "image-task-id-invalid", "image-task-state-unrecognized", "image-task-reconciliation-required", "image-task-request-count-unknown", "image-task-pending", "image-task-poll-delay", "image-task-poll-rate-limited", "image-task-poll-resource-bound", "image-task-polling-deadline", "image-task-explicit-continuation", "image-task-terminal-failure", "image-task-timeout-or-unknown", "image-content-delivery-failure", "image-content-delivery-location", "image-delivery-terminal-boundary", "image-content-index-missing", "image-content-resource-bound"],
-    "puretokens-video": ["video-model-alias-ambiguous", "video-normal-submission-skips-catalog", "video-failure-receipt-safe", "video-content-safety-failure", "video-submission-model-parameter-rejected", "video-submission-rate-limited", "video-submission-outcome-unknown", "video-submission-runtime-output-unknown", "video-unknown-submission-continuation-without-id", "video-model-unavailable", "video-model-parameter-profile-unavailable", "video-model-parameter-unsupported", "video-catalog-on-demand-unavailable", "video-execution-unavailable", "video-parameter-unsupported", "video-resolution-mode-unsupported", "video-image-operation-profile-unavailable", "video-media-operation-profile-unavailable", "video-image-transport-unavailable", "video-native-attachment-route-locked", "video-native-attachment-path-unavailable", "video-public-url-reference-profile-unavailable", "video-public-url-reference-invalid", "video-public-url-reference-not-public", "video-public-url-reference-ambiguous", "video-prompt-requirement", "video-attachment-direct-api", "video-image-count-unsupported", "video-media-combination-unsupported", "video-input-media-unsupported", "video-task-id-normalization", "video-task-id-missing", "video-task-id-invalid", "video-task-state-unrecognized", "video-task-reconciliation-required", "video-task-pending", "video-task-poll-delay", "video-task-poll-rate-limited", "video-task-poll-resource-bound", "video-task-polling-deadline", "video-task-explicit-continuation", "video-task-terminal-failure", "video-task-timeout-or-unknown", "video-content-delivery-failure", "video-content-resource-bound"],
+    "puretokens-image": ["image-model-alias-ambiguous", "image-normal-submission-skips-catalog", "image-failure-receipt-safe", "image-content-safety-failure", "image-input-role-ambiguous", "image-request-scope-boundary", "image-distinct-assets", "image-prompt-shaping", "image-submission-model-parameter-rejected", "image-submission-rate-limited", "image-submission-outcome-unknown", "image-submission-runtime-output-unknown", "image-unknown-submission-continuation-without-id", "image-model-unavailable", "image-model-parameter-profile-unavailable", "image-model-parameter-unsupported", "image-size-expression-constraints", "image-catalog-on-demand-unavailable", "image-execution-unavailable", "image-count-invalid", "image-pixel-size-invalid", "image-physical-size", "image-edit-profile-unavailable", "image-public-url-reference-profile-unavailable", "image-public-url-edit-profile-unavailable", "image-public-url-reference-invalid", "image-public-url-reference-not-public", "image-public-url-reference-ambiguous", "image-native-reference-attachment-direct-api", "image-native-reference-attachment-unavailable", "image-edit-attachment-unavailable", "image-edit-attachment-direct-api", "image-edit-input-unsupported", "image-task-id-normalization", "image-task-id-missing", "image-task-id-invalid", "image-task-state-unrecognized", "image-task-reconciliation-required", "image-task-request-count-unknown", "image-task-pending", "image-task-poll-delay", "image-task-poll-rate-limited", "image-task-poll-resource-bound", "image-task-polling-deadline", "image-task-explicit-continuation", "image-task-terminal-failure", "image-task-timeout-or-unknown", "image-content-delivery-failure", "image-content-delivery-location", "image-delivery-terminal-boundary", "image-content-index-missing", "image-content-resource-bound"],
+    "puretokens-video": ["video-model-alias-ambiguous", "video-normal-submission-skips-catalog", "video-failure-receipt-safe", "video-content-safety-failure", "video-submission-model-parameter-rejected", "video-submission-rate-limited", "video-submission-outcome-unknown", "video-submission-runtime-output-unknown", "video-unknown-submission-continuation-without-id", "video-model-unavailable", "video-model-parameter-profile-unavailable", "video-model-parameter-unsupported", "video-catalog-on-demand-unavailable", "video-execution-unavailable", "video-parameter-unsupported", "video-first-frame-operation-mapping", "video-generate-audio-intent-mapping", "video-resolution-mode-unsupported", "video-image-operation-profile-unavailable", "video-media-operation-profile-unavailable", "video-image-transport-unavailable", "video-native-attachment-route-locked", "video-native-attachment-path-unavailable", "video-public-url-reference-profile-unavailable", "video-public-url-reference-invalid", "video-public-url-reference-not-public", "video-public-url-reference-ambiguous", "video-prompt-requirement", "video-attachment-direct-api", "video-image-count-unsupported", "video-media-combination-unsupported", "video-input-media-unsupported", "video-task-id-normalization", "video-task-id-missing", "video-task-id-invalid", "video-task-state-unrecognized", "video-task-reconciliation-required", "video-task-pending", "video-task-poll-delay", "video-task-poll-rate-limited", "video-task-poll-resource-bound", "video-task-polling-deadline", "video-task-explicit-continuation", "video-task-terminal-failure", "video-task-timeout-or-unknown", "video-content-delivery-failure", "video-content-resource-bound"],
     "puretokens-update": ["update-host-unknown", "update-terminal-unavailable", "update-validation-failed", "update-unmanaged-conflict", "update-managed-retired-skill", "update-managed-sync"]
   };
   for (const name of names) {
@@ -173,16 +198,18 @@ test("installed contracts cover bounded requests, task recovery, and user-facing
   assert.deepEqual(image.operations.edit.requiredBodyFields, ["model", "prompt", "async"]);
   assert.equal(image.inputMediaValidation.publicUrlReferenceRequires, "installed_model_selection_or_on_demand_live_profile_property_and_declared_reference_transport");
   assert.equal(image.inputMediaValidation.publicUrlEditRequires, "installed_model_selection_or_on_demand_live_profile_image_edit_operation_with_application_json_exact_field_and_public_url_transport");
-  assert.equal(image.inputMediaValidation.nativeAttachmentRequires, "installed_model_selection_or_on_demand_live_profile_operation");
+  assert.equal(image.inputMediaValidation.nativeAttachmentRequires, "installed_model_selection_or_on_demand_live_profile_image_edit_operation_for_current_visual_reference_or_explicit_edit");
   assert.equal(image.inputMediaValidation.imageEditOperation, "image_edit");
+  assert.equal(image.inputMediaValidation.nativeVisualReferenceUsesImageEditOperation, true);
+  assert.equal(image.inputMediaValidation.nativeVisualReferencePromptSemantics, "preserve_reference_intent_while_using_the_declared_image_edit_multipart_transport");
   assert.equal(image.inputMediaValidation.onlyCurrentUserExplicitMedia, true);
   assert.equal(image.inputMediaValidation.skillPassesUserProvidedPublicUrlsWithoutDownloadingOrRehosting, true);
   assert.equal(image.inputMediaValidation.skillNeverDownloadsOrRehostsMedia, true);
   assert.equal(image.inputMediaValidation.gatewayStagesCurrentRequestAttachment, true);
   assert.equal(image.inputMediaValidation.requiresRuntimeNativeAttachmentByteDelivery, true);
-  assert.equal(image.inputMediaValidation.nativeReferenceAttachmentRequires, "installed_model_selection_or_on_demand_profile_property_or_operation_with_multipart_file_transport");
+  assert.equal(image.inputMediaValidation.nativeReferenceAttachmentRequires, "installed_model_selection_or_on_demand_profile_image_edit_operation_with_multipart_file_transport");
   assert.equal(image.inputMediaValidation.untransportableNativeReferenceMustNeverBeConvertedToTextPrompt, true);
-  assert.equal(image.inputMediaValidation.whenNativeReferenceTransportUnavailable, "stop_before_post_and_require_public_https_url_or_explicit_new_text_only_request");
+  assert.equal(image.inputMediaValidation.whenNativeReferenceTransportUnavailable, "stop_before_post_when_no_declared_image_edit_multipart_operation_or_no_native_byte_delivery_and_require_public_https_url_or_explicit_new_text_only_request");
   assert.equal(image.inputMediaValidation.requestScope, "current_user_request_only_no_unrelated_skill_history_workspace_search_or_quality_review");
   assert.equal(image.result.sameTaskOnly, true);
   assert.equal(image.result.neverAutoResubmit, true);
@@ -210,6 +237,8 @@ test("installed contracts cover bounded requests, task recovery, and user-facing
   assert.equal(image.parameterValidation.exactModelCoreSubmissionDoesNotRequireCatalogPreflight, true);
   assert.equal(image.parameterValidation.onDemandLiveCatalogRead, "only_for_explicit_discovery_installed_profile_gap_or_post_rejection_diagnosis");
   assert.equal(image.parameterValidation.allOptionalParametersRequire, "installed_model_selection_parameter_schema_or_on_demand_live_input_schema");
+  assert.equal(image.parameterValidation.enforcesDeclaredRequiresTogether, true);
+  assert.equal(image.parameterValidation.sizeExpressionPrecedence, "send_only_the_highest_precedence_user_supplied_declared_size_expression");
   assert.deepEqual(image.taskIdentity.fallbackTopLevelResponseFields, ["task_id", "id"]);
   assert.equal(image.taskIdentity.neverDerivesIdFromUrlsNestedObjectsOrPrompt, true);
   assert.deepEqual(image.taskState.fallbackPendingStates, ["pending", "queued", "running", "in_progress"]);
@@ -266,6 +295,8 @@ test("installed contracts cover bounded requests, task recovery, and user-facing
   assert.equal(video.submissionFailure.runtimeUnknownOutcomeResponse, "one_terminal_receipt_then_end_turn_without_followup_tool_status_or_poll_work");
   assert.equal(video.submissionFailure.noTaskIdLaterContinuation, "require_explicit_confirmation_of_a_new_billable_request_before_one_new_post");
   assert.equal(video.inputMediaValidation.imageToVideoOperation, "image_to_video");
+  assert.equal(video.inputMediaValidation.explicitFirstFrameIntentUses, "image_to_video");
+  assert.equal(video.inputMediaValidation.declaredGenerateAudioIntent, "map_explicit_generated_sound_to_true_and_silence_to_false_only_for_declared_boolean_generate_audio");
   assert.equal(video.inputMediaValidation.referenceImageVideoOperation, "reference_image_video");
   assert.equal(video.inputMediaValidation.referenceVideoOperation, "reference_video");
   assert.equal(video.inputMediaValidation.referenceAudioOperation, "reference_audio");
@@ -720,7 +751,7 @@ test("CLI sync installs missing Skills and refuses unmanaged conflicts before wr
   for (const name of names) {
     assert.equal(JSON.parse(await readFile(path.join(target, name, "skill.json"), "utf8")).name, name);
   }
-  assert.equal(JSON.parse(await readFile(path.join(target, ".puretokens-runtime", "runtime.json"), "utf8")).version, "0.13.9");
+  assert.equal(JSON.parse(await readFile(path.join(target, ".puretokens-runtime", "runtime.json"), "utf8")).version, "0.13.11");
 });
 
 test("CLI refuses an unmanaged direct runtime before changing Skills", async (t) => {

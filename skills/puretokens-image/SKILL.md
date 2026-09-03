@@ -15,7 +15,7 @@ description: 通过当前 Pure Tokens 连接生成图片、选择图片模型、
 
 - 当前用户请求就是完整工作范围。海报、封面、插画等视觉设计请求不等于要求地图、地理资料、合规研究或历史作品检索；除非用户明确要求真实地图、地理信息、文件检索或质量复查，否则不得加载无关 Skill、搜索工作区/历史会话/旧生成文件、读取旧图片，或以“先参考一下”“再确认构图”为由扩展任务。只可读取本 Skill 的规定参考资料和当前用户明确提供的输入。
 - 先区分用户要的是：没有输入图片的文生图、以图片作为风格/构图参考，还是修改一张现有图片。用户明确说“参考”“按这个风格/构图”时按参考输入处理；明确说“修改”“替换”“删除”“保留主体”等时按编辑处理。用户给了图片、URL 或附件却未说明角色时，在计费前只问“它是参考图还是待编辑图片？”，不得猜测。
-- 当前请求附带的**原生本地图片附件**若被指定为参考图，只有已安装资料或为该明确需求按需读取的目录声明匹配的原生附件 `multipart_file` reference transport 时才可提交。若当前模型仅声明 `public_https_url`（如只允许 `image` 公网链接）或宿主不能交付当前附件字节，必须在 `POST` 前停止，并请用户提供该图片的公网 HTTPS URL，或在**新的用户请求**中明确表示忽略附件、改为纯文生图。不得查看、描述、概括、转写、复刻或从无法传输的附件推断任何内容后再把它塞进文生图提示词；不得生成 URL、上传、搜索历史图片或静默降级。
+- 当前请求附带的**原生本地图片附件**被用户指定为视觉参考时，优先检查已安装资料或为该明确需求按需读取的目录是否声明可用的 `image_edit` multipart operation。若已声明，使用该 operation 的精确路径、字段、数量和 `multipart_file` transport 直接提交当前附件；提示词仍明确该图片是风格、构图或主体参考，而不是擅自改写用户目标。`image_edit` 是当前 Images API 为本地图片参考/修改声明的传输操作名，不改变用户所表达的参考或编辑意图。只有该 operation 不存在、附件数量越界或宿主不能交付当前附件字节时，才在 `POST` 前停止，并请用户提供该图片的公网 HTTPS URL，或在**新的用户请求**中明确表示忽略附件、改为纯文生图。不得查看、描述、概括、转写、复刻或从无法传输的附件推断任何内容后再把它塞进文生图提示词；不得生成 URL、上传、搜索历史图片或静默降级。
 - `n` 只表示**同一完整提示词的变体**，绝不代表多项不同资产。用户一次列出海报、头像和横幅等不同简报时，不得把它们塞进 `n`、拆成多次提交或静默丢弃项目；请用户先确认本次要生成的第一项，再由后续明确请求分别生成其余项。
 - 将用户的自然语言整理成简洁、可执行的图片提示词：保留已给出的用途、主体/场景、风格、构图、光线或色彩、材质、逐字文本和限制。提示词已具体时只整理，不添加人物、物体、品牌、标语、色彩或叙事；提示词笼统时可补足不改变意图的构图或成片要求。除非缺少的信息会影响“文生 / 参考 / 编辑”这一操作选择，否则不要为了创作细节反复追问。
 - 对参考图，在提示词中说明它是风格、构图或主体参考；对编辑，明确“只改什么、必须保留什么”。用户给出的文字须逐字保留并用引号标出；不得承诺模型一定能无误渲染文字。
@@ -23,15 +23,15 @@ description: 通过当前 Pure Tokens 连接生成图片、选择图片模型、
 
 ## 模型与提交
 
-- 普通文生图不得在提交前读取 `GET https://api.puretokensx.com/v1/media/models`。未指定模型时用已安装选择中的 `gpt-image-2`；明确 `image2` 也使用该模型。用户给出别名时，仅在 `model-selection.json` 中唯一匹配时解析为精确 ID；零个或多个候选时，列出候选精确 ID 并请用户选择，绝不猜测。
+- 普通文生图不得在提交前读取 `GET https://api.puretokensx.com/v1/media/models`。未指定模型时，普通文生图、当前请求明确附带的本地图片参考和本地图片编辑都优先使用已安装选择中的 `gpt-image-2`；有本地图片时仍必须使用该模型已声明的 `image_edit` multipart operation。明确 `image2` 也使用该模型。用户给出别名时，仅在 `model-selection.json` 中唯一匹配时解析为精确 ID；零个或多个候选时，列出候选精确 ID 并请用户选择，绝不猜测或自动切换模型。
 - 用户给出精确模型 ID 时，保留并直接提交；即使该 ID 不在已安装快照中，也不得为了确认模型、权限或 capability 而进行目录预检。对未在快照中的精确 ID，只能提交核心 `model`、`prompt`、`async: true` 字段；用户同时要求快照未声明的可选参数或媒体操作时，才可在提交前读取一次实时目录以确认如何满足该明确要求。
-- 单次 `POST https://api.puretokensx.com/v1/images/generations` 始终传 `model`、`prompt` 和 `async: true`。图片的 `n`、`size`、`image_size`、`aspect_ratio`、`width`、`height`、`strength` 及其他可选字段，只有已安装的该精确模型 `parameterSchema.properties` 明确声明字段和值后才传递；只在该快照明确给出时使用 `default`。快照未声明所需字段、值、参考输入或编辑 operation 时，可读取一次实时目录；仍无资料或不兼容时，列出已声明选项并请用户重选，绝不猜测、删改用户参数或拆单。
+- 单次 `POST https://api.puretokensx.com/v1/images/generations` 始终传 `model`、`prompt` 和 `async: true`。图片的 `n`、`size`、`image_size`、`aspect_ratio`、`width`、`height`、`strength` 及其他可选字段，只有已安装的该精确模型 `parameterSchema.properties` 明确声明字段和值后才传递；只在该快照明确给出时使用 `default`。同时严格执行该模型 `constraints`：`requires_together` 声明 `width` 与 `height` 必须成对时，用户只给一边就停止并请其补齐；`size_expression_precedence` 声明多个尺寸表达的优先顺序时，只发送用户已给表达中优先级最高的一种，不混传较低优先级表达，并在回执中说明实际提交的尺寸表达。快照未声明所需字段、值、参考输入或编辑 operation 时，可读取一次实时目录；仍无资料或不兼容时，列出已声明选项并请用户重选，绝不猜测、删改用户参数或拆单。
 - 一个用户请求只能有一次付费提交，绝不拆单。只有 `n` 已由已安装模型资料或按需读取的实时目录声明为允许的整数时才可传递；未指定时不编造 `n`。若用户要求多张但资料只声明 `n: 1` 或未声明 `n`，说明该模型当前一次只支持一张，请用户改为一张或明确选择支持所需数量的模型。
 - `200cm × 230cm` 等物理尺寸不能传给 `n`、`size` 或其他 API 字段。说明不能精确保证物理尺寸，并列出已安装资料或按需目录查询实际声明的像素 `size`、语义 `image_size` 和 `aspect_ratio` 选项；若三者均未声明，明确说明没有可用规格资料并请用户改用纯提示词或选择另一个模型。
 - 用户提供的是当前请求中明确给出的**公网 HTTPS 图片 URL**并说明是视觉参考时，先确认它是 `https://` URL；不是时说明只接受公网 HTTPS URL，停止并请用户提供合规 URL。拒绝含 URL 凭据、`localhost`、`.local`，或显式环回、私网、链路本地 IP 的 URL；Skill 不做 DNS 解析或可访问性探测，公网可读性仍由 API 验证。只有已安装模型资料或为该明确参考需求按需读取的目录同时声明对应请求属性和允许的 URL transport 时，才可在 JSON body 的 `POST https://api.puretokensx.com/v1/images/generations` 中传原始 URL。`string[]` 属性传 URL 数组；`string` 或 `json` 属性只传用户明确给出的原始值。多个可能 URL 字段、或用户未说明单图/多图输入模式时，列出已声明字段并请用户选择；不得依据模型名或附件数量猜测字段，更不能下载、探测、转存或改写 URL。
 - 用户明确要求**编辑**公网 URL 图片时，不能把一般参考字段当作编辑能力。只有已安装资料或按需目录中的 `image_edit` operation 明确声明 `application/json`、精确请求路径、精确 URL 字段及公网 URL transport 时，才可按该声明发起一次 JSON 编辑请求；路径只可为 `/v1/images/generations` 或 `/v1/images/edits`，并附带 `model`、`prompt`、`async: true`。若只声明参考字段而未声明 JSON 编辑 operation，说明该模型当前只能按参考图使用，询问用户是否改为参考图生成；未经确认不得降级或提交。
-- 用户提供的是当前请求中明确附带的原生图片附件/运行环境媒体对象时，只有已安装模型资料或为该明确编辑需求按需读取的目录中 `image_edit` operation 明确声明 `POST`、`multipart/form-data`、必需字段、允许数量和 `multipart_file` transport，且路径为 `/v1/images/generations` 或 `/v1/images/edits` 时才可继续。Skill 将该 operation 的相对路径与固定 API origin 组合成完整 URL，绝不把编辑路径固定为 generations。Skill 只把附件原生字节随这一次 Images API 请求发送。资料缺失、操作不支持或运行环境无法随请求传递附件字节时，在计费前停止并说明已声明输入；不得生成 URL、file ID 或调用独立上传接口，也不得静默降级为文生图。
-- 原生附件图片编辑的 multipart 请求严格使用资料声明的路径、字段、数量和 transport，并附带 `model`、`prompt`、`async: true` 和声明允许的可选字段。公网 URL JSON 编辑则严格使用上条所述的 `image_edit` operation。mask、透明背景、未声明的多参考图或任何其他扩展必须停止并说明未声明；不得伪装成功。
+- 用户提供的是当前请求中明确附带的原生图片附件/运行环境媒体对象，且明确其为参考图或待编辑图片时，只有已安装模型资料或为该明确需求按需读取的目录中 `image_edit` operation 明确声明 `POST`、`multipart/form-data`、必需字段、允许数量和 `multipart_file` transport，且路径为 `/v1/images/generations` 或 `/v1/images/edits` 时才可继续。Skill 将该 operation 的相对路径与固定 API origin 组合成完整 URL，绝不把编辑路径固定为 generations。Skill 只把附件原生字节随这一次 Images API 请求发送。资料缺失、操作不支持或运行环境无法随请求传递附件字节时，在计费前停止并说明已声明输入；不得生成 URL、file ID 或调用独立上传接口，也不得静默降级为文生图。
+- 原生附件图片参考或编辑的 multipart 请求严格使用资料声明的路径、字段、数量和 transport，并附带 `model`、`prompt`、`async: true` 和声明允许的可选字段；参考请求的 prompt 必须保留“参考”语义，编辑请求必须保留“只改什么、保留什么”语义。公网 URL JSON 编辑则严格使用上条所述的 `image_edit` operation。mask、透明背景、未声明的多参考图或任何其他扩展必须停止并说明未声明；不得伪装成功。
 - 只有用户明确问“当前有哪些模型/参数/操作”，请求的可选字段或图片输入 operation 不在已安装资料中、已安装 operation 与用户明确输入的 transport 不兼容，或提交被 API 以模型、参数或 capability 问题拒绝后需要解释时，才可读取一次 `GET https://api.puretokensx.com/v1/media/models`。这不是普通生图的前置条件；目录读取失败绝不能阻止本可直接提交的核心文生图，也不得触发自动重试或重提。
 
 ## 任务与交付

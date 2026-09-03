@@ -82,6 +82,8 @@
     "referenceVideoOperation": "reference_video",
     "referenceAudioOperation": "reference_audio",
     "videoEditOperation": "video_edit",
+    "explicitFirstFrameIntentUses": "image_to_video",
+    "declaredGenerateAudioIntent": "map_explicit_generated_sound_to_true_and_silence_to_false_only_for_declared_boolean_generate_audio",
     "requiresInstalledOrOnDemandProfileOperation": true,
     "publicUrlOrDeclaredIdReferenceRequires": "installed_model_selection_or_on_demand_live_profile_property_and_declared_reference_transport",
     "onlyCurrentUserExplicitMedia": true,

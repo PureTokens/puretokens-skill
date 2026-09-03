@@ -4,6 +4,17 @@
 
 # Changelog
 
+## 0.13.11 — 2026-09-03
+
+- Made a current local visual-reference image use the selected model's declared multipart `image_edit` operation directly, while preserving the user's reference-image intent in the prompt. It never uploads, rehosts, invents a URL, or turns an unavailable attachment into text-only generation.
+- Enforced declared image size-expression constraints: required pairs such as `width` plus `height` must be complete, and competing size expressions submit only the highest-precedence user-supplied form.
+- Made video operation selection explicit for first-frame requests (`image_to_video` and its declared field, including Wan `first_frame_image`) and for declared `generate_audio` intent. An attached image with no stated first-frame/reference role now asks before billing.
+
+## 0.13.10 — 2026-09-03
+
+- Synchronized the installed media profiles with the current Pure Tokens base catalog. `gpt-image-2`, `seedream-5.0-pro`, `nano-banana-2`, `nano-banana-2-lite`, and `nano-banana-pro` now expose their declared native `image_edit` operations.
+- Made `gpt-image-2` the default for an unspecified current local image-edit request as well as normal image generation. The Skill still sends attachments only through the declared operation and never switches models automatically.
+
 ## 0.13.9 — 2026-09-02
 
 - Made an untransportable current local reference image fail closed. If the selected model does not declare a compatible native multipart reference transport, the Skill stops before any paid request and requires either the user's public HTTPS URL or a new explicit text-only request that ignores the attachment. It never inspects, summarizes, recreates, uploads, searches for, or silently converts that image into a text prompt.

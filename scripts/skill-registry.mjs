@@ -373,13 +373,19 @@ function validateExecutionContract(errors, directory, contract) {
     if (contract.parameterValidation?.defaultModel !== "gpt-image-2" || contract.parameterValidation?.normalSubmissionUsesInstalledModelSelection !== true ||
       contract.parameterValidation?.exactModelCoreSubmissionDoesNotRequireCatalogPreflight !== true ||
       contract.parameterValidation?.onDemandLiveCatalogRead !== "only_for_explicit_discovery_installed_profile_gap_or_post_rejection_diagnosis" ||
-      contract.parameterValidation?.allOptionalParametersRequire !== "installed_model_selection_parameter_schema_or_on_demand_live_input_schema") {
+      contract.parameterValidation?.allOptionalParametersRequire !== "installed_model_selection_parameter_schema_or_on_demand_live_input_schema" ||
+      contract.parameterValidation?.enforcesDeclaredRequiresTogether !== true ||
+      contract.parameterValidation?.sizeExpressionPrecedence !== "send_only_the_highest_precedence_user_supplied_declared_size_expression") {
       errors.push(`${label} must use its installed selection for normal image submissions and limit live catalog reads to on-demand cases`);
     }
     const mediaInput = contract.inputMediaValidation;
-    if (!mediaInput || mediaInput.nativeReferenceAttachmentRequires !== "installed_model_selection_or_on_demand_profile_property_or_operation_with_multipart_file_transport" ||
+    if (!mediaInput || mediaInput.nativeAttachmentRequires !== "installed_model_selection_or_on_demand_live_profile_image_edit_operation_for_current_visual_reference_or_explicit_edit" ||
+      mediaInput.imageEditOperation !== "image_edit" ||
+      mediaInput.nativeVisualReferenceUsesImageEditOperation !== true ||
+      mediaInput.nativeVisualReferencePromptSemantics !== "preserve_reference_intent_while_using_the_declared_image_edit_multipart_transport" ||
+      mediaInput.nativeReferenceAttachmentRequires !== "installed_model_selection_or_on_demand_profile_image_edit_operation_with_multipart_file_transport" ||
       mediaInput.untransportableNativeReferenceMustNeverBeConvertedToTextPrompt !== true ||
-      mediaInput.whenNativeReferenceTransportUnavailable !== "stop_before_post_and_require_public_https_url_or_explicit_new_text_only_request" ||
+      mediaInput.whenNativeReferenceTransportUnavailable !== "stop_before_post_when_no_declared_image_edit_multipart_operation_or_no_native_byte_delivery_and_require_public_https_url_or_explicit_new_text_only_request" ||
       mediaInput.requestScope !== "current_user_request_only_no_unrelated_skill_history_workspace_search_or_quality_review" ||
       contract.result?.afterConfirmedDelivery !== "return_one_completion_receipt_and_end_turn_without_quality_review_history_search_or_new_media_submission") {
       errors.push(`${label} must fail closed for untransportable native reference attachments and end after confirmed delivery`);
@@ -404,7 +410,14 @@ function validateExecutionContract(errors, directory, contract) {
       errors.push(`${label} must use its installed selection for normal video submissions, limit live catalog reads to on-demand cases, and require native video bytes`);
     }
     const mediaInput = contract.inputMediaValidation;
-    if (!mediaInput || mediaInput.nativeAttachmentRouteMustMatchDeclaredOperation !== true ||
+    if (!mediaInput || mediaInput.imageToVideoOperation !== "image_to_video" ||
+      mediaInput.referenceImageVideoOperation !== "reference_image_video" ||
+      mediaInput.referenceVideoOperation !== "reference_video" ||
+      mediaInput.referenceAudioOperation !== "reference_audio" ||
+      mediaInput.videoEditOperation !== "video_edit" ||
+      mediaInput.explicitFirstFrameIntentUses !== "image_to_video" ||
+      mediaInput.declaredGenerateAudioIntent !== "map_explicit_generated_sound_to_true_and_silence_to_false_only_for_declared_boolean_generate_audio" ||
+      mediaInput.nativeAttachmentRouteMustMatchDeclaredOperation !== true ||
       mediaInput.nativeAttachmentMustNeverFallBackToJsonTextSubmission !== true ||
       mediaInput.workBuddyNativeAttachmentBodyMode !== "multipart_base64_descriptor_only" ||
       mediaInput.whenCurrentAttachmentPathUnavailable !== "stop_before_post_and_explain_declared_multipart_requirement") {

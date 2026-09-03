@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "name": "puretokens-video",
-  "version": "0.13.9",
+  "version": "0.13.11",
   "entry": "SKILL.md",
   "displayName": "Pure Tokens Video",
   "description": "Generate and profile-gated animate, reference, or edit video through the fixed Pure Tokens Videos API.",
@@ -69,6 +69,8 @@
     "profiledReferenceVideoSupported": true,
     "profiledReferenceAudioSupported": true,
     "profiledVideoEditSupported": true,
+    "mapsExplicitFirstFrameIntentToProfiledImageToVideo": true,
+    "mapsDeclaredGenerateAudioIntent": true,
     "nativeAttachmentsMustUseExactDeclaredMultipartOperation": true,
     "workBuddyNativeAttachmentsUseMultipartBase64": true,
     "nativeAttachmentNeverFallsBackToTextSubmission": true,
