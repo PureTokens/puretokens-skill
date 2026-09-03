@@ -2,7 +2,9 @@
 
 set -eu
 
-payload_archive_url="https://raw.githubusercontent.com/PureTokens/puretokens-skill/main/dist/puretokens-skill-install-payload.zip"
+payload_archive_primary_url="https://api.github.com/repos/PureTokens/puretokens-skill/contents/dist/puretokens-skill-install-payload.zip?ref=main"
+payload_archive_fallback_url="https://raw.githubusercontent.com/PureTokens/puretokens-skill/main/dist/puretokens-skill-install-payload.zip"
+payload_download_attempt_deadline_seconds=20
 current_skills="puretokens-balance puretokens-connection puretokens-models puretokens-image puretokens-video puretokens-update"
 retired_skills="puretokens_media puretokens_balance puretokens_connection puretokens_models puretokens_image puretokens_video puretokens_update puretokens_get_balance puretokens_get_model_price puretokens_workbuddy_router"
 
@@ -80,8 +82,15 @@ download_source() {
   archive="$workspace/puretokens-skill-install-payload.zip"
   unpacked="$workspace/unpacked"
   mkdir -p "$unpacked"
-  curl --fail --location --proto '=https' --proto-redir '=https' --tlsv1.2 --connect-timeout 10 --max-time 45 \
-    "$payload_archive_url" --output "$archive" || fail "could not download the compact official Pure Tokens Skill install payload within 45 seconds"
+  printf '%s\n' "Downloading the compact official Pure Tokens Skill install payload through the official GitHub API." >&2
+  if ! curl --fail --location --proto '=https' --proto-redir '=https' --tlsv1.2 --connect-timeout 7 --max-time "$payload_download_attempt_deadline_seconds" \
+    --header 'Accept: application/vnd.github.raw+json' --header 'X-GitHub-Api-Version: 2022-11-28' \
+    "$payload_archive_primary_url" --output "$archive"; then
+    printf '%s\n' "The official GitHub API download path was unavailable; trying GitHub raw content once." >&2
+    curl --fail --location --proto '=https' --proto-redir '=https' --tlsv1.2 --connect-timeout 7 --max-time "$payload_download_attempt_deadline_seconds" \
+      "$payload_archive_fallback_url" --output "$archive" ||
+      fail "could not download the compact official Pure Tokens Skill install payload from either official GitHub path within two 20-second attempts"
+  fi
   unzip -q "$archive" -d "$unpacked" || fail "could not unpack the official Pure Tokens Skill source"
   source_root="$unpacked/puretokens-skill-main"
   [ -d "$source_root" ] || fail "official source archive has an unexpected layout"

@@ -30,7 +30,7 @@ test("registry exposes exactly the six specialist Skills", async () => {
   const { registry, records } = await collectSkillRecords();
   assert.deepEqual(registry.skills.map((skill) => skill.name), names);
   assert.equal(records.length, 6);
-  assert.deepEqual([...new Set(records.map((record) => record.manifest.version))], ["0.13.19"]);
+  assert.deepEqual([...new Set(records.map((record) => record.manifest.version))], ["0.13.20"]);
   assert.deepEqual(await validateRepository(), []);
 });
 
@@ -106,7 +106,9 @@ test("specialist manifests use the fixed direct API with a narrow configured-cre
       assert.equal(manifest.rules.reportsSynchronizedVersion, true);
       assert.equal(manifest.rules.removesLegacyCodexPluginWhenPresent, true);
       assert.equal(manifest.rules.usesCompactInstallPayload, true);
-      assert.equal(manifest.rules.payloadDownloadDeadlineSeconds, 45);
+      assert.equal(manifest.rules.payloadDownloadDeadlineSeconds, 40);
+      assert.equal(manifest.rules.payloadDownloadAttemptDeadlineSeconds, 20);
+      assert.equal(manifest.rules.usesOfficialGitHubApiFallback, true);
       assert.equal(manifest.rules.doesNotClaimSuccessWithoutVersionReceipt, true);
       assert.equal(manifest.rules.doesNotReadCredentialsOrHostConfiguration, true);
     } else {
@@ -160,7 +162,7 @@ test("installed contracts cover bounded requests, task recovery, and user-facing
     "puretokens-models": ["models-catalog-unavailable", "models-catalog-empty", "models-exact-id-unavailable", "models-capability-filter-empty", "models-parameter-profile-absent", "models-operation-profile-absent", "models-requirement-ambiguous", "models-catalog-response"],
     "puretokens-image": ["image-model-alias-ambiguous", "image-normal-submission-skips-catalog", "image-failure-receipt-safe", "image-content-safety-failure", "image-input-role-ambiguous", "image-request-scope-boundary", "image-distinct-assets", "image-prompt-shaping", "image-submission-model-parameter-rejected", "image-submission-rate-limited", "image-submission-outcome-unknown", "image-submission-runtime-output-unknown", "image-unknown-submission-continuation-without-id", "image-model-unavailable", "image-model-parameter-profile-unavailable", "image-model-parameter-unsupported", "image-size-expression-constraints", "image-catalog-on-demand-unavailable", "image-execution-unavailable", "image-count-invalid", "image-pixel-size-invalid", "image-physical-size", "image-edit-profile-unavailable", "image-public-url-reference-profile-unavailable", "image-public-url-edit-profile-unavailable", "image-public-url-reference-invalid", "image-public-url-reference-not-public", "image-public-url-reference-ambiguous", "image-native-reference-attachment-direct-api", "image-native-reference-attachment-unavailable", "image-edit-attachment-unavailable", "image-edit-attachment-direct-api", "image-edit-input-unsupported", "image-task-id-normalization", "image-task-id-missing", "image-task-id-invalid", "image-task-state-unrecognized", "image-task-reconciliation-required", "image-task-request-count-unknown", "image-task-pending", "image-task-poll-delay", "image-task-poll-rate-limited", "image-task-poll-resource-bound", "image-task-polling-deadline", "image-task-explicit-continuation", "image-task-terminal-failure", "image-task-timeout-or-unknown", "image-content-delivery-failure", "image-content-delivery-location", "image-delivery-terminal-boundary", "image-content-index-missing", "image-content-resource-bound"],
     "puretokens-video": ["video-model-alias-ambiguous", "video-normal-submission-skips-catalog", "video-failure-receipt-safe", "video-content-safety-failure", "video-submission-model-parameter-rejected", "video-submission-rate-limited", "video-submission-outcome-unknown", "video-submission-runtime-output-unknown", "video-unknown-submission-continuation-without-id", "video-model-unavailable", "video-model-parameter-profile-unavailable", "video-model-parameter-unsupported", "video-catalog-on-demand-unavailable", "video-execution-unavailable", "video-parameter-unsupported", "video-first-frame-operation-mapping", "video-generate-audio-intent-mapping", "video-resolution-mode-unsupported", "video-image-operation-profile-unavailable", "video-media-operation-profile-unavailable", "video-image-transport-unavailable", "video-native-attachment-route-locked", "video-native-attachment-path-unavailable", "video-public-url-reference-profile-unavailable", "video-public-url-reference-invalid", "video-public-url-reference-not-public", "video-public-url-reference-ambiguous", "video-prompt-requirement", "video-attachment-direct-api", "video-image-count-unsupported", "video-media-combination-unsupported", "video-input-media-unsupported", "video-task-id-normalization", "video-task-id-missing", "video-task-id-invalid", "video-task-state-unrecognized", "video-task-reconciliation-required", "video-task-pending", "video-task-poll-delay", "video-task-poll-rate-limited", "video-task-poll-resource-bound", "video-task-polling-deadline", "video-task-explicit-continuation", "video-task-terminal-failure", "video-task-timeout-or-unknown", "video-content-delivery-failure", "video-content-resource-bound"],
-    "puretokens-update": ["update-host-unknown", "update-terminal-unavailable", "update-native-installer-bootstrap", "update-validation-failed", "update-execution-unconfirmed", "update-unmanaged-conflict", "update-managed-retired-skill", "update-codex-legacy-plugin", "update-codex-legacy-plugin-unavailable", "update-managed-sync"]
+    "puretokens-update": ["update-host-unknown", "update-terminal-unavailable", "update-native-installer-bootstrap", "update-official-download-fallback", "update-validation-failed", "update-execution-unconfirmed", "update-unmanaged-conflict", "update-managed-retired-skill", "update-codex-legacy-plugin", "update-codex-legacy-plugin-unavailable", "update-managed-sync"]
   };
   for (const name of names) {
     const root = path.join(repositoryRoot, "skills", name, "references");
@@ -368,7 +370,9 @@ test("installed contracts cover bounded requests, task recovery, and user-facing
   assert.equal(update.operations.sync.validationCommand, "native_installer_downloads_compact_official_payload_and_performs_static_validation_before_sync");
   assert.equal(update.operations.sync.sourceBranch, "main");
   assert.equal(update.transport.usesCompactInstallPayload, true);
-  assert.equal(update.transport.payloadDownloadDeadlineSeconds, 45);
+  assert.equal(update.transport.payloadDownloadDeadlineSeconds, 40);
+  assert.equal(update.transport.payloadDownloadAttemptDeadlineSeconds, 20);
+  assert.equal(update.transport.usesOfficialGitHubApiFallback, true);
   assert.equal(update.result.neverOverwritesUnmanagedDirectories, true);
   assert.equal(update.result.removesVerifiedRetiredManagedSkills, true);
   assert.equal(update.result.reportsSynchronizedVersion, true);
@@ -561,17 +565,21 @@ test("native platform Skill installers ship with the managed runtime", async () 
   const run = promisify(execFile);
   await run("sh", ["-n", shellInstaller], { cwd: repositoryRoot });
   const [shellSource, powerShellSource] = await Promise.all([readFile(shellInstaller, "utf8"), readFile(powerShellInstaller, "utf8")]);
-  assert.match(shellSource, /payload_archive_url="https:\/\/raw\.githubusercontent\.com\/PureTokens\/puretokens-skill\/main\/dist\/puretokens-skill-install-payload\.zip"/);
-  assert.match(shellSource, /curl --fail --location --proto '=https'.*--max-time 45/);
+  assert.match(shellSource, /payload_archive_primary_url="https:\/\/api\.github\.com\/repos\/PureTokens\/puretokens-skill\/contents\/dist\/puretokens-skill-install-payload\.zip\?ref=main"/);
+  assert.match(shellSource, /payload_archive_fallback_url="https:\/\/raw\.githubusercontent\.com\/PureTokens\/puretokens-skill\/main\/dist\/puretokens-skill-install-payload\.zip"/);
+  assert.match(shellSource, /--max-time "\$payload_download_attempt_deadline_seconds"/);
+  assert.match(shellSource, /application\/vnd\.github\.raw\+json/);
+  assert.match(shellSource, /Downloading the compact official Pure Tokens Skill install payload through the official GitHub API\." >&2/);
   assert.match(shellSource, /unzip -q/);
   assert.match(shellSource, /unmanaged Skill conflicts/);
   assert.match(shellSource, /Pure Tokens Skills \$release_version synchronized at \$target_root/);
   assert.match(shellSource, /codex plugin list --json/);
   assert.match(shellSource, /codex plugin remove puretokens-media --json/);
   assert.doesNotMatch(shellSource, /node|npm|git clone/i);
-  assert.match(powerShellSource, /Invoke-WebRequest -Uri \$archiveUrl/);
+  assert.match(powerShellSource, /Invoke-WebRequest -Uri \$primaryArchiveUrl/);
+  assert.match(powerShellSource, /Invoke-WebRequest -Uri \$fallbackArchiveUrl/);
   assert.match(powerShellSource, /puretokens-skill-install-payload\.zip/);
-  assert.match(powerShellSource, /-TimeoutSec 45/);
+  assert.match(powerShellSource, /-TimeoutSec \$payloadDownloadAttemptDeadlineSeconds/);
   assert.match(powerShellSource, /Expand-Archive/);
   assert.match(powerShellSource, /unmanaged Skill conflicts/);
   assert.match(powerShellSource, /Pure Tokens Skills \$releaseVersion synchronized at \$targetRoot/);
@@ -796,7 +804,7 @@ test("CLI sync installs missing Skills and refuses unmanaged conflicts before wr
   for (const name of names) {
     assert.equal(JSON.parse(await readFile(path.join(target, name, "skill.json"), "utf8")).name, name);
   }
-  assert.equal(JSON.parse(await readFile(path.join(target, ".puretokens-runtime", "runtime.json"), "utf8")).version, "0.13.19");
+  assert.equal(JSON.parse(await readFile(path.join(target, ".puretokens-runtime", "runtime.json"), "utf8")).version, "0.13.20");
 });
 
 test("CLI refuses an unmanaged direct runtime before changing Skills", async (t) => {
@@ -859,7 +867,7 @@ test("CLI sync removes verified retired managed Skills and stale retired backups
 
   const { stdout } = await run(process.execPath, [path.join(repositoryRoot, "bin", "puretokens-skill.js"), "sync", "--target", target], { cwd: repositoryRoot });
   assert.equal((stdout.match(/Removed retired managed puretokens_image from/g) ?? []).length, 2);
-  assert.match(stdout, /Pure Tokens Skills 0\.13\.19 synchronized at/);
+  assert.match(stdout, /Pure Tokens Skills 0\.13\.20 synchronized at/);
   await assert.rejects(readFile(path.join(retired, "skill.json"), "utf8"));
   await assert.rejects(readFile(path.join(staleBackup, "skill.json"), "utf8"));
   assert.equal((await readdir(target)).some((entry) => entry.startsWith(".puretokens_image.retired-")), false);

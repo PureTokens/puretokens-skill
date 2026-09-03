@@ -20,10 +20,16 @@
 ```bash
 # macOS 或 Linux：将下方 target 替换为对应宿主目录。
 installer_dir="$(mktemp -d)"
-curl --fail --location --proto '=https' --tlsv1.2 \
-  https://raw.githubusercontent.com/PureTokens/puretokens-skill/main/runtime/puretokens-skill-install.sh \
-  --output "$installer_dir/puretokens-skill-install.sh"
-sh "$installer_dir/puretokens-skill-install.sh" sync --target "$HOME/.agents/skills"
+installer_file="$installer_dir/puretokens-skill-install.sh"
+if ! curl --fail --location --proto '=https' --proto-redir '=https' --tlsv1.2 --connect-timeout 7 --max-time 20 \
+  --header 'Accept: application/vnd.github.raw+json' --header 'X-GitHub-Api-Version: 2022-11-28' \
+  'https://api.github.com/repos/PureTokens/puretokens-skill/contents/runtime/puretokens-skill-install.sh?ref=main' \
+  --output "$installer_file"; then
+  curl --fail --location --proto '=https' --proto-redir '=https' --tlsv1.2 --connect-timeout 7 --max-time 20 \
+    'https://raw.githubusercontent.com/PureTokens/puretokens-skill/main/runtime/puretokens-skill-install.sh' \
+    --output "$installer_file"
+fi
+sh "$installer_file" sync --target "$HOME/.agents/skills"
 rm -rf "$installer_dir"
 ```
 
@@ -31,8 +37,13 @@ rm -rf "$installer_dir"
 # Windows PowerShell：将下方 target 替换为对应宿主目录。
 $installerDir = Join-Path ([System.IO.Path]::GetTempPath()) ("puretokens-skill-" + [Guid]::NewGuid().ToString("N"))
 New-Item -ItemType Directory -Path $installerDir | Out-Null
-Invoke-WebRequest https://raw.githubusercontent.com/PureTokens/puretokens-skill/main/runtime/puretokens-skill-install.ps1 -OutFile "$installerDir\puretokens-skill-install.ps1"
-& "$installerDir\puretokens-skill-install.ps1" sync -Target "$env:USERPROFILE\.agents\skills"
+$installerFile = Join-Path $installerDir "puretokens-skill-install.ps1"
+try {
+  Invoke-WebRequest 'https://api.github.com/repos/PureTokens/puretokens-skill/contents/runtime/puretokens-skill-install.ps1?ref=main' -Headers @{ Accept = "application/vnd.github.raw+json"; "X-GitHub-Api-Version" = "2022-11-28" } -OutFile $installerFile -TimeoutSec 20
+} catch {
+  Invoke-WebRequest 'https://raw.githubusercontent.com/PureTokens/puretokens-skill/main/runtime/puretokens-skill-install.ps1' -OutFile $installerFile -TimeoutSec 20
+}
+& $installerFile sync -Target "$env:USERPROFILE\.agents\skills"
 Remove-Item -LiteralPath $installerDir -Recurse -Force
 ```
 
@@ -92,7 +103,7 @@ Skill 绝不猜测分组名称，也不会声称某模型属于哪个分组；�
 
 ## Skill 升级
 
-`puretokens-update` 专门处理用户明确提出的安装、更新或同步本机官方 Skills 的请求。macOS/Linux 使用已安装的原生 Shell 安装器，Windows 使用已安装的 PowerShell 安装器。安装器通过 HTTPS 下载不含文档和品牌资源的紧凑官方安装载荷，下载最多 45 秒；随后在改动目标目录前做静态校验并执行同步。用户无需安装 Node、npm、包管理器、Git 或依赖。当前官方 Skill 全部安装或升级成功后，它会删除已验证的旧受管 Skill 目录，以及同名的旧隐藏备份，安装缺失官方 Skill，只升级受管且同名的当前 Skill 目录；只要遇到当前或旧的非受管同名目录，或非受管运行器目录，整个同步会在改动前停止。仅当目标是 Codex 目录时，它会通过官方 Codex 插件接口移除精确匹配且已安装的旧 `puretokens-media` 插件；无法移除时会明确提示用户到 Codex Plugins 卸载或联系工作区管理员。只有精确的带版本成功回执才能确认同步完成。它绝不读取连接设置或凭据，也绝不会在媒体任务中自行运行。
+`puretokens-update` 专门处理用户明确提出的安装、更新或同步本机官方 Skills 的请求。每次更新都会先把最新平台安装器下载到私有临时目录，再执行该本地文件，避免旧安装器持续使用过期网络路径。安装器通过 HTTPS 下载不含文档和品牌资源的紧凑官方安装载荷，并在同步前做静态校验。它先给 GitHub 官方 API raw-content 路径 20 秒；仅当该路径失败时，才通过 GitHub raw-content 路径再尝试一次、最多 20 秒。绝不使用第三方镜像、不再重试任一路径，也不会在载荷校验成功前开始同步。用户无需安装 Node、npm、包管理器、Git 或依赖。当前官方 Skill 全部安装或升级成功后，它会删除已验证的旧受管 Skill 目录，以及同名的旧隐藏备份，安装缺失官方 Skill，只升级受管且同名的当前 Skill 目录；只要遇到当前或旧的非受管同名目录，或非受管运行器目录，整个同步会在改动前停止。仅当目标是 Codex 目录时，它会通过官方 Codex 插件接口移除精确匹配且已安装的旧 `puretokens-media` 插件；无法移除时会明确提示用户到 Codex Plugins 卸载或联系工作区管理员。只有精确的带版本成功回执才能确认同步完成。它绝不读取连接设置或凭据，也绝不会在媒体任务中自行运行。
 
 ## 图片尺寸和数量
 

@@ -4,6 +4,10 @@
 
 # Changelog
 
+## 0.13.20 — 2026-09-03
+
+- Made native Skill updates fit short host command windows more reliably. The compact payload now gets one 20-second attempt through GitHub's official API raw-content endpoint and, only if that fails, one further 20-second attempt from GitHub raw content. Each update also bootstraps the latest platform installer before execution, so an older installed installer cannot retain an obsolete network path. No third-party mirror, repeated source retry, or target synchronization occurs before static payload validation succeeds.
+
 ## 0.13.19 — 2026-09-03
 
 - Strengthened direct credential binding. A runtime now uses a configured key only when its documented host configuration explicitly identifies the fixed Pure Tokens endpoint; it never sends a key from a local, client-managed, or unrelated connection to the Pure Tokens API. The configured URL only establishes credential provenance—every balance, connection, models, Images, and Videos request still uses the fixed public API URL.

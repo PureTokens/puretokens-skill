@@ -440,7 +440,8 @@ function validateExecutionContract(errors, directory, contract) {
 function validateUpdateContract(errors, label, contract) {
   const transport = contract.transport;
   if (!transport || transport.localSkillManager !== true || transport.usesOfficialMainBranch !== true ||
-    transport.usesCompactInstallPayload !== true || transport.payloadDownloadDeadlineSeconds !== 45 ||
+    transport.usesCompactInstallPayload !== true || transport.payloadDownloadDeadlineSeconds !== 40 ||
+    transport.payloadDownloadAttemptDeadlineSeconds !== 20 || transport.usesOfficialGitHubApiFallback !== true ||
     transport.doesNotReadCredentialsOrHostConfiguration !== true || transport.doesNotUseMediaApiOrMcp !== true) {
     errors.push(`${label} must use the local official Skill manager without credentials, media APIs, or MCP`);
   }

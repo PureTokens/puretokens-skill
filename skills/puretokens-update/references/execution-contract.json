@@ -6,7 +6,9 @@
     "localSkillManager": true,
     "usesOfficialMainBranch": true,
     "usesCompactInstallPayload": true,
-    "payloadDownloadDeadlineSeconds": 45,
+    "payloadDownloadDeadlineSeconds": 40,
+    "payloadDownloadAttemptDeadlineSeconds": 20,
+    "usesOfficialGitHubApiFallback": true,
     "doesNotReadCredentialsOrHostConfiguration": true,
     "doesNotUseMediaApiOrMcp": true
   },

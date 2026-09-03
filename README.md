@@ -20,10 +20,16 @@ Install the Skills you need into the supported host's documented global Skill di
 ```bash
 # macOS or Linux — replace the target with your host's directory below.
 installer_dir="$(mktemp -d)"
-curl --fail --location --proto '=https' --tlsv1.2 \
-  https://raw.githubusercontent.com/PureTokens/puretokens-skill/main/runtime/puretokens-skill-install.sh \
-  --output "$installer_dir/puretokens-skill-install.sh"
-sh "$installer_dir/puretokens-skill-install.sh" sync --target "$HOME/.agents/skills"
+installer_file="$installer_dir/puretokens-skill-install.sh"
+if ! curl --fail --location --proto '=https' --proto-redir '=https' --tlsv1.2 --connect-timeout 7 --max-time 20 \
+  --header 'Accept: application/vnd.github.raw+json' --header 'X-GitHub-Api-Version: 2022-11-28' \
+  'https://api.github.com/repos/PureTokens/puretokens-skill/contents/runtime/puretokens-skill-install.sh?ref=main' \
+  --output "$installer_file"; then
+  curl --fail --location --proto '=https' --proto-redir '=https' --tlsv1.2 --connect-timeout 7 --max-time 20 \
+    'https://raw.githubusercontent.com/PureTokens/puretokens-skill/main/runtime/puretokens-skill-install.sh' \
+    --output "$installer_file"
+fi
+sh "$installer_file" sync --target "$HOME/.agents/skills"
 rm -rf "$installer_dir"
 ```
 
@@ -31,8 +37,13 @@ rm -rf "$installer_dir"
 # Windows PowerShell — replace the target with your host's directory below.
 $installerDir = Join-Path ([System.IO.Path]::GetTempPath()) ("puretokens-skill-" + [Guid]::NewGuid().ToString("N"))
 New-Item -ItemType Directory -Path $installerDir | Out-Null
-Invoke-WebRequest https://raw.githubusercontent.com/PureTokens/puretokens-skill/main/runtime/puretokens-skill-install.ps1 -OutFile "$installerDir\puretokens-skill-install.ps1"
-& "$installerDir\puretokens-skill-install.ps1" sync -Target "$env:USERPROFILE\.agents\skills"
+$installerFile = Join-Path $installerDir "puretokens-skill-install.ps1"
+try {
+  Invoke-WebRequest 'https://api.github.com/repos/PureTokens/puretokens-skill/contents/runtime/puretokens-skill-install.ps1?ref=main' -Headers @{ Accept = "application/vnd.github.raw+json"; "X-GitHub-Api-Version" = "2022-11-28" } -OutFile $installerFile -TimeoutSec 20
+} catch {
+  Invoke-WebRequest 'https://raw.githubusercontent.com/PureTokens/puretokens-skill/main/runtime/puretokens-skill-install.ps1' -OutFile $installerFile -TimeoutSec 20
+}
+& $installerFile sync -Target "$env:USERPROFILE\.agents\skills"
 Remove-Item -LiteralPath $installerDir -Recurse -Force
 ```
 
@@ -92,7 +103,7 @@ The Skill never guesses a group name or claims which group contains a model: the
 
 ## Skill updates
 
-`puretokens-update` handles explicit requests to install, update, or synchronize local official Skills. On macOS/Linux it runs the installed native shell installer; on Windows it runs the installed PowerShell installer. The installer downloads a compact official install payload over HTTPS, excluding documentation and brand assets, and limits that download to 45 seconds before static validation and synchronization. It requires no user-installed Node, npm, package manager, Git, or dependency installation. After every current official Skill installs or upgrades successfully, it removes verified retired managed Skill directories and old matching hidden retired backups, installs missing official Skills, and upgrades only managed matching Skill directories; an unmanaged current or retired same-name directory, or an unmanaged runtime directory, stops the whole sync before any target is changed. For the Codex target only, it uses the official Codex plugin interface to remove the exact installed legacy `puretokens-media` plugin; if that cannot be done, it tells the user to remove it in Codex Plugins or ask the workspace administrator. Only the exact versioned success receipt confirms completion. It never reads connection settings or credentials, and it never runs automatically during media work.
+`puretokens-update` handles explicit requests to install, update, or synchronize local official Skills. Each update first downloads the latest platform installer into a private temporary directory and runs that local file, so an older installed installer cannot keep an obsolete network path. The installer downloads a compact official install payload over HTTPS, excluding documentation and brand assets, then statically validates it before synchronization. It first gives GitHub's official API raw-content path 20 seconds; only if that fails, it gives GitHub's raw-content path one further 20-second attempt. It never uses a third-party mirror, retries either source again, or starts synchronization until a payload validates. It requires no user-installed Node, npm, package manager, Git, or dependency installation. After every current official Skill installs or upgrades successfully, it removes verified retired managed Skill directories and old matching hidden retired backups, installs missing official Skills, and upgrades only managed matching Skill directories; an unmanaged current or retired same-name directory, or an unmanaged runtime directory, stops the whole sync before any target is changed. For the Codex target only, it uses the official Codex plugin interface to remove the exact installed legacy `puretokens-media` plugin; if that cannot be done, it tells the user to remove it in Codex Plugins or ask the workspace administrator. Only the exact versioned success receipt confirms completion. It never reads connection settings or credentials, and it never runs automatically during media work.
 
 ## Image sizes and count
 

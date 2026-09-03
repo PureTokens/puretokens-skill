@@ -163,12 +163,14 @@
     },
     "updateTransport": {
       "type": "object",
-      "required": ["localSkillManager", "usesOfficialMainBranch", "usesCompactInstallPayload", "payloadDownloadDeadlineSeconds", "doesNotReadCredentialsOrHostConfiguration", "doesNotUseMediaApiOrMcp"],
+      "required": ["localSkillManager", "usesOfficialMainBranch", "usesCompactInstallPayload", "payloadDownloadDeadlineSeconds", "payloadDownloadAttemptDeadlineSeconds", "usesOfficialGitHubApiFallback", "doesNotReadCredentialsOrHostConfiguration", "doesNotUseMediaApiOrMcp"],
       "properties": {
         "localSkillManager": { "const": true },
         "usesOfficialMainBranch": { "const": true },
         "usesCompactInstallPayload": { "const": true },
-        "payloadDownloadDeadlineSeconds": { "const": 45 },
+        "payloadDownloadDeadlineSeconds": { "const": 40 },
+        "payloadDownloadAttemptDeadlineSeconds": { "const": 20 },
+        "usesOfficialGitHubApiFallback": { "const": true },
         "doesNotReadCredentialsOrHostConfiguration": { "const": true },
         "doesNotUseMediaApiOrMcp": { "const": true }
       },

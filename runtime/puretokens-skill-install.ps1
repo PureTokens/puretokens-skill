@@ -8,7 +8,9 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$archiveUrl = "https://raw.githubusercontent.com/PureTokens/puretokens-skill/main/dist/puretokens-skill-install-payload.zip"
+$primaryArchiveUrl = "https://api.github.com/repos/PureTokens/puretokens-skill/contents/dist/puretokens-skill-install-payload.zip?ref=main"
+$fallbackArchiveUrl = "https://raw.githubusercontent.com/PureTokens/puretokens-skill/main/dist/puretokens-skill-install-payload.zip"
+$payloadDownloadAttemptDeadlineSeconds = 20
 $currentSkills = @("puretokens-balance", "puretokens-connection", "puretokens-models", "puretokens-image", "puretokens-video", "puretokens-update")
 $retiredSkills = @("puretokens_media", "puretokens_balance", "puretokens_connection", "puretokens_models", "puretokens_image", "puretokens_video", "puretokens_update", "puretokens_get_balance", "puretokens_get_model_price", "puretokens_workbuddy_router")
 
@@ -40,6 +42,21 @@ function Test-OfficialSource([string]$SourceRoot) {
   if (-not (Test-Path -LiteralPath (Join-Path $runtime "puretokens-skill-install.sh") -PathType Leaf)) { Fail "official source is missing the macOS/Linux native installer" }
   foreach ($name in $currentSkills) {
     if (-not (Test-ManagedSkill (Join-Path (Join-Path $SourceRoot "skills") $name) $name)) { Fail "official source has an invalid Skill: $name" }
+  }
+}
+
+function Download-OfficialPayload([string]$Archive) {
+  Write-Output "Downloading the compact official Pure Tokens Skill install payload through the official GitHub API."
+  try {
+    Invoke-WebRequest -Uri $primaryArchiveUrl -Headers @{ Accept = "application/vnd.github.raw+json"; "X-GitHub-Api-Version" = "2022-11-28" } -OutFile $Archive -TimeoutSec $payloadDownloadAttemptDeadlineSeconds
+    return
+  } catch {
+    Write-Output "The official GitHub API download path was unavailable; trying GitHub raw content once."
+  }
+  try {
+    Invoke-WebRequest -Uri $fallbackArchiveUrl -OutFile $Archive -TimeoutSec $payloadDownloadAttemptDeadlineSeconds
+  } catch {
+    Fail "could not download the compact official Pure Tokens Skill install payload from either official GitHub path within two 20-second attempts"
   }
 }
 
@@ -87,7 +104,7 @@ $workspace = Join-Path ([System.IO.Path]::GetTempPath()) ("puretokens-skill-" + 
 try {
   New-Item -ItemType Directory -Path $workspace | Out-Null
   $archive = Join-Path $workspace "puretokens-skill-install-payload.zip"
-  Invoke-WebRequest -Uri $archiveUrl -OutFile $archive -TimeoutSec 45
+  Download-OfficialPayload $archive
   $unpacked = Join-Path $workspace "unpacked"
   Expand-Archive -LiteralPath $archive -DestinationPath $unpacked
   $sourceRoot = Join-Path $unpacked "puretokens-skill-main"
