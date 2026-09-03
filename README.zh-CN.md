@@ -66,7 +66,7 @@ CC Switch 是连接配置工具，不是 Skill 宿主。Skill 自身始终调用
 
 ## 直连 API 契约
 
-面向 API 的 Skill 都调用固定的公开 API origin：`https://api.puretokensx.com`。请求使用完整 URL，不使用用户选择的 Base URL 或备用 endpoint。安装在 Skill 同级目录的受管 `.puretokens-runtime/puretokens-direct-api.mjs` 会在 Claude Code、Codex、WorkBuddy、Gemini CLI、Grok Build 和 OpenCode 中，只从各宿主已记录的固定配置位置狭义匹配一个 Pure Tokens 凭据。通常配置应指向 `https://api.puretokensx.com/v1`（或规定的仅 origin 形式）；WorkBuddy 也允许在相同固定 origin 下保存无 query、无 fragment 的 `/v1/...` 单模型资源 URL。它只在内存中保留该凭据，并且只用于允许的固定 Pure Tokens API 路径认证。它绝不打印、复制、保存或索取 Key；不接受任意 URL，不使用 MCP、代理或 sidecar。`puretokens-update` 只处理本机更新，不调用 API endpoint。
+面向 API 的 Skill 都调用固定的公开 API origin：`https://api.puretokensx.com`。请求使用完整 URL，不使用用户选择的 Base URL 或备用 endpoint。安装在 Skill 同级目录的受管 `.puretokens-runtime/puretokens-direct-api.mjs` 会在 Claude Code、Codex、WorkBuddy、Gemini CLI、Grok Build 和 OpenCode 中，只从各宿主已记录的固定配置位置狭义匹配一把 Pure Tokens 凭据。通常配置应指向 `https://api.puretokensx.com/v1`（或规定的仅 origin 形式）；WorkBuddy 也允许在相同固定 origin 下保存无 query、无 fragment 的 `/v1/...` 单模型资源 URL。该配置仅用于绑定凭据来源，绝不作为请求目标复用。运行器只在内存中保留该凭据，并且只用于允许的固定 Pure Tokens API 路径认证。它绝不打印、复制、保存或索取 Key；不接受任意 URL，不使用 MCP、代理或 sidecar。`puretokens-update` 只处理本机更新，不调用 API endpoint。
 
 直连契约要求已认证的完整 URL HTTPS 请求、JSON 任务响应、同任务状态查询和原生媒体字节交付。Claude Code、Codex、WorkBuddy、Gemini CLI、Grok Build 和 OpenCode 通过受管本地运行器完成认证绑定。WorkBuddy 的 POST 请求体使用一个有界、规范的 Base64 参数，而不是标准输入，因为它的 Bash 执行链路不能可靠关闭 stdin；运行器只在内存中解码。Trae 是手动配置例外：当前没有已批准的本地凭据读取契约，Skill 会安全停止，而不会读取或猜测其用户状态。
 

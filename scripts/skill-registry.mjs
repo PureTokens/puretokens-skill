@@ -187,6 +187,8 @@ function validateDirectApiExecutionContract(errors, contract, hostSupport) {
     contract.authentication.usesConfiguredConnectionCredential !== true ||
     !sameArray(contract.authentication.managedRuntimeHosts, managedRuntimeHostIds) ||
     contract.authentication.credentialUse !== "in_memory_only_for_fixed_puretokens_api_requests" ||
+    contract.authentication.credentialSourceMustMatchFixedPureTokensEndpoint !== true ||
+    contract.authentication.credentialSourceNeverBecomesRequestTarget !== true ||
     contract.authentication.neverDisplaysCopiesStoresOrRequestsCredentials !== true ||
     !transport || transport.usesFullApiUrls !== true || transport.doesNotUseMcp !== true ||
     transport.doesNotUseLocalProxyOrSidecar !== true || transport.doesNotUseFallbackEndpoint !== true ||

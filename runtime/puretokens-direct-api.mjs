@@ -134,6 +134,7 @@ export async function resolveClaudeCodeCredential(settingsPath = claudeSettingsP
 
 export async function resolveCodexCredential(configPath = codexConfigPath, authPath = codexAuthPath) {
   const connection = parseCodexConnection(await readConfigurationText(configPath, "Codex"));
+  // This is credential-source eligibility only. main() always sends the API request to apiOrigin.
   if (!isPureTokensApiEndpoint(connection.baseUrl)) {
     throw new Error("No usable Pure Tokens API credential is configured for Codex.");
   }

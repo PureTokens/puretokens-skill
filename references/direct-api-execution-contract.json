@@ -6,6 +6,8 @@
     "usesConfiguredConnectionCredential": true,
     "managedRuntimeHosts": ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode"],
     "credentialUse": "in_memory_only_for_fixed_puretokens_api_requests",
+    "credentialSourceMustMatchFixedPureTokensEndpoint": true,
+    "credentialSourceNeverBecomesRequestTarget": true,
     "neverDisplaysCopiesStoresOrRequestsCredentials": true
   },
   "transport": {

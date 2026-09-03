@@ -10,7 +10,7 @@
     "apiOrigin": { "const": "https://api.puretokensx.com" },
     "authentication": {
       "type": "object",
-      "required": ["usesConfiguredConnectionCredential", "managedRuntimeHosts", "credentialUse", "neverDisplaysCopiesStoresOrRequestsCredentials"],
+      "required": ["usesConfiguredConnectionCredential", "managedRuntimeHosts", "credentialUse", "credentialSourceMustMatchFixedPureTokensEndpoint", "credentialSourceNeverBecomesRequestTarget", "neverDisplaysCopiesStoresOrRequestsCredentials"],
       "properties": {
         "usesConfiguredConnectionCredential": { "const": true },
         "managedRuntimeHosts": {
@@ -18,6 +18,8 @@
           "const": ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode"]
         },
         "credentialUse": { "const": "in_memory_only_for_fixed_puretokens_api_requests" },
+        "credentialSourceMustMatchFixedPureTokensEndpoint": { "const": true },
+        "credentialSourceNeverBecomesRequestTarget": { "const": true },
         "neverDisplaysCopiesStoresOrRequestsCredentials": { "const": true }
       },
       "additionalProperties": false

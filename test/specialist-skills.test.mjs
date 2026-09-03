@@ -30,7 +30,7 @@ test("registry exposes exactly the six specialist Skills", async () => {
   const { registry, records } = await collectSkillRecords();
   assert.deepEqual(registry.skills.map((skill) => skill.name), names);
   assert.equal(records.length, 6);
-  assert.deepEqual([...new Set(records.map((record) => record.manifest.version))], ["0.13.17"]);
+  assert.deepEqual([...new Set(records.map((record) => record.manifest.version))], ["0.13.19"]);
   assert.deepEqual(await validateRepository(), []);
 });
 
@@ -415,6 +415,8 @@ test("distribution matrix and fixed direct API contract match every specialist m
     usesConfiguredConnectionCredential: true,
     managedRuntimeHosts: ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode"],
     credentialUse: "in_memory_only_for_fixed_puretokens_api_requests",
+    credentialSourceMustMatchFixedPureTokensEndpoint: true,
+    credentialSourceNeverBecomesRequestTarget: true,
     neverDisplaysCopiesStoresOrRequestsCredentials: true
   });
   assert.deepEqual(directContract.transport, {
@@ -683,7 +685,7 @@ test("Codex direct runtime resolves only the active exact Pure Tokens provider",
   assert.equal(await resolveCodexCredential(configPath, authPath), "test-codex-key");
   await writeFile(configPath, activeConfig.replace('experimental_bearer_token = "test-codex-key"', ""));
   assert.equal(await resolveCodexCredential(configPath, authPath), "fallback-key");
-  await writeFile(configPath, activeConfig.replace("https://api.puretokensx.com/v1", "https://example.com/v1"));
+  await writeFile(configPath, activeConfig.replace("https://api.puretokensx.com/v1", "https://client-managed.invalid/v1"));
   await assert.rejects(resolveCodexCredential(configPath, authPath), /No usable Pure Tokens API credential/);
 });
 
@@ -754,6 +756,10 @@ test("WorkBuddy direct runtime resolves one credential from fixed API base or re
     { url: "https://api.puretokensx.com/v1/responses", apiKey: "second-key" }
   ]));
   await assert.rejects(resolveWorkBuddyCredential(configPath), /Multiple different Pure Tokens API credentials/);
+  await writeFile(configPath, JSON.stringify([
+    { url: "https://client-managed.invalid/v1/chat/completions", apiKey: "not-a-match", ptsManaged: true }
+  ]));
+  await assert.rejects(resolveWorkBuddyCredential(configPath), /No usable Pure Tokens API credential/);
 });
 
 test("CLI installs each specialist Skill", async (t) => {
@@ -790,7 +796,7 @@ test("CLI sync installs missing Skills and refuses unmanaged conflicts before wr
   for (const name of names) {
     assert.equal(JSON.parse(await readFile(path.join(target, name, "skill.json"), "utf8")).name, name);
   }
-  assert.equal(JSON.parse(await readFile(path.join(target, ".puretokens-runtime", "runtime.json"), "utf8")).version, "0.13.17");
+  assert.equal(JSON.parse(await readFile(path.join(target, ".puretokens-runtime", "runtime.json"), "utf8")).version, "0.13.19");
 });
 
 test("CLI refuses an unmanaged direct runtime before changing Skills", async (t) => {
@@ -853,7 +859,7 @@ test("CLI sync removes verified retired managed Skills and stale retired backups
 
   const { stdout } = await run(process.execPath, [path.join(repositoryRoot, "bin", "puretokens-skill.js"), "sync", "--target", target], { cwd: repositoryRoot });
   assert.equal((stdout.match(/Removed retired managed puretokens_image from/g) ?? []).length, 2);
-  assert.match(stdout, /Pure Tokens Skills 0\.13\.17 synchronized at/);
+  assert.match(stdout, /Pure Tokens Skills 0\.13\.19 synchronized at/);
   await assert.rejects(readFile(path.join(retired, "skill.json"), "utf8"));
   await assert.rejects(readFile(path.join(staleBackup, "skill.json"), "utf8"));
   assert.equal((await readdir(target)).some((entry) => entry.startsWith(".puretokens_image.retired-")), false);

@@ -4,6 +4,10 @@
 
 # Changelog
 
+## 0.13.19 — 2026-09-03
+
+- Strengthened direct credential binding. A runtime now uses a configured key only when its documented host configuration explicitly identifies the fixed Pure Tokens endpoint; it never sends a key from a local, client-managed, or unrelated connection to the Pure Tokens API. The configured URL only establishes credential provenance—every balance, connection, models, Images, and Videos request still uses the fixed public API URL.
+
 ## 0.13.17 — 2026-09-03
 
 - Optimized `puretokens-update` for hosts with short command windows. Native installers now download a compact, static-validated official install payload that excludes documentation and brand assets, instead of the full repository archive; each payload download has a 45-second hard limit. A host timeout or interruption is now explicitly an unconfirmed result, never a claimed upgrade or guessed version.
