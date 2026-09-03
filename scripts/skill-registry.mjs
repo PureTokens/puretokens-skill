@@ -450,9 +450,10 @@ function validateUpdateContract(errors, label, contract) {
   if (!result || result.installsMissingOfficialSkills !== true || result.upgradesOnlyManagedMatchingSkills !== true ||
     result.neverOverwritesUnmanagedDirectories !== true || result.removesVerifiedRetiredManagedSkills !== true ||
     result.reportsSynchronizedVersion !== true ||
+    result.removesLegacyCodexPluginWhenPresent !== true || result.reportsLegacyCodexPluginManualActionWhenUnavailable !== true ||
     result.neverModifiesOfficialCheckout !== true ||
     result.requiresNewHostConversationAfterSuccess !== true) {
-    errors.push(`${label} must preserve the official checkout, remove only verified retired Skills, preserve unmanaged directories, report the synchronized version, and report a new-conversation requirement`);
+    errors.push(`${label} must preserve the official checkout, remove only verified retired Skills and the exact legacy Codex plugin, preserve unmanaged directories, report the synchronized version and unavailable plugin migration, and report a new-conversation requirement`);
   }
 }
 

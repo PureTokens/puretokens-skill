@@ -4,6 +4,10 @@
 
 # 更新日志
 
+## 0.13.16 — 2026-09-03
+
+- 为 `puretokens-update` 增加仅限 Codex 的旧插件迁移：同步 Codex 的 `~/.agents/skills` 时，会在 Skill 同步成功后只通过官方 Codex 插件接口检查并移除精确匹配且已安装的 `puretokens-media`。如果无法检查或卸载（包括工作区受管场景），会明确提示用户到 Plugins 操作或联系管理员，绝不虚报成功。
+
 ## 0.13.15 — 2026-09-03
 
 - `puretokens-update` 成功完成后会在安装、升级和旧 Skill 清理结果后，明确报告本次同步的官方 Skill 版本号。

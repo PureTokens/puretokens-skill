@@ -57,6 +57,32 @@ function Restore-Target([string]$TargetRoot, [string]$StageRoot, [string[]]$Repl
   }
 }
 
+function Remove-LegacyCodexPlugin([string]$TargetRoot) {
+  $codexTarget = [System.IO.Path]::GetFullPath((Join-Path $env:USERPROFILE ".agents\skills")).TrimEnd('\\')
+  if (-not [string]::Equals($TargetRoot.TrimEnd('\\'), $codexTarget, [System.StringComparison]::OrdinalIgnoreCase)) { return }
+  $codex = Get-Command codex -ErrorAction SilentlyContinue
+  if ($null -eq $codex) {
+    Write-Output "Codex legacy-plugin migration was skipped because the Codex CLI is unavailable. If Puretokens Media is installed, remove it in Codex Plugins before opening a new conversation."
+    return
+  }
+  try {
+    $pluginOutput = & $codex.Source plugin list --json 2>$null
+    if ($LASTEXITCODE -ne 0) { throw "plugin list failed" }
+    $plugins = ($pluginOutput -join "`n") | ConvertFrom-Json
+    $legacyPlugin = @($plugins.installed | Where-Object { $_.name -eq "puretokens-media" })
+  } catch {
+    Write-Output "Codex legacy-plugin migration could not inspect installed plugins. If Puretokens Media is installed, remove it in Codex Plugins before opening a new conversation."
+    return
+  }
+  if ($legacyPlugin.Count -eq 0) { return }
+  & $codex.Source plugin remove puretokens-media --json *> $null
+  if ($LASTEXITCODE -eq 0) {
+    Write-Output "Removed legacy Codex plugin puretokens-media"
+  } else {
+    Write-Output "Codex could not remove the legacy Puretokens Media plugin. Remove it in Codex Plugins, or ask the workspace administrator if it is managed, before opening a new conversation."
+  }
+}
+
 $workspace = Join-Path ([System.IO.Path]::GetTempPath()) ("puretokens-skill-" + [Guid]::NewGuid().ToString("N"))
 try {
   New-Item -ItemType Directory -Path $workspace | Out-Null
@@ -125,6 +151,7 @@ try {
     }
   }
   Remove-Item -LiteralPath $stageRoot -Recurse -Force
+  Remove-LegacyCodexPlugin $targetRoot
   Write-Output "Pure Tokens Skills $releaseVersion synchronized at $targetRoot"
 } finally {
   if (Test-Path -LiteralPath $workspace) { Remove-Item -LiteralPath $workspace -Recurse -Force }

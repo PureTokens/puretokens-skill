@@ -4,6 +4,10 @@
 
 # Changelog
 
+## 0.13.16 — 2026-09-03
+
+- Added a Codex-only legacy-plugin migration to `puretokens-update`. When synchronizing Codex's `~/.agents/skills`, it uses only the official Codex plugin interface to detect and remove the exact installed `puretokens-media` plugin after Skill synchronization. If the plugin cannot be inspected or removed, including workspace-managed cases, it reports the required Plugins or administrator action instead of claiming success.
+
 ## 0.13.15 — 2026-09-03
 
 - A successful `puretokens-update` now reports the exact synchronized official Skill version after listing its installation, upgrade, and retired-Skill cleanup results.

@@ -126,13 +126,15 @@
             }
           },
           "result": {
-            "required": ["installsMissingOfficialSkills", "upgradesOnlyManagedMatchingSkills", "neverOverwritesUnmanagedDirectories", "removesVerifiedRetiredManagedSkills", "reportsSynchronizedVersion", "neverModifiesOfficialCheckout", "requiresNewHostConversationAfterSuccess"],
+            "required": ["installsMissingOfficialSkills", "upgradesOnlyManagedMatchingSkills", "neverOverwritesUnmanagedDirectories", "removesVerifiedRetiredManagedSkills", "reportsSynchronizedVersion", "removesLegacyCodexPluginWhenPresent", "reportsLegacyCodexPluginManualActionWhenUnavailable", "neverModifiesOfficialCheckout", "requiresNewHostConversationAfterSuccess"],
             "properties": {
               "installsMissingOfficialSkills": { "const": true },
               "upgradesOnlyManagedMatchingSkills": { "const": true },
               "neverOverwritesUnmanagedDirectories": { "const": true },
               "removesVerifiedRetiredManagedSkills": { "const": true },
               "reportsSynchronizedVersion": { "const": true },
+              "removesLegacyCodexPluginWhenPresent": { "const": true },
+              "reportsLegacyCodexPluginManualActionWhenUnavailable": { "const": true },
               "neverModifiesOfficialCheckout": { "const": true },
               "requiresNewHostConversationAfterSuccess": { "const": true }
             }

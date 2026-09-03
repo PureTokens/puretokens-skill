@@ -1,14 +1,18 @@
 #!/usr/bin/env node
 
+import { execFile as execFileCallback } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { cp, mkdir, readFile, readdir, rename, rm, stat } from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import process from "node:process";
+import { promisify } from "node:util";
 import { collectSkillRecords, repositoryRoot, skillsRoot, validateRepository } from "../scripts/skill-registry.mjs";
 
 const [command, ...argumentsList] = process.argv.slice(2);
 const managedRuntimeDirectoryName = ".puretokens-runtime";
 const runtimeSource = path.join(repositoryRoot, "runtime");
+const execFile = promisify(execFileCallback);
 const retiredSkillNames = [
   "puretokens_media",
   "puretokens_balance",
@@ -146,7 +150,35 @@ async function syncSkills(args) {
     await rm(item.destination, { recursive: true, force: false });
     process.stdout.write(`Removed retired managed ${item.name} from ${item.destination}\n`);
   }
+  await migrateLegacyCodexPlugin(root);
   process.stdout.write(`Pure Tokens Skills ${releaseVersion} synchronized at ${root}\n`);
+}
+
+async function migrateLegacyCodexPlugin(root) {
+  if (path.resolve(root) !== path.resolve(os.homedir(), ".agents", "skills")) return;
+  let pluginList;
+  try {
+    ({ stdout: pluginList } = await execFile("codex", ["plugin", "list", "--json"], { maxBuffer: 256 * 1024 }));
+  } catch {
+    process.stdout.write("Codex legacy-plugin migration was skipped because the Codex CLI is unavailable. If Puretokens Media is installed, remove it in Codex Plugins before opening a new conversation.\n");
+    return;
+  }
+  let legacyPluginInstalled;
+  try {
+    const payload = JSON.parse(pluginList);
+    const installedPlugins = Array.isArray(payload) ? payload : payload?.installed;
+    legacyPluginInstalled = Array.isArray(installedPlugins) && installedPlugins.some((plugin) => plugin?.name === "puretokens-media");
+  } catch {
+    process.stdout.write("Codex legacy-plugin migration could not inspect installed plugins. If Puretokens Media is installed, remove it in Codex Plugins before opening a new conversation.\n");
+    return;
+  }
+  if (!legacyPluginInstalled) return;
+  try {
+    await execFile("codex", ["plugin", "remove", "puretokens-media", "--json"], { maxBuffer: 256 * 1024 });
+    process.stdout.write("Removed legacy Codex plugin puretokens-media\n");
+  } catch {
+    process.stdout.write("Codex could not remove the legacy Puretokens Media plugin. Remove it in Codex Plugins, or ask the workspace administrator if it is managed, before opening a new conversation.\n");
+  }
 }
 
 async function retiredSkillDestinations(root, name) {

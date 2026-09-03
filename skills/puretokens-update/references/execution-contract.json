@@ -22,6 +22,8 @@
     "neverOverwritesUnmanagedDirectories": true,
     "removesVerifiedRetiredManagedSkills": true,
     "reportsSynchronizedVersion": true,
+    "removesLegacyCodexPluginWhenPresent": true,
+    "reportsLegacyCodexPluginManualActionWhenUnavailable": true,
     "neverModifiesOfficialCheckout": true,
     "requiresNewHostConversationAfterSuccess": true
   }

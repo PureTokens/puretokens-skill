@@ -40,6 +40,28 @@ managed_release_version() {
   esac
 }
 
+migrate_legacy_codex_plugin() {
+  target_root=$1
+  [ -n "${HOME:-}" ] || return 0
+  [ "$target_root" = "$HOME/.agents/skills" ] || return 0
+  if ! command -v codex >/dev/null 2>&1; then
+    printf '%s\n' "Codex legacy-plugin migration was skipped because the Codex CLI is unavailable. If Puretokens Media is installed, remove it in Codex Plugins before opening a new conversation."
+    return 0
+  fi
+  plugin_list=$(codex plugin list --json 2>/dev/null) || {
+    printf '%s\n' "Codex legacy-plugin migration could not inspect installed plugins. If Puretokens Media is installed, remove it in Codex Plugins before opening a new conversation."
+    return 0
+  }
+  if ! printf '%s' "$plugin_list" | grep -Eq '"name"[[:space:]]*:[[:space:]]*"puretokens-media"'; then
+    return 0
+  fi
+  if codex plugin remove puretokens-media --json >/dev/null 2>&1; then
+    printf '%s\n' "Removed legacy Codex plugin puretokens-media"
+  else
+    printf '%s\n' "Codex could not remove the legacy Puretokens Media plugin. Remove it in Codex Plugins, or ask the workspace administrator if it is managed, before opening a new conversation."
+  fi
+}
+
 validate_source() {
   source_root=$1
   [ -f "$source_root/README.md" ] || fail "official source is missing README.md"
@@ -145,6 +167,7 @@ sync_target() {
     done
   done
   rm -rf -- "$stage_root"
+  migrate_legacy_codex_plugin "$target_root"
   printf '%s\n' "Pure Tokens Skills $release_version synchronized at $target_root"
 }
 
