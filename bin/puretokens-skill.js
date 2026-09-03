@@ -101,6 +101,8 @@ async function syncSkills(args) {
   const options = parseSyncOptions(args);
   const root = resolveInstallRoot(options.target);
   const { registry } = await collectSkillRecords();
+  const releaseVersion = registry.skills[0]?.version;
+  if (!releaseVersion) throw new Error("Repository validation failed: official Skill version is missing");
   const errors = await validateRepository();
   if (errors.length) throw new Error(`Repository validation failed:\n${errors.map((error) => `- ${error}`).join("\n")}`);
 
@@ -144,6 +146,7 @@ async function syncSkills(args) {
     await rm(item.destination, { recursive: true, force: false });
     process.stdout.write(`Removed retired managed ${item.name} from ${item.destination}\n`);
   }
+  process.stdout.write(`Pure Tokens Skills ${releaseVersion} synchronized at ${root}\n`);
 }
 
 async function retiredSkillDestinations(root, name) {

@@ -30,7 +30,7 @@ test("registry exposes exactly the six specialist Skills", async () => {
   const { registry, records } = await collectSkillRecords();
   assert.deepEqual(registry.skills.map((skill) => skill.name), names);
   assert.equal(records.length, 6);
-  assert.deepEqual([...new Set(records.map((record) => record.manifest.version))], ["0.13.14"]);
+  assert.deepEqual([...new Set(records.map((record) => record.manifest.version))], ["0.13.15"]);
   assert.deepEqual(await validateRepository(), []);
 });
 
@@ -103,6 +103,7 @@ test("specialist manifests use the fixed direct API with a narrow configured-cre
       assert.equal(manifest.rules.usesManagedSkillSync, true);
       assert.equal(manifest.rules.neverOverwritesUnmanagedDirectories, true);
       assert.equal(manifest.rules.removesVerifiedRetiredSkills, true);
+      assert.equal(manifest.rules.reportsSynchronizedVersion, true);
       assert.equal(manifest.rules.doesNotReadCredentialsOrHostConfiguration, true);
     } else {
       assert.equal(manifest.rules.usesFixedPureTokensApiOrigin, true);
@@ -364,6 +365,7 @@ test("installed contracts cover bounded requests, task recovery, and user-facing
   assert.equal(update.operations.sync.sourceBranch, "main");
   assert.equal(update.result.neverOverwritesUnmanagedDirectories, true);
   assert.equal(update.result.removesVerifiedRetiredManagedSkills, true);
+  assert.equal(update.result.reportsSynchronizedVersion, true);
   assert.equal(update.result.neverModifiesOfficialCheckout, true);
   const updateScenarios = JSON.parse(await readFile(path.join(repositoryRoot, "skills", "puretokens-update", "references", "behavior-scenarios.json"), "utf8"));
   assert.match(updateScenarios.scenarios.find((scenario) => scenario.id === "update-validation-failed").then, /Do not install Node, npm packages, Git, generators, docs sync, formatters, repair commands, Git writes/);
@@ -552,10 +554,12 @@ test("native platform Skill installers ship with the managed runtime", async () 
   assert.match(shellSource, /curl --fail --location --proto '=https'/);
   assert.match(shellSource, /unzip -q/);
   assert.match(shellSource, /unmanaged Skill conflicts/);
+  assert.match(shellSource, /Pure Tokens Skills \$release_version synchronized at \$target_root/);
   assert.doesNotMatch(shellSource, /node|npm|git clone/i);
   assert.match(powerShellSource, /Invoke-WebRequest -Uri \$archiveUrl/);
   assert.match(powerShellSource, /Expand-Archive/);
   assert.match(powerShellSource, /unmanaged Skill conflicts/);
+  assert.match(powerShellSource, /Pure Tokens Skills \$releaseVersion synchronized at \$targetRoot/);
   assert.doesNotMatch(powerShellSource, /node|npm|git clone/i);
 });
 
@@ -771,7 +775,7 @@ test("CLI sync installs missing Skills and refuses unmanaged conflicts before wr
   for (const name of names) {
     assert.equal(JSON.parse(await readFile(path.join(target, name, "skill.json"), "utf8")).name, name);
   }
-  assert.equal(JSON.parse(await readFile(path.join(target, ".puretokens-runtime", "runtime.json"), "utf8")).version, "0.13.14");
+  assert.equal(JSON.parse(await readFile(path.join(target, ".puretokens-runtime", "runtime.json"), "utf8")).version, "0.13.15");
 });
 
 test("CLI refuses an unmanaged direct runtime before changing Skills", async (t) => {
@@ -804,6 +808,7 @@ test("CLI sync removes verified retired managed Skills and stale retired backups
 
   const { stdout } = await run(process.execPath, [path.join(repositoryRoot, "bin", "puretokens-skill.js"), "sync", "--target", target], { cwd: repositoryRoot });
   assert.equal((stdout.match(/Removed retired managed puretokens_image from/g) ?? []).length, 2);
+  assert.match(stdout, /Pure Tokens Skills 0\.13\.15 synchronized at/);
   await assert.rejects(readFile(path.join(retired, "skill.json"), "utf8"));
   await assert.rejects(readFile(path.join(staleBackup, "skill.json"), "utf8"));
   assert.equal((await readdir(target)).some((entry) => entry.startsWith(".puretokens_image.retired-")), false);

@@ -32,11 +32,20 @@ managed_runtime() {
     grep -Fq '"name": "puretokens-direct-api-runtime"' "$directory/runtime.json"
 }
 
+managed_release_version() {
+  version=$(sed -n 's/^[[:space:]]*"version"[[:space:]]*:[[:space:]]*"\([0-9][0-9.]*\)".*$/\1/p' "$1/runtime/runtime.json" | sed -n '1p')
+  case "$version" in
+    *.*.*) printf '%s\n' "$version" ;;
+    *) return 1 ;;
+  esac
+}
+
 validate_source() {
   source_root=$1
   [ -f "$source_root/README.md" ] || fail "official source is missing README.md"
   [ -f "$source_root/runtime/runtime.json" ] || fail "official source is missing the managed runtime manifest"
   managed_runtime "$source_root/runtime" || fail "official source has an invalid managed runtime"
+  managed_release_version "$source_root" >/dev/null || fail "official source has an invalid managed runtime version"
   [ -f "$source_root/runtime/puretokens-skill-install.sh" ] || fail "official source is missing the native installer"
   [ -f "$source_root/runtime/puretokens-skill-install.ps1" ] || fail "official source is missing the Windows native installer"
   for name in $current_skills; do
@@ -78,6 +87,7 @@ restore_target() {
 sync_target() {
   source_root=$1
   target_root=$2
+  release_version=$(managed_release_version "$source_root") || fail "official source has an invalid managed runtime version"
   [ -d "$target_root" ] || mkdir -p "$target_root"
   target_root=$(cd "$target_root" && pwd -P)
 
@@ -135,7 +145,7 @@ sync_target() {
     done
   done
   rm -rf -- "$stage_root"
-  printf '%s\n' "Installed or upgraded official Pure Tokens Skills at $target_root"
+  printf '%s\n' "Pure Tokens Skills $release_version synchronized at $target_root"
 }
 
 command_name=${1:-}

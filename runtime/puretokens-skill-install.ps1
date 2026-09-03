@@ -32,6 +32,10 @@ function Test-OfficialSource([string]$SourceRoot) {
   if (-not (Test-Path -LiteralPath (Join-Path $SourceRoot "README.md") -PathType Leaf)) { Fail "official source is missing README.md" }
   $runtime = Join-Path $SourceRoot "runtime"
   if (-not (Test-ManagedRuntime $runtime)) { Fail "official source has an invalid managed runtime" }
+  try {
+    $runtimeVersion = (Get-Content -LiteralPath (Join-Path $runtime "runtime.json") -Raw | ConvertFrom-Json).version
+    if ($runtimeVersion -notmatch '^\d+\.\d+\.\d+$') { Fail "official source has an invalid managed runtime version" }
+  } catch { Fail "official source has an invalid managed runtime version" }
   if (-not (Test-Path -LiteralPath (Join-Path $runtime "puretokens-skill-install.ps1") -PathType Leaf)) { Fail "official source is missing the native installer" }
   if (-not (Test-Path -LiteralPath (Join-Path $runtime "puretokens-skill-install.sh") -PathType Leaf)) { Fail "official source is missing the macOS/Linux native installer" }
   foreach ($name in $currentSkills) {
@@ -67,6 +71,7 @@ try {
     Write-Output "Official Pure Tokens Skill source passed native static validation."
     exit 0
   }
+  $releaseVersion = (Get-Content -LiteralPath (Join-Path (Join-Path $sourceRoot "runtime") "runtime.json") -Raw | ConvertFrom-Json).version
 
   if (-not [System.IO.Path]::IsPathRooted($Target)) { Fail "-Target must be an absolute Skill directory" }
   New-Item -ItemType Directory -Path $Target -Force | Out-Null
@@ -120,7 +125,7 @@ try {
     }
   }
   Remove-Item -LiteralPath $stageRoot -Recurse -Force
-  Write-Output "Installed or upgraded official Pure Tokens Skills at $targetRoot"
+  Write-Output "Pure Tokens Skills $releaseVersion synchronized at $targetRoot"
 } finally {
   if (Test-Path -LiteralPath $workspace) { Remove-Item -LiteralPath $workspace -Recurse -Force }
 }

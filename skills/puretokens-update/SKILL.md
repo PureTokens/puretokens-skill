@@ -14,7 +14,7 @@ description: 用户要求检查、安装或升级本机已安装的 Pure Tokens 
 - 若当前回合没有可执行终端、PowerShell、exec 或 shell 工具，说明无法代用户完成本机升级，并提供与该宿主匹配的官方可复制命令；不得声称已升级。
 - 升级不能要求用户安装 Node、npm、包管理器、Git 或开发环境。macOS/Linux 使用已安装运行时中的 `sh <installation-root>/.puretokens-runtime/puretokens-skill-install.sh sync --target <installation-root>`；Windows 使用 `& "<installation-root>\.puretokens-runtime\puretokens-skill-install.ps1" sync -Target "<installation-root>"`。若当前旧版安装中还没有对应平台安装器，必须先从 `https://raw.githubusercontent.com/PureTokens/puretokens-skill/main/runtime/` 下载该平台脚本到新的私有临时目录，再执行它；不得把远程内容直接管道给 Shell/PowerShell，也不得退回 Node 流程。这两个官方平台安装器只使用操作系统自带的 HTTPS 下载、归档和文件操作能力；它们下载官方 `main` 源码，先完成只读静态载荷校验，再在同一次运行中同步。不得先运行 `node`、`npm`、Git、生成器或安装依赖。
 - 平台安装器会安装缺失的官方 Skill，只升级含匹配 `SKILL.md` 与 `skill.json` 的已受管同名 Skill。当前 Skill 全部成功同步后，会删除目标根目录内已验证的旧受管 Skill，以及旧版更新遗留的同名隐藏备份，避免宿主继续发现废弃的 `puretokens_media` 等目录。只要任一当前或旧同名目录，或受管运行器目录，不是受管内容，必须在写入前停止并报告冲突，绝不覆盖、删除或改名该目录。
-- 升级完成后，逐项报告安装或升级的 Skill、未改动的冲突和失败原因（如有），并提醒用户新开宿主会话后再测试。
+- 升级完成后，逐项报告安装或升级的 Skill，并明确报告本次同步的官方 Pure Tokens Skills 版本号、未改动的冲突和失败原因（如有），再提醒用户新开宿主会话后测试。
 
 ## 安全边界
 

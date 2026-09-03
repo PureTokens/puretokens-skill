@@ -4,6 +4,10 @@
 
 # Changelog
 
+## 0.13.15 — 2026-09-03
+
+- A successful `puretokens-update` now reports the exact synchronized official Skill version after listing its installation, upgrade, and retired-Skill cleanup results.
+
 ## 0.13.14 — 2026-09-03
 
 - Changed `puretokens-update` and both native installers to remove verified retired managed Skill directories after all current Skills have synchronized successfully. It also removes hidden retired backups left by earlier installers, so hosts cannot keep discovering obsolete `puretokens_media` instructions. Any unmanaged current, retired, or backup directory remains a preflight conflict and is never removed.

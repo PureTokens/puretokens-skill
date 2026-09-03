@@ -21,6 +21,7 @@
     "upgradesOnlyManagedMatchingSkills": true,
     "neverOverwritesUnmanagedDirectories": true,
     "removesVerifiedRetiredManagedSkills": true,
+    "reportsSynchronizedVersion": true,
     "neverModifiesOfficialCheckout": true,
     "requiresNewHostConversationAfterSuccess": true
   }

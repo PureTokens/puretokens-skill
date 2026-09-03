@@ -449,9 +449,10 @@ function validateUpdateContract(errors, label, contract) {
   const result = contract.result;
   if (!result || result.installsMissingOfficialSkills !== true || result.upgradesOnlyManagedMatchingSkills !== true ||
     result.neverOverwritesUnmanagedDirectories !== true || result.removesVerifiedRetiredManagedSkills !== true ||
+    result.reportsSynchronizedVersion !== true ||
     result.neverModifiesOfficialCheckout !== true ||
     result.requiresNewHostConversationAfterSuccess !== true) {
-    errors.push(`${label} must preserve the official checkout, remove only verified retired Skills, preserve unmanaged directories, and report a new-conversation requirement`);
+    errors.push(`${label} must preserve the official checkout, remove only verified retired Skills, preserve unmanaged directories, report the synchronized version, and report a new-conversation requirement`);
   }
 }
 
