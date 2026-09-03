@@ -30,7 +30,7 @@ test("registry exposes exactly the six specialist Skills", async () => {
   const { registry, records } = await collectSkillRecords();
   assert.deepEqual(registry.skills.map((skill) => skill.name), names);
   assert.equal(records.length, 6);
-  assert.deepEqual([...new Set(records.map((record) => record.manifest.version))], ["0.13.22"]);
+  assert.deepEqual([...new Set(records.map((record) => record.manifest.version))], ["0.13.23"]);
   assert.deepEqual(await validateRepository(), []);
 });
 
@@ -80,7 +80,7 @@ test("bilingual READMEs include safe copyable Agent installation prompts", async
   assert.equal((english.match(/^### Copy this to a terminal-capable local agent$/gm) ?? []).length, 1);
   const englishPrompt = english.match(/^### Copy this to a terminal-capable local agent\n\n```text\n([\s\S]*?)\n```$/m);
   assert.ok(englishPrompt, "English client-download prompt must be the first bounded text block under the fixed heading");
-  assert.equal(englishPrompt[1], "Actually install or update the official Pure Tokens Skills from https://github.com/PureTokens/puretokens-skill in the local terminal. Identify the current host and use the README's one-download compact-payload flow: download `dist/puretokens-skill-install-payload.zip` once, unpack it, then run its native installer with `--source` (Windows: `-Source`) and that host's Skill directory. Do not run an installed updater or download a runtime installer that then downloads a second payload. Report completion only after `Pure Tokens Skills <version> synchronized at <directory>` appears.");
+  assert.equal(englishPrompt[1], "Install or update the official Pure Tokens Skills from https://github.com/PureTokens/puretokens-skill.");
   assert.match(english, /## Model access groups/);
   assert.match(english, /select a group containing that exact model/);
   assert.match(chinese, /## 让 Agent 协助安装/);
@@ -88,7 +88,7 @@ test("bilingual READMEs include safe copyable Agent installation prompts", async
   assert.equal((chinese.match(/^### 直接复制给具备本机终端的 Agent$/gm) ?? []).length, 1);
   const chinesePrompt = chinese.match(/^### 直接复制给具备本机终端的 Agent\n\n```text\n([\s\S]*?)\n```$/m);
   assert.ok(chinesePrompt, "Chinese client-download prompt must be the first bounded text block under the fixed heading");
-  assert.equal(chinesePrompt[1], "请在本机终端实际安装或更新 https://github.com/PureTokens/puretokens-skill 的官方 Pure Tokens Skills。识别当前宿主并使用 README 的“单次紧凑载荷”流程：下载一次 `dist/puretokens-skill-install-payload.zip`，解压后执行其中的原生安装器，并传入 `--source`（Windows 为 `-Source`）和该宿主的 Skill 目录；不要运行已安装的更新器，也不要先下载 runtime 安装器再让它第二次下载载荷。只有看到 `Pure Tokens Skills <版本> synchronized at <目录>` 才能报告完成。");
+  assert.equal(chinesePrompt[1], "请安装或更新 https://github.com/PureTokens/puretokens-skill 的官方 Pure Tokens Skills。");
   assert.match(chinese, /^<p align="center">\n  <img src="\.\/assets\/brand\/puretokens-skill-hero\.png" alt="Pure Tokens 官方 Skills" width="100%" \/>\n<\/p>/);
   assert.match(chinese, /## 模型访问分组/);
   assert.match(chinese, /勾选包含该精确模型的分组/);
@@ -366,8 +366,8 @@ test("installed contracts cover bounded requests, task recovery, and user-facing
 
   const update = JSON.parse(await readFile(path.join(repositoryRoot, "skills", "puretokens-update", "references", "execution-contract.json"), "utf8"));
   assert.equal(update.kind, "update");
-  assert.equal(update.operations.sync.commandTemplate, "native_platform_installer sync --source <latest-unpacked-official-source> --target <installation-root>");
-  assert.equal(update.operations.sync.validationCommand, "native_installer_validates_explicit_compact_official_payload_source_before_sync");
+  assert.equal(update.operations.sync.commandTemplate, "native_platform_installer sync --host <current-supported-host>");
+  assert.equal(update.operations.sync.validationCommand, "native_installer_derives_host_target_and_validates_unpacked_compact_official_bundle_before_sync");
   assert.equal(update.operations.sync.sourceBranch, "main");
   assert.equal(update.transport.usesCompactInstallPayload, true);
   assert.equal(update.transport.payloadDownloadDeadlineSeconds, 40);
@@ -565,13 +565,14 @@ test("native platform Skill installers ship with the managed runtime", async (t)
   const run = promisify(execFile);
   await run("sh", ["-n", shellInstaller], { cwd: repositoryRoot });
   const [shellSource, powerShellSource] = await Promise.all([readFile(shellInstaller, "utf8"), readFile(powerShellInstaller, "utf8")]);
-  assert.match(shellSource, /payload_archive_primary_url="https:\/\/api\.github\.com\/repos\/PureTokens\/puretokens-skill\/contents\/dist\/puretokens-skill-install-payload\.zip\?ref=main"/);
-  assert.match(shellSource, /payload_archive_fallback_url="https:\/\/raw\.githubusercontent\.com\/PureTokens\/puretokens-skill\/main\/dist\/puretokens-skill-install-payload\.zip"/);
+  assert.match(shellSource, /payload_archive_primary_url="https:\/\/api\.github\.com\/repos\/PureTokens\/puretokens-skill\/contents\/dist\/puretokens-skill-install\.zip\?ref=main"/);
+  assert.match(shellSource, /payload_archive_fallback_url="https:\/\/raw\.githubusercontent\.com\/PureTokens\/puretokens-skill\/main\/dist\/puretokens-skill-install\.zip"/);
   assert.match(shellSource, /--max-time "\$payload_download_attempt_deadline_seconds"/);
   assert.match(shellSource, /application\/vnd\.github\.raw\+json/);
   assert.match(shellSource, /Downloading the compact official Pure Tokens Skill install payload through the official GitHub API\." >&2/);
   assert.match(shellSource, /unzip -q/);
-  assert.match(shellSource, /--source requires an absolute official source directory/);
+  assert.match(shellSource, /--host requires a supported host ID/);
+  assert.match(shellSource, /target_for_host\(\)/);
   assert.match(shellSource, /validate_source "\$source_root"/);
   assert.match(shellSource, /unmanaged Skill conflicts/);
   assert.match(shellSource, /Pure Tokens Skills \$release_version synchronized at \$target_root/);
@@ -580,21 +581,22 @@ test("native platform Skill installers ship with the managed runtime", async (t)
   assert.doesNotMatch(shellSource, /node|npm|git clone/i);
   assert.match(powerShellSource, /Invoke-WebRequest -Uri \$primaryArchiveUrl/);
   assert.match(powerShellSource, /Invoke-WebRequest -Uri \$fallbackArchiveUrl/);
-  assert.match(powerShellSource, /puretokens-skill-install-payload\.zip/);
+  assert.match(powerShellSource, /puretokens-skill-install\.zip/);
   assert.match(powerShellSource, /-TimeoutSec \$payloadDownloadAttemptDeadlineSeconds/);
   assert.match(powerShellSource, /Expand-Archive/);
-  assert.match(powerShellSource, /-Source must be an absolute official source directory/);
+  assert.match(powerShellSource, /Get-TargetForHost/);
   assert.match(powerShellSource, /unmanaged Skill conflicts/);
   assert.match(powerShellSource, /Pure Tokens Skills \$releaseVersion synchronized at \$targetRoot/);
   assert.match(powerShellSource, /plugin list --json/);
   assert.match(powerShellSource, /plugin remove puretokens-media --json/);
   assert.doesNotMatch(powerShellSource, /node|npm|git clone/i);
 
-  const target = await mkdtemp(path.join(os.tmpdir(), "puretokens-skill-native-source-"));
-  t.after(() => rm(target, { recursive: true, force: true }));
-  const { stdout } = await run("sh", [shellInstaller, "sync", "--source", repositoryRoot, "--target", target], { cwd: repositoryRoot });
-  assert.match(stdout, /Pure Tokens Skills 0\.13\.22 synchronized at/);
-  assert.equal(JSON.parse(await readFile(path.join(target, "puretokens-image", "skill.json"), "utf8")).version, "0.13.22");
+  const home = await mkdtemp(path.join(os.tmpdir(), "puretokens-skill-native-host-"));
+  t.after(() => rm(home, { recursive: true, force: true }));
+  const target = path.join(home, ".agents", "skills");
+  const { stdout } = await run("sh", [shellInstaller, "sync", "--host", "codex"], { cwd: repositoryRoot, env: { ...process.env, HOME: home } });
+  assert.match(stdout, /Pure Tokens Skills 0\.13\.23 synchronized at/);
+  assert.equal(JSON.parse(await readFile(path.join(target, "puretokens-image", "skill.json"), "utf8")).version, "0.13.23");
 });
 
 test("Grok Build direct runtime resolves only matching configured model credentials", () => {
@@ -813,7 +815,7 @@ test("CLI sync installs missing Skills and refuses unmanaged conflicts before wr
   for (const name of names) {
     assert.equal(JSON.parse(await readFile(path.join(target, name, "skill.json"), "utf8")).name, name);
   }
-  assert.equal(JSON.parse(await readFile(path.join(target, ".puretokens-runtime", "runtime.json"), "utf8")).version, "0.13.22");
+  assert.equal(JSON.parse(await readFile(path.join(target, ".puretokens-runtime", "runtime.json"), "utf8")).version, "0.13.23");
 });
 
 test("CLI refuses an unmanaged direct runtime before changing Skills", async (t) => {
@@ -876,7 +878,7 @@ test("CLI sync removes verified retired managed Skills and stale retired backups
 
   const { stdout } = await run(process.execPath, [path.join(repositoryRoot, "bin", "puretokens-skill.js"), "sync", "--target", target], { cwd: repositoryRoot });
   assert.equal((stdout.match(/Removed retired managed puretokens_image from/g) ?? []).length, 2);
-  assert.match(stdout, /Pure Tokens Skills 0\.13\.22 synchronized at/);
+  assert.match(stdout, /Pure Tokens Skills 0\.13\.23 synchronized at/);
   await assert.rejects(readFile(path.join(retired, "skill.json"), "utf8"));
   await assert.rejects(readFile(path.join(staleBackup, "skill.json"), "utf8"));
   assert.equal((await readdir(target)).some((entry) => entry.startsWith(".puretokens_image.retired-")), false);

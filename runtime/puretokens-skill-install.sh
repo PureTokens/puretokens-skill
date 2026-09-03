@@ -2,14 +2,14 @@
 
 set -eu
 
-payload_archive_primary_url="https://api.github.com/repos/PureTokens/puretokens-skill/contents/dist/puretokens-skill-install-payload.zip?ref=main"
-payload_archive_fallback_url="https://raw.githubusercontent.com/PureTokens/puretokens-skill/main/dist/puretokens-skill-install-payload.zip"
+payload_archive_primary_url="https://api.github.com/repos/PureTokens/puretokens-skill/contents/dist/puretokens-skill-install.zip?ref=main"
+payload_archive_fallback_url="https://raw.githubusercontent.com/PureTokens/puretokens-skill/main/dist/puretokens-skill-install.zip"
 payload_download_attempt_deadline_seconds=20
 current_skills="puretokens-balance puretokens-connection puretokens-models puretokens-image puretokens-video puretokens-update"
 retired_skills="puretokens_media puretokens_balance puretokens_connection puretokens_models puretokens_image puretokens_video puretokens_update puretokens_get_balance puretokens_get_model_price puretokens_workbuddy_router"
 
 usage() {
-  printf '%s\n' "Usage: puretokens-skill-install.sh <check|sync> --target <absolute-skill-directory> [--source <absolute-official-source-directory>]"
+  printf '%s\n' "Usage: puretokens-skill-install.sh <check|sync> (--host <claude-code|codex|workbuddy|gemini-cli|grok-build|opencode|trae> | --target <absolute-skill-directory>) [--source <absolute-official-source-directory>]"
 }
 
 fail() {
@@ -39,6 +39,21 @@ managed_release_version() {
   case "$version" in
     *.*.*) printf '%s\n' "$version" ;;
     *) return 1 ;;
+  esac
+}
+
+target_for_host() {
+  host=$1
+  [ -n "${HOME:-}" ] || fail "cannot resolve a host Skill directory because HOME is unavailable"
+  case "$host" in
+    claude-code) printf '%s\n' "$HOME/.claude/skills" ;;
+    codex) printf '%s\n' "$HOME/.agents/skills" ;;
+    workbuddy) printf '%s\n' "$HOME/.workbuddy/skills" ;;
+    gemini-cli) printf '%s\n' "$HOME/.gemini/skills" ;;
+    grok-build) printf '%s\n' "$HOME/.grok/skills" ;;
+    opencode) printf '%s\n' "$HOME/.config/opencode/skills" ;;
+    trae) printf '%s\n' "$HOME/.trae/skills" ;;
+    *) fail "unsupported host: $host" ;;
   esac
 }
 
@@ -184,12 +199,18 @@ command_name=${1:-}
 [ -n "$command_name" ] || { usage; exit 2; }
 shift
 target=
+host=
 source=
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --target)
       [ "$#" -ge 2 ] || fail "--target requires an absolute directory"
       target=$2
+      shift 2
+      ;;
+    --host)
+      [ "$#" -ge 2 ] || fail "--host requires a supported host ID"
+      host=$2
       shift 2
       ;;
     --source)
@@ -203,7 +224,10 @@ while [ "$#" -gt 0 ]; do
       ;;
   esac
 done
-[ -n "$target" ] && [ "${target#/}" != "$target" ] || fail "--target must be an absolute Skill directory"
+[ -z "$target" ] || [ -z "$host" ] || fail "use either --host or --target, not both"
+[ -n "$target" ] || [ -n "$host" ] || fail "--host or --target is required"
+[ -z "$host" ] || target=$(target_for_host "$host")
+[ "${target#/}" != "$target" ] || fail "--target must be an absolute Skill directory"
 [ -z "$source" ] || [ "${source#/}" != "$source" ] || fail "--source must be an absolute official source directory"
 case "$command_name" in check|sync) ;; *) usage; exit 2 ;; esac
 
@@ -211,6 +235,9 @@ require_command mktemp
 if [ -n "$source" ]; then
   [ -d "$source" ] || fail "--source does not exist: $source"
   source_root=$(cd "$source" && pwd -P) || fail "could not resolve --source"
+  validate_source "$source_root"
+elif bundled_source_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." 2>/dev/null && pwd -P) && [ -f "$bundled_source_root/README.md" ] && [ -f "$bundled_source_root/runtime/runtime.json" ] && [ -d "$bundled_source_root/skills" ]; then
+  source_root=$bundled_source_root
   validate_source "$source_root"
 else
   require_command curl

@@ -6,7 +6,10 @@ import { promisify } from "node:util";
 import { repositoryRoot } from "./skill-registry.mjs";
 
 const exec = promisify(execFile);
-const archive = path.join(repositoryRoot, "dist", "puretokens-skill-install-payload.zip");
+const archives = [
+  path.join(repositoryRoot, "dist", "puretokens-skill-install.zip"),
+  path.join(repositoryRoot, "dist", "puretokens-skill-install-payload.zip")
+];
 const payloadRoot = "puretokens-skill-main";
 const expectedFiles = [
   "README.md",
@@ -14,22 +17,24 @@ const expectedFiles = [
   ...await filesUnder("skills")
 ].sort();
 
-const { stdout } = await exec("unzip", ["-Z1", archive], { maxBuffer: 1024 * 1024 });
-const archivedFiles = stdout.split(/\r?\n/)
-  .filter((entry) => entry.startsWith(`${payloadRoot}/`) && !entry.endsWith("/"))
-  .map((entry) => entry.slice(`${payloadRoot}/`.length))
-  .sort();
+for (const archive of archives) {
+  const { stdout } = await exec("unzip", ["-Z1", archive], { maxBuffer: 1024 * 1024 });
+  const archivedFiles = stdout.split(/\r?\n/)
+    .filter((entry) => entry.startsWith(`${payloadRoot}/`) && !entry.endsWith("/"))
+    .map((entry) => entry.slice(`${payloadRoot}/`.length))
+    .sort();
 
-if (JSON.stringify(archivedFiles) !== JSON.stringify(expectedFiles)) {
-  throw new Error("install payload files do not exactly match README.md, runtime/, and skills/");
-}
+  if (JSON.stringify(archivedFiles) !== JSON.stringify(expectedFiles)) {
+    throw new Error(`${path.basename(archive)} files do not exactly match README.md, runtime/, and skills/`);
+  }
 
-for (const relativePath of expectedFiles) {
-  const [source, payload] = await Promise.all([
-    readFile(path.join(repositoryRoot, relativePath)),
-    readArchiveFile(`${payloadRoot}/${relativePath}`)
-  ]);
-  if (sha256(source) !== sha256(payload)) throw new Error(`install payload differs from source: ${relativePath}`);
+  for (const relativePath of expectedFiles) {
+    const [source, payload] = await Promise.all([
+      readFile(path.join(repositoryRoot, relativePath)),
+      readArchiveFile(archive, `${payloadRoot}/${relativePath}`)
+    ]);
+    if (sha256(source) !== sha256(payload)) throw new Error(`${path.basename(archive)} differs from source: ${relativePath}`);
+  }
 }
 
 async function filesUnder(relativeDirectory) {
@@ -45,7 +50,7 @@ async function filesUnder(relativeDirectory) {
   return files;
 }
 
-async function readArchiveFile(entry) {
+async function readArchiveFile(archive, entry) {
   const { stdout } = await exec("unzip", ["-p", archive, entry], { encoding: "buffer", maxBuffer: 16 * 1024 * 1024 });
   return stdout;
 }

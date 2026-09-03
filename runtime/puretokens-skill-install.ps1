@@ -3,15 +3,19 @@ param(
   [Parameter(Position = 0, Mandatory = $true)]
   [ValidateSet("check", "sync")]
   [string]$Command,
-  [Parameter(Mandatory = $true)]
+  [Parameter(Mandatory = $false)]
   [string]$Target,
+  [Parameter(Mandatory = $false)]
+  [ValidateSet("claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae")]
+  [Alias("Host")]
+  [string]$HostId,
   [Parameter(Mandatory = $false)]
   [string]$Source
 )
 
 $ErrorActionPreference = "Stop"
-$primaryArchiveUrl = "https://api.github.com/repos/PureTokens/puretokens-skill/contents/dist/puretokens-skill-install-payload.zip?ref=main"
-$fallbackArchiveUrl = "https://raw.githubusercontent.com/PureTokens/puretokens-skill/main/dist/puretokens-skill-install-payload.zip"
+$primaryArchiveUrl = "https://api.github.com/repos/PureTokens/puretokens-skill/contents/dist/puretokens-skill-install.zip?ref=main"
+$fallbackArchiveUrl = "https://raw.githubusercontent.com/PureTokens/puretokens-skill/main/dist/puretokens-skill-install.zip"
 $payloadDownloadAttemptDeadlineSeconds = 20
 $currentSkills = @("puretokens-balance", "puretokens-connection", "puretokens-models", "puretokens-image", "puretokens-video", "puretokens-update")
 $retiredSkills = @("puretokens_media", "puretokens_balance", "puretokens_connection", "puretokens_models", "puretokens_image", "puretokens_video", "puretokens_update", "puretokens_get_balance", "puretokens_get_model_price", "puretokens_workbuddy_router")
@@ -44,6 +48,20 @@ function Test-OfficialSource([string]$SourceRoot) {
   if (-not (Test-Path -LiteralPath (Join-Path $runtime "puretokens-skill-install.sh") -PathType Leaf)) { Fail "official source is missing the macOS/Linux native installer" }
   foreach ($name in $currentSkills) {
     if (-not (Test-ManagedSkill (Join-Path (Join-Path $SourceRoot "skills") $name) $name)) { Fail "official source has an invalid Skill: $name" }
+  }
+}
+
+function Get-TargetForHost([string]$RequestedHost) {
+  if ([string]::IsNullOrWhiteSpace($env:USERPROFILE)) { Fail "cannot resolve a host Skill directory because USERPROFILE is unavailable" }
+  switch ($RequestedHost) {
+    "claude-code" { return (Join-Path $env:USERPROFILE ".claude\skills") }
+    "codex" { return (Join-Path $env:USERPROFILE ".agents\skills") }
+    "workbuddy" { return (Join-Path $env:USERPROFILE ".workbuddy\skills") }
+    "gemini-cli" { return (Join-Path $env:USERPROFILE ".gemini\skills") }
+    "grok-build" { return (Join-Path $env:USERPROFILE ".grok\skills") }
+    "opencode" { return (Join-Path $env:USERPROFILE ".config\opencode\skills") }
+    "trae" { return (Join-Path $env:USERPROFILE ".trae\skills") }
+    default { Fail "unsupported host: $RequestedHost" }
   }
 }
 
@@ -104,7 +122,22 @@ function Remove-LegacyCodexPlugin([string]$TargetRoot) {
 
 $workspace = $null
 try {
-  if ([string]::IsNullOrWhiteSpace($Source)) {
+  if (-not [string]::IsNullOrWhiteSpace($Target) -and -not [string]::IsNullOrWhiteSpace($HostId)) { Fail "use either -Host or -Target, not both" }
+  if ([string]::IsNullOrWhiteSpace($Target) -and [string]::IsNullOrWhiteSpace($HostId)) { Fail "-Host or -Target is required" }
+  if (-not [string]::IsNullOrWhiteSpace($HostId)) { $Target = Get-TargetForHost $HostId }
+  if (-not [System.IO.Path]::IsPathRooted($Target)) { Fail "-Target must be an absolute Skill directory" }
+
+  if (-not [string]::IsNullOrWhiteSpace($Source)) {
+    if (-not [System.IO.Path]::IsPathRooted($Source)) { Fail "-Source must be an absolute official source directory" }
+    if (-not (Test-Path -LiteralPath $Source -PathType Container)) { Fail "-Source does not exist: $Source" }
+    $sourceRoot = (Resolve-Path -LiteralPath $Source).Path
+  } else {
+    $bundledSourceRoot = Split-Path -Parent $PSScriptRoot
+    if ((Test-Path -LiteralPath (Join-Path $bundledSourceRoot "README.md") -PathType Leaf) -and
+      (Test-Path -LiteralPath (Join-Path $bundledSourceRoot "runtime\runtime.json") -PathType Leaf) -and
+      (Test-Path -LiteralPath (Join-Path $bundledSourceRoot "skills") -PathType Container)) {
+      $sourceRoot = $bundledSourceRoot
+    } else {
     $workspace = Join-Path ([System.IO.Path]::GetTempPath()) ("puretokens-skill-" + [Guid]::NewGuid().ToString("N"))
     New-Item -ItemType Directory -Path $workspace | Out-Null
     $archive = Join-Path $workspace "puretokens-skill-install-payload.zip"
@@ -113,10 +146,7 @@ try {
     Expand-Archive -LiteralPath $archive -DestinationPath $unpacked
     $sourceRoot = Join-Path $unpacked "puretokens-skill-main"
     if (-not (Test-Path -LiteralPath $sourceRoot -PathType Container)) { Fail "official source archive has an unexpected layout" }
-  } else {
-    if (-not [System.IO.Path]::IsPathRooted($Source)) { Fail "-Source must be an absolute official source directory" }
-    if (-not (Test-Path -LiteralPath $Source -PathType Container)) { Fail "-Source does not exist: $Source" }
-    $sourceRoot = (Resolve-Path -LiteralPath $Source).Path
+    }
   }
   Test-OfficialSource $sourceRoot
   if ($Command -eq "check") {
@@ -125,7 +155,6 @@ try {
   }
   $releaseVersion = (Get-Content -LiteralPath (Join-Path (Join-Path $sourceRoot "runtime") "runtime.json") -Raw | ConvertFrom-Json).version
 
-  if (-not [System.IO.Path]::IsPathRooted($Target)) { Fail "-Target must be an absolute Skill directory" }
   New-Item -ItemType Directory -Path $Target -Force | Out-Null
   $targetRoot = (Resolve-Path -LiteralPath $Target).Path
   foreach ($name in $retiredSkills) {

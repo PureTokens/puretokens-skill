@@ -4,6 +4,10 @@
 
 # Changelog
 
+## 0.13.23 — 2026-09-03
+
+- Simplified the Agent install prompt to the repository URL and moved all bootstrap detail into one official install bundle. Its native installer now accepts a host ID, derives the documented Skill directory, validates the unpacked bundle, and synchronizes without a second package download.
+
 ## 0.13.22 — 2026-09-03
 
 - Replaced the two-download Agent bootstrap with a one-download compact-payload flow. The unpacked latest native installer now accepts that validated source explicitly, so it synchronizes without first fetching a runtime installer and then fetching the payload again.
