@@ -31,9 +31,9 @@ Install or update the official Pure Tokens Skills from https://github.com/PureTo
 
 The media Skills always use full fixed URLs under `https://api.puretokensx.com`: Images uses `/v1/images/generations`; Videos uses `/v1/videos`. They do not send media work to an arbitrary configured Base URL, MCP server, local proxy, sidecar, or a second endpoint.
 
-The active host makes the authenticated HTTPS request with the credential already configured for its current matching Pure Tokens connection. A third-party CC Switch and a manual host configuration both work: they only supply the host connection. The Skill never checks a provider label, asks for, displays, stores, logs, or reports an API key, Base URL, or host configuration. The configured Base URL is used only to identify the matching credential in memory; it is never used as the request target.
+The active host makes the authenticated HTTPS request with the credential already configured for its current matching Pure Tokens connection. A third-party CC Switch and a manual host configuration both work: they only supply the host connection. For a fixed request, the Skill resolves exactly one matching credential in memory and sends that request directly through the host terminal or native HTTPS capability. It never checks a provider label, asks for, displays, stores, logs, or reports an API key, Base URL, or host configuration. The configured Base URL is used only to identify the matching credential in memory; it is never used as the request target.
 
-No Node, npm, Python, Pure Tokens Desktop, local media runtime, MCP, or upload relay is required to generate media. The host must be able to make authenticated HTTPS requests, send declared multipart attachments when needed, and deliver native media bytes. If that capability is unavailable or blocked by host policy, the Skill stops before a billable request and tells the user what the host must allow.
+No Node, npm, Python, Pure Tokens Desktop, local media runtime, MCP, or upload relay is required to generate media. The Skill must not first search for a separate “authenticated image/video interface”: it directly uses the configured connection and fixed API path. A local attachment is sent in the declared multipart request. Only an actual terminal, network, credential-resolution, attachment-byte, or API failure may stop a request before billing.
 
 Computer Use, browser automation, and opening or clicking Pure Tokens Switch/Desktop are not fallback execution paths. The Skills never use them to find a visible generation interface, obtain a credential, submit media, or deliver a result; they also never invoke another image or video Skill as a fallback.
 
@@ -41,7 +41,7 @@ Computer Use, browser automation, and opening or clicking Pure Tokens Switch/Des
 
 When the current host uses a Pure Tokens connection, ordinary image requests select `puretokens-image` before generic `imagegen`, Imagen, or other image Skills; ordinary video requests select `puretokens-video` before generic video Skills. This applies even when the user does not explicitly say “Pure Tokens.” Once selected, the Pure Tokens specialist either executes its fixed API path or stops safely; it never falls back to a generic media Skill.
 
-The priority is carried by the installed Skill metadata and the host's current connection context. The Skill never reads connection configuration. A host that ignores installed-Skill selection metadata must correct its own selection policy; a Skill cannot force another host or third-party Skill to change priority at runtime.
+The priority is carried by the installed Skill metadata and the host's current connection context. The Skill may resolve only one matching current-connection credential privately in memory for a fixed request; it never exposes or reports connection configuration. A host that ignores installed-Skill selection metadata must correct its own selection policy; a Skill cannot force another host or third-party Skill to change priority at runtime.
 
 ## Supported hosts
 

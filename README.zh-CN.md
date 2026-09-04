@@ -31,9 +31,9 @@ Install or update the official Pure Tokens Skills from https://github.com/PureTo
 
 媒体 Skill 始终请求 `https://api.puretokensx.com` 下的完整固定 URL：生图使用 `/v1/images/generations`，生视频使用 `/v1/videos`。不会将媒体请求发给任意用户配置的 Base URL、MCP、本地代理、sidecar 或第二个 endpoint。
 
-当前宿主使用已配置的、当前匹配 Pure Tokens 连接的凭据执行认证 HTTPS 请求。第三方 CC Switch 与用户手动配置宿主都可以使用：它们只负责把连接配置给宿主。Skill 不检查 provider 标签，不索取、展示、保存、记录或报告 API Key、Base URL 或宿主配置。保存的 Base URL 只用于在内存中识别匹配凭据，绝不作为请求目标。
+当前宿主使用已配置的、当前匹配 Pure Tokens 连接的凭据执行认证 HTTPS 请求。第三方 CC Switch 与用户手动配置宿主都可以使用：它们只负责把连接配置给宿主。对于固定请求，Skill 只在内存中解析一把匹配凭据，并通过宿主终端或原生 HTTPS 能力直接发出请求。Skill 不检查 provider 标签，不索取、展示、保存、记录或报告 API Key、Base URL 或宿主配置。保存的 Base URL 只用于在内存中识别匹配凭据，绝不作为请求目标。
 
-生成图片和视频不需要 Node、npm、Python、Pure Tokens Desktop、本地媒体运行器、MCP 或上传中转。宿主需要具备认证 HTTPS 请求、必要时发送声明的 multipart 附件、交付原生媒体字节的能力；若宿主能力缺失或被策略阻止，Skill 会在计费前停止并说明需允许的能力。
+生成图片和视频不需要 Node、npm、Python、Pure Tokens Desktop、本地媒体运行器、MCP 或上传中转。不得先查找一个单独的“已认证图片/视频接口”：Skill 必须直接使用已配置连接和固定 API 路径；本地附件直接随已声明的 multipart 请求发送。只有实际终端、网络、凭据解析、附件字节或 API 失败，才可在计费前停止。
 
 Computer Use、浏览器自动化以及打开或点击 Pure Tokens Switch/Desktop 都不是备用执行路径。Skill 不会用它们寻找可见生成界面、获取凭据、提交媒体或交付结果，也不会调用其他生图或生视频 Skill 作为回退。
 
@@ -41,7 +41,7 @@ Computer Use、浏览器自动化以及打开或点击 Pure Tokens Switch/Deskto
 
 当前宿主使用 Pure Tokens 连接时，即使用户没有明确说“Pure Tokens”，普通图片请求也必须先选择 `puretokens-image`，再考虑通用 `imagegen`、Imagen 或其他图片 Skill；普通视频请求也必须先选择 `puretokens-video`，再考虑通用视频 Skill。一旦选择了 Pure Tokens 专项 Skill，就只能执行固定 API 路径或安全停止，绝不回退到通用媒体 Skill。
 
-优先级由已安装 Skill 的元数据和宿主当前连接上下文共同提供。Skill 不读取宿主连接配置；若某个宿主忽略已安装 Skill 的选择元数据，需要在该宿主修正自己的选择策略，Skill 无法在运行时强制第三方宿主或第三方 Skill 改变优先级。
+优先级由已安装 Skill 的元数据和宿主当前连接上下文共同提供。对固定请求，Skill 可以私密地在内存中解析一把当前匹配连接的凭据，但绝不展示或报告连接配置；若某个宿主忽略已安装 Skill 的选择元数据，需要在该宿主修正自己的选择策略，Skill 无法在运行时强制第三方宿主或第三方 Skill 改变优先级。
 
 ## 支持的宿主
 

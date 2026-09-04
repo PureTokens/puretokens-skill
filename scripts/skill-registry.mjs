@@ -8,11 +8,13 @@ export const skillsRoot = path.join(repositoryRoot, "skills");
 
 const forbiddenPattern = /(BEGIN [A-Z ]*PRIVATE|127\.0\.0\.1:|\/Users\/)/i;
 const directApiOrigin = "https://api.puretokensx.com";
-const directAcceptanceScenarioIds = ["api-identity-read", "catalog-read", "media-submit", "same-task-status", "native-media-delivery", "host-api-execution-unavailable"];
+const directAcceptanceScenarioIds = ["api-identity-read", "catalog-read", "media-submit", "same-task-status", "native-media-delivery", "direct-request-start"];
 const directHostCapabilities = ["authenticated_full_url_request", "json_task_response", "same_task_status_read", "native_media_byte_delivery"];
 const hostNativeExecutionHostIds = ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae"];
 const mediaRoutingPriority = "when_current_host_connection_uses_puretokens_select_the_matching_puretokens_specialist_before_generic_imagegen_imagen_or_video_skills";
 const mediaRoutingMetadataLimitation = "skill_metadata_expresses_routing_priority_but_cannot_override_a_host_that_ignores_installed_skill_selection";
+const directRequestStart = "resolve_one_matching_current_host_credential_in_memory_and_issue_the_fixed_request_through_host_terminal_or_native_https_without_preflighting_for_a_special_media_interface";
+const directRequestActualFailureOnly = "report_only_an_actual_terminal_network_credential_resolution_or_attachment_byte_failure_and_never_open_a_browser_desktop_ui_or_computer_use";
 const receiptCoreFields = ["exact_model_id", "task_id", "returned_state", "requested_operation", "requested_count", "requested_size_or_parameters", "next_action"];
 const failureReceiptRequiredFields = ["failure_phase", "api_error_code", "http_status", "error_message", "next_action"];
 const failureReceiptPhases = ["validation", "submission", "status", "content"];
@@ -191,11 +193,12 @@ function validateDirectApiExecutionContract(errors, contract, hostSupport) {
     contract.authentication.credentialSourceMustMatchFixedPureTokensEndpoint !== true ||
     contract.authentication.credentialSourceNeverBecomesRequestTarget !== true ||
     contract.authentication.neverDisplaysCopiesStoresOrRequestsCredentials !== true ||
+    contract.authentication.resolvesCurrentHostConnectionCredentialInMemoryForFixedRequest !== true ||
     !transport || transport.usesFullApiUrls !== true || transport.usesHostNativeAuthenticatedHttpsExecution !== true ||
     transport.doesNotRequireNode !== true || transport.doesNotUseMcp !== true ||
     transport.doesNotUseLocalProxyOrSidecar !== true || transport.doesNotUseFallbackEndpoint !== true ||
     transport.doesNotUseComputerUseOrUiAutomation !== true || transport.doesNotInvokeOtherMediaSkillsAsApiFallback !== true ||
-    transport.whenHostNativeApiExecutionUnavailable !== "stop_before_request_with_validation_failure_and_never_open_a_browser_desktop_ui_or_computer_use") {
+    transport.executionStart !== directRequestStart || transport.whenHostNativeApiExecutionUnavailable !== directRequestActualFailureOnly) {
     errors.push(`${label} must use host-native authenticated HTTPS for the fixed full API origin without Node, MCP, proxy, sidecar, UI automation, Computer Use, or another media-Skill fallback`);
   }
   const mediaRouting = contract.mediaRouting;
@@ -203,9 +206,9 @@ function validateDirectApiExecutionContract(errors, contract, hostSupport) {
     mediaRouting.imageSkill !== "puretokens-image" || mediaRouting.videoSkill !== "puretokens-video" ||
     mediaRouting.priority !== mediaRoutingPriority ||
     mediaRouting.afterSpecialistSelection !== "never_fall_back_to_a_generic_media_skill" ||
-    mediaRouting.connectionContext !== "host_managed_only_skill_never_reads_or_inspects_connection_configuration" ||
+    mediaRouting.connectionContext !== "host_managed_skill_resolves_one_matching_current_connection_credential_privately_for_the_fixed_request" ||
     mediaRouting.metadataLimitation !== mediaRoutingMetadataLimitation) {
-    errors.push(`${label} must prioritize the matching Pure Tokens media specialist before generic media Skills without reading host connection configuration or using a fallback`);
+    errors.push(`${label} must prioritize the matching Pure Tokens media specialist before generic media Skills while resolving only one matching current connection credential privately for the fixed request and never using a fallback`);
   }
   if (!Array.isArray(contract.acceptanceScenarios) || !sameArray(contract.acceptanceScenarios.map((scenario) => scenario?.id), directAcceptanceScenarioIds)) {
     errors.push(`${label} must define the ordered direct-API acceptance scenarios`);
@@ -482,7 +485,8 @@ function validateDirectTransport(errors, label, transport, requiresNativeMediaBy
     transport.doesNotUseNodeRuntime !== true ||
     transport.doesNotUseComputerUseOrUiAutomation !== true ||
     transport.doesNotInvokeOtherMediaSkillsAsApiFallback !== true ||
-    transport.whenHostNativeApiExecutionUnavailable !== "stop_before_request_with_validation_failure_and_never_open_a_browser_desktop_ui_or_computer_use" ||
+    transport.executionStart !== directRequestStart ||
+    transport.whenHostNativeApiExecutionUnavailable !== directRequestActualFailureOnly ||
     (requiresNativeMediaByteDelivery && transport.requiresNativeMediaByteDelivery !== true)) {
     errors.push(`${label} must use the fixed full API origin, current-host credential, host-native HTTPS, and no Node, MCP, UI automation, Computer Use, or fallback transport`);
   }

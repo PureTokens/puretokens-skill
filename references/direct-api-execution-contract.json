@@ -8,7 +8,8 @@
     "credentialUse": "in_memory_only_for_fixed_puretokens_api_requests",
     "credentialSourceMustMatchFixedPureTokensEndpoint": true,
     "credentialSourceNeverBecomesRequestTarget": true,
-    "neverDisplaysCopiesStoresOrRequestsCredentials": true
+    "neverDisplaysCopiesStoresOrRequestsCredentials": true,
+    "resolvesCurrentHostConnectionCredentialInMemoryForFixedRequest": true
   },
   "transport": {
     "usesFullApiUrls": true,
@@ -19,7 +20,8 @@
     "doesNotUseFallbackEndpoint": true,
     "doesNotUseComputerUseOrUiAutomation": true,
     "doesNotInvokeOtherMediaSkillsAsApiFallback": true,
-    "whenHostNativeApiExecutionUnavailable": "stop_before_request_with_validation_failure_and_never_open_a_browser_desktop_ui_or_computer_use"
+    "executionStart": "resolve_one_matching_current_host_credential_in_memory_and_issue_the_fixed_request_through_host_terminal_or_native_https_without_preflighting_for_a_special_media_interface",
+    "whenHostNativeApiExecutionUnavailable": "report_only_an_actual_terminal_network_credential_resolution_or_attachment_byte_failure_and_never_open_a_browser_desktop_ui_or_computer_use"
   },
   "mediaRouting": {
     "imageAndVideoRequestsPreferPureTokensSpecialists": true,
@@ -27,7 +29,7 @@
     "videoSkill": "puretokens-video",
     "priority": "when_current_host_connection_uses_puretokens_select_the_matching_puretokens_specialist_before_generic_imagegen_imagen_or_video_skills",
     "afterSpecialistSelection": "never_fall_back_to_a_generic_media_skill",
-    "connectionContext": "host_managed_only_skill_never_reads_or_inspects_connection_configuration",
+    "connectionContext": "host_managed_skill_resolves_one_matching_current_connection_credential_privately_for_the_fixed_request",
     "metadataLimitation": "skill_metadata_expresses_routing_priority_but_cannot_override_a_host_that_ignores_installed_skill_selection"
   },
   "installableHosts": ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae"],
@@ -39,7 +41,7 @@
     { "id": "media-submit", "request": "POST the fixed Images or Videos API URL once with the selected model and declared request body", "expect": "normal core text generation submits directly without a catalog preflight and returns a JSON task response" },
     { "id": "same-task-status", "request": "GET a submitted task's fixed full status or content URL", "expect": "continues only the supplied task_id and never submits a replacement task" },
     { "id": "native-media-delivery", "request": "GET a completed task's fixed full content URL", "expect": "the host delivers native media bytes; URLs, HTML, SVG, task IDs, and status text are not completed delivery" },
-    { "id": "host-api-execution-unavailable", "request": "no authenticated host-native API executor is exposed in the current session", "expect": "stops before a request with validation failure and never opens a browser, desktop UI, Pure Tokens Switch, another media Skill, or Computer Use" }
+    { "id": "direct-request-start", "request": "a fixed API request is needed while no separate specialized media interface is exposed", "expect": "resolves one current matching credential in memory and issues the fixed request through the host terminal or native HTTPS capability; it never reports a missing interface before attempting that request" }
   ],
   "userMediaInput": {
     "onlyCurrentUserExplicitMedia": true,

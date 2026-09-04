@@ -19,6 +19,8 @@ const skillNames = [
 ];
 const apiSkillNames = skillNames.filter((name) => name !== "puretokens-update");
 const apiOrigin = "https://api.puretokensx.com";
+const directRequestStart = "resolve_one_matching_current_host_credential_in_memory_and_issue_the_fixed_request_through_host_terminal_or_native_https_without_preflighting_for_a_special_media_interface";
+const directRequestActualFailureOnly = "report_only_an_actual_terminal_network_credential_resolution_or_attachment_byte_failure_and_never_open_a_browser_desktop_ui_or_computer_use";
 
 test("repository validates its host-native direct API contract", async () => {
   assert.deepEqual(await validateRepository(), []);
@@ -27,7 +29,7 @@ test("repository validates its host-native direct API contract", async () => {
 test("all specialist Skills are versioned together and use the expected source files", async () => {
   const packageManifest = JSON.parse(await readFile(path.join(repositoryRoot, "package.json"), "utf8"));
   const { registry, records } = await collectSkillRecords();
-  assert.equal(packageManifest.version, "0.14.2");
+  assert.equal(packageManifest.version, "0.14.3");
   assert.deepEqual(registry.skills.map((entry) => entry.name), skillNames);
   assert.equal(records.length, skillNames.length);
   for (const record of records) {
@@ -47,6 +49,7 @@ test("API Skills use host-native authenticated HTTPS without a shipped execution
     assert.match(skill, /https:\/\/api\.puretokensx\.com/);
     assert.equal(manifest.rules.usesHostNativeAuthenticatedHttpsExecution, true);
     assert.equal(manifest.rules.usesCurrentHostConfiguredCredential, true);
+    assert.equal(manifest.rules.resolvesCurrentHostConnectionCredentialInMemoryForFixedRequest, true);
     assert.equal(manifest.rules.doesNotUseNodeRuntime, true);
     assert.equal(manifest.rules.doesNotUseComputerUseOrUiAutomation, true);
     assert.equal(manifest.rules.doesNotInvokeOtherMediaSkillsAsApiFallback, true);
@@ -60,7 +63,8 @@ test("API Skills use host-native authenticated HTTPS without a shipped execution
     assert.equal(contract.transport.doesNotUseMcpOrFallbackTransport, true);
     assert.equal(contract.transport.doesNotUseComputerUseOrUiAutomation, true);
     assert.equal(contract.transport.doesNotInvokeOtherMediaSkillsAsApiFallback, true);
-    assert.equal(contract.transport.whenHostNativeApiExecutionUnavailable, "stop_before_request_with_validation_failure_and_never_open_a_browser_desktop_ui_or_computer_use");
+    assert.equal(contract.transport.executionStart, directRequestStart);
+    assert.equal(contract.transport.whenHostNativeApiExecutionUnavailable, directRequestActualFailureOnly);
     assert.match(skill, /Computer Use/);
     assert.doesNotMatch(skill, /puretokens-direct-api\.mjs|\.puretokens-runtime|--json-base64|--multipart-base64/);
   }
@@ -74,7 +78,7 @@ test("media routing prioritizes Pure Tokens specialists before generic media Ski
     videoSkill: "puretokens-video",
     priority: "when_current_host_connection_uses_puretokens_select_the_matching_puretokens_specialist_before_generic_imagegen_imagen_or_video_skills",
     afterSpecialistSelection: "never_fall_back_to_a_generic_media_skill",
-    connectionContext: "host_managed_only_skill_never_reads_or_inspects_connection_configuration",
+    connectionContext: "host_managed_skill_resolves_one_matching_current_connection_credential_privately_for_the_fixed_request",
     metadataLimitation: "skill_metadata_expresses_routing_priority_but_cannot_override_a_host_that_ignores_installed_skill_selection"
   });
   for (const [name, genericSkill] of [["puretokens-image", "imagegen"], ["puretokens-video", "通用视频"]]) {
@@ -91,6 +95,24 @@ test("media routing prioritizes Pure Tokens specialists before generic media Ski
     assert.match(agentMetadata, /Primary/);
     assert.equal(scenarios.scenarios[0].id, `${name.replace("puretokens-", "")}-specialist-routing-priority`);
   }
+});
+
+test("image and video never preflight for a fictional authenticated media interface", async () => {
+  const image = await readFile(path.join(repositoryRoot, "skills", "puretokens-image", "SKILL.md"), "utf8");
+  const video = await readFile(path.join(repositoryRoot, "skills", "puretokens-video", "SKILL.md"), "utf8");
+  for (const [kind, skill] of [["image", image], ["video", video]]) {
+    assert.match(skill, /不得先判断是否存在所谓“已认证/);
+    assert.match(skill, /不得因看不到单独的/);
+    assert.match(skill, /终端或原生 HTTPS\/API 能力/);
+    assert.match(skill, /~\/.codex\/auth\.json/);
+    assert.match(skill, /Authorization: Bearer/);
+    assert.doesNotMatch(skill, /若当前会话没有暴露可执行认证 API 请求/);
+    const scenarios = JSON.parse(await readFile(path.join(repositoryRoot, "skills", `puretokens-${kind}`, "references", "behavior-scenarios.json"), "utf8"));
+    assert.equal(scenarios.scenarios.some((scenario) => scenario.id === `${kind}-direct-request-start`), true);
+    assert.equal(scenarios.scenarios.some((scenario) => scenario.id === `${kind}-host-native-api-executor-unavailable`), false);
+  }
+  assert.match(image, /https:\/\/api\.puretokensx\.com\/v1\/images\/edits/);
+  assert.match(image, /`image` 字段/);
 });
 
 test("media contracts retain fixed endpoints, asynchronous same-task handling, and native delivery", async () => {
@@ -176,8 +198,30 @@ test("legacy migration archive contains only the current source-only installer a
   const source = path.join(unpacked, "puretokens-skill-main");
   const installer = path.join(source, "runtime", "puretokens-skill-install.sh");
   const { stdout } = await execFile("sh", [installer, "sync", "--target", target, "--source", source], { cwd: source });
-  assert.match(stdout, /Pure Tokens Skills 0\.14\.2 synchronized at/);
+  assert.match(stdout, /Pure Tokens Skills 0\.14\.3 synchronized at/);
   await assert.rejects(readFile(path.join(target, ".puretokens-runtime", "runtime.json"), "utf8"));
+});
+
+test("published legacy updater bridge remains marker-only and carries current Skills", async () => {
+  const archive = path.join(repositoryRoot, "dist", "puretokens-skill-install-payload.zip");
+  const packageManifest = JSON.parse(await readFile(path.join(repositoryRoot, "package.json"), "utf8"));
+  const prefix = "puretokens-skill-main/";
+  const { stdout: listing } = await execFile("unzip", ["-Z1", archive], { cwd: repositoryRoot });
+  const entries = new Set(listing.trim().split("\n"));
+  for (const required of [
+    `${prefix}runtime/runtime.json`,
+    `${prefix}runtime/puretokens-direct-api.mjs`,
+    `${prefix}skills/puretokens-image/SKILL.md`,
+    `${prefix}skills/puretokens-video/SKILL.md`
+  ]) assert.equal(entries.has(required), true, `missing ${required}`);
+  const [{ stdout: runtime }, { stdout: imageManifest }, { stdout: marker }] = await Promise.all([
+    execFile("unzip", ["-p", archive, `${prefix}runtime/runtime.json`], { cwd: repositoryRoot }),
+    execFile("unzip", ["-p", archive, `${prefix}skills/puretokens-image/skill.json`], { cwd: repositoryRoot }),
+    execFile("unzip", ["-p", archive, `${prefix}runtime/puretokens-direct-api.mjs`], { cwd: repositoryRoot })
+  ]);
+  assert.equal(JSON.parse(runtime).legacyBootstrapOnly, true);
+  assert.equal(JSON.parse(imageManifest).version, packageManifest.version);
+  assert.doesNotMatch(marker, /api\.puretokensx\.com|fetch\(|Authorization/);
 });
 
 test("the public install prompt remains extractable in both README files", async () => {
@@ -203,7 +247,7 @@ test("source installer synchronizes Skills without copying an API runtime", asyn
   t.after(() => rm(target, { recursive: true, force: true }));
   const installer = path.join(repositoryRoot, "runtime", "puretokens-skill-install.sh");
   const { stdout } = await execFile("sh", [installer, "sync", "--target", target, "--source", repositoryRoot], { cwd: repositoryRoot });
-  assert.match(stdout, /Pure Tokens Skills 0\.14\.2 synchronized at/);
+  assert.match(stdout, /Pure Tokens Skills 0\.14\.3 synchronized at/);
   assert.deepEqual((await readdir(target)).filter((entry) => skillNames.includes(entry)).sort(), [...skillNames].sort());
   await assert.rejects(readFile(path.join(target, ".puretokens-runtime", "runtime.json"), "utf8"));
 });

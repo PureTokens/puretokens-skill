@@ -13,7 +13,8 @@
     "doesNotUseMcpOrFallbackTransport": true,
     "doesNotUseComputerUseOrUiAutomation": true,
     "doesNotInvokeOtherMediaSkillsAsApiFallback": true,
-    "whenHostNativeApiExecutionUnavailable": "stop_before_request_with_validation_failure_and_never_open_a_browser_desktop_ui_or_computer_use"
+    "executionStart": "resolve_one_matching_current_host_credential_in_memory_and_issue_the_fixed_request_through_host_terminal_or_native_https_without_preflighting_for_a_special_media_interface",
+    "whenHostNativeApiExecutionUnavailable": "report_only_an_actual_terminal_network_credential_resolution_or_attachment_byte_failure_and_never_open_a_browser_desktop_ui_or_computer_use"
   },
   "operations": {
     "identity": { "method": "GET", "url": "https://api.puretokensx.com/v1" }

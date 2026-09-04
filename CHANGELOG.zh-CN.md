@@ -4,6 +4,12 @@
 
 # 更新日志
 
+## 0.14.3 — 2026-09-04
+
+- 修正直连执行契约：Image、Video、Models、Connection 和 Balance 必须私密地在内存中解析当前匹配连接的一把凭据，并通过宿主终端或原生 HTTPS 能力直接请求固定 API；不得因为没有单独的“已认证媒体接口”就在请求前拒绝。
+- 明确默认 `gpt-image-2` 的图片编辑路径：当前用户附件直接用已声明的 `image` 字段，以 multipart 提交到 `POST /v1/images/edits`，不再输出虚构的“没有编辑接口”校验提示。
+- 恢复已发布 0.13.x 更新器硬编码请求的旧版升级归档，使旧安装可以升级到本版本。该归档只包含供旧更新器静态校验的不可执行兼容标记；当前安装不会使用或依赖 Node 媒体运行器。
+
 ## 0.14.2 — 2026-09-04
 
 - 将 Images、Videos、Models、Connection 和 Balance 的固定宿主原生 API 路径收紧为唯一执行路径：明确禁止 Computer Use、浏览器或桌面 UI 自动化、打开 Pure Tokens Switch/Desktop，以及回退调用其他生图或生视频 Skill。

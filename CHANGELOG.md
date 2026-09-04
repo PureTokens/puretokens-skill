@@ -4,6 +4,12 @@
 
 # Changelog
 
+## 0.14.3 — 2026-09-04
+
+- Corrected the direct-execution contract: Image, Video, Models, Connection, and Balance must resolve the current matching connection credential privately in memory and issue the fixed API request through the host terminal or native HTTPS capability. They may not first reject a request because a separate “authenticated media interface” is not exposed.
+- Made image editing explicit for the default `gpt-image-2` profile: a current user attachment is sent directly as multipart to `POST /v1/images/edits` with the declared `image` field, rather than producing a fictional-interface validation message.
+- Restored the exact legacy update archive expected by published 0.13.x updaters, so an old install can reach this release. It contains only a non-functional compatibility marker for that updater's static check; current installs do not use or require a Node media runtime.
+
 ## 0.14.2 — 2026-09-04
 
 - Made the fixed host-native API path exclusive for Images, Videos, Models, Connection, and Balance. These Skills now explicitly forbid Computer Use, browser or desktop UI automation, opening Pure Tokens Switch/Desktop, and using another image or video Skill as a fallback.
