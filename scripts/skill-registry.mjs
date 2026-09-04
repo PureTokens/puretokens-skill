@@ -192,7 +192,9 @@ function validateDirectApiExecutionContract(errors, contract, hostSupport) {
     contract.authentication.neverDisplaysCopiesStoresOrRequestsCredentials !== true ||
     !transport || transport.usesFullApiUrls !== true || transport.doesNotUseMcp !== true ||
     transport.doesNotUseLocalProxyOrSidecar !== true || transport.doesNotUseFallbackEndpoint !== true ||
-    transport.workBuddyPostBodyTransport !== "bounded_base64_argument_never_stdin") {
+    transport.managedRuntimePostBodyTransport !== "bounded_base64_argument_never_stdin" ||
+    transport.managedRuntimeTotalDeadlineSeconds !== 90 ||
+    transport.runtimeFailureEnvelope !== "structured_json_with_phase") {
     errors.push(`${label} must use the fixed full API origin with the configured-credential direct runtime and no MCP, proxy, sidecar, or fallback`);
   }
   if (!Array.isArray(contract.acceptanceScenarios) || !sameArray(contract.acceptanceScenarios.map((scenario) => scenario?.id), directAcceptanceScenarioIds)) {
@@ -222,7 +224,7 @@ function validateDirectApiExecutionContract(errors, contract, hostSupport) {
     userMediaInput.apiHandlesDeclaredMultipartAttachments !== true ||
     userMediaInput.nativeAttachmentRouteMustMatchDeclaredOperation !== true ||
     userMediaInput.nativeAttachmentMustNeverFallBackToJsonTextSubmission !== true ||
-    userMediaInput.workBuddyNativeAttachmentBodyMode !== "multipart_base64_descriptor_only" ||
+    userMediaInput.managedRuntimeNativeAttachmentBodyMode !== "multipart_base64_descriptor_only" ||
     userMediaInput.untransportableNativeReferenceMustNeverBeConvertedToTextPrompt !== true ||
     userMediaInput.currentRequestScopeOnly !== true ||
     typeof userMediaInput.fallback !== "string" || !userMediaInput.fallback) {
@@ -421,7 +423,7 @@ function validateExecutionContract(errors, directory, contract) {
       mediaInput.declaredGenerateAudioIntent !== "map_explicit_generated_sound_to_true_and_silence_to_false_only_for_declared_boolean_generate_audio" ||
       mediaInput.nativeAttachmentRouteMustMatchDeclaredOperation !== true ||
       mediaInput.nativeAttachmentMustNeverFallBackToJsonTextSubmission !== true ||
-      mediaInput.workBuddyNativeAttachmentBodyMode !== "multipart_base64_descriptor_only" ||
+      mediaInput.managedRuntimeNativeAttachmentBodyMode !== "multipart_base64_descriptor_only" ||
       mediaInput.whenCurrentAttachmentPathUnavailable !== "stop_before_post_and_explain_declared_multipart_requirement") {
       errors.push(`${label} must lock native attachments to their declared multipart operation and stop before POST when a current attachment path is unavailable`);
     }
@@ -454,11 +456,11 @@ function validateUpdateContract(errors, label, contract) {
   if (!result || result.installsMissingOfficialSkills !== true || result.upgradesOnlyManagedMatchingSkills !== true ||
     result.neverOverwritesUnmanagedDirectories !== true || result.removesVerifiedRetiredManagedSkills !== true ||
     result.reportsSynchronizedVersion !== true ||
-    result.removesLegacyCodexPluginWhenPresent !== true || result.reportsLegacyCodexPluginManualActionWhenUnavailable !== true ||
+    result.removesLegacyCodexPluginWhenPresent !== true || result.requiresVerifiedLegacyCodexPluginRemovalBeforeSync !== true ||
     result.doesNotClaimSuccessWithoutVersionReceipt !== true ||
     result.neverModifiesOfficialCheckout !== true ||
-    result.requiresNewHostConversationAfterSuccess !== true) {
-    errors.push(`${label} must preserve the official checkout, remove only verified retired Skills and the exact legacy Codex plugin, preserve unmanaged directories, report the synchronized version and unavailable plugin migration, and report a new-conversation requirement`);
+    result.requiresFullCodexRestartAfterLegacyPluginRemoval !== true || result.requiresNewHostConversationAfterSuccess !== true) {
+    errors.push(`${label} must preserve the official checkout, verify removal of the exact legacy Codex plugin before sync, preserve unmanaged directories, report the synchronized version, and require a full Codex restart after legacy-plugin removal`);
   }
 }
 
@@ -468,7 +470,9 @@ function validateDirectTransport(errors, label, transport, requiresNativeMediaBy
     !sameArray(transport.verifiedManagedRuntimeHosts, managedRuntimeHostIds) ||
     transport.neverExposesCredentialsOrHostConfiguration !== true ||
     transport.doesNotUseMcpOrFallbackTransport !== true ||
-    transport.workBuddyPostBodyTransport !== "bounded_base64_argument_never_stdin" ||
+    transport.managedRuntimePostBodyTransport !== "bounded_base64_argument_never_stdin" ||
+    transport.managedRuntimeTotalDeadlineSeconds !== 90 ||
+    transport.runtimeFailureEnvelope !== "structured_json_with_phase" ||
     (requiresNativeMediaByteDelivery && transport.requiresNativeMediaByteDelivery !== true)) {
     errors.push(`${label} must use the fixed full API origin, configured-credential direct runtime, and no MCP or fallback transport`);
   }
@@ -505,6 +509,7 @@ function validateTaskIdentityStateAndSubmissionFailure(errors, label, contract, 
   if (!failure || failure.modelParameterOrCapabilityRejection !== "one_on_demand_catalog_read_then_require_explicit_corrected_new_request" ||
     failure.rateLimit !== "report_retry_after_when_returned_and_require_explicit_retry" ||
     failure.serverTransportOrTimeoutWithoutTaskId !== "report_submission_outcome_unknown_without_declaring_task_absent_or_resubmitting" ||
+    failure.hostExecutionPolicyBlockedBeforeRuntimeStarts !== "report_validation_no_api_request_or_task_id_and_require_host_session_with_external_network_permission" ||
     failure.runtimeInvocationOutputUnknown !== "treat_submission_outcome_as_unknown_do_not_repeat_post_or_submit_replacement_task" ||
     failure.runtimeUnknownOutcomeResponse !== "one_terminal_receipt_then_end_turn_without_followup_tool_status_or_poll_work" ||
     failure.noTaskIdLaterContinuation !== "require_explicit_confirmation_of_a_new_billable_request_before_one_new_post") {

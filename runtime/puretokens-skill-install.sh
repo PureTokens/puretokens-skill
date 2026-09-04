@@ -60,23 +60,29 @@ target_for_host() {
 migrate_legacy_codex_plugin() {
   target_root=$1
   [ -n "${HOME:-}" ] || return 0
-  [ "$target_root" = "$HOME/.agents/skills" ] || return 0
+  home_root=$(cd "$HOME" && pwd -P) || return 0
+  [ "$target_root" = "$home_root/.agents/skills" ] || return 0
   if ! command -v codex >/dev/null 2>&1; then
-    printf '%s\n' "Codex legacy-plugin migration was skipped because the Codex CLI is unavailable. If Puretokens Media is installed, remove it in Codex Plugins before opening a new conversation."
-    return 0
+    fail "cannot verify removal of legacy Codex plugin puretokens-media because the Codex CLI is unavailable; remove it in Codex Plugins, then run this installer again"
   fi
   plugin_list=$(codex plugin list --json 2>/dev/null) || {
-    printf '%s\n' "Codex legacy-plugin migration could not inspect installed plugins. If Puretokens Media is installed, remove it in Codex Plugins before opening a new conversation."
-    return 0
+    fail "cannot verify removal of legacy Codex plugin puretokens-media because Codex Plugins could not be inspected; remove it in Codex Plugins, then run this installer again"
   }
   if ! printf '%s' "$plugin_list" | grep -Eq '"name"[[:space:]]*:[[:space:]]*"puretokens-media"'; then
     return 0
   fi
-  if codex plugin remove puretokens-media --json >/dev/null 2>&1; then
-    printf '%s\n' "Removed legacy Codex plugin puretokens-media"
-  else
-    printf '%s\n' "Codex could not remove the legacy Puretokens Media plugin. Remove it in Codex Plugins, or ask the workspace administrator if it is managed, before opening a new conversation."
+  plugin_selectors=$(printf '%s' "$plugin_list" | tr '{},' '\n' | sed -n 's/.*"pluginId"[[:space:]]*:[[:space:]]*"\(puretokens-media@[^"]*\)".*/\1/p' | sort -u)
+  [ -n "$plugin_selectors" ] || plugin_selectors="puretokens-media"
+  for plugin_selector in $plugin_selectors; do
+    codex plugin remove "$plugin_selector" --json >/dev/null 2>&1 ||
+      fail "could not remove legacy Codex plugin $plugin_selector; remove it in Codex Plugins, then run this installer again"
+  done
+  plugin_list=$(codex plugin list --json 2>/dev/null) ||
+    fail "could not verify removal of legacy Codex plugin puretokens-media; reopen Codex Plugins, remove it if present, then run this installer again"
+  if printf '%s' "$plugin_list" | grep -Eq '"name"[[:space:]]*:[[:space:]]*"puretokens-media"'; then
+    fail "legacy Codex plugin puretokens-media is still installed; remove it in Codex Plugins, then run this installer again"
   fi
+  printf '%s\n' "Removed and verified legacy Codex plugin puretokens-media. Fully restart Codex before testing the new Skills."
 }
 
 validate_source() {
@@ -148,8 +154,10 @@ sync_target() {
   for name in $current_skills; do
     destination="$target_root/$name"
     [ ! -e "$destination" ] || managed_skill "$destination" "$name" ||
-      fail "unmanaged Skill conflicts: $destination"
+        fail "unmanaged Skill conflicts: $destination"
   done
+
+  migrate_legacy_codex_plugin "$target_root"
 
   stage_root=$(mktemp -d "$target_root/.puretokens-skill-stage.XXXXXX") || fail "could not create a private update staging directory"
   mkdir -p "$stage_root/backup"
@@ -191,7 +199,6 @@ sync_target() {
     done
   done
   rm -rf -- "$stage_root"
-  migrate_legacy_codex_plugin "$target_root"
   printf '%s\n' "Pure Tokens Skills $release_version synchronized at $target_root"
 }
 

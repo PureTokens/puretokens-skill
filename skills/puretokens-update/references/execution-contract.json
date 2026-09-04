@@ -27,9 +27,10 @@
     "removesVerifiedRetiredManagedSkills": true,
     "reportsSynchronizedVersion": true,
     "removesLegacyCodexPluginWhenPresent": true,
-    "reportsLegacyCodexPluginManualActionWhenUnavailable": true,
+    "requiresVerifiedLegacyCodexPluginRemovalBeforeSync": true,
     "doesNotClaimSuccessWithoutVersionReceipt": true,
     "neverModifiesOfficialCheckout": true,
+    "requiresFullCodexRestartAfterLegacyPluginRemoval": true,
     "requiresNewHostConversationAfterSuccess": true
   }
 }

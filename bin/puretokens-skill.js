@@ -80,6 +80,7 @@ async function installSkill(args) {
     throw new Error(`Refusing to overwrite existing skill: ${destination}`);
   }
   const runtimePlan = await planManagedRuntime(root);
+  await migrateLegacyCodexPlugin(root);
   await mkdir(root, { recursive: true });
   await applyManagedRuntime(runtimePlan);
   await cp(source, destination, { recursive: true, errorOnExist: true, force: false });
@@ -132,6 +133,7 @@ async function syncSkills(args) {
     }
   }
 
+  await migrateLegacyCodexPlugin(root);
   await mkdir(root, { recursive: true });
   for (const item of plan) {
     if (item.action === "remove-retired") continue;
@@ -150,34 +152,45 @@ async function syncSkills(args) {
     await rm(item.destination, { recursive: true, force: false });
     process.stdout.write(`Removed retired managed ${item.name} from ${item.destination}\n`);
   }
-  await migrateLegacyCodexPlugin(root);
   process.stdout.write(`Pure Tokens Skills ${releaseVersion} synchronized at ${root}\n`);
 }
 
 async function migrateLegacyCodexPlugin(root) {
   if (path.resolve(root) !== path.resolve(os.homedir(), ".agents", "skills")) return;
+  const legacyPlugins = await readLegacyCodexPlugins();
+  if (!legacyPlugins.length) return;
+  for (const plugin of legacyPlugins) {
+    const selector = typeof plugin.pluginId === "string" && plugin.pluginId
+      ? plugin.pluginId
+      : typeof plugin.marketplaceName === "string" && plugin.marketplaceName
+        ? `${plugin.name}@${plugin.marketplaceName}`
+        : "puretokens-media";
+    try {
+      await execFile("codex", ["plugin", "remove", selector, "--json"], { maxBuffer: 256 * 1024 });
+    } catch {
+      throw new Error(`Could not remove legacy Codex plugin ${selector}. Remove it in Codex Plugins, then run this installer again.`);
+    }
+  }
+  if ((await readLegacyCodexPlugins()).length) {
+    throw new Error("Legacy Codex plugin puretokens-media is still installed. Remove it in Codex Plugins, then run this installer again.");
+  }
+  process.stdout.write("Removed and verified legacy Codex plugin puretokens-media. Fully restart Codex before testing the new Skills.\n");
+}
+
+async function readLegacyCodexPlugins() {
   let pluginList;
   try {
     ({ stdout: pluginList } = await execFile("codex", ["plugin", "list", "--json"], { maxBuffer: 256 * 1024 }));
   } catch {
-    process.stdout.write("Codex legacy-plugin migration was skipped because the Codex CLI is unavailable. If Puretokens Media is installed, remove it in Codex Plugins before opening a new conversation.\n");
-    return;
+    throw new Error("Cannot verify removal of legacy Codex plugin puretokens-media because the Codex CLI is unavailable. Remove it in Codex Plugins, then run this installer again.");
   }
-  let legacyPluginInstalled;
   try {
     const payload = JSON.parse(pluginList);
     const installedPlugins = Array.isArray(payload) ? payload : payload?.installed;
-    legacyPluginInstalled = Array.isArray(installedPlugins) && installedPlugins.some((plugin) => plugin?.name === "puretokens-media");
+    if (!Array.isArray(installedPlugins)) throw new Error("invalid plugin list");
+    return installedPlugins.filter((plugin) => plugin?.name === "puretokens-media");
   } catch {
-    process.stdout.write("Codex legacy-plugin migration could not inspect installed plugins. If Puretokens Media is installed, remove it in Codex Plugins before opening a new conversation.\n");
-    return;
-  }
-  if (!legacyPluginInstalled) return;
-  try {
-    await execFile("codex", ["plugin", "remove", "puretokens-media", "--json"], { maxBuffer: 256 * 1024 });
-    process.stdout.write("Removed legacy Codex plugin puretokens-media\n");
-  } catch {
-    process.stdout.write("Codex could not remove the legacy Puretokens Media plugin. Remove it in Codex Plugins, or ask the workspace administrator if it is managed, before opening a new conversation.\n");
+    throw new Error("Cannot verify removal of legacy Codex plugin puretokens-media because Codex Plugins could not be inspected. Remove it in Codex Plugins, then run this installer again.");
   }
 }
 

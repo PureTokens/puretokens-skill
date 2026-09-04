@@ -82,7 +82,7 @@ CC Switch 是连接配置工具，不是 Skill 宿主。Skill 自身始终调用
 
 面向 API 的 Skill 都调用固定的公开 API origin：`https://api.puretokensx.com`。请求使用完整 URL，不使用用户选择的 Base URL 或备用 endpoint。安装在 Skill 同级目录的受管 `.puretokens-runtime/puretokens-direct-api.mjs` 会在 Claude Code、Codex、WorkBuddy、Gemini CLI、Grok Build 和 OpenCode 中，只从各宿主已记录的固定配置位置狭义匹配一把 Pure Tokens 凭据。通常配置应指向 `https://api.puretokensx.com/v1`（或规定的仅 origin 形式）；WorkBuddy 也允许在相同固定 origin 下保存无 query、无 fragment 的 `/v1/...` 单模型资源 URL。该配置仅用于绑定凭据来源，绝不作为请求目标复用。运行器只在内存中保留该凭据，并且只用于允许的固定 Pure Tokens API 路径认证。它绝不打印、复制、保存或索取 Key；不接受任意 URL，不使用 MCP、代理或 sidecar。`puretokens-update` 只处理本机更新，不调用 API endpoint。
 
-直连契约要求已认证的完整 URL HTTPS 请求、JSON 任务响应、同任务状态查询和原生媒体字节交付。Claude Code、Codex、WorkBuddy、Gemini CLI、Grok Build 和 OpenCode 通过受管本地运行器完成认证绑定。WorkBuddy 的 POST 请求体使用一个有界、规范的 Base64 参数，而不是标准输入，因为它的 Bash 执行链路不能可靠关闭 stdin；运行器只在内存中解码。Trae 是手动配置例外：当前没有已批准的本地凭据读取契约，Skill 会安全停止，而不会读取或猜测其用户状态。
+直连契约要求已认证的完整 URL HTTPS 请求、JSON 任务响应、同任务状态查询和原生媒体字节交付。Claude Code、Codex、WorkBuddy、Gemini CLI、Grok Build 和 OpenCode 通过受管本地运行器完成认证绑定。所有受管运行器的 POST 请求体统一使用一个有界、规范的 Base64 参数，而不是标准输入；运行器只在内存中解码、立即拒绝标准输入请求体、执行 90 秒总期限，并在无法完成时返回脱敏的结构化 JSON 失败回执。Trae 是手动配置例外：当前没有已批准的本地凭据读取契约，Skill 会安全停止，而不会读取或猜测其用户状态。
 
 `puretokens-connection` 只调用一次 `GET https://api.puretokensx.com/v1`。只有固定端点明确返回 `status: "ok"`、`name: "Pure Tokens API"` 与 `base_url: "/v1"` 时，才确认该固定 API 的标识。受管运行器可在内部为该请求使用凭据，但 Skill 不会展示或报告用户实际配置的 Base URL 或凭据；这只是端点公开声明检查，不是密码学防伪证明。
 
@@ -106,7 +106,7 @@ Skill 绝不猜测分组名称，也不会声称某模型属于哪个分组；�
 
 ## Skill 升级
 
-`puretokens-update` 专门处理用户明确提出的安装、更新或同步本机官方 Skills 的请求。每次更新只下载一次不含文档和品牌资源的紧凑官方安装包，然后从中执行对应平台安装器并传入当前宿主 ID。安装器自行推导该宿主的全局 Skill 目录，静态校验解压后的安装包，并在同一次运行中同步；不会运行已安装的旧更新器、复用用户配置或再次下载安装包。它先给 GitHub 官方 API raw-content 路径 20 秒；仅当该路径失败时，才通过 GitHub raw-content 路径再尝试一次、最多 20 秒。绝不使用第三方镜像、不再重试任一路径，也不会在安装包校验成功前开始同步。用户无需安装 Node、npm、包管理器、Git 或依赖。当前官方 Skill 全部安装或升级成功后，它会删除已验证的旧受管 Skill 目录，以及同名的旧隐藏备份，安装缺失官方 Skill，只升级受管且同名的当前 Skill 目录；只要遇到当前或旧的非受管同名目录，或非受管运行器目录，整个同步会在改动前停止。仅当目标是 Codex 目录时，它会通过官方 Codex 插件接口移除精确匹配且已安装的旧 `puretokens-media` 插件；无法移除时会明确提示用户到 Codex Plugins 卸载或联系工作区管理员。只有精确的带版本成功回执才能确认同步完成。它绝不读取连接设置或凭据，也绝不会在媒体任务中自行运行。
+`puretokens-update` 专门处理用户明确提出的安装、更新或同步本机官方 Skills 的请求。每次更新只下载一次不含文档和品牌资源的紧凑官方安装包，然后从中执行对应平台安装器并传入当前宿主 ID。安装器自行推导该宿主的全局 Skill 目录，静态校验解压后的安装包，并在同一次运行中同步；不会运行已安装的旧更新器、复用用户配置或再次下载安装包。它先给 GitHub 官方 API raw-content 路径 20 秒；仅当该路径失败时，才通过 GitHub raw-content 路径再尝试一次、最多 20 秒。绝不使用第三方镜像、不再重试任一路径，也不会在安装包校验成功前开始同步。用户无需安装 Node、npm、包管理器、Git 或依赖。Codex 同步前会列出插件；若发现精确的旧 `puretokens-media` 插件，会按其精确 selector 卸载并再次列出确认已不存在。无法检查、卸载或确认时，安装器会停止且不输出成功回执；用户需在 Codex Plugins 中卸载，或联系工作区管理员，再重新执行安装。若本次已移除该插件，必须完全退出并重新启动 Codex，再新开测试对话：已经打开的对话会保留旧插件已加载的指令。全部检查成功后，安装器会删除已验证的旧受管 Skill 目录，以及同名的旧隐藏备份，安装缺失官方 Skill，只升级受管且同名的当前 Skill 目录；只要遇到当前或旧的非受管同名目录，或非受管运行器目录，整个同步会在改动前停止。只有精确的带版本成功回执才能确认同步完成。它绝不读取连接设置或凭据，也绝不会在媒体任务中自行运行。
 
 ## 图片尺寸和数量
 

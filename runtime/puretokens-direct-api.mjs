@@ -24,6 +24,7 @@ const maxMultipartFileBytes = 512 * 1024 * 1024;
 const maxJsonBodyBytes = 1024 * 1024;
 const maxImageMediaBytes = 128 * 1024 * 1024;
 const maxVideoOrAudioMediaBytes = 2 * 1024 * 1024 * 1024;
+export const directRequestDeadlineMs = 90_000;
 const allowedMultipartContentTypes = new Set([
   "image/jpeg",
   "image/png",
@@ -41,64 +42,59 @@ const allowedMultipartContentTypes = new Set([
   "audio/webm"
 ]);
 
-if (isMainModule()) {
-  main().catch((error) => {
-    process.stderr.write(`${safeMessage(error)}\n`);
-    process.exitCode = 1;
-  });
-}
-
 export async function main(argv = process.argv.slice(2), environment = process.env) {
-  const options = parseArguments(argv);
-  const credential = await resolveConfiguredCredential(options.host, environment);
-  const target = new URL(options.path, apiOrigin);
-  const headers = { authorization: `Bearer ${credential}` };
-  const request = { method: options.method, headers, signal: AbortSignal.timeout(90_000) };
+  const deadline = AbortSignal.timeout(directRequestDeadlineMs);
+  let phase = "validation";
+  try {
+    const options = parseArguments(argv);
+    const credential = await withinDeadline(resolveConfiguredCredential(options.host, environment), deadline);
+    const target = new URL(options.path, apiOrigin);
+    const headers = { authorization: `Bearer ${credential}` };
+    const request = { method: options.method, headers, signal: deadline };
 
-  if (options.jsonStdin || options.jsonBase64 !== undefined) {
-    const body = options.jsonBase64 !== undefined
-      ? readJsonBase64Argument(options.jsonBase64)
-      : await readJsonStandardInput();
-    headers["content-type"] = "application/json";
-    request.body = JSON.stringify(body);
-  }
-  if (options.multipartStdin || options.multipartBase64 !== undefined) {
-    const specification = options.multipartBase64 !== undefined
-      ? readJsonBase64Argument(options.multipartBase64)
-      : await readJsonStandardInput();
-    request.body = await createMultipartRequestBody(specification);
-  }
+    if (options.jsonBase64 !== undefined) {
+      headers["content-type"] = "application/json";
+      request.body = JSON.stringify(readJsonBase64Argument(options.jsonBase64));
+    }
+    if (options.multipartBase64 !== undefined) {
+      request.body = await withinDeadline(createMultipartRequestBody(readJsonBase64Argument(options.multipartBase64)), deadline);
+    }
 
-  const response = await fetch(target, request);
-  if (options.outputFile) {
-    const delivered = await writeNativeResponse(response, options.outputFile);
-    if (!delivered) return;
+    phase = options.method === "POST" ? "submission" : "read";
+    const response = await withinDeadline(fetch(target, request), deadline);
+    phase = "response";
+    if (options.outputFile) {
+      const delivered = await writeNativeResponse(response, options.outputFile, deadline);
+      if (!delivered) return;
+      writeJson({
+        http_status: response.status,
+        content_type: response.headers.get("content-type") || null,
+        retry_after: response.headers.get("retry-after") || null,
+        output_file: options.outputFile
+      });
+      return;
+    }
+
+    const responseText = await withinDeadline(response.text(), deadline);
+    let body = responseText;
+    if (responseText) {
+      try {
+        body = JSON.parse(responseText);
+      } catch {
+        // A non-JSON body is still surfaced to the calling Skill as an opaque API response.
+      }
+    } else {
+      body = null;
+    }
     writeJson({
       http_status: response.status,
       content_type: response.headers.get("content-type") || null,
       retry_after: response.headers.get("retry-after") || null,
-      output_file: options.outputFile
+      body
     });
-    return;
+  } catch (error) {
+    throw new DirectRuntimeFailure(phase, error);
   }
-
-  const responseText = await response.text();
-  let body = responseText;
-  if (responseText) {
-    try {
-      body = JSON.parse(responseText);
-    } catch {
-      // A non-JSON body is still surfaced to the calling Skill as an opaque API response.
-    }
-  } else {
-    body = null;
-  }
-  writeJson({
-    http_status: response.status,
-    content_type: response.headers.get("content-type") || null,
-    retry_after: response.headers.get("retry-after") || null,
-    body
-  });
 }
 
 export async function resolveConfiguredCredential(host, environment = process.env) {
@@ -243,34 +239,27 @@ export function parseDotEnv(source) {
 
 export function parseArguments(argv) {
   const args = [...argv];
-  if (args.shift() !== "request") throw new Error(`Usage: puretokens-direct-api request --host <${managedRuntimeHosts.join("|")}> --method <GET|POST> --path <fixed-api-path> [--json-stdin|--json-base64 <base64>|--multipart-stdin|--multipart-base64 <base64>] [--output-file <absolute-path>]`);
+  if (args.shift() !== "request") throw new Error(`Usage: puretokens-direct-api request --host <${managedRuntimeHosts.join("|")}> --method <GET|POST> --path <fixed-api-path> [--json-base64 <base64>|--multipart-base64 <base64>] [--output-file <absolute-path>]`);
   const options = {
     host: undefined,
     method: undefined,
     path: undefined,
-    jsonStdin: false,
     jsonBase64: undefined,
-    multipartStdin: false,
     multipartBase64: undefined,
     outputFile: undefined
   };
   while (args.length) {
     const flag = args.shift();
-    if (flag === "--json-stdin") {
-      options.jsonStdin = true;
-      continue;
-    }
     if (flag === "--json-base64") {
       options.jsonBase64 = requiredArgumentValue(args, flag);
-      continue;
-    }
-    if (flag === "--multipart-stdin") {
-      options.multipartStdin = true;
       continue;
     }
     if (flag === "--multipart-base64") {
       options.multipartBase64 = requiredArgumentValue(args, flag);
       continue;
+    }
+    if (flag === "--json-stdin" || flag === "--multipart-stdin") {
+      throw new Error("Standard-input request bodies are not supported; use --json-base64 or --multipart-base64.");
     }
     if (!["--host", "--method", "--path", "--output-file"].includes(flag)) throw new Error(`Unknown option: ${flag}`);
     const value = requiredArgumentValue(args, flag);
@@ -282,11 +271,7 @@ export function parseArguments(argv) {
   if (!managedRuntimeHosts.includes(options.host)) throw new Error("The requested host does not have a managed Pure Tokens credential runtime.");
   if (!["GET", "POST"].includes(options.method)) throw new Error("--method must be GET or POST");
   if (!isAllowedPath(options.method, options.path)) throw new Error("The requested API path is not allowed by the Pure Tokens direct API contract.");
-  if (options.host === "workbuddy" && (options.jsonStdin || options.multipartStdin)) {
-    throw new Error("WorkBuddy POST request bodies must use --json-base64 or --multipart-base64; standard input is not supported.");
-  }
-  const requestBodyModeCount = Number(options.jsonStdin) + Number(options.jsonBase64 !== undefined) +
-    Number(options.multipartStdin) + Number(options.multipartBase64 !== undefined);
+  const requestBodyModeCount = Number(options.jsonBase64 !== undefined) + Number(options.multipartBase64 !== undefined);
   if (requestBodyModeCount !== (options.method === "POST" ? 1 : 0)) {
     throw new Error(options.method === "POST"
       ? "POST requests require exactly one JSON or multipart request-body mode."
@@ -427,23 +412,6 @@ function resolveEnvironmentCredential(rawValue, environment) {
   return names.map((name) => environment[name]).find((candidate) => typeof candidate === "string" && candidate.length > 0);
 }
 
-async function readJsonStandardInput() {
-  const chunks = [];
-  let bytes = 0;
-  for await (const chunk of process.stdin) {
-    bytes += Buffer.byteLength(chunk);
-    if (bytes > maxJsonBodyBytes) throw new Error("JSON request body must be no more than 1 MiB.");
-    chunks.push(chunk);
-  }
-  const value = Buffer.concat(chunks).toString("utf8");
-  if (!value.trim()) throw new Error("JSON request body is required on standard input.");
-  try {
-    return JSON.parse(value);
-  } catch {
-    throw new Error("Standard input must contain one valid JSON request body.");
-  }
-}
-
 export function readJsonBase64Argument(value) {
   if (typeof value !== "string" || !value || value.length > encodedBodyLengthLimit() || value.length % 4 !== 0 || !/^[A-Za-z0-9+/]*={0,2}$/.test(value)) {
     throw new Error("Base64 request body must be one bounded canonical UTF-8 JSON value.");
@@ -536,9 +504,9 @@ function isSafeFilename(value) {
   return value.length > 0 && value.length <= 255 && value === path.basename(value) && !/[\0\r\n]/.test(value);
 }
 
-async function writeNativeResponse(response, outputFile) {
+async function writeNativeResponse(response, outputFile, deadline) {
   if (!response.ok) {
-    const responseText = await response.text();
+    const responseText = await withinDeadline(response.text(), deadline);
     let body = responseText;
     try {
       body = JSON.parse(responseText);
@@ -570,7 +538,8 @@ async function writeNativeResponse(response, outputFile) {
     await pipeline(
       Readable.fromWeb(response.body),
       new BoundedNativeMediaStream(mediaLimit),
-      createWriteStream(outputFile, { flags: "wx", mode: 0o600 })
+      createWriteStream(outputFile, { flags: "wx", mode: 0o600 }),
+      { signal: deadline }
     );
   } catch (error) {
     await unlink(outputFile).catch(() => undefined);
@@ -609,11 +578,80 @@ function writeJson(value) {
   process.stdout.write(`${JSON.stringify(value)}\n`);
 }
 
-function safeMessage(error) {
-  if (error instanceof Error && error.message) return error.message;
-  return "Pure Tokens direct API runtime failed.";
+async function withinDeadline(promise, deadline) {
+  if (deadline.aborted) throw new Error("The direct API runtime exceeded its 90-second total deadline.");
+  return new Promise((resolve, reject) => {
+    const onAbort = () => {
+      cleanup();
+      reject(new Error("The direct API runtime exceeded its 90-second total deadline."));
+    };
+    const cleanup = () => deadline.removeEventListener("abort", onAbort);
+    deadline.addEventListener("abort", onAbort, { once: true });
+    Promise.resolve(promise).then((value) => {
+      cleanup();
+      resolve(value);
+    }, (error) => {
+      cleanup();
+      reject(error);
+    });
+  });
+}
+
+class DirectRuntimeFailure extends Error {
+  constructor(phase, cause) {
+    super("Pure Tokens direct API runtime failed.");
+    this.phase = phase;
+    this.cause = cause;
+  }
+}
+
+export function runtimeFailureEnvelope(error) {
+  const failure = error instanceof DirectRuntimeFailure ? error : new DirectRuntimeFailure("validation", error);
+  return {
+    runtime_error: {
+      phase: failure.phase,
+      message: safeRuntimeFailureMessage(failure.cause)
+    }
+  };
+}
+
+function safeRuntimeFailureMessage(error) {
+  for (const message of runtimeErrorMessages(error)) {
+    if (message === "The direct API runtime exceeded its 90-second total deadline.") return message;
+    if (message === "Standard-input request bodies are not supported; use --json-base64 or --multipart-base64.") return message;
+    if (message.startsWith("No usable Pure Tokens API credential is configured for") ||
+      message === "No usable Pure Tokens API-key connection is selected for Gemini CLI." ||
+      message === "Trae uses manual connection setup and has no approved local credential resolver for this Skill." ||
+      message === "The requested host does not have a managed Pure Tokens credential runtime.") return message;
+    if (message.startsWith("--") || message.startsWith("Usage:") || message.startsWith("POST requests require") || message.startsWith("GET requests cannot") ||
+      message.startsWith("Unknown option:") || message.startsWith("The requested API path") || message.startsWith("Base64 request body") ||
+      message.startsWith("Multipart request body") || message.startsWith("Each multipart file") || message.startsWith("An explicit media attachment") ||
+      message.startsWith("Multipart attachments") || message.startsWith("The completed media response") || message.startsWith("Refusing to overwrite")) return message;
+  }
+  return "The direct API runtime did not complete the request.";
+}
+
+function runtimeErrorMessages(error) {
+  const messages = [];
+  const visited = new Set();
+  let current = error;
+  while (current instanceof Error && !visited.has(current)) {
+    visited.add(current);
+    if (typeof current.message === "string") messages.push(current.message);
+    current = current.cause;
+  }
+  return messages;
 }
 
 function isMainModule() {
-  return process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname);
+  // The managed installer copies this standalone .mjs file without a package root.
+  // Match its fixed executable filename instead of relying on package-context URL resolution.
+  return Boolean(process.argv[1]) && path.basename(process.argv[1]) === "puretokens-direct-api.mjs";
+}
+
+if (isMainModule()) {
+  main().catch((error) => {
+    writeJson(runtimeFailureEnvelope(error));
+    process.exitCode = 1;
+  });
 }

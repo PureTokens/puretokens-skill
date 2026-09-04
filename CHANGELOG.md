@@ -4,6 +4,16 @@
 
 # Changelog
 
+## 0.13.25 — 2026-09-04
+
+- Fixed direct Images and Videos submissions that could stall before any API call in Codex and other managed hosts. Every managed runtime POST now uses only a bounded canonical Base64 request-body argument; standard-input request bodies are rejected immediately instead of waiting for an EOF that a host may never send.
+- Added a 90-second total runtime deadline and a sanitized structured JSON runtime-failure envelope with an execution phase. Skills now distinguish a local pre-submit failure from a submission whose acceptance is genuinely unknown, without repeating a billable request.
+- Clarified host-policy blocks before the runtime starts: they are local `validation` failures with no API request, task ID, HTTP response, or billing claim. Image and video Skills now direct users to retry only in a session where external-network execution can be approved.
+
+## 0.13.24 — 2026-09-03
+
+- Fixed a legacy Codex-plugin migration hole: the installer now removes the exact listed `puretokens-media` plugin selector, lists plugins again to verify its absence, and stops without a synchronized-version receipt if that cannot be proven. After verified removal, it explicitly requires a full Codex restart because already-open conversations retain loaded legacy Skill instructions.
+
 ## 0.13.23 — 2026-09-03
 
 - Simplified the Agent install prompt to the repository URL and moved all bootstrap detail into one official install bundle. Its native installer now accepts a host ID, derives the documented Skill directory, validates the unpacked bundle, and synchronizes without a second package download.

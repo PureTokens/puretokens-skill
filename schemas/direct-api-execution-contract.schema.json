@@ -26,13 +26,15 @@
     },
     "transport": {
       "type": "object",
-      "required": ["usesFullApiUrls", "doesNotUseMcp", "doesNotUseLocalProxyOrSidecar", "doesNotUseFallbackEndpoint", "workBuddyPostBodyTransport"],
+      "required": ["usesFullApiUrls", "doesNotUseMcp", "doesNotUseLocalProxyOrSidecar", "doesNotUseFallbackEndpoint", "managedRuntimePostBodyTransport", "managedRuntimeTotalDeadlineSeconds", "runtimeFailureEnvelope"],
       "properties": {
         "usesFullApiUrls": { "const": true },
         "doesNotUseMcp": { "const": true },
         "doesNotUseLocalProxyOrSidecar": { "const": true },
         "doesNotUseFallbackEndpoint": { "const": true },
-        "workBuddyPostBodyTransport": { "const": "bounded_base64_argument_never_stdin" }
+        "managedRuntimePostBodyTransport": { "const": "bounded_base64_argument_never_stdin" },
+        "managedRuntimeTotalDeadlineSeconds": { "const": 90 },
+        "runtimeFailureEnvelope": { "const": "structured_json_with_phase" }
       },
       "additionalProperties": false
     },

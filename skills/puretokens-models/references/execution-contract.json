@@ -10,7 +10,9 @@
     "verifiedManagedRuntimeHosts": ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode"],
     "neverExposesCredentialsOrHostConfiguration": true,
     "doesNotUseMcpOrFallbackTransport": true,
-    "workBuddyPostBodyTransport": "bounded_base64_argument_never_stdin"
+    "managedRuntimePostBodyTransport": "bounded_base64_argument_never_stdin",
+    "managedRuntimeTotalDeadlineSeconds": 90,
+    "runtimeFailureEnvelope": "structured_json_with_phase"
   },
   "operations": {
     "catalog": { "method": "GET", "url": "https://api.puretokensx.com/v1/media/models" }

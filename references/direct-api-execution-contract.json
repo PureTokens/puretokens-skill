@@ -15,7 +15,9 @@
     "doesNotUseMcp": true,
     "doesNotUseLocalProxyOrSidecar": true,
     "doesNotUseFallbackEndpoint": true,
-    "workBuddyPostBodyTransport": "bounded_base64_argument_never_stdin"
+    "managedRuntimePostBodyTransport": "bounded_base64_argument_never_stdin",
+    "managedRuntimeTotalDeadlineSeconds": 90,
+    "runtimeFailureEnvelope": "structured_json_with_phase"
   },
   "installableHosts": [
     "claude-code",
@@ -69,7 +71,7 @@
     "apiHandlesDeclaredMultipartAttachments": true,
     "nativeAttachmentRouteMustMatchDeclaredOperation": true,
     "nativeAttachmentMustNeverFallBackToJsonTextSubmission": true,
-    "workBuddyNativeAttachmentBodyMode": "multipart_base64_descriptor_only",
+    "managedRuntimeNativeAttachmentBodyMode": "multipart_base64_descriptor_only",
     "untransportableNativeReferenceMustNeverBeConvertedToTextPrompt": true,
     "currentRequestScopeOnly": true,
     "fallback": "If the active runtime cannot send an explicitly attached file as the declared multipart representation, stop before submission, explain the declared transport, and do not invent a URL, file ID, or upload path. A public HTTPS URL, file ID, or voice ID explicitly supplied by the user may be sent only in the exact installed or on-demand-profile field whose declared transport permits it; the Skill never downloads, validates, or rehosts it."

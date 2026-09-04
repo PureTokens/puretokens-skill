@@ -99,8 +99,7 @@ function Remove-LegacyCodexPlugin([string]$TargetRoot) {
   if (-not [string]::Equals($TargetRoot.TrimEnd('\\'), $codexTarget, [System.StringComparison]::OrdinalIgnoreCase)) { return }
   $codex = Get-Command codex -ErrorAction SilentlyContinue
   if ($null -eq $codex) {
-    Write-Output "Codex legacy-plugin migration was skipped because the Codex CLI is unavailable. If Puretokens Media is installed, remove it in Codex Plugins before opening a new conversation."
-    return
+    Fail "cannot verify removal of legacy Codex plugin puretokens-media because the Codex CLI is unavailable; remove it in Codex Plugins, then run this installer again"
   }
   try {
     $pluginOutput = & $codex.Source plugin list --json 2>$null
@@ -108,16 +107,26 @@ function Remove-LegacyCodexPlugin([string]$TargetRoot) {
     $plugins = ($pluginOutput -join "`n") | ConvertFrom-Json
     $legacyPlugin = @($plugins.installed | Where-Object { $_.name -eq "puretokens-media" })
   } catch {
-    Write-Output "Codex legacy-plugin migration could not inspect installed plugins. If Puretokens Media is installed, remove it in Codex Plugins before opening a new conversation."
-    return
+    Fail "cannot verify removal of legacy Codex plugin puretokens-media because Codex Plugins could not be inspected; remove it in Codex Plugins, then run this installer again"
   }
   if ($legacyPlugin.Count -eq 0) { return }
-  & $codex.Source plugin remove puretokens-media --json *> $null
-  if ($LASTEXITCODE -eq 0) {
-    Write-Output "Removed legacy Codex plugin puretokens-media"
-  } else {
-    Write-Output "Codex could not remove the legacy Puretokens Media plugin. Remove it in Codex Plugins, or ask the workspace administrator if it is managed, before opening a new conversation."
+  foreach ($plugin in $legacyPlugin) {
+    $selector = if (-not [string]::IsNullOrWhiteSpace($plugin.pluginId)) { $plugin.pluginId } elseif (-not [string]::IsNullOrWhiteSpace($plugin.marketplaceName)) { "$($plugin.name)@$($plugin.marketplaceName)" } else { $plugin.name }
+    & $codex.Source plugin remove $selector --json *> $null
+    if ($LASTEXITCODE -ne 0) {
+      Fail "could not remove legacy Codex plugin $selector; remove it in Codex Plugins, then run this installer again"
+    }
   }
+  try {
+    $pluginOutput = & $codex.Source plugin list --json 2>$null
+    if ($LASTEXITCODE -ne 0) { throw "plugin list failed" }
+    $plugins = ($pluginOutput -join "`n") | ConvertFrom-Json
+    $legacyPlugin = @($plugins.installed | Where-Object { $_.name -eq "puretokens-media" })
+  } catch {
+    Fail "could not verify removal of legacy Codex plugin puretokens-media; reopen Codex Plugins, remove it if present, then run this installer again"
+  }
+  if ($legacyPlugin.Count -ne 0) { Fail "legacy Codex plugin puretokens-media is still installed; remove it in Codex Plugins, then run this installer again" }
+  Write-Output "Removed and verified legacy Codex plugin puretokens-media. Fully restart Codex before testing the new Skills."
 }
 
 $workspace = $null
@@ -171,6 +180,8 @@ try {
     if ((Test-Path -LiteralPath $destination) -and -not (Test-ManagedSkill $destination $name)) { Fail "unmanaged Skill conflicts: $destination" }
   }
 
+  Remove-LegacyCodexPlugin $targetRoot
+
   $stageRoot = Join-Path $targetRoot (".puretokens-skill-stage-" + [Guid]::NewGuid().ToString("N"))
   New-Item -ItemType Directory -Path (Join-Path $stageRoot "backup") -Force | Out-Null
   Copy-Item -LiteralPath (Join-Path $sourceRoot "runtime") -Destination $stageRoot -Recurse
@@ -206,7 +217,6 @@ try {
     }
   }
   Remove-Item -LiteralPath $stageRoot -Recurse -Force
-  Remove-LegacyCodexPlugin $targetRoot
   Write-Output "Pure Tokens Skills $releaseVersion synchronized at $targetRoot"
 } finally {
   if ($null -ne $workspace -and (Test-Path -LiteralPath $workspace)) { Remove-Item -LiteralPath $workspace -Recurse -Force }
