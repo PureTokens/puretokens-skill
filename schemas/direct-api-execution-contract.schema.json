@@ -3,7 +3,7 @@
   "$id": "https://puretokensx.com/schemas/direct-api-execution-contract.schema.json",
   "title": "Pure Tokens host-native direct API execution contract",
   "type": "object",
-  "required": ["schemaVersion", "apiOrigin", "authentication", "transport", "installableHosts", "hostNativeExecutionHosts", "requiredHostCapabilities", "acceptanceScenarios", "userMediaInput", "asyncTaskHandling", "mediaDeliveryResourceBounds", "balance"],
+  "required": ["schemaVersion", "apiOrigin", "authentication", "transport", "mediaRouting", "installableHosts", "hostNativeExecutionHosts", "requiredHostCapabilities", "acceptanceScenarios", "userMediaInput", "asyncTaskHandling", "mediaDeliveryResourceBounds", "balance"],
   "properties": {
     "$schema": { "const": "https://puretokensx.com/schemas/direct-api-execution-contract.schema.json" },
     "schemaVersion": { "const": 1 },
@@ -23,14 +23,31 @@
     },
     "transport": {
       "type": "object",
-      "required": ["usesFullApiUrls", "usesHostNativeAuthenticatedHttpsExecution", "doesNotRequireNode", "doesNotUseMcp", "doesNotUseLocalProxyOrSidecar", "doesNotUseFallbackEndpoint"],
+      "required": ["usesFullApiUrls", "usesHostNativeAuthenticatedHttpsExecution", "doesNotRequireNode", "doesNotUseMcp", "doesNotUseLocalProxyOrSidecar", "doesNotUseFallbackEndpoint", "doesNotUseComputerUseOrUiAutomation", "doesNotInvokeOtherMediaSkillsAsApiFallback", "whenHostNativeApiExecutionUnavailable"],
       "properties": {
         "usesFullApiUrls": { "const": true },
         "usesHostNativeAuthenticatedHttpsExecution": { "const": true },
         "doesNotRequireNode": { "const": true },
         "doesNotUseMcp": { "const": true },
         "doesNotUseLocalProxyOrSidecar": { "const": true },
-        "doesNotUseFallbackEndpoint": { "const": true }
+        "doesNotUseFallbackEndpoint": { "const": true },
+        "doesNotUseComputerUseOrUiAutomation": { "const": true },
+        "doesNotInvokeOtherMediaSkillsAsApiFallback": { "const": true },
+        "whenHostNativeApiExecutionUnavailable": { "const": "stop_before_request_with_validation_failure_and_never_open_a_browser_desktop_ui_or_computer_use" }
+      },
+      "additionalProperties": false
+    },
+    "mediaRouting": {
+      "type": "object",
+      "required": ["imageAndVideoRequestsPreferPureTokensSpecialists", "imageSkill", "videoSkill", "priority", "afterSpecialistSelection", "connectionContext", "metadataLimitation"],
+      "properties": {
+        "imageAndVideoRequestsPreferPureTokensSpecialists": { "const": true },
+        "imageSkill": { "const": "puretokens-image" },
+        "videoSkill": { "const": "puretokens-video" },
+        "priority": { "const": "when_current_host_connection_uses_puretokens_select_the_matching_puretokens_specialist_before_generic_imagegen_imagen_or_video_skills" },
+        "afterSpecialistSelection": { "const": "never_fall_back_to_a_generic_media_skill" },
+        "connectionContext": { "const": "host_managed_only_skill_never_reads_or_inspects_connection_configuration" },
+        "metadataLimitation": { "const": "skill_metadata_expresses_routing_priority_but_cannot_override_a_host_that_ignores_installed_skill_selection" }
       },
       "additionalProperties": false
     },

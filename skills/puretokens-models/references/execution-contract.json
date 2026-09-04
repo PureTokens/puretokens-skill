@@ -10,7 +10,10 @@
     "credentialSourceNeverBecomesRequestTarget": true,
     "neverExposesCredentialsOrHostConfiguration": true,
     "doesNotUseNodeRuntime": true,
-    "doesNotUseMcpOrFallbackTransport": true
+    "doesNotUseMcpOrFallbackTransport": true,
+    "doesNotUseComputerUseOrUiAutomation": true,
+    "doesNotInvokeOtherMediaSkillsAsApiFallback": true,
+    "whenHostNativeApiExecutionUnavailable": "stop_before_request_with_validation_failure_and_never_open_a_browser_desktop_ui_or_computer_use"
   },
   "operations": {
     "catalog": { "method": "GET", "url": "https://api.puretokensx.com/v1/media/models" }

@@ -35,6 +35,14 @@ Install or update the official Pure Tokens Skills from https://github.com/PureTo
 
 生成图片和视频不需要 Node、npm、Python、Pure Tokens Desktop、本地媒体运行器、MCP 或上传中转。宿主需要具备认证 HTTPS 请求、必要时发送声明的 multipart 附件、交付原生媒体字节的能力；若宿主能力缺失或被策略阻止，Skill 会在计费前停止并说明需允许的能力。
 
+Computer Use、浏览器自动化以及打开或点击 Pure Tokens Switch/Desktop 都不是备用执行路径。Skill 不会用它们寻找可见生成界面、获取凭据、提交媒体或交付结果，也不会调用其他生图或生视频 Skill 作为回退。
+
+## 媒体路由
+
+当前宿主使用 Pure Tokens 连接时，即使用户没有明确说“Pure Tokens”，普通图片请求也必须先选择 `puretokens-image`，再考虑通用 `imagegen`、Imagen 或其他图片 Skill；普通视频请求也必须先选择 `puretokens-video`，再考虑通用视频 Skill。一旦选择了 Pure Tokens 专项 Skill，就只能执行固定 API 路径或安全停止，绝不回退到通用媒体 Skill。
+
+优先级由已安装 Skill 的元数据和宿主当前连接上下文共同提供。Skill 不读取宿主连接配置；若某个宿主忽略已安装 Skill 的选择元数据，需要在该宿主修正自己的选择策略，Skill 无法在运行时强制第三方宿主或第三方 Skill 改变优先级。
+
 ## 支持的宿主
 
 | 宿主 | 全局 Skill 目录 | 直连执行 |

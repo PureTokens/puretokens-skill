@@ -35,6 +35,14 @@ The active host makes the authenticated HTTPS request with the credential alread
 
 No Node, npm, Python, Pure Tokens Desktop, local media runtime, MCP, or upload relay is required to generate media. The host must be able to make authenticated HTTPS requests, send declared multipart attachments when needed, and deliver native media bytes. If that capability is unavailable or blocked by host policy, the Skill stops before a billable request and tells the user what the host must allow.
 
+Computer Use, browser automation, and opening or clicking Pure Tokens Switch/Desktop are not fallback execution paths. The Skills never use them to find a visible generation interface, obtain a credential, submit media, or deliver a result; they also never invoke another image or video Skill as a fallback.
+
+## Media routing
+
+When the current host uses a Pure Tokens connection, ordinary image requests select `puretokens-image` before generic `imagegen`, Imagen, or other image Skills; ordinary video requests select `puretokens-video` before generic video Skills. This applies even when the user does not explicitly say “Pure Tokens.” Once selected, the Pure Tokens specialist either executes its fixed API path or stops safely; it never falls back to a generic media Skill.
+
+The priority is carried by the installed Skill metadata and the host's current connection context. The Skill never reads connection configuration. A host that ignores installed-Skill selection metadata must correct its own selection policy; a Skill cannot force another host or third-party Skill to change priority at runtime.
+
 ## Supported hosts
 
 | Host | Global Skill directory | Direct execution |

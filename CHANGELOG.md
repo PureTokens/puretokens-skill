@@ -4,6 +4,12 @@
 
 # Changelog
 
+## 0.14.2 — 2026-09-04
+
+- Made the fixed host-native API path exclusive for Images, Videos, Models, Connection, and Balance. These Skills now explicitly forbid Computer Use, browser or desktop UI automation, opening Pure Tokens Switch/Desktop, and using another image or video Skill as a fallback.
+- Added validation contracts and scenario coverage for a missing native API executor: stop before any request with a local validation failure instead of searching for a visual generation interface or requesting Computer Use permission.
+- Made `puretokens-image` and `puretokens-video` the declared first-choice specialists for generic image and video requests on a current Pure Tokens connection, ahead of generic `imagegen`, Imagen, or video Skills. The contract explicitly documents the host-side metadata boundary: a Skill cannot override a host that ignores installed-Skill priority.
+
 ## 0.14.1 — 2026-09-04
 
 - Reduced normal media-request context: Image and Video now read a compact model index and only the selected model profile. Full behavior scenarios are loaded only for matching exceptional paths.

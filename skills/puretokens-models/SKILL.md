@@ -7,6 +7,8 @@ description: 查询当前 Pure Tokens 连接实际可用的图片和视频模型
 
 只读查询固定 Pure Tokens API `https://api.puretokensx.com/v1/media/models` 的当前认证媒体目录。使用当前宿主已有的认证 HTTPS/API 执行能力直接发出该完整固定 URL 请求；只可在内存中读取当前活动连接中与固定 Pure Tokens origin 精确匹配的一把凭据，作为本次请求的认证头。第三方 CC Switch 或手工配置只要已写入宿主连接即可使用；不得检查 provider 标签，也不得把保存的 Base URL 当作请求目标。不得显示、复制、保存、索取或输出凭据、Base URL 或完整宿主配置；不得安装或调用 Node 运行器、MCP、本地代理、sidecar、备用服务或另一条认证路径。
 
+不得申请、调用或使用 Computer Use，也不得打开、点击或控制浏览器、Pure Tokens Switch、Pure Tokens Desktop 或其他图形界面来发现模型、读取配置或替代该 GET 请求；不得调用其他 Skill 作为回退。若宿主未暴露认证 API 执行能力，计费前停止并明确目录 API 未执行。
+
 只处理完成请求后得到的结构化结果；不得把响应原文、请求头或配置内容直接展示给用户。若当前宿主不能在不暴露凭据的前提下执行该已认证 HTTPS 请求，按本地执行不可用处理，明确目录请求未执行且不猜测配置原因。
 
 先读取已安装的 `references/execution-contract.json` 和 `references/behavior-scenarios.json`；它们定义模型目录、能力筛选和用户可见输出的约束。

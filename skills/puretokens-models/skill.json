@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "name": "puretokens-models",
-  "version": "0.14.1",
+  "version": "0.14.2",
   "entry": "SKILL.md",
   "displayName": "Pure Tokens Models",
   "description": "Inspect fixed-Pure-Tokens authenticated media models, declared parameters, and media operations.",
@@ -53,6 +53,8 @@
     "usesHostNativeAuthenticatedHttpsExecution": true,
     "usesCurrentHostConfiguredCredential": true,
     "doesNotUseNodeRuntime": true,
+    "doesNotUseComputerUseOrUiAutomation": true,
+    "doesNotInvokeOtherMediaSkillsAsApiFallback": true,
     "neverExposesCredentialsOrHostConfiguration": true,
     "catalogReadOnly": true,
     "reportsOnlyLiveDeclaredCapabilities": true,

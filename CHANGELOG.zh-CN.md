@@ -4,6 +4,12 @@
 
 # 更新日志
 
+## 0.14.2 — 2026-09-04
+
+- 将 Images、Videos、Models、Connection 和 Balance 的固定宿主原生 API 路径收紧为唯一执行路径：明确禁止 Computer Use、浏览器或桌面 UI 自动化、打开 Pure Tokens Switch/Desktop，以及回退调用其他生图或生视频 Skill。
+- 为缺少宿主原生 API 执行器增加契约和场景校验：在任何请求前以本地 validation 失败停止，不再搜索可见生成界面或请求 Computer Use 权限。
+- 当前宿主使用 Pure Tokens 连接时，将 `puretokens-image` 和 `puretokens-video` 声明为普通图片、视频请求的第一选择，优先于通用 `imagegen`、Imagen 或视频 Skill；契约也明确了宿主侧元数据边界：若宿主忽略已安装 Skill 优先级，Skill 本身无法在运行时强制改变宿主选择。
+
 ## 0.14.1 — 2026-09-04
 
 - 降低普通媒体请求的上下文负担：生图和生视频先读取紧凑模型索引，再只读取被选中模型的 profile；完整异常场景只在命中对应特殊路径时读取。
