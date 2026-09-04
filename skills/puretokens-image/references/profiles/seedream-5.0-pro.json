@@ -1,0 +1,183 @@
+{
+  "$schema": "https://puretokensx.com/schemas/model-profile.schema.json",
+  "schemaVersion": 1,
+  "capability": "image",
+  "catalogUpdatedAt": "2026-09-03",
+  "catalogCapturedAt": "2026-09-03T04:00:37.535Z",
+  "id": "seedream-5.0-pro",
+  "parameterSchema": {
+    "properties": {
+      "prompt": {
+        "type": "string",
+        "required": true,
+        "minLength": 3,
+        "maxLength": 2000
+      },
+      "n": {
+        "type": "integer",
+        "default": 1,
+        "min": 1,
+        "max": 6
+      },
+      "width": {
+        "type": "integer",
+        "min": 768,
+        "max": 2048
+      },
+      "height": {
+        "type": "integer",
+        "min": 768,
+        "max": 2048
+      },
+      "aspect_ratio": {
+        "type": "string",
+        "enum": [
+          "1:1",
+          "2:3",
+          "3:2",
+          "3:4",
+          "4:3",
+          "16:9",
+          "9:16",
+          "21:9"
+        ],
+        "default": "1:1"
+      },
+      "size": {
+        "type": "string",
+        "enum": [
+          "2048x2048",
+          "1024x1536",
+          "1536x1024",
+          "1152x1536",
+          "1536x1152",
+          "1920x1080",
+          "1080x1920",
+          "2016x864"
+        ]
+      },
+      "image_urls": {
+        "type": "string[]",
+        "maxLength": 10
+      },
+      "strength": {
+        "type": "string",
+        "enum": [
+          "LOW",
+          "MID",
+          "HIGH"
+        ]
+      }
+    },
+    "constraints": {
+      "size_expression_precedence": {
+        "order": [
+          "width+height",
+          "aspect_ratio",
+          "size"
+        ]
+      },
+      "requires_together": {
+        "width": [
+          "height"
+        ],
+        "height": [
+          "width"
+        ]
+      },
+      "reference_transport": {
+        "image_urls": [
+          "public_https_url"
+        ]
+      }
+    },
+    "outputSizes": [
+      {
+        "aspectRatio": "1:1",
+        "size": "2048x2048"
+      },
+      {
+        "aspectRatio": "2:3",
+        "size": "1024x1536"
+      },
+      {
+        "aspectRatio": "3:2",
+        "size": "1536x1024"
+      },
+      {
+        "aspectRatio": "3:4",
+        "size": "1152x1536"
+      },
+      {
+        "aspectRatio": "4:3",
+        "size": "1536x1152"
+      },
+      {
+        "aspectRatio": "16:9",
+        "size": "1920x1080"
+      },
+      {
+        "aspectRatio": "9:16",
+        "size": "1080x1920"
+      },
+      {
+        "aspectRatio": "21:9",
+        "size": "2016x864"
+      }
+    ],
+    "lifecycle": {
+      "create": {
+        "successStatus": 200,
+        "idField": "id",
+        "object": "image",
+        "initialStatuses": [
+          "pending"
+        ]
+      },
+      "poll": {
+        "method": "GET",
+        "path": "/v1/images/{image_id}",
+        "intervalSeconds": 3,
+        "statusField": "status",
+        "pendingStatuses": [
+          "pending"
+        ],
+        "successStatuses": [
+          "completed"
+        ],
+        "failureStatuses": [
+          "failed"
+        ],
+        "resultFields": [
+          "content_url",
+          "content_urls"
+        ]
+      }
+    },
+    "operations": {
+      "image_edit": {
+        "request": {
+          "method": "POST",
+          "path": "/v1/images/edits",
+          "contentType": "multipart/form-data"
+        },
+        "requiredBodyFields": [
+          "model",
+          "prompt",
+          "image"
+        ],
+        "inputs": {
+          "image": {
+            "field": "image",
+            "required": true,
+            "minItems": 1,
+            "maxItems": 10,
+            "transports": [
+              "multipart_file"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

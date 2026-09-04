@@ -3,8 +3,8 @@
   "schemaVersion": 1,
   "apiOrigin": "https://api.puretokensx.com",
   "authentication": {
-    "usesConfiguredConnectionCredential": true,
-    "managedRuntimeHosts": ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode"],
+    "usesCurrentHostConfiguredCredential": true,
+    "hostNativeExecutionHosts": ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae"],
     "credentialUse": "in_memory_only_for_fixed_puretokens_api_requests",
     "credentialSourceMustMatchFixedPureTokensEndpoint": true,
     "credentialSourceNeverBecomesRequestTarget": true,
@@ -12,55 +12,21 @@
   },
   "transport": {
     "usesFullApiUrls": true,
+    "usesHostNativeAuthenticatedHttpsExecution": true,
+    "doesNotRequireNode": true,
     "doesNotUseMcp": true,
     "doesNotUseLocalProxyOrSidecar": true,
-    "doesNotUseFallbackEndpoint": true,
-    "managedRuntimePostBodyTransport": "bounded_base64_argument_never_stdin",
-    "managedRuntimeTotalDeadlineSeconds": 90,
-    "runtimeFailureEnvelope": "structured_json_with_phase"
+    "doesNotUseFallbackEndpoint": true
   },
-  "installableHosts": [
-    "claude-code",
-    "codex",
-    "workbuddy",
-    "gemini-cli",
-    "grok-build",
-    "opencode",
-    "trae"
-  ],
-  "verifiedManagedRuntimeHosts": ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode"],
-  "requiredRuntimeCapabilities": [
-    "authenticated_full_url_request",
-    "json_task_response",
-    "same_task_status_read",
-    "native_media_byte_delivery"
-  ],
+  "installableHosts": ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae"],
+  "hostNativeExecutionHosts": ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae"],
+  "requiredHostCapabilities": ["authenticated_full_url_request", "json_task_response", "same_task_status_read", "native_media_byte_delivery"],
   "acceptanceScenarios": [
-    {
-      "id": "api-identity-read",
-      "request": "GET https://api.puretokensx.com/v1",
-      "expect": "returns the API identity JSON without the Skill reading or exposing credentials"
-    },
-    {
-      "id": "catalog-read",
-      "request": "GET https://api.puretokensx.com/v1/media/models",
-      "expect": "returns the authenticated media catalog only for explicit discovery, an installed-profile gap, or post-rejection diagnosis; it is not a normal media-submission preflight"
-    },
-    {
-      "id": "media-submit",
-      "request": "POST the fixed Images or Videos API URL once with the installed selected model and declared request body",
-      "expect": "normal core text generation submits directly without a catalog preflight and returns a JSON task response without changing the model or parameters"
-    },
-    {
-      "id": "same-task-status",
-      "request": "GET a submitted task's fixed full status or content URL",
-      "expect": "continues only the supplied task_id and never submits a replacement task"
-    },
-    {
-      "id": "native-media-delivery",
-      "request": "GET a completed task's fixed full content URL",
-      "expect": "returns or attaches native media bytes; URLs, HTML, SVG, task IDs, and status text are not completed delivery"
-    }
+    { "id": "api-identity-read", "request": "GET https://api.puretokensx.com/v1", "expect": "uses the active host connection credential only in memory and returns the API identity JSON" },
+    { "id": "catalog-read", "request": "GET https://api.puretokensx.com/v1/media/models", "expect": "returns the authenticated media catalog only for explicit discovery, an installed-profile gap, or post-rejection diagnosis" },
+    { "id": "media-submit", "request": "POST the fixed Images or Videos API URL once with the selected model and declared request body", "expect": "normal core text generation submits directly without a catalog preflight and returns a JSON task response" },
+    { "id": "same-task-status", "request": "GET a submitted task's fixed full status or content URL", "expect": "continues only the supplied task_id and never submits a replacement task" },
+    { "id": "native-media-delivery", "request": "GET a completed task's fixed full content URL", "expect": "the host delivers native media bytes; URLs, HTML, SVG, task IDs, and status text are not completed delivery" }
   ],
   "userMediaInput": {
     "onlyCurrentUserExplicitMedia": true,
@@ -68,18 +34,17 @@
     "publicUrlImageEditRequiresExactDeclaredJsonOperation": true,
     "requiresInstalledOrOnDemandDeclaredTransport": true,
     "skillNeverDownloadsOrRehosts": true,
-    "apiHandlesDeclaredMultipartAttachments": true,
+    "hostSendsDeclaredMultipartAttachmentsDirectly": true,
     "nativeAttachmentRouteMustMatchDeclaredOperation": true,
     "nativeAttachmentMustNeverFallBackToJsonTextSubmission": true,
-    "managedRuntimeNativeAttachmentBodyMode": "multipart_base64_descriptor_only",
     "untransportableNativeReferenceMustNeverBeConvertedToTextPrompt": true,
     "currentRequestScopeOnly": true,
-    "fallback": "If the active runtime cannot send an explicitly attached file as the declared multipart representation, stop before submission, explain the declared transport, and do not invent a URL, file ID, or upload path. A public HTTPS URL, file ID, or voice ID explicitly supplied by the user may be sent only in the exact installed or on-demand-profile field whose declared transport permits it; the Skill never downloads, validates, or rehosts it."
+    "fallback": "If the active host cannot send an explicitly attached file through the declared multipart representation, stop before submission, explain the declared transport, and do not invent a URL, file ID, or upload path."
   },
   "asyncTaskHandling": {
     "reconciliationRequiredPrecedesLifecycle": true,
     "reconciliationOutcome": "stop_ordinary_polling_retain_same_task_id_do_not_submit_replacement_or_infer_refund",
-    "submissionRuntimeOutputUnknown": "treat_submission_outcome_as_unknown_do_not_repeat_post_or_submit_replacement_task",
+    "submissionOutputUnknown": "treat_submission_outcome_as_unknown_do_not_repeat_post_or_submit_replacement_task",
     "statusHttp429": "honor_valid_positive_retry_after_then_continue_same_task_if_remaining_budget",
     "non429StatusReadFailure": "stop_bounded_window_without_replacement_task",
     "doesNotInventApiErrorCode": true
@@ -94,7 +59,7 @@
     "handoffNativeBytesBeforeNextRead": true,
     "doesNotPersistMediaBytesInSkillStateOrLogs": true,
     "confirmedDeliveryEndsCurrentResponse": true,
-    "fallback": "If native media bytes cannot be handed off, report same-task delivery as unavailable. Do not substitute a URL, HTML, SVG, status text, or a re-submitted task."
+    "fallback": "If the host cannot hand off native media bytes, report same-task delivery as unavailable. Do not substitute a URL, HTML, SVG, status text, or a re-submitted task."
   },
   "balance": {
     "url": "https://api.puretokensx.com/api/product/desktop/account/balance",

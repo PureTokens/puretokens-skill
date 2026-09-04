@@ -1,0 +1,60 @@
+{
+  "$schema": "https://puretokensx.com/schemas/model-index.schema.json",
+  "schemaVersion": 1,
+  "capability": "image",
+  "catalogUpdatedAt": "2026-09-03",
+  "catalogCapturedAt": "2026-09-03T04:00:37.535Z",
+  "defaultModel": "gpt-image-2",
+  "models": [
+    {
+      "id": "gpt-image-2",
+      "aliases": [
+        "image2"
+      ],
+      "profile": "profiles/gpt-image-2.json"
+    },
+    {
+      "id": "grok-imagine-image",
+      "aliases": [
+        "grok image"
+      ],
+      "profile": "profiles/grok-imagine-image.json"
+    },
+    {
+      "id": "grok-imagine-image-2.0",
+      "aliases": [
+        "grok image 2.0"
+      ],
+      "profile": "profiles/grok-imagine-image-2.0.json"
+    },
+    {
+      "id": "grok-imagine-image-quality",
+      "aliases": [],
+      "profile": "profiles/grok-imagine-image-quality.json"
+    },
+    {
+      "id": "nano-banana-2",
+      "aliases": [
+        "nano banana 2"
+      ],
+      "profile": "profiles/nano-banana-2.json"
+    },
+    {
+      "id": "nano-banana-2-lite",
+      "aliases": [],
+      "profile": "profiles/nano-banana-2-lite.json"
+    },
+    {
+      "id": "nano-banana-pro",
+      "aliases": [
+        "nano banana pro"
+      ],
+      "profile": "profiles/nano-banana-pro.json"
+    },
+    {
+      "id": "seedream-5.0-pro",
+      "aliases": [],
+      "profile": "profiles/seedream-5.0-pro.json"
+    }
+  ]
+}

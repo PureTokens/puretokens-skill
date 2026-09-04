@@ -1,50 +1,31 @@
-# Pure Tokens Skill Repository
+# Pure Tokens Skills repository rules
 
-This repository is the private source of truth for installable Pure Tokens Skills. It owns Skill instructions, manifests, catalog schemas, validation, the safe local installer, and the managed fixed-endpoint runtime. It does **not** own, persist, display, or manage client configuration or credentials.
+This repository owns the six installable Skill instructions, model selections, contracts, documentation, validation and source-only installers. It does not own, display, persist or manage user connection configuration or credentials.
 
-## Structure
+## Direct API product contract
 
-```text
-skills/index.json                         # installable skill registry
-skills/<skill-name>/SKILL.md              # Codex skill instruction entry point
-skills/<skill-name>/skill.json            # machine-readable manifest
-skills/<skill-name>/references/           # bounded, versioned reference material
-schemas/                                  # catalog and manifest schemas
-bin/puretokens-skill.js                   # list/install/validate CLI
-scripts/                                  # repository validation helpers
-```
+- API-facing Skills always use full fixed URLs under `https://api.puretokensx.com`; fixed requests never reuse a configured Base URL as their target.
+- The current host's existing authenticated HTTPS/API capability performs the request. It may read exactly one current matching credential in memory for the fixed request, whether the connection was configured by Pure Tokens Switch, a third-party CC Switch, or manual host configuration.
+- Do not use provider labels to identify the connection. Do not display, log, copy, persist, ask for, compare or report credentials, Base URLs, provider labels or host configuration.
+- Do not add or require a Node runtime, npm, Python, MCP, proxy, sidecar, local media helper, separate upload service, or another authentication path for balance, model discovery, image generation, editing, video generation, or video editing.
+- The fixed endpoints are `/v1`, `/v1/media/models`, `/api/product/desktop/account/balance`, `/v1/images/generations`, `/v1/images/edits`, `/v1/videos`, and `/v1/videos/edits`, plus declared same-task status/content paths.
+- JSON and declared multipart requests are sent through the host-native API capability. Current user attachments are sent only with their declared operation; never upload, rehost, convert them to a text prompt, or silently downgrade a media-reference request.
+- If host policy blocks network/API execution, attachment transport, or native byte delivery, stop before a billable request and return the documented safe failure receipt. Do not suggest a fallback transport.
 
-## Product boundary
+## Skill behavior
 
-- An API-facing **Skill** interprets the user's natural-language balance, API-identity, model-discovery, or media request. It calls the fixed public Pure Tokens API origin, `https://api.puretokensx.com`; it never derives a request target from a host connection configuration. A connection check reads only that API's public `GET /v1` declaration. A model query reads its authenticated media catalog once and reports only declared capabilities, parameters, and operations. A normal media submission resolves the default model or a unique alias from its installed versioned model selection and calls the full Images or Videos API directly; it must not make a model-catalog preflight request. The live catalog is read only for an explicit model-discovery request, an installed-profile gap needed to honor a requested option or media operation, or one post-rejection diagnosis; it never gates a normal submission or causes an automatic retry. The separate `puretokens-update` Skill handles only explicit local Skill installation or upgrade: it validates a fresh official `main` checkout and runs the managed `sync` command without accessing credentials, host configuration, or media APIs.
-- Direct API authentication uses the host's configured Pure Tokens connection. For fixed API requests only, the managed direct runtime may narrowly resolve one unambiguous matching credential in memory from the documented location of the active host: Claude Code `~/.claude/settings.json` (`env.ANTHROPIC_BASE_URL` and `env.ANTHROPIC_AUTH_TOKEN`); Codex `~/.codex/config.toml` active provider plus its bearer token or `~/.codex/auth.json`; WorkBuddy `~/.workbuddy/models.json`; Gemini CLI `~/.gemini/.env` plus the selected `gemini-api-key` auth mode in `~/.gemini/settings.json`; Grok Build `~/.grok/config.toml`; OpenCode `~/.config/opencode/opencode.json`. Each source must exactly match `https://api.puretokensx.com/v1` (or the origin-only form required by Claude Code and Gemini CLI); WorkBuddy may additionally use that fixed origin's query-free, fragment-free `/v1/...` model-resource URL. This source match only binds the in-memory credential; it is never reused as a request target. The runtime must never display, copy, persist, ask for, or log a credential, Base URL, or host configuration. It must not make a generic configuration scan, accept arbitrary request targets, route through MCP, or use a local proxy or sidecar. Trae remains manual-configuration-only because its product contract has no approved local credential source; do not read or infer Trae user state.
-- The **Pure Tokens API** remains authoritative for API-key group access and endpoint capabilities. A Skill must never infer access or capability from a model name.
+- Media submissions are asynchronous. Submit once, retain only the same returned task ID, and never automatically resubmit after uncertain output, status failure, timeout or delivery failure.
+- Do not make `/v1/media/models` a preflight for ordinary core generation. Read the small installed model index, then only the selected model profile; read the live catalog only for explicit discovery, an installed-profile gap, or post-rejection diagnosis.
+- Treat physical dimensions as a request for guidance, not an API size value. Only declared model fields and values may be sent.
+- Native bytes, not URLs, HTML, SVG, task IDs or status text, are required for successful delivery.
+- Keep every user-facing failure sanitized. Never expose raw responses, request data, internal URLs, stacks, upstream identities, credentials or user media.
 
-Skill instructions never inspect or report a provider label, a user-configured Base URL, service attribution, or credentials; only the managed runtime performs its narrow in-memory credential resolution. Skills make no compatibility or fallback branch for another relay and always call the fixed public Pure Tokens API origin. If the direct request fails before a task is accepted, they report the returned failure and do not invent a configuration diagnosis, retry a billable submission, or use another endpoint. For a declared `multipart_file` media operation, the runtime sends only the current request's explicit image, video, or audio attachment bytes in that one Images or Videos API request. The API owns any required internal attachment handling; the Skill never calls a separate upload path, reads internal storage settings, or exposes internal URLs. Do not embed a cloud API key, localhost URL, or sidecar binary in this repository.
+## Installation and updates
 
-`references/media-model-catalog.json` is the sole source for published model aliases. `npm run docs:sync-media-models` derives the capability-specific `references/model-selection.json` files installed with image/video Skills and synchronizes both READMEs. Every specialist Skill includes an installed execution contract and behavior-scenario reference; update and test them with its `SKILL.md` in the same change. Do not create a combined always-apply media Skill for a host.
-
-## Conventions
-
-- Skill directory and front-matter `name` use the Agent Skills standard: lowercase kebab-case.
-- Every skill has both `SKILL.md` and `skill.json`.
-- Update `skills/index.json`, `CHANGELOG.md`, the Chinese README and the English README in the same change when adding or changing a skill.
-- Keep user-facing language concise and deterministic. If a model cannot be selected uniquely, the skill asks the user instead of guessing.
-- Do not add a GitHub Actions workflow unless the user explicitly asks to enable Actions for this repository.
+- Source-only shell/PowerShell installers synchronize the six Skills. They are installation tools only; they do not participate in API execution and must not install an API runtime.
+- An update may remove only a verified old `puretokens-direct-api-runtime` directory and verified retired official Skill directories. Never delete unknown directories.
+- Preserve the exact first `text` install prompt under the required heading in both READMEs because the client download page extracts it.
 
 ## Validation
 
-```bash
-npm run check
-node bin/puretokens-skill.js list
-node bin/puretokens-skill.js install puretokens-image --target /private/tmp/puretokens-skill-test
-```
-
-Before committing, also run:
-
-```bash
-rg -n --hidden --glob '!node_modules/**' -- '(BEGIN [A-Z ]*PRIVATE|api[_-]?key|authorization:|bearer |/Users/|127\\.0\\.0\\.1:)' .
-git status --short
-```
-
-Do not commit credentials, cookies, local configuration, generated media, task IDs, user prompts, desktop build artifacts, or a license file. This is a proprietary repository.
+Run `npm run check` and `npm run release:validate` before release. Node is permitted for repository development and validation only; it is never a user runtime dependency for media work.

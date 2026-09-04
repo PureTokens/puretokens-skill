@@ -9,9 +9,8 @@ export const skillsRoot = path.join(repositoryRoot, "skills");
 const forbiddenPattern = /(BEGIN [A-Z ]*PRIVATE|127\.0\.0\.1:|\/Users\/)/i;
 const directApiOrigin = "https://api.puretokensx.com";
 const directAcceptanceScenarioIds = ["api-identity-read", "catalog-read", "media-submit", "same-task-status", "native-media-delivery"];
-const directRuntimeCapabilities = ["authenticated_full_url_request", "json_task_response", "same_task_status_read", "native_media_byte_delivery"];
-const managedRuntimeHostIds = ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode"];
-const manualCredentialSetupHostIds = ["trae"];
+const directHostCapabilities = ["authenticated_full_url_request", "json_task_response", "same_task_status_read", "native_media_byte_delivery"];
+const hostNativeExecutionHostIds = ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae"];
 const receiptCoreFields = ["exact_model_id", "task_id", "returned_state", "requested_operation", "requested_count", "requested_size_or_parameters", "next_action"];
 const failureReceiptRequiredFields = ["failure_phase", "api_error_code", "http_status", "error_message", "next_action"];
 const failureReceiptPhases = ["validation", "submission", "status", "content"];
@@ -53,7 +52,7 @@ export async function validateRepository() {
   if (!/^\d+\.\d+\.\d+$/.test(packageManifest?.version || "")) {
     errors.push("package.json must contain a semver version");
   }
-  await validateManagedRuntime(errors, packageManifest?.version);
+  await validateInstallerSources(errors);
   await validateSchemaDocuments(errors);
   const hostSupport = await readHostSupport(errors);
   const directApiExecutionContract = await readDirectApiExecutionContract(errors);
@@ -98,7 +97,7 @@ export async function validateRepository() {
     }
     validateHostDistributions(errors, directory, manifest, hostSupport);
     if (forbiddenPattern.test(skillText) || forbiddenPattern.test(JSON.stringify(manifest))) {
-      errors.push(`${directory}: skill content contains a forbidden credential or local-runtime marker`);
+      errors.push(`${directory}: skill content contains a forbidden credential or local endpoint marker`);
     }
   }
 
@@ -141,7 +140,7 @@ async function readHostSupport(errors) {
         errors.push(`references/host-support.json: ${host?.id || "unnamed host"} needs guidance`);
       }
       if (host?.delivery !== "manual-source" || typeof host.globalSkillDirectory !== "string" || !/^~\/(?:\.[a-z-]+\/)*(?:[a-z-]+\/)?skills$/.test(host.globalSkillDirectory) ||
-        !["verified-managed-local-runtime", "manual-credential-setup"].includes(host.directMediaExecution)) {
+        host.directMediaExecution !== "host-native-direct-api") {
         errors.push(`references/host-support.json: ${host?.id || "unnamed host"} needs a manual-source global Skill directory`);
       }
     }
@@ -184,30 +183,24 @@ function validateDirectApiExecutionContract(errors, contract, hostSupport) {
   }
   const transport = contract.transport;
   if (contract.apiOrigin !== directApiOrigin || !contract.authentication ||
-    contract.authentication.usesConfiguredConnectionCredential !== true ||
-    !sameArray(contract.authentication.managedRuntimeHosts, managedRuntimeHostIds) ||
+    contract.authentication.usesCurrentHostConfiguredCredential !== true ||
+    !sameArray(contract.authentication.hostNativeExecutionHosts, hostNativeExecutionHostIds) ||
     contract.authentication.credentialUse !== "in_memory_only_for_fixed_puretokens_api_requests" ||
     contract.authentication.credentialSourceMustMatchFixedPureTokensEndpoint !== true ||
     contract.authentication.credentialSourceNeverBecomesRequestTarget !== true ||
     contract.authentication.neverDisplaysCopiesStoresOrRequestsCredentials !== true ||
-    !transport || transport.usesFullApiUrls !== true || transport.doesNotUseMcp !== true ||
-    transport.doesNotUseLocalProxyOrSidecar !== true || transport.doesNotUseFallbackEndpoint !== true ||
-    transport.managedRuntimePostBodyTransport !== "bounded_base64_argument_never_stdin" ||
-    transport.managedRuntimeTotalDeadlineSeconds !== 90 ||
-    transport.runtimeFailureEnvelope !== "structured_json_with_phase") {
-    errors.push(`${label} must use the fixed full API origin with the configured-credential direct runtime and no MCP, proxy, sidecar, or fallback`);
+    !transport || transport.usesFullApiUrls !== true || transport.usesHostNativeAuthenticatedHttpsExecution !== true ||
+    transport.doesNotRequireNode !== true || transport.doesNotUseMcp !== true ||
+    transport.doesNotUseLocalProxyOrSidecar !== true || transport.doesNotUseFallbackEndpoint !== true) {
+    errors.push(`${label} must use host-native authenticated HTTPS for the fixed full API origin without Node, MCP, proxy, sidecar, or fallback`);
   }
   if (!Array.isArray(contract.acceptanceScenarios) || !sameArray(contract.acceptanceScenarios.map((scenario) => scenario?.id), directAcceptanceScenarioIds)) {
     errors.push(`${label} must define the ordered direct-API acceptance scenarios`);
   }
   const installableHostIds = hostSupport.supported.map((host) => host.id);
-  const verifiedRuntimeHostIds = hostSupport.supported
-    .filter((host) => host.directMediaExecution === "verified-managed-local-runtime")
-    .map((host) => host.id)
-    .sort();
-  if (!sameArray(contract.installableHosts, installableHostIds) || !sameArray([...contract.verifiedManagedRuntimeHosts].sort(), verifiedRuntimeHostIds) ||
-    !sameArray(contract.requiredRuntimeCapabilities, directRuntimeCapabilities)) {
-    errors.push(`${label} must distinguish all installable hosts from the verified managed direct runtimes and define the four required direct-API runtime capabilities`);
+  if (!sameArray(contract.installableHosts, installableHostIds) || !sameArray(contract.hostNativeExecutionHosts, installableHostIds) ||
+    !sameArray(contract.requiredHostCapabilities, directHostCapabilities)) {
+    errors.push(`${label} must define the same seven installable and host-native execution hosts plus the four required direct-API capabilities`);
   }
   const balance = contract.balance;
   if (!balance || balance.method !== "GET" || balance.url !== `${directApiOrigin}/api/product/desktop/account/balance` ||
@@ -221,10 +214,9 @@ function validateDirectApiExecutionContract(errors, contract, hostSupport) {
     userMediaInput.publicUrlImageEditRequiresExactDeclaredJsonOperation !== true ||
     userMediaInput.requiresInstalledOrOnDemandDeclaredTransport !== true ||
     userMediaInput.skillNeverDownloadsOrRehosts !== true ||
-    userMediaInput.apiHandlesDeclaredMultipartAttachments !== true ||
+    userMediaInput.hostSendsDeclaredMultipartAttachmentsDirectly !== true ||
     userMediaInput.nativeAttachmentRouteMustMatchDeclaredOperation !== true ||
     userMediaInput.nativeAttachmentMustNeverFallBackToJsonTextSubmission !== true ||
-    userMediaInput.managedRuntimeNativeAttachmentBodyMode !== "multipart_base64_descriptor_only" ||
     userMediaInput.untransportableNativeReferenceMustNeverBeConvertedToTextPrompt !== true ||
     userMediaInput.currentRequestScopeOnly !== true ||
     typeof userMediaInput.fallback !== "string" || !userMediaInput.fallback) {
@@ -233,7 +225,7 @@ function validateDirectApiExecutionContract(errors, contract, hostSupport) {
   const asyncTaskHandling = contract.asyncTaskHandling;
   if (!asyncTaskHandling || asyncTaskHandling.reconciliationRequiredPrecedesLifecycle !== true ||
     asyncTaskHandling.reconciliationOutcome !== "stop_ordinary_polling_retain_same_task_id_do_not_submit_replacement_or_infer_refund" ||
-    asyncTaskHandling.submissionRuntimeOutputUnknown !== "treat_submission_outcome_as_unknown_do_not_repeat_post_or_submit_replacement_task" ||
+    asyncTaskHandling.submissionOutputUnknown !== "treat_submission_outcome_as_unknown_do_not_repeat_post_or_submit_replacement_task" ||
     asyncTaskHandling.statusHttp429 !== "honor_valid_positive_retry_after_then_continue_same_task_if_remaining_budget" ||
     asyncTaskHandling.non429StatusReadFailure !== "stop_bounded_window_without_replacement_task" ||
     asyncTaskHandling.doesNotInventApiErrorCode !== true) {
@@ -257,7 +249,7 @@ function validateDirectApiExecutionContract(errors, contract, hostSupport) {
 async function validateSpecialistReferences(errors, record) {
   const { directory, skillDir, manifest } = record;
   const required = ["executionContract", "behaviorScenarios"];
-  if (directory === "puretokens-image" || directory === "puretokens-video") required.unshift("modelSelection", "taskReceipt");
+  if (directory === "puretokens-image" || directory === "puretokens-video") required.unshift("modelIndex", "taskReceipt");
   const references = {};
   for (const field of required) {
     const relativePath = manifest?.[field];
@@ -269,8 +261,12 @@ async function validateSpecialistReferences(errors, record) {
   }
   validateExecutionContract(errors, directory, references.executionContract);
   validateBehaviorScenarios(errors, directory, references.behaviorScenarios);
-  if (references.modelSelection) validateModelSelection(errors, directory, references.modelSelection);
+  if (references.modelIndex) await validateModelIndex(errors, directory, skillDir, references.modelIndex);
   if (references.taskReceipt) validateTaskReceipt(errors, directory, references.taskReceipt);
+  if ((directory === "puretokens-image" || directory === "puretokens-video") &&
+    (manifest?.rules?.usesLazyModelProfileLoading !== true || manifest?.rules?.loadsBehaviorScenariosOnDemandOnly !== true)) {
+    errors.push(`${directory}: rules must require lazy selected-profile and on-demand behavior-scenario loading`);
+  }
 }
 
 function validateHostDistributions(errors, directory, manifest, hostSupport) {
@@ -365,7 +361,7 @@ function validateExecutionContract(errors, directory, contract) {
     validateRequest(errors, `${label} content`, operations.content, "GET", `${directApiOrigin}/v1/images/{task_id}/content?index={index}`, true);
     const editPaths = Array.isArray(operations.edit?.allowedPaths) ? operations.edit.allowedPaths : [];
     if (operations.edit?.method !== "POST" || editPaths.length !== 2 || !editPaths.includes("/v1/images/generations") || !editPaths.includes("/v1/images/edits") ||
-      operations.edit?.pathSource !== "installed_model_selection_or_on_demand_live_profile_operation_path" || operations.edit?.contentType !== "profile_declared_json_or_multipart" ||
+      operations.edit?.pathSource !== "installed_model_index_and_selected_profile_or_on_demand_live_profile_operation_path" || operations.edit?.contentType !== "profile_declared_json_or_multipart" ||
       operations.edit?.requiresDeclaredProfileOperation !== "image_edit") {
       errors.push(`${label} must define the fixed-origin declared image-edit operation`);
     }
@@ -374,20 +370,20 @@ function validateExecutionContract(errors, directory, contract) {
       operations.edit?.inputSource !== "current_user_explicit_public_url_or_native_media_only" || operations.edit?.transport !== "profile_declared_json_public_url_or_multipart_file") {
       errors.push(`${label} must fix async and declare the profile-gated JSON-URL or multipart image-edit input`);
     }
-    if (contract.parameterValidation?.defaultModel !== "gpt-image-2" || contract.parameterValidation?.normalSubmissionUsesInstalledModelSelection !== true ||
+    if (contract.parameterValidation?.defaultModel !== "gpt-image-2" || contract.parameterValidation?.normalSubmissionUsesInstalledModelIndexAndSelectedProfile !== true ||
       contract.parameterValidation?.exactModelCoreSubmissionDoesNotRequireCatalogPreflight !== true ||
       contract.parameterValidation?.onDemandLiveCatalogRead !== "only_for_explicit_discovery_installed_profile_gap_or_post_rejection_diagnosis" ||
-      contract.parameterValidation?.allOptionalParametersRequire !== "installed_model_selection_parameter_schema_or_on_demand_live_input_schema" ||
+      contract.parameterValidation?.allOptionalParametersRequire !== "installed_model_index_and_selected_profile_parameter_schema_or_on_demand_live_input_schema" ||
       contract.parameterValidation?.enforcesDeclaredRequiresTogether !== true ||
       contract.parameterValidation?.sizeExpressionPrecedence !== "send_only_the_highest_precedence_user_supplied_declared_size_expression") {
       errors.push(`${label} must use its installed selection for normal image submissions and limit live catalog reads to on-demand cases`);
     }
     const mediaInput = contract.inputMediaValidation;
-    if (!mediaInput || mediaInput.nativeAttachmentRequires !== "installed_model_selection_or_on_demand_live_profile_image_edit_operation_for_current_visual_reference_or_explicit_edit" ||
+    if (!mediaInput || mediaInput.nativeAttachmentRequires !== "installed_model_index_and_selected_profile_or_on_demand_live_profile_image_edit_operation_for_current_visual_reference_or_explicit_edit" ||
       mediaInput.imageEditOperation !== "image_edit" ||
       mediaInput.nativeVisualReferenceUsesImageEditOperation !== true ||
       mediaInput.nativeVisualReferencePromptSemantics !== "preserve_reference_intent_while_using_the_declared_image_edit_multipart_transport" ||
-      mediaInput.nativeReferenceAttachmentRequires !== "installed_model_selection_or_on_demand_profile_image_edit_operation_with_multipart_file_transport" ||
+      mediaInput.nativeReferenceAttachmentRequires !== "installed_model_index_and_selected_profile_or_on_demand_profile_image_edit_operation_with_multipart_file_transport" ||
       mediaInput.untransportableNativeReferenceMustNeverBeConvertedToTextPrompt !== true ||
       mediaInput.whenNativeReferenceTransportUnavailable !== "stop_before_post_when_no_declared_image_edit_multipart_operation_or_no_native_byte_delivery_and_require_public_https_url_or_explicit_new_text_only_request" ||
       mediaInput.requestScope !== "current_user_request_only_no_unrelated_skill_history_workspace_search_or_quality_review" ||
@@ -405,10 +401,10 @@ function validateExecutionContract(errors, directory, contract) {
     validateRequest(errors, `${label} status`, operations.status, "GET", `${directApiOrigin}/v1/videos/{task_id}`, true);
     validateRequest(errors, `${label} content`, operations.content, "GET", `${directApiOrigin}/v1/videos/{task_id}/content`, true);
     validateRequiredBodyFields(errors, `${label} submit`, operations.submit, ["model"]);
-    if (contract.parameterValidation?.normalSubmissionUsesInstalledModelSelection !== true ||
+    if (contract.parameterValidation?.normalSubmissionUsesInstalledModelIndexAndSelectedProfile !== true ||
       contract.parameterValidation?.exactModelCoreSubmissionDoesNotRequireCatalogPreflight !== true ||
       contract.parameterValidation?.onDemandLiveCatalogRead !== "only_for_explicit_discovery_installed_profile_gap_or_post_rejection_diagnosis" ||
-      contract.parameterValidation?.allModelsOptionalParametersRequire !== "installed_model_selection_parameter_schema_or_on_demand_live_input_schema" ||
+      contract.parameterValidation?.allModelsOptionalParametersRequire !== "installed_model_index_and_selected_profile_parameter_schema_or_on_demand_live_input_schema" ||
       contract.parameterValidation?.promptRequirementUsesInstalledOrOnDemandPropertiesAndConstraints !== true ||
       contract.parameterValidation?.resolutionUsesInstalledOrOnDemandModeConstraint !== true || contract.result?.successRequires !== "native_video_bytes") {
       errors.push(`${label} must use its installed selection for normal video submissions, limit live catalog reads to on-demand cases, and require native video bytes`);
@@ -423,7 +419,7 @@ function validateExecutionContract(errors, directory, contract) {
       mediaInput.declaredGenerateAudioIntent !== "map_explicit_generated_sound_to_true_and_silence_to_false_only_for_declared_boolean_generate_audio" ||
       mediaInput.nativeAttachmentRouteMustMatchDeclaredOperation !== true ||
       mediaInput.nativeAttachmentMustNeverFallBackToJsonTextSubmission !== true ||
-      mediaInput.managedRuntimeNativeAttachmentBodyMode !== "multipart_base64_descriptor_only" ||
+      mediaInput.nativeAttachmentBodyMode !== "host_native_multipart_only" ||
       mediaInput.whenCurrentAttachmentPathUnavailable !== "stop_before_post_and_explain_declared_multipart_requirement") {
       errors.push(`${label} must lock native attachments to their declared multipart operation and stop before POST when a current attachment path is unavailable`);
     }
@@ -454,26 +450,25 @@ function validateUpdateContract(errors, label, contract) {
   const result = contract.result;
   if (!result || result.installsMissingOfficialSkills !== true || result.upgradesOnlyManagedMatchingSkills !== true ||
     result.neverOverwritesUnmanagedDirectories !== true || result.removesVerifiedRetiredManagedSkills !== true ||
+    result.removesVerifiedLegacyNodeRuntime !== true || result.doesNotInstallApiRuntime !== true ||
     result.reportsSynchronizedVersion !== true ||
     result.removesLegacyCodexPluginWhenPresent !== true || result.requiresVerifiedLegacyCodexPluginRemovalBeforeSync !== true ||
     result.doesNotClaimSuccessWithoutVersionReceipt !== true ||
     result.neverModifiesOfficialCheckout !== true ||
     result.requiresFullCodexRestartAfterLegacyPluginRemoval !== true || result.requiresNewHostConversationAfterSuccess !== true) {
-    errors.push(`${label} must preserve the official checkout, verify removal of the exact legacy Codex plugin before sync, preserve unmanaged directories, report the synchronized version, and require a full Codex restart after legacy-plugin removal`);
+    errors.push(`${label} must preserve the official checkout, remove only the verified legacy Node runtime and exact legacy Codex plugin, preserve unmanaged directories, report the synchronized version, and require a full Codex restart after legacy-plugin removal`);
   }
 }
 
 function validateDirectTransport(errors, label, transport, requiresNativeMediaByteDelivery) {
   if (!transport || transport.fixedApiOrigin !== directApiOrigin || transport.usesFullApiUrls !== true ||
-    transport.usesRuntimeManagedAuthentication !== true || transport.usesNarrowConfiguredCredentialResolver !== true ||
-    !sameArray(transport.verifiedManagedRuntimeHosts, managedRuntimeHostIds) ||
+    transport.usesHostNativeAuthenticatedHttpsExecution !== true || transport.usesCurrentHostConfiguredCredential !== true ||
+    transport.credentialSourceNeverBecomesRequestTarget !== true ||
     transport.neverExposesCredentialsOrHostConfiguration !== true ||
     transport.doesNotUseMcpOrFallbackTransport !== true ||
-    transport.managedRuntimePostBodyTransport !== "bounded_base64_argument_never_stdin" ||
-    transport.managedRuntimeTotalDeadlineSeconds !== 90 ||
-    transport.runtimeFailureEnvelope !== "structured_json_with_phase" ||
+    transport.doesNotUseNodeRuntime !== true ||
     (requiresNativeMediaByteDelivery && transport.requiresNativeMediaByteDelivery !== true)) {
-    errors.push(`${label} must use the fixed full API origin, configured-credential direct runtime, and no MCP or fallback transport`);
+    errors.push(`${label} must use the fixed full API origin, current-host credential, host-native HTTPS, and no Node, MCP, or fallback transport`);
   }
 }
 
@@ -508,11 +503,11 @@ function validateTaskIdentityStateAndSubmissionFailure(errors, label, contract, 
   if (!failure || failure.modelParameterOrCapabilityRejection !== "one_on_demand_catalog_read_then_require_explicit_corrected_new_request" ||
     failure.rateLimit !== "report_retry_after_when_returned_and_require_explicit_retry" ||
     failure.serverTransportOrTimeoutWithoutTaskId !== "report_submission_outcome_unknown_without_declaring_task_absent_or_resubmitting" ||
-    failure.hostExecutionPolicyBlockedBeforeRuntimeStarts !== "report_validation_no_api_request_or_task_id_and_require_host_session_with_external_network_permission" ||
-    failure.runtimeInvocationOutputUnknown !== "treat_submission_outcome_as_unknown_do_not_repeat_post_or_submit_replacement_task" ||
-    failure.runtimeUnknownOutcomeResponse !== "one_terminal_receipt_then_end_turn_without_followup_tool_status_or_poll_work" ||
+    failure.hostExecutionPolicyBlockedBeforeRequestStarts !== "report_validation_no_api_request_or_task_id_and_require_host_session_with_external_network_permission" ||
+    failure.hostInvocationOutputUnknown !== "treat_submission_outcome_as_unknown_do_not_repeat_post_or_submit_replacement_task" ||
+    failure.hostUnknownOutcomeResponse !== "one_terminal_receipt_then_end_turn_without_followup_tool_status_or_poll_work" ||
     failure.noTaskIdLaterContinuation !== "require_explicit_confirmation_of_a_new_billable_request_before_one_new_post") {
-    errors.push(`${label} must stop uncertain submission/runtime-output handling without automatic resubmission or continued work`);
+    errors.push(`${label} must stop uncertain host submission output without automatic resubmission or continued work`);
   }
   validateFailureReceipt(errors, label, contract.failureReceipt);
   if (image && contract.contentRetrieval?.requestedCount !== "explicit_n_or_default_1") {
@@ -576,27 +571,47 @@ function validateBehaviorScenarios(errors, directory, scenarios) {
   }
 }
 
-function validateModelSelection(errors, directory, selection) {
-  const label = `${directory}: modelSelection`;
-  if (!selection || typeof selection !== "object") return;
+async function validateModelIndex(errors, directory, skillDir, index) {
+  const label = `${directory}: modelIndex`;
+  if (!index || typeof index !== "object") return;
   const capability = skillKind(directory);
-  if (selection.$schema !== "https://puretokensx.com/schemas/model-selection.schema.json") errors.push(`${label} must declare the model-selection schema`);
-  if (selection.schemaVersion !== 1 || selection.capability !== capability || typeof selection.catalogUpdatedAt !== "string" || typeof selection.catalogCapturedAt !== "string" || !Array.isArray(selection.models) || !selection.models.length) {
-    errors.push(`${label} must be a non-empty schemaVersion=1 ${capability} selection`);
+  const expectedDefaultModel = capability === "image" ? "gpt-image-2" : "grok-imagine-video-1.5-preview";
+  if (index.$schema !== "https://puretokensx.com/schemas/model-index.schema.json") errors.push(`${label} must declare the model-index schema`);
+  if (index.schemaVersion !== 1 || index.capability !== capability || typeof index.catalogUpdatedAt !== "string" || typeof index.catalogCapturedAt !== "string" ||
+    typeof index.defaultModel !== "string" || !index.defaultModel || !Array.isArray(index.models) || !index.models.length) {
+    errors.push(`${label} must be a non-empty schemaVersion=1 ${capability} index`);
     return;
   }
   const ids = new Set();
-  for (const model of selection.models) {
-    if (!model || typeof model.id !== "string" || !model.id || !Array.isArray(model.aliases) || model.aliases.some((alias) => typeof alias !== "string" || !alias)) {
-      errors.push(`${label} models must have a non-empty id and string aliases`);
+  const profilePaths = new Set();
+  for (const model of index.models) {
+    if (!model || typeof model.id !== "string" || !model.id || !Array.isArray(model.aliases) || model.aliases.some((alias) => typeof alias !== "string" || !alias) ||
+      typeof model.profile !== "string" || model.profile !== `profiles/${model.id}.json`) {
+      errors.push(`${label} models must have a non-empty id, string aliases, and their canonical profile path`);
       continue;
     }
     if (ids.has(model.id)) errors.push(`${label} duplicate model id ${model.id}`);
     ids.add(model.id);
     if (new Set(model.aliases).size !== model.aliases.length) errors.push(`${label} duplicate aliases for ${model.id}`);
-    if (Object.hasOwn(model, "parameterSchema") && (!model.parameterSchema || typeof model.parameterSchema !== "object" || Array.isArray(model.parameterSchema))) {
-      errors.push(`${label} parameterSchema for ${model.id} must be an object`);
+    profilePaths.add(model.profile);
+    const profile = await readSkillReference(errors, skillDir, `references/${model.profile}`, `${label} profile ${model.id}`);
+    if (!profile || profile.$schema !== "https://puretokensx.com/schemas/model-profile.schema.json" || profile.schemaVersion !== 1 ||
+      profile.capability !== capability || profile.id !== model.id || profile.catalogUpdatedAt !== index.catalogUpdatedAt ||
+      profile.catalogCapturedAt !== index.catalogCapturedAt || !profile.parameterSchema || typeof profile.parameterSchema !== "object" || Array.isArray(profile.parameterSchema)) {
+      errors.push(`${label} profile ${model.id} must match the index and declare a parameterSchema object`);
     }
+  }
+  if (!ids.has(index.defaultModel)) errors.push(`${label} defaultModel must be in models`);
+  if (index.defaultModel !== expectedDefaultModel) errors.push(`${label} defaultModel must remain ${expectedDefaultModel}`);
+  try {
+    const entries = await readdir(path.join(skillDir, "references", "profiles"), { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.isFile() && entry.name.endsWith(".json") && !profilePaths.has(`profiles/${entry.name}`)) {
+        errors.push(`${label} has an unindexed profile profiles/${entry.name}`);
+      }
+    }
+  } catch {
+    errors.push(`${label} profiles directory is missing or unreadable`);
   }
 }
 
@@ -634,7 +649,8 @@ async function validateSchemaDocuments(errors) {
   const schemas = [
     "schemas/media-execution-contract.schema.json",
     "schemas/media-behavior-scenarios.schema.json",
-    "schemas/model-selection.schema.json",
+    "schemas/model-index.schema.json",
+    "schemas/model-profile.schema.json",
     "schemas/host-support.schema.json",
     "schemas/direct-api-execution-contract.schema.json",
     "schemas/catalog-freshness.schema.json",
@@ -644,24 +660,15 @@ async function validateSchemaDocuments(errors) {
   for (const schema of schemas) await verifyJsonFile(errors, schema, `schema ${schema}`);
 }
 
-async function validateManagedRuntime(errors, packageVersion) {
+async function validateInstallerSources(errors) {
   const runtimeDirectory = path.join(repositoryRoot, "runtime");
-  const manifestPath = path.join(runtimeDirectory, "runtime.json");
-  const entryPath = path.join(runtimeDirectory, "puretokens-direct-api.mjs");
   const shellInstallerPath = path.join(runtimeDirectory, "puretokens-skill-install.sh");
   const powerShellInstallerPath = path.join(runtimeDirectory, "puretokens-skill-install.ps1");
   try {
-    const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
-    if (manifest?.schemaVersion !== 1 || manifest?.name !== "puretokens-direct-api-runtime" || manifest?.version !== packageVersion ||
-      !sameArray(manifest?.managedRuntimeHosts, managedRuntimeHostIds) ||
-      !sameArray(manifest?.manualCredentialSetupHosts, manualCredentialSetupHostIds)) {
-      errors.push("runtime/runtime.json must identify the current managed Pure Tokens direct API runtime");
-    }
-    if (!(await stat(entryPath)).isFile()) errors.push("runtime/puretokens-direct-api.mjs is required");
     if (!(await stat(shellInstallerPath)).isFile()) errors.push("runtime/puretokens-skill-install.sh is required");
     if (!(await stat(powerShellInstallerPath)).isFile()) errors.push("runtime/puretokens-skill-install.ps1 is required");
   } catch {
-    errors.push("managed Pure Tokens direct API runtime is missing or invalid");
+    errors.push("native Pure Tokens Skill installer sources are missing or invalid");
   }
 }
 

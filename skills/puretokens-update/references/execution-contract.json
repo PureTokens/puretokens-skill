@@ -23,6 +23,8 @@
     "upgradesOnlyManagedMatchingSkills": true,
     "neverOverwritesUnmanagedDirectories": true,
     "removesVerifiedRetiredManagedSkills": true,
+    "removesVerifiedLegacyNodeRuntime": true,
+    "doesNotInstallApiRuntime": true,
     "reportsSynchronizedVersion": true,
     "removesLegacyCodexPluginWhenPresent": true,
     "requiresVerifiedLegacyCodexPluginRemovalBeforeSync": true,

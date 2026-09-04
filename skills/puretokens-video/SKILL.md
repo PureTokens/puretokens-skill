@@ -1,51 +1,39 @@
 ---
 name: puretokens-video
-description: 通过当前 Pure Tokens 连接生成视频、选择视频模型或参数时使用。
+description: 通过当前 Pure Tokens 连接生成视频、图生视频、参考媒体或视频编辑时使用。
 ---
 
 # Pure Tokens Video
 
-直接调用固定的 Pure Tokens Videos API：`https://api.puretokensx.com`。每个请求都使用完整 URL；不得用未认证的通用 Fetch/WebFetch 猜测认证。Claude Code、Codex、WorkBuddy、Gemini CLI、Grok Build 和 OpenCode 都使用受管直连运行器；它只从当前宿主的固定已配置位置狭义匹配 Pure Tokens 凭据，且只在内存中为这一次固定 Videos API 请求构造认证头。该配置来源只用于绑定凭据，绝不作为请求目标复用。WorkBuddy 可以匹配固定 origin 下无 query、无 fragment 的 `/v1` 或 `/v1/...` 单模型资源 URL；其他宿主仍只接受各自规定的精确连接形式。不得显示、复制、保存、索取或输出 API Key、Base URL 或完整宿主配置；不得调用 MCP、本地代理、sidecar、备用服务或手工认证请求。
+只调用固定 Pure Tokens Videos API：`https://api.puretokensx.com/v1/videos`；视频编辑仅在精确模型资料声明时调用 `/v1/videos/edits`。每次都使用完整固定 URL，不使用已配置 Base URL 作为请求目标，也不检查 provider 名称。
 
-根据当前宿主运行对应命令：Claude Code：`node ~/.claude/skills/.puretokens-runtime/puretokens-direct-api.mjs request --host claude-code --method <GET|POST> --path <允许的固定路径>`；Codex：`node ~/.agents/skills/.puretokens-runtime/puretokens-direct-api.mjs request --host codex --method <GET|POST> --path <允许的固定路径>`；WorkBuddy：`node ~/.workbuddy/skills/.puretokens-runtime/puretokens-direct-api.mjs request --host workbuddy --method <GET|POST> --path <允许的固定路径>`；Gemini CLI：`node ~/.gemini/skills/.puretokens-runtime/puretokens-direct-api.mjs request --host gemini-cli --method <GET|POST> --path <允许的固定路径>`；Grok Build：`node ~/.grok/skills/.puretokens-runtime/puretokens-direct-api.mjs request --host grok-build --method <GET|POST> --path <允许的固定路径>`；OpenCode：`node ~/.config/opencode/skills/.puretokens-runtime/puretokens-direct-api.mjs request --host opencode --method <GET|POST> --path <允许的固定路径>`。所有受管宿主的 JSON POST 都必须把唯一 JSON body 编码为有界、规范的 UTF-8 Base64 参数并使用 `--json-base64 <值>`；已声明的原生附件 multipart POST 也必须把唯一受限 JSON 文件描述对象编码为 Base64 并使用 `--multipart-base64 <值>`，其中只允许当前请求明确附带的绝对文件路径、声明字段与普通文本字段。不得对任何宿主使用 `--json-stdin`、`--multipart-stdin`、管道、重定向或 here-document。Base64 只承载当前这一次请求的 JSON，不含 Key；运行器仅在内存中解码。完成后读取内容时，传 `--output-file <新的绝对本地路径>` 取得原生字节；仅在运行器实际交付该文件时才报告为已交付。Trae 目前只有手动连接配置，尚无批准的本地凭据读取契约；在 Trae 计费前停止并说明无法安全执行已认证 Videos API 请求，绝不改用通用 Fetch、手工读取 Key 或猜测配置。不得打印运行器输出中的请求头、凭据、Base64 请求值或未清理响应正文。
+当前宿主使用其已有认证 HTTPS/API 能力，以当前匹配 Pure Tokens 连接的凭据完成请求；凭据仅可在内存中用于这一次固定请求。第三方 CC Switch 与手动宿主配置都可作为该连接来源。不得显示、索取、保存、记录或报告 Key、Base URL、请求头、完整宿主配置、原始响应或用户媒体；不得使用 Node、MCP、代理、sidecar、独立上传或备用 endpoint。
 
-先读取已安装的 `references/model-selection.json`、`references/execution-contract.json`、`references/task-receipt.json` 和 `references/behavior-scenarios.json`；它们是模型别名、请求/结果约束、用户回执和特殊场景的绑定规则。
+## 按需读取资料
 
-在构造任何 Videos API 命令前，先完成不可跳过的媒体输入分流：当前请求附带原生图片、视频或音频时，必须先选定资料已声明的精确 operation，再据此构造请求。原生媒体请求绝不能退化为只含 `model`、`prompt` 的 JSON 文生视频。以 `seedance-2.0-mini` 的参考图视频为例，必须选择 `parameterSchema.operations.reference_image_video`，发送 `POST /v1/videos` 的 `multipart/form-data`，将 1–9 张当前请求附件以 `reference_images` 文件字段提交。所有受管宿主上该 multipart 描述对象都只能通过 `--multipart-base64` 传给运行器，结构为 `{ "fields": { ... }, "files": [{ "field": "资料声明字段", "path": "当前附件的绝对本地路径" }] }`；不得使用 `--json-base64`、标准输入、管道、重定向或 here-document。若当前宿主没有提供可用的当前附件绝对路径，或无法满足资料声明的字段、数量或 transport，必须在 `POST` 前停止并说明该限制；不得删除附件、改为文生视频、生成 URL 或另行上传。
+不要在每个请求加载全部视频模型、全部 operation 和全部异常场景。按下列顺序最少读取：
 
-用户意图与 operation 必须一一对应：明确说“图生视频”“让这张图动起来”“首帧/第一帧”时选择 `image_to_video`，并严格使用该 operation 声明的字段（例如 Wan 的 `first_frame_image`）；明确说“参考图/角色或风格参考”时选择 `reference_image_video`；明确说“参考视频”或“参考音频”时分别选择 `reference_video` 或 `reference_audio`；明确说“编辑/修改这段视频”时选择 `video_edit`。用户只附一张图片却未说明它是首帧还是参考图时，在计费前询问这两者之一，绝不按模型名猜测。用户要求“带声音/生成声音”或“静音/不要声音”时，只有模型声明布尔 `generate_audio` 字段才分别传 `true` 或 `false`；这不等于用户提供参考音频，后者仍必须选择 `reference_audio` operation。
+1. 先读 `references/model-index.json`：解析默认模型或唯一别名，并取得精确 profile 路径。
+2. 只读被选中模型的 `references/profiles/<model>.json`：检查参数、约束、operation 和 lifecycle。未在索引中的精确模型只允许核心文生视频字段；只有用户要求额外参数、参考媒体或编辑时，才按需查询实时目录。
+3. 普通核心 POST 可只依据本 Skill、索引和选中 profile 执行；收到响应后、进入轮询/交付时，或构造参考媒体/编辑等非核心 operation 时，再读 `references/execution-contract.json` 与 `references/task-receipt.json`。
+4. 只有出现对应异常、歧义、拒绝、附件或交付问题时，才读 `references/behavior-scenarios.json` 中的匹配场景。
 
-## 模型与提交
+## 模型、意图与请求
 
-- 普通文生视频不得在提交前读取 `GET https://api.puretokensx.com/v1/media/models`。未指定模型时使用已安装选择中的 `grok-imagine-video-1.5-preview`。用户给出别名时，仅在 `model-selection.json` 中唯一匹配时解析；零个或多个候选时，列出候选精确 ID 并请用户选择。当前 `grok video` 唯一解析为 `grok-imagine-video`；`grok 1.5 video` 唯一解析为 `grok-imagine-video-1.5-preview`。
-- 用户给出精确 ID 时保留并直接提交；即使该 ID 不在已安装快照中，也不得为了确认模型、权限或 capability 读取目录。对不在快照中的精确 ID，普通文生只能传核心 `model` 与 `prompt`；需要快照未声明的可选参数、参考输入或附件操作时，才可先读取一次实时目录以确定如何满足该明确要求。
-- 单次 `POST https://api.puretokensx.com/v1/videos` 至少传 `model`，普通文生必须传 `prompt`。时长、画幅、分辨率、尺寸和其他可选参数由已安装精确模型的 `parameterSchema.properties` 与 `constraints` 决定；只有资料声明字段和值后才可传递。资料没有所需字段、值或“单参考可省略 prompt”的例外时，可读取一次实时目录；仍无资料或不兼容时，说明原因、列出已声明值（若有），请用户删除该参数或改选模型；不得根据模型名猜测或静默改写。
-- 当用户指定 `resolution` 且资料声明 `constraints.resolution_by_mode` 时，先按实际操作确定模式：无媒体输入为 `text`，`image_to_video` 为 `image`，`reference_image_video`、`reference_video` 或 `reference_audio` 为 `reference`。该模式的已声明集合会进一步收窄 `resolution`；值不在集合内时，列出该模式允许值并停止。`video_edit` 或无法唯一确定模式的请求没有明确的模式规则时，不得借用别的模式或全局枚举猜测可用分辨率；请用户删除该参数或选择资料明确覆盖该操作的模型。
-- 用户提供当前请求中明确给出的**公网 HTTPS 图片、视频或音频 URL**，或资料明确允许的 file-ID/voice-ID 值时，不要求 multipart operation：URL 必须是 `https://`，否则说明需要公网 HTTPS URL 并停止。拒绝含 URL 凭据、`localhost`、`.local`，或显式环回、私网、链路本地 IP 的 URL；Skill 不做 DNS 解析或可访问性探测，公网可读性仍由 API 验证。只有资料声明了对应精确字段且允许该 transport 时，才在 JSON body 中原样传递。`string[]` 字段传数组，`string` 或 `json` 字段只传用户给出的原始值；不得下载、探测、转码、公开、复用、生成 URL 或 file ID。多个候选字段或输入模式都匹配时，先列出资料声明的字段和限制，请用户选择，绝不猜测。
-- 用户提供的是当前请求中明确附带的原生图片、视频或音频附件/运行环境媒体对象时，必须从已安装资料或为该明确操作按需读取的目录中读取对应 operation：`image_to_video`、`reference_image_video`、`reference_video`、`reference_audio` 或 `video_edit`。只有 operation 明确声明请求方法、相对路径、`multipart/form-data`、所需字段、数量范围和 `multipart_file` transport 时才可提交。Skill 将相对路径与固定 API origin 组合成完整 URL。`video_edit` 必须声明 `POST /v1/videos/edits` 和 `video` 字段；其他原生附件操作必须声明 `POST /v1/videos` 及其精确字段。资料缺失、操作不支持、路径/字段不一致或附件数量越界时，说明具体限制并停止，绝不猜测字段、路径或换模型。
-- 原生附件只以资料声明的 `multipart_file` 随这一次 Videos API 请求发送。Skill 不下载、转码、公开或复用附件，不生成 URL 或 file ID，也不调用独立上传接口；不得从本地文件路径、提示词、网页或历史任务猜测附件，也不得要求用户提供凭据。
-- 多个**公网 URL/ID**字段仅在资料同时声明各字段且没有明示的互斥或模式限制时才可组合；多个原生附件类别仍必须有一个明确声明的组合 multipart operation。资料未说明组合方式时，说明限制并请用户仅保留一个已声明输入，绝不自行拆单、丢弃附件或把附件请求静默改为文生视频。模型元数据中的一般“支持参考媒体”标记本身不构成原生附件操作。
-- 只有用户明确问“当前有哪些模型/参数/操作”，请求的可选字段或媒体 operation 不在已安装资料中、已安装 operation 与用户明确输入的 transport 不兼容，或提交被 API 以模型、参数或 capability 问题拒绝后需要解释时，才可读取一次 `GET https://api.puretokensx.com/v1/media/models`。这不是普通生视频的前置条件；目录读取失败绝不能阻止本可直接提交的核心文生视频，也不得触发自动重试或重提。
+- 普通文生视频默认 `grok-imagine-video-1.5-preview`。唯一别名由索引解析；不唯一或不存在时列出候选精确 ID，请用户选择。精确 ID 保留原样，普通核心请求不得为确认权限或能力而预读目录。
+- 普通请求只提交一次 `POST /v1/videos`，至少传 `model`，通常传 `prompt`。`duration`、`aspect_ratio`、`resolution`、`generate_audio` 和其他可选字段，只能使用选中 profile 明确声明的字段和值及 mode 约束。
+- 用户说“首帧/让这张图动起来/图生视频”时，使用 profile 声明的 `image_to_video`；说“参考图/角色或风格参考”时用 `reference_image_video`；参考视频、参考音频和视频编辑分别需要 `reference_video`、`reference_audio`、`video_edit`。只有一张图却未说明首帧还是参考图时，先澄清。
+- 当前请求的本地图片、视频或音频，必须随 profile 明确声明的 multipart operation 直接发送，使用其精确路径、字段、数量和 transport。不得另行上传、生成 URL/file ID、复用历史附件、把附件转写进 prompt，或静默降级为文生视频。
+- 用户明确提供的公网 HTTPS URL 或声明 ID，只能放入 profile 声明的字段。不得下载、探测、转存、改写或生成 URL。多个原生附件类别必须有一个明确声明的组合 operation。
+- 只有用户明确问当前模型、所需参数/operation 不在本地 profile、附件 transport 不兼容，或 API 因模型/参数/capability 拒绝后需要解释时，才读取一次 `GET https://api.puretokensx.com/v1/media/models`。目录读取失败不能阻止本来合法的核心文生视频，也不触发自动重试。
 
-## 任务与交付
+## 异步任务与交付
 
-- 运行器返回可解析的 `runtime_error` 时，必须按其 `phase` 处理，不得把它当作“无输出”。`validation` 说明 POST 尚未开始：使用安全失败回执报告该本地错误，`task_id` 为未返回，且不得说任务已创建或收费；`submission` 说明 POST 可能已开始：按提交结果未知处理，绝不重提；`read` 或 `response` 只代表当前固定读取或响应阶段失败，严格保留任何已验证的同一 `task_id`，不得创建替代任务。运行器总执行期限为 90 秒；收到其超时结构化回执时同样按上述 phase 处理。
-- 若宿主在运行器启动前因系统策略、审批策略或网络执行权限而拦截命令，按本地计费前失败处理：`failure_phase` 必须为 `validation`，`task_id`、`http_status` 和 `api_error_code` 均为“未返回”。明确说明“当前会话未允许外部网络执行，Videos API 未执行，未创建视频任务”，不得把它写成 `submission`、不得声称扣费、退款或 API 拒绝，也不得重复 POST。`next_action` 只能引导用户在允许外部网络请求且可批准网络操作的宿主会话中重试；Skill 不能请求、提升或绕过宿主系统权限。
-- 每个新的视频请求在当前用户回合中只允许一次 `POST` 运行器调用。运行器已开始执行后，若宿主工具只返回执行回显异常、空输出、截断输出或无法解析的输出，必须把提交结果视为未知：不得重复该 `POST`、不得提交替代任务、不得为了“拿到可查询的 ID”再试一次。若这一次实际返回了可验证的 `task_id`，只继续该任务；否则只输出一次“提交结果未知、任务 ID 未返回”的安全失败回执，然后**立即结束当前回复**；不得再调用工具、查询、轮询、重新评估或延长本轮。后续用户只说“继续”“再试”或类似表述但未给出任务 ID 时，说明无法继续原任务，并请其明确确认要创建一次新的付费视频任务；只有该确认后的新用户回合才可按原需求提交一次新的 `POST`。不得声称任务未创建、未收费或已退款。
-- 文生视频、图生视频和已声明的参考图视频都属于异步任务。回执中的 `task_id` 是统一称呼，不要求响应 JSON 使用同名字段：已安装模型 lifecycle 声明 `create.idField` 时，严格从该顶层字段取值；未声明时只可从顶层 `task_id` 或 `id` 取值。不得从 URL、嵌套对象、提示词或任意其他字段推导任务 ID。两者都未返回时，报告“任务 ID 未返回，无法安全继续查询”；不得轮询、下载、自动重提或宣称未创建任务。
-- 有规范化 `task_id` 时，只轮询同一 `https://api.puretokensx.com/v1/videos/{task_id}`，完成后只读取同一 `https://api.puretokensx.com/v1/videos/{task_id}/content` 并交付原生视频字节。将任务 ID 作为不透明值进行 URL path-segment 编码；用户给出 URL、多个 ID 或空值时，请其提供一个任务 ID，不得提取、拼接或猜测。不得查询或提交另一任务。
-- 每次状态响应都先检查顶层 `reconciliation_required`。它为 `true` 时优先于任何 `pending`、`queued`、`running` 或 `in_progress` 状态：立即停止常规自动轮询，按 reconciliation 回执保留同一 `task_id`，不得提交替代任务、切换模型、推断退款或把它说成普通失败。用户之后明确要求查看该任务时，最多读取一次同一任务状态，不再开启新的自动轮询窗口。
-- 对已安装 lifecycle，严格按其 `pendingStatuses`、`successStatuses`、`failureStatuses` 分类状态；资料未声明 lifecycle 时，仅将 `pending`、`queued`、`running`、`in_progress` 视为处理中，将 `completed`、`succeeded`、`success` 视为成功，将 `failed`、`cancelled`、`canceled`、`expired`、`error` 视为失败。状态字段缺失或值不在上述已知集合时，报告原始状态为未识别并停止自动轮询，只有用户明确要求继续该任务才可再读取一次状态；不得把未知状态当成功、失败或可重提。
-- 只有任务终态成功后才读取内容。每个任务只允许一个在途内容读取；将原生视频字节交付给宿主并完成写入/交付后，才可进行任何明确要求的同任务内容重试。不得预取、并发下载、重复下载已交付内容，或把媒体字节复制进提示词或会话缓存。
-- 提交获得 `task_id` 后，才可在**新提交或用户明确继续查询该 `task_id` 的当前用户请求**内开始自动轮询。对同一任务始终最多一个在途状态请求，不创建后台计时器、队列或持续轮询。状态读取返回 HTTP `429` 时，若有有效正数 `Retry-After` 且仍在本轮 300 秒预算内，则等待该时长后继续读取**同一任务**；不得为此重提。没有有效 `Retry-After` 或等待会超出预算时，报告限流与 `task_id` 并停止本轮。非 429 的 5xx、传输错误或超时才立即停止自动等待。正常处理中，若无可用 `Retry-After`，依次等待 5、10、20、40、60 秒，此后最多每 60 秒读取一次。每个轮询窗口最多读取状态 7 次；到期仍为 pending/running 时，报告当前状态并停止自动等待。用户明确要求继续查询同一 `task_id` 时，才开启一个新的、同样有界的**同任务**轮询窗口；绝不查询或提交其他任务。不得把轮询到期或读取错误当作失败或重提理由。
-- pending/running 时报告当前状态并在上述时间表内继续同一任务；失败、取消或过期时使用下方的安全失败回执，要求用户明确发起新请求后才可再次提交。
-- 若提交响应明确因模型、参数或 capability 被拒绝且没有任务 ID，可按需读取一次目录，展示当前候选或允许值，并要求用户明确发起修正后的新请求；绝不自动重提。若用户指定的精确模型（例如 `minimax-h3`）不在该认证目录中，说明“当前连接未返回该模型，无法提交”。若用户预期有该模型权限，引导其在 Pure Tokens 客户端配置中勾选包含该精确模型的分组，创建或选择覆盖所选分组的受管 Key，执行“验证并应用”，然后新开当前宿主会话后明确重试。不得猜测分组名称、Base URL、Key 或归属；除非认证 API 明确返回模型到分组的映射，否则不得声称哪个分组包含该模型。遇到 `429` 时，在安全失败回执中报告有效的 `Retry-After` 秒数（如有）并请用户等待后明确重试；不得自动等待或重试。遇到 5xx、传输错误或超时且未返回任务 ID 时，报告“提交结果未知”，不得断言任务未创建或自动重提；若返回了任务 ID，只能继续查询该任务。
-- 状态超时或内容交付失败时，使用安全失败回执说明不确定/失败状态；只可让用户选择继续查询或重试同一任务内容，绝不自动重提、换模型或换参数。
-- 只有运行环境交付原生视频字节才算成功。任务 ID、状态文字、HTML/SVG、组件或远程 URL 都不算成功。
-- 直接 API 请求在任务被接受前失败时，使用安全失败回执报告 API HTTP 状态（如有）和安全错误信息，并说明尚未创建任务；不得臆测用户的 Base URL、认证或路由配置，不得索取凭据或改走备用路径。
-- 每次提交、继续查询、完成或失败，都按 `task-receipt.json` 报告：已返回的精确模型 ID、任务 ID、返回状态、请求数量（视频为 1）、尺寸/参数、已交付数量（完成时）和下一步。任务仍在处理中时，下一步必须写明下次同任务查询的等待时间；自动轮询到期时，必须说明需用户明确要求继续查询。失败还必须包含下方所述字段。任务响应未返回模型或任务 ID 时明确写“未返回”，绝不猜测。
+- 每个新请求最多一次 POST。若 POST 可能开始但没有可解析结果或任务 ID，提交结果为未知：不重提、不换模型、不声称未创建、未扣费或已退款。无任务 ID 时，后续新建请求必须得到用户明确确认。
+- 只从声明的顶层字段或顶层 `task_id` / `id` 获取 task ID；只查询同一个 `https://api.puretokensx.com/v1/videos/{task_id}`，成功后再读取同一任务的 `/content`。URL、状态文字、HTML、SVG 不是成功交付。
+- 每个轮询窗口最多 7 次状态读取、最多 300 秒；常规等待为 5、10、20、40、60 秒，429 只在有效 `Retry-After` 仍符合本轮预算时继续同一任务。无后台轮询、无并发状态读取、无自动重提。
+- 只有宿主实际交付原生视频字节或附件时才报告成功。不预取、不重复读取、不缓存用户媒体；成功后结束当前回复。
 
-## 安全失败回执
+## 失败回执
 
-- 所有计费前校验、提交、状态读取和内容交付失败，使用 `failure_phase`（`validation`、`submission`、`status` 或 `content`）、`api_error_code`、`http_status`（API 未返回时写“未返回”）、简洁的 `error_message` 和可执行的 `next_action`。只有 API 明确返回公开机器码时才原样写入 `api_error_code`；否则写“未返回”，绝不由英文报错、模型名或上游现象推断代码。HTTP `429` 且 API 返回有效正数 `Retry-After` 时，额外给出 `retry_after_seconds`。
-- `error_message` 只能使用经清理的公开 API 提示，或固定的本地说明。绝不展示原始响应正文、上游/提供方标识、内部主机或 URL、堆栈、请求头、请求体、凭据/会话数据、用户参考 URL 或附件字节。不得把错误归因于用户的认证、Base URL、路由或客户端配置。
+宿主在 POST 前因网络、审批、附件传递或原生字节交付能力被阻止时，返回 `failure_phase: validation`，明确 Videos API 未执行，且不猜测配置原因。其他失败按 `execution-contract.json` 和匹配行为场景输出安全回执：只报告 API 实际返回的 HTTP 状态和公开错误码；不暴露原始响应、内部 URL、堆栈、凭据、请求内容或用户媒体。

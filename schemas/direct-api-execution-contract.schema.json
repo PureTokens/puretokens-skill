@@ -1,22 +1,19 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://puretokensx.com/schemas/direct-api-execution-contract.schema.json",
-  "title": "Pure Tokens direct API execution contract",
+  "title": "Pure Tokens host-native direct API execution contract",
   "type": "object",
-  "required": ["schemaVersion", "apiOrigin", "authentication", "transport", "installableHosts", "verifiedManagedRuntimeHosts", "requiredRuntimeCapabilities", "acceptanceScenarios", "userMediaInput", "asyncTaskHandling", "mediaDeliveryResourceBounds", "balance"],
+  "required": ["schemaVersion", "apiOrigin", "authentication", "transport", "installableHosts", "hostNativeExecutionHosts", "requiredHostCapabilities", "acceptanceScenarios", "userMediaInput", "asyncTaskHandling", "mediaDeliveryResourceBounds", "balance"],
   "properties": {
     "$schema": { "const": "https://puretokensx.com/schemas/direct-api-execution-contract.schema.json" },
     "schemaVersion": { "const": 1 },
     "apiOrigin": { "const": "https://api.puretokensx.com" },
     "authentication": {
       "type": "object",
-      "required": ["usesConfiguredConnectionCredential", "managedRuntimeHosts", "credentialUse", "credentialSourceMustMatchFixedPureTokensEndpoint", "credentialSourceNeverBecomesRequestTarget", "neverDisplaysCopiesStoresOrRequestsCredentials"],
+      "required": ["usesCurrentHostConfiguredCredential", "hostNativeExecutionHosts", "credentialUse", "credentialSourceMustMatchFixedPureTokensEndpoint", "credentialSourceNeverBecomesRequestTarget", "neverDisplaysCopiesStoresOrRequestsCredentials"],
       "properties": {
-        "usesConfiguredConnectionCredential": { "const": true },
-        "managedRuntimeHosts": {
-          "type": "array",
-          "const": ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode"]
-        },
+        "usesCurrentHostConfiguredCredential": { "const": true },
+        "hostNativeExecutionHosts": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string" } },
         "credentialUse": { "const": "in_memory_only_for_fixed_puretokens_api_requests" },
         "credentialSourceMustMatchFixedPureTokensEndpoint": { "const": true },
         "credentialSourceNeverBecomesRequestTarget": { "const": true },
@@ -26,41 +23,20 @@
     },
     "transport": {
       "type": "object",
-      "required": ["usesFullApiUrls", "doesNotUseMcp", "doesNotUseLocalProxyOrSidecar", "doesNotUseFallbackEndpoint", "managedRuntimePostBodyTransport", "managedRuntimeTotalDeadlineSeconds", "runtimeFailureEnvelope"],
+      "required": ["usesFullApiUrls", "usesHostNativeAuthenticatedHttpsExecution", "doesNotRequireNode", "doesNotUseMcp", "doesNotUseLocalProxyOrSidecar", "doesNotUseFallbackEndpoint"],
       "properties": {
         "usesFullApiUrls": { "const": true },
+        "usesHostNativeAuthenticatedHttpsExecution": { "const": true },
+        "doesNotRequireNode": { "const": true },
         "doesNotUseMcp": { "const": true },
         "doesNotUseLocalProxyOrSidecar": { "const": true },
-        "doesNotUseFallbackEndpoint": { "const": true },
-        "managedRuntimePostBodyTransport": { "const": "bounded_base64_argument_never_stdin" },
-        "managedRuntimeTotalDeadlineSeconds": { "const": 90 },
-        "runtimeFailureEnvelope": { "const": "structured_json_with_phase" }
+        "doesNotUseFallbackEndpoint": { "const": true }
       },
       "additionalProperties": false
     },
-    "installableHosts": {
-      "type": "array",
-      "minItems": 1,
-      "uniqueItems": true,
-      "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" }
-    },
-    "verifiedManagedRuntimeHosts": {
-      "type": "array",
-      "const": ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode"]
-    },
-    "requiredRuntimeCapabilities": {
-      "type": "array",
-      "minItems": 4,
-      "uniqueItems": true,
-      "items": {
-        "enum": [
-          "authenticated_full_url_request",
-          "json_task_response",
-          "same_task_status_read",
-          "native_media_byte_delivery"
-        ]
-      }
-    },
+    "installableHosts": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" } },
+    "hostNativeExecutionHosts": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" } },
+    "requiredHostCapabilities": { "type": "array", "minItems": 4, "uniqueItems": true, "items": { "enum": ["authenticated_full_url_request", "json_task_response", "same_task_status_read", "native_media_byte_delivery"] } },
     "acceptanceScenarios": { "type": "array", "minItems": 5 },
     "userMediaInput": { "type": "object" },
     "asyncTaskHandling": { "type": "object" },

@@ -10,8 +10,6 @@ import { promisify } from "node:util";
 import { collectSkillRecords, repositoryRoot, skillsRoot, validateRepository } from "../scripts/skill-registry.mjs";
 
 const [command, ...argumentsList] = process.argv.slice(2);
-const managedRuntimeDirectoryName = ".puretokens-runtime";
-const runtimeSource = path.join(repositoryRoot, "runtime");
 const execFile = promisify(execFileCallback);
 const retiredSkillNames = [
   "puretokens_media",
@@ -79,10 +77,8 @@ async function installSkill(args) {
   if (await exists(destination)) {
     throw new Error(`Refusing to overwrite existing skill: ${destination}`);
   }
-  const runtimePlan = await planManagedRuntime(root);
   await migrateLegacyCodexPlugin(root);
   await mkdir(root, { recursive: true });
-  await applyManagedRuntime(runtimePlan);
   await cp(source, destination, { recursive: true, errorOnExist: true, force: false });
   process.stdout.write(`Installed ${options.name} to ${destination}\n`);
 }
@@ -96,8 +92,6 @@ async function upgradeSkill(args) {
   if (!(await isManagedSkill(destination, options.name))) {
     throw new Error(`Cannot upgrade missing or unmanaged skill: ${destination}`);
   }
-  const runtimePlan = await planManagedRuntime(root);
-  await applyManagedRuntime(runtimePlan);
   await replaceManagedSkill(source, root, destination, options.name);
   process.stdout.write(`Upgraded ${options.name} at ${destination}\n`);
 }
@@ -111,7 +105,7 @@ async function syncSkills(args) {
   const errors = await validateRepository();
   if (errors.length) throw new Error(`Repository validation failed:\n${errors.map((error) => `- ${error}`).join("\n")}`);
 
-  const plan = [await planManagedRuntime(root)];
+  const plan = [];
   for (const retiredName of retiredSkillNames) {
     for (const destination of await retiredSkillDestinations(root, retiredName)) {
       if (!(await isManagedSkill(destination, retiredName))) {
@@ -137,9 +131,7 @@ async function syncSkills(args) {
   await mkdir(root, { recursive: true });
   for (const item of plan) {
     if (item.action === "remove-retired") continue;
-    if (item.kind === "runtime") {
-      await applyManagedRuntime(item);
-    } else if (item.action === "install") {
+    if (item.action === "install") {
       await cp(item.source, item.destination, { recursive: true, errorOnExist: true, force: false });
       process.stdout.write(`Installed ${item.name} to ${item.destination}\n`);
     } else {
@@ -152,6 +144,7 @@ async function syncSkills(args) {
     await rm(item.destination, { recursive: true, force: false });
     process.stdout.write(`Removed retired managed ${item.name} from ${item.destination}\n`);
   }
+  await removeVerifiedLegacyNodeRuntime(root);
   process.stdout.write(`Pure Tokens Skills ${releaseVersion} synchronized at ${root}\n`);
 }
 
@@ -210,24 +203,6 @@ async function retiredSkillDestinations(root, name) {
   return (await Promise.all(destinations.map(async (destination) => ({ destination, present: await exists(destination) }))))
     .filter(({ present }) => present)
     .map(({ destination }) => destination);
-}
-
-async function planManagedRuntime(root) {
-  const destination = path.join(root, managedRuntimeDirectoryName);
-  ensureChildPath(root, destination);
-  if (!(await exists(destination))) return { kind: "runtime", action: "install", source: runtimeSource, root, destination };
-  if (await isManagedRuntime(destination)) return { kind: "runtime", action: "upgrade", source: runtimeSource, root, destination };
-  throw new Error(`Refusing to install because an unmanaged Pure Tokens runtime conflicts: ${destination}`);
-}
-
-async function applyManagedRuntime(plan) {
-  if (plan.action === "install") {
-    await cp(plan.source, plan.destination, { recursive: true, errorOnExist: true, force: false });
-    process.stdout.write(`Installed managed runtime to ${plan.destination}\n`);
-    return;
-  }
-  await replaceManagedDirectory(plan.source, plan.root, plan.destination, managedRuntimeDirectoryName);
-  process.stdout.write(`Upgraded managed runtime at ${plan.destination}\n`);
 }
 
 async function uninstallSkill(args) {
@@ -319,11 +294,18 @@ async function isManagedSkill(directory, name) {
   }
 }
 
-async function isManagedRuntime(directory) {
-  if (!(await existsDirectory(directory))) return false;
+async function removeVerifiedLegacyNodeRuntime(root) {
+  const directory = path.join(root, ".puretokens-runtime");
+  if (!(await isVerifiedLegacyNodeRuntime(directory))) return;
+  await rm(directory, { recursive: true, force: false });
+  process.stdout.write(`Removed retired managed Node runtime from ${directory}\n`);
+}
+
+async function isVerifiedLegacyNodeRuntime(directory) {
+  if (!(await existsDirectory(directory)) || !(await exists(path.join(directory, "puretokens-direct-api.mjs")))) return false;
   try {
     const manifest = JSON.parse(await readFile(path.join(directory, "runtime.json"), "utf8"));
-    return manifest?.name === "puretokens-direct-api-runtime" && (await exists(path.join(directory, "puretokens-direct-api.mjs")));
+    return manifest?.name === "puretokens-direct-api-runtime";
   } catch {
     return false;
   }
@@ -376,5 +358,5 @@ async function existsDirectory(value) {
 }
 
 function printHelp() {
-  process.stdout.write(`Pure Tokens Skill Manager\n\nUsage:\n  puretokens-skill list\n  puretokens-skill validate\n  puretokens-skill install <skill-name> --target <directory>\n  puretokens-skill upgrade <skill-name> --target <directory>\n  puretokens-skill sync --target <directory>\n  puretokens-skill uninstall <skill-name> --target <directory> --yes\n\nSync removes verified retired managed Skills (including stale retired backups), installs missing official Skills, and upgrades only managed matching Skills. It refuses before changing anything when an unmanaged directory conflicts. Every install target is explicit. Use the seven supported host directories in README.md.\n\nRepository: ${repositoryRoot}\n`);
+  process.stdout.write(`Pure Tokens Skill Manager\n\nUsage:\n  puretokens-skill list\n  puretokens-skill validate\n  puretokens-skill install <skill-name> --target <directory>\n  puretokens-skill upgrade <skill-name> --target <directory>\n  puretokens-skill sync --target <directory>\n  puretokens-skill uninstall <skill-name> --target <directory> --yes\n\nSync removes verified retired managed Skills (including stale retired backups) and the exact retired official Node runtime when present, installs missing official Skills, and upgrades only managed matching Skills. It never installs an API runtime and refuses before changing anything when an unmanaged Skill directory conflicts. Every install target is explicit. Use the seven supported host directories in README.md.\n\nRepository: ${repositoryRoot}\n`);
 }

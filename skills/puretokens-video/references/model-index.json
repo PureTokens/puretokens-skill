@@ -1,0 +1,72 @@
+{
+  "$schema": "https://puretokensx.com/schemas/model-index.schema.json",
+  "schemaVersion": 1,
+  "capability": "video",
+  "catalogUpdatedAt": "2026-09-03",
+  "catalogCapturedAt": "2026-09-03T04:00:37.535Z",
+  "defaultModel": "grok-imagine-video-1.5-preview",
+  "models": [
+    {
+      "id": "grok-imagine-video",
+      "aliases": [
+        "grok video"
+      ],
+      "profile": "profiles/grok-imagine-video.json"
+    },
+    {
+      "id": "grok-imagine-video-1.5",
+      "aliases": [],
+      "profile": "profiles/grok-imagine-video-1.5.json"
+    },
+    {
+      "id": "grok-imagine-video-1.5-preview",
+      "aliases": [
+        "grok 1.5 video"
+      ],
+      "profile": "profiles/grok-imagine-video-1.5-preview.json"
+    },
+    {
+      "id": "minimax-h3",
+      "aliases": [
+        "minimax h3"
+      ],
+      "profile": "profiles/minimax-h3.json"
+    },
+    {
+      "id": "seedance-2.0",
+      "aliases": [],
+      "profile": "profiles/seedance-2.0.json"
+    },
+    {
+      "id": "seedance-2.0-fast",
+      "aliases": [],
+      "profile": "profiles/seedance-2.0-fast.json"
+    },
+    {
+      "id": "seedance-2.0-mini",
+      "aliases": [],
+      "profile": "profiles/seedance-2.0-mini.json"
+    },
+    {
+      "id": "seedance-2.5",
+      "aliases": [],
+      "profile": "profiles/seedance-2.5.json"
+    },
+    {
+      "id": "wan3.0-video",
+      "aliases": [
+        "wan3 video",
+        "wan 3 video"
+      ],
+      "profile": "profiles/wan3.0-video.json"
+    },
+    {
+      "id": "wan3.0-video-prime",
+      "aliases": [
+        "wan3 video prime",
+        "wan 3 video prime"
+      ],
+      "profile": "profiles/wan3.0-video-prime.json"
+    }
+  ]
+}

@@ -22,7 +22,7 @@
         "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
         "delivery": { "const": "manual-source" },
         "globalSkillDirectory": { "type": "string", "pattern": "^~/(?:\\.[a-z-]+/)*(?:[a-z-]+/)?skills$" },
-        "directMediaExecution": { "enum": ["verified-managed-local-runtime", "manual-credential-setup"] },
+        "directMediaExecution": { "const": "host-native-direct-api" },
         "guidance": { "type": "string", "minLength": 1 },
         "directApiOrigin": { "const": "https://api.puretokensx.com" }
       },

@@ -4,6 +4,18 @@
 
 # Changelog
 
+## 0.14.1 — 2026-09-04
+
+- Reduced normal media-request context: Image and Video now read a compact model index and only the selected model profile. Full behavior scenarios are loaded only for matching exceptional paths.
+- Replaced the monolithic installed model-selection files with generated per-model profiles, while retaining one controlled base catalog and release freshness checks.
+- Rebuilt the one-time legacy migration archive from the current source-only installer and Skills. It no longer carries a Node runtime, direct API executor, or retired model-selection files.
+
+## 0.14.0 — 2026-09-04
+
+- Replaced the custom direct-API Node runtime with the host's native authenticated HTTPS/API capability for every supported host. Images, Videos, Models, Connection, and Balance now use the fixed `https://api.puretokensx.com` API URLs without MCP, a proxy, sidecar, or local execution helper.
+- Defined the connection contract for third-party CC Switch and manual host configuration: a current matching credential may be used only in memory for the fixed request; the Skill never checks a provider label or exposes connection configuration.
+- Updated installation and update flows to install no API runtime and to remove only the verifiably retired official Node runtime when present. Updated user documentation, contracts, scenarios, and validation to match this path.
+
 ## 0.13.26 — 2026-09-04
 
 - Removed the custom temporary install-payload ZIPs and their download chain. Installation and updates now obtain a fresh official `main` checkout, then run the source-only native sync script from that checkout. The script no longer downloads anything itself. One unlinked legacy archive remains solely to migrate the already-published 0.13.25 updater, whose update path is otherwise hard-coded to that exact file.

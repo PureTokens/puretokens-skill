@@ -14,10 +14,6 @@ fail() {
   exit 1
 }
 
-require_command() {
-  command -v "$1" >/dev/null 2>&1 || fail "required system command is unavailable: $1"
-}
-
 managed_skill() {
   directory=$1
   name=$2
@@ -25,14 +21,14 @@ managed_skill() {
     grep -Fq "\"name\": \"$name\"" "$directory/skill.json"
 }
 
-managed_runtime() {
+legacy_node_runtime() {
   directory=$1
   [ -f "$directory/runtime.json" ] && [ -f "$directory/puretokens-direct-api.mjs" ] &&
-    grep -Fq '"name": "puretokens-direct-api-runtime"' "$directory/runtime.json"
+    grep -Eq '"name"[[:space:]]*:[[:space:]]*"puretokens-direct-api-runtime"' "$directory/runtime.json"
 }
 
-managed_release_version() {
-  version=$(sed -n 's/^[[:space:]]*"version"[[:space:]]*:[[:space:]]*"\([0-9][0-9.]*\)".*$/\1/p' "$1/runtime/runtime.json" | sed -n '1p')
+source_release_version() {
+  version=$(sed -n 's/^[[:space:]]*"version"[[:space:]]*:[[:space:]]*"\([0-9][0-9.]*\)".*$/\1/p' "$1/package.json" | sed -n '1p')
   case "$version" in
     *.*.*) printf '%s\n' "$version" ;;
     *) return 1 ;;
@@ -62,20 +58,16 @@ migrate_legacy_codex_plugin() {
   if ! command -v codex >/dev/null 2>&1; then
     fail "cannot verify removal of legacy Codex plugin puretokens-media because the Codex CLI is unavailable; remove it in Codex Plugins, then run this installer again"
   fi
-  plugin_list=$(codex plugin list --json 2>/dev/null) || {
-    fail "cannot verify removal of legacy Codex plugin puretokens-media because Codex Plugins could not be inspected; remove it in Codex Plugins, then run this installer again"
-  }
+  plugin_list=$(codex plugin list --json 2>/dev/null) || fail "cannot inspect Codex Plugins; remove legacy puretokens-media in Codex Plugins, then run this installer again"
   if ! printf '%s' "$plugin_list" | grep -Eq '"name"[[:space:]]*:[[:space:]]*"puretokens-media"'; then
     return 0
   fi
   plugin_selectors=$(printf '%s' "$plugin_list" | tr '{},' '\n' | sed -n 's/.*"pluginId"[[:space:]]*:[[:space:]]*"\(puretokens-media@[^"]*\)".*/\1/p' | sort -u)
   [ -n "$plugin_selectors" ] || plugin_selectors="puretokens-media"
   for plugin_selector in $plugin_selectors; do
-    codex plugin remove "$plugin_selector" --json >/dev/null 2>&1 ||
-      fail "could not remove legacy Codex plugin $plugin_selector; remove it in Codex Plugins, then run this installer again"
+    codex plugin remove "$plugin_selector" --json >/dev/null 2>&1 || fail "could not remove legacy Codex plugin $plugin_selector; remove it in Codex Plugins, then run this installer again"
   done
-  plugin_list=$(codex plugin list --json 2>/dev/null) ||
-    fail "could not verify removal of legacy Codex plugin puretokens-media; reopen Codex Plugins, remove it if present, then run this installer again"
+  plugin_list=$(codex plugin list --json 2>/dev/null) || fail "could not verify removal of legacy Codex plugin puretokens-media"
   if printf '%s' "$plugin_list" | grep -Eq '"name"[[:space:]]*:[[:space:]]*"puretokens-media"'; then
     fail "legacy Codex plugin puretokens-media is still installed; remove it in Codex Plugins, then run this installer again"
   fi
@@ -85,11 +77,10 @@ migrate_legacy_codex_plugin() {
 validate_source() {
   source_root=$1
   [ -f "$source_root/README.md" ] || fail "official source is missing README.md"
-  [ -f "$source_root/runtime/runtime.json" ] || fail "official source is missing the managed runtime manifest"
-  managed_runtime "$source_root/runtime" || fail "official source has an invalid managed runtime"
-  managed_release_version "$source_root" >/dev/null || fail "official source has an invalid managed runtime version"
-  [ -f "$source_root/runtime/puretokens-skill-install.sh" ] || fail "official source is missing the native installer"
-  [ -f "$source_root/runtime/puretokens-skill-install.ps1" ] || fail "official source is missing the Windows native installer"
+  [ -f "$source_root/package.json" ] || fail "official source is missing package.json"
+  source_release_version "$source_root" >/dev/null || fail "official source has an invalid Skill version"
+  [ -f "$source_root/runtime/puretokens-skill-install.sh" ] || fail "official source is missing the macOS/Linux installer"
+  [ -f "$source_root/runtime/puretokens-skill-install.ps1" ] || fail "official source is missing the Windows installer"
   for name in $current_skills; do
     managed_skill "$source_root/skills/$name" "$name" || fail "official source has an invalid Skill: $name"
   done
@@ -115,44 +106,30 @@ restore_target() {
 sync_target() {
   source_root=$1
   target_root=$2
-  release_version=$(managed_release_version "$source_root") || fail "official source has an invalid managed runtime version"
+  release_version=$(source_release_version "$source_root") || fail "official source has an invalid Skill version"
   [ -d "$target_root" ] || mkdir -p "$target_root"
   target_root=$(cd "$target_root" && pwd -P)
 
   for name in $retired_skills; do
     for destination in "$target_root/$name" "$target_root/.$name.retired-"*; do
-      [ ! -e "$destination" ] || managed_skill "$destination" "$name" ||
-        fail "unmanaged retired Skill conflicts: $destination"
+      [ ! -e "$destination" ] || managed_skill "$destination" "$name" || fail "unmanaged retired Skill conflicts: $destination"
     done
   done
-  [ ! -e "$target_root/.puretokens-runtime" ] || managed_runtime "$target_root/.puretokens-runtime" ||
-    fail "unmanaged Pure Tokens runtime conflicts: $target_root/.puretokens-runtime"
   for name in $current_skills; do
     destination="$target_root/$name"
-    [ ! -e "$destination" ] || managed_skill "$destination" "$name" ||
-        fail "unmanaged Skill conflicts: $destination"
+    [ ! -e "$destination" ] || managed_skill "$destination" "$name" || fail "unmanaged Skill conflicts: $destination"
   done
+
+  stage_root=$(mktemp -d "$target_root/.puretokens-skill-stage.XXXXXX") || fail "could not create a private update staging directory"
+  cleanup_stage() { [ ! -d "$stage_root" ] || rm -rf -- "$stage_root"; }
+  trap cleanup_stage EXIT HUP INT TERM
+  mkdir -p "$stage_root/backup"
+  for name in $current_skills; do cp -R "$source_root/skills/$name" "$stage_root/$name"; done
 
   migrate_legacy_codex_plugin "$target_root"
 
-  stage_root=$(mktemp -d "$target_root/.puretokens-skill-stage.XXXXXX") || fail "could not create a private update staging directory"
-  mkdir -p "$stage_root/backup"
-  cp -R "$source_root/runtime" "$stage_root/.puretokens-runtime"
-  for name in $current_skills; do cp -R "$source_root/skills/$name" "$stage_root/$name"; done
-
   replaced_names=
   created_names=
-  if [ -e "$target_root/.puretokens-runtime" ]; then
-    mv "$target_root/.puretokens-runtime" "$stage_root/backup/.puretokens-runtime"
-    replaced_names="$replaced_names .puretokens-runtime"
-  else
-    created_names="$created_names .puretokens-runtime"
-  fi
-  if ! mv "$stage_root/.puretokens-runtime" "$target_root/.puretokens-runtime"; then
-    restore_target "$target_root" "$stage_root" "$replaced_names" "$created_names"
-    rm -rf -- "$stage_root"
-    fail "could not install the managed runtime"
-  fi
   for name in $current_skills; do
     destination="$target_root/$name"
     if [ -e "$destination" ]; then
@@ -163,7 +140,6 @@ sync_target() {
     fi
     if ! mv "$stage_root/$name" "$destination"; then
       restore_target "$target_root" "$stage_root" "$replaced_names" "$created_names"
-      rm -rf -- "$stage_root"
       fail "could not install Skill: $name"
     fi
   done
@@ -174,7 +150,11 @@ sync_target() {
       printf '%s\n' "Removed retired managed $name from $destination"
     done
   done
-  rm -rf -- "$stage_root"
+  legacy_runtime="$target_root/.puretokens-runtime"
+  if [ -e "$legacy_runtime" ] && legacy_node_runtime "$legacy_runtime"; then
+    rm -rf -- "$legacy_runtime" || fail "could not remove retired Node runtime"
+    printf '%s\n' "Removed retired managed Node runtime from $legacy_runtime"
+  fi
   printf '%s\n' "Pure Tokens Skills $release_version synchronized at $target_root"
 }
 
@@ -186,25 +166,10 @@ host=
 source=
 while [ "$#" -gt 0 ]; do
   case "$1" in
-    --target)
-      [ "$#" -ge 2 ] || fail "--target requires an absolute directory"
-      target=$2
-      shift 2
-      ;;
-    --host)
-      [ "$#" -ge 2 ] || fail "--host requires a supported host ID"
-      host=$2
-      shift 2
-      ;;
-    --source)
-      [ "$#" -ge 2 ] || fail "--source requires an absolute official source directory"
-      source=$2
-      shift 2
-      ;;
-    *)
-      usage
-      exit 2
-      ;;
+    --target) [ "$#" -ge 2 ] || fail "--target requires an absolute directory"; target=$2; shift 2 ;;
+    --host) [ "$#" -ge 2 ] || fail "--host requires a supported host ID"; host=$2; shift 2 ;;
+    --source) [ "$#" -ge 2 ] || fail "--source requires an absolute official source directory"; source=$2; shift 2 ;;
+    *) usage; exit 2 ;;
   esac
 done
 [ -z "$target" ] || [ -z "$host" ] || fail "use either --host or --target, not both"
@@ -214,12 +179,11 @@ done
 [ -z "$source" ] || [ "${source#/}" != "$source" ] || fail "--source must be an absolute official source directory"
 case "$command_name" in check|sync) ;; *) usage; exit 2 ;; esac
 
-require_command mktemp
 if [ -n "$source" ]; then
   [ -d "$source" ] || fail "--source does not exist: $source"
   source_root=$(cd "$source" && pwd -P) || fail "could not resolve --source"
   validate_source "$source_root"
-elif bundled_source_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." 2>/dev/null && pwd -P) && [ -f "$bundled_source_root/README.md" ] && [ -f "$bundled_source_root/runtime/runtime.json" ] && [ -d "$bundled_source_root/skills" ]; then
+elif bundled_source_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." 2>/dev/null && pwd -P) && [ -f "$bundled_source_root/README.md" ] && [ -f "$bundled_source_root/package.json" ] && [ -d "$bundled_source_root/skills" ]; then
   source_root=$bundled_source_root
   validate_source "$source_root"
 else

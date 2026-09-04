@@ -5,15 +5,13 @@
   "transport": {
     "fixedApiOrigin": "https://api.puretokensx.com",
     "usesFullApiUrls": true,
-    "usesRuntimeManagedAuthentication": true,
-    "usesNarrowConfiguredCredentialResolver": true,
-    "verifiedManagedRuntimeHosts": ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode"],
+    "usesHostNativeAuthenticatedHttpsExecution": true,
+    "usesCurrentHostConfiguredCredential": true,
+    "credentialSourceNeverBecomesRequestTarget": true,
     "neverExposesCredentialsOrHostConfiguration": true,
     "requiresNativeMediaByteDelivery": true,
-    "doesNotUseMcpOrFallbackTransport": true,
-    "managedRuntimePostBodyTransport": "bounded_base64_argument_never_stdin",
-    "managedRuntimeTotalDeadlineSeconds": 90,
-    "runtimeFailureEnvelope": "structured_json_with_phase"
+    "doesNotUseNodeRuntime": true,
+    "doesNotUseMcpOrFallbackTransport": true
   },
   "operations": {
     "catalog": { "method": "GET", "url": "https://api.puretokensx.com/v1/media/models" },
@@ -23,7 +21,7 @@
       "requiredBodyFields": ["model"],
       "conditionalBodyFields": {
         "prompt": "required_for_normal_text_generation_and_omitted_only_when_the_installed_or_on_demand_profile_declares_a_single-reference-exception",
-        "all_other_user_optional_fields": "only_when_the_installed_exact_model_selection_or_an_on_demand_live_input_schema_declares_the_field_and_value"
+        "all_other_user_optional_fields": "only_when_the_installed_exact_model_index_and_selected_profile_or_an_on_demand_live_input_schema_declares_the_field_and_value"
       },
       "contentType": "profile_declared_json_or_multipart"
     },
@@ -70,10 +68,10 @@
     "handoffBeforeNextContentRead": true
   },
   "parameterValidation": {
-    "normalSubmissionUsesInstalledModelSelection": true,
+    "normalSubmissionUsesInstalledModelIndexAndSelectedProfile": true,
     "exactModelCoreSubmissionDoesNotRequireCatalogPreflight": true,
     "onDemandLiveCatalogRead": "only_for_explicit_discovery_installed_profile_gap_or_post_rejection_diagnosis",
-    "allModelsOptionalParametersRequire": "installed_model_selection_parameter_schema_or_on_demand_live_input_schema",
+    "allModelsOptionalParametersRequire": "installed_model_index_and_selected_profile_parameter_schema_or_on_demand_live_input_schema",
     "promptRequirementUsesInstalledOrOnDemandPropertiesAndConstraints": true,
     "resolutionUsesInstalledOrOnDemandModeConstraint": true,
     "whenProfileIsMissing": "do_not_submit_requested_optional_parameters_or_media_operations"
@@ -87,15 +85,15 @@
     "explicitFirstFrameIntentUses": "image_to_video",
     "declaredGenerateAudioIntent": "map_explicit_generated_sound_to_true_and_silence_to_false_only_for_declared_boolean_generate_audio",
     "requiresInstalledOrOnDemandProfileOperation": true,
-    "publicUrlOrDeclaredIdReferenceRequires": "installed_model_selection_or_on_demand_live_profile_property_and_declared_reference_transport",
+    "publicUrlOrDeclaredIdReferenceRequires": "installed_model_index_and_selected_profile_or_on_demand_live_profile_property_and_declared_reference_transport",
     "onlyCurrentUserExplicitMedia": true,
     "allowedTransports": ["multipart_file"],
     "skillPassesUserProvidedPublicUrlsOrDeclaredIdsWithoutDownloadingOrRehosting": true,
     "skillNeverDownloadsOrRehostsMedia": true,
-    "gatewayStagesCurrentRequestAttachment": true,
+    "hostStagesCurrentRequestAttachment": true,
     "nativeAttachmentRouteMustMatchDeclaredOperation": true,
     "nativeAttachmentMustNeverFallBackToJsonTextSubmission": true,
-    "managedRuntimeNativeAttachmentBodyMode": "multipart_base64_descriptor_only",
+    "nativeAttachmentBodyMode": "host_native_multipart_only",
     "whenCurrentAttachmentPathUnavailable": "stop_before_post_and_explain_declared_multipart_requirement",
     "multipleNativeAttachmentTypesRequireOneDeclaredCombinedOperation": true,
     "multiplePublicUrlOrIdFieldsRequireNoDeclaredConflict": true,
@@ -119,9 +117,9 @@
     "modelParameterOrCapabilityRejection": "one_on_demand_catalog_read_then_require_explicit_corrected_new_request",
     "rateLimit": "report_retry_after_when_returned_and_require_explicit_retry",
     "serverTransportOrTimeoutWithoutTaskId": "report_submission_outcome_unknown_without_declaring_task_absent_or_resubmitting",
-    "hostExecutionPolicyBlockedBeforeRuntimeStarts": "report_validation_no_api_request_or_task_id_and_require_host_session_with_external_network_permission",
-    "runtimeInvocationOutputUnknown": "treat_submission_outcome_as_unknown_do_not_repeat_post_or_submit_replacement_task",
-    "runtimeUnknownOutcomeResponse": "one_terminal_receipt_then_end_turn_without_followup_tool_status_or_poll_work",
+    "hostExecutionPolicyBlockedBeforeRequestStarts": "report_validation_no_api_request_or_task_id_and_require_host_session_with_external_network_permission",
+    "hostInvocationOutputUnknown": "treat_submission_outcome_as_unknown_do_not_repeat_post_or_submit_replacement_task",
+    "hostUnknownOutcomeResponse": "one_terminal_receipt_then_end_turn_without_followup_tool_status_or_poll_work",
     "noTaskIdLaterContinuation": "require_explicit_confirmation_of_a_new_billable_request_before_one_new_post"
   },
   "failureReceipt": {

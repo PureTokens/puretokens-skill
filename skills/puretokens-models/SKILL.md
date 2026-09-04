@@ -5,9 +5,9 @@ description: 查询当前 Pure Tokens 连接实际可用的图片和视频模型
 
 # Pure Tokens Models
 
-只读查询固定 Pure Tokens API `https://api.puretokensx.com/v1/media/models` 的当前认证媒体目录。不得用未认证的通用 Fetch/WebFetch 猜测认证。Claude Code、Codex、WorkBuddy、Gemini CLI、Grok Build 和 OpenCode 都使用受管直连运行器；它只从当前宿主的固定已配置位置狭义匹配 Pure Tokens 凭据，且只在内存中为这一次固定请求构造认证头。该配置来源只用于绑定凭据，绝不作为请求目标复用。WorkBuddy 可以匹配固定 origin 下无 query、无 fragment 的 `/v1` 或 `/v1/...` 单模型资源 URL；其他宿主仍只接受各自规定的精确连接形式。不得显示、复制、保存、索取或输出凭据、Base URL 或完整宿主配置；不得使用 MCP、本地代理、sidecar、备用服务或手工认证请求。
+只读查询固定 Pure Tokens API `https://api.puretokensx.com/v1/media/models` 的当前认证媒体目录。使用当前宿主已有的认证 HTTPS/API 执行能力直接发出该完整固定 URL 请求；只可在内存中读取当前活动连接中与固定 Pure Tokens origin 精确匹配的一把凭据，作为本次请求的认证头。第三方 CC Switch 或手工配置只要已写入宿主连接即可使用；不得检查 provider 标签，也不得把保存的 Base URL 当作请求目标。不得显示、复制、保存、索取或输出凭据、Base URL 或完整宿主配置；不得安装或调用 Node 运行器、MCP、本地代理、sidecar、备用服务或另一条认证路径。
 
-根据当前宿主运行对应命令：Claude Code：`node ~/.claude/skills/.puretokens-runtime/puretokens-direct-api.mjs request --host claude-code --method GET --path /v1/media/models`；Codex：`node ~/.agents/skills/.puretokens-runtime/puretokens-direct-api.mjs request --host codex --method GET --path /v1/media/models`；WorkBuddy：`node ~/.workbuddy/skills/.puretokens-runtime/puretokens-direct-api.mjs request --host workbuddy --method GET --path /v1/media/models`；Gemini CLI：`node ~/.gemini/skills/.puretokens-runtime/puretokens-direct-api.mjs request --host gemini-cli --method GET --path /v1/media/models`；Grok Build：`node ~/.grok/skills/.puretokens-runtime/puretokens-direct-api.mjs request --host grok-build --method GET --path /v1/media/models`；OpenCode：`node ~/.config/opencode/skills/.puretokens-runtime/puretokens-direct-api.mjs request --host opencode --method GET --path /v1/media/models`。只处理其结构化输出；不得把响应原文、请求头或配置内容直接展示给用户。Trae 目前只有手动连接配置，尚无批准的本地凭据读取契约；在 Trae 停止并说明无法安全读取认证模型目录，绝不改用通用 Fetch、手工读取 Key 或猜测配置。
+只处理完成请求后得到的结构化结果；不得把响应原文、请求头或配置内容直接展示给用户。若当前宿主不能在不暴露凭据的前提下执行该已认证 HTTPS 请求，按本地执行不可用处理，明确目录请求未执行且不猜测配置原因。
 
 先读取已安装的 `references/execution-contract.json` 和 `references/behavior-scenarios.json`；它们定义模型目录、能力筛选和用户可见输出的约束。
 

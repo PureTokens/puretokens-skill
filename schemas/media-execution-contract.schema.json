@@ -126,12 +126,14 @@
             }
           },
           "result": {
-            "required": ["installsMissingOfficialSkills", "upgradesOnlyManagedMatchingSkills", "neverOverwritesUnmanagedDirectories", "removesVerifiedRetiredManagedSkills", "reportsSynchronizedVersion", "removesLegacyCodexPluginWhenPresent", "requiresVerifiedLegacyCodexPluginRemovalBeforeSync", "doesNotClaimSuccessWithoutVersionReceipt", "neverModifiesOfficialCheckout", "requiresFullCodexRestartAfterLegacyPluginRemoval", "requiresNewHostConversationAfterSuccess"],
+            "required": ["installsMissingOfficialSkills", "upgradesOnlyManagedMatchingSkills", "neverOverwritesUnmanagedDirectories", "removesVerifiedRetiredManagedSkills", "removesVerifiedLegacyNodeRuntime", "doesNotInstallApiRuntime", "reportsSynchronizedVersion", "removesLegacyCodexPluginWhenPresent", "requiresVerifiedLegacyCodexPluginRemovalBeforeSync", "doesNotClaimSuccessWithoutVersionReceipt", "neverModifiesOfficialCheckout", "requiresFullCodexRestartAfterLegacyPluginRemoval", "requiresNewHostConversationAfterSuccess"],
             "properties": {
               "installsMissingOfficialSkills": { "const": true },
               "upgradesOnlyManagedMatchingSkills": { "const": true },
               "neverOverwritesUnmanagedDirectories": { "const": true },
               "removesVerifiedRetiredManagedSkills": { "const": true },
+              "removesVerifiedLegacyNodeRuntime": { "const": true },
+              "doesNotInstallApiRuntime": { "const": true },
               "reportsSynchronizedVersion": { "const": true },
               "removesLegacyCodexPluginWhenPresent": { "const": true },
               "requiresVerifiedLegacyCodexPluginRemovalBeforeSync": { "const": true },
@@ -148,18 +150,16 @@
   "$defs": {
     "directTransport": {
       "type": "object",
-      "required": ["fixedApiOrigin", "usesFullApiUrls", "usesRuntimeManagedAuthentication", "usesNarrowConfiguredCredentialResolver", "verifiedManagedRuntimeHosts", "neverExposesCredentialsOrHostConfiguration", "doesNotUseMcpOrFallbackTransport", "managedRuntimePostBodyTransport", "managedRuntimeTotalDeadlineSeconds", "runtimeFailureEnvelope"],
+      "required": ["fixedApiOrigin", "usesFullApiUrls", "usesHostNativeAuthenticatedHttpsExecution", "usesCurrentHostConfiguredCredential", "credentialSourceNeverBecomesRequestTarget", "neverExposesCredentialsOrHostConfiguration", "doesNotUseNodeRuntime", "doesNotUseMcpOrFallbackTransport"],
       "properties": {
         "fixedApiOrigin": { "const": "https://api.puretokensx.com" },
         "usesFullApiUrls": { "const": true },
-        "usesRuntimeManagedAuthentication": { "const": true },
-        "usesNarrowConfiguredCredentialResolver": { "const": true },
-        "verifiedManagedRuntimeHosts": { "const": ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode"] },
+        "usesHostNativeAuthenticatedHttpsExecution": { "const": true },
+        "usesCurrentHostConfiguredCredential": { "const": true },
+        "credentialSourceNeverBecomesRequestTarget": { "const": true },
         "neverExposesCredentialsOrHostConfiguration": { "const": true },
+        "doesNotUseNodeRuntime": { "const": true },
         "doesNotUseMcpOrFallbackTransport": { "const": true },
-        "managedRuntimePostBodyTransport": { "const": "bounded_base64_argument_never_stdin" },
-        "managedRuntimeTotalDeadlineSeconds": { "const": 90 },
-        "runtimeFailureEnvelope": { "const": "structured_json_with_phase" },
         "requiresNativeMediaByteDelivery": { "const": true }
       },
       "additionalProperties": false

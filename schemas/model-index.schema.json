@@ -1,21 +1,22 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://puretokensx.com/schemas/model-selection.schema.json",
-  "title": "Pure Tokens installed media model selection",
+  "$id": "https://puretokensx.com/schemas/model-index.schema.json",
+  "title": "Pure Tokens installed media model index",
   "type": "object",
-  "required": ["schemaVersion", "capability", "catalogUpdatedAt", "catalogCapturedAt", "models"],
+  "required": ["schemaVersion", "capability", "catalogUpdatedAt", "catalogCapturedAt", "defaultModel", "models"],
   "properties": {
-    "$schema": { "const": "https://puretokensx.com/schemas/model-selection.schema.json" },
+    "$schema": { "const": "https://puretokensx.com/schemas/model-index.schema.json" },
     "schemaVersion": { "const": 1 },
     "capability": { "enum": ["image", "video"] },
     "catalogUpdatedAt": { "type": "string", "minLength": 1 },
     "catalogCapturedAt": { "type": "string", "format": "date-time" },
+    "defaultModel": { "type": "string", "minLength": 1, "maxLength": 128 },
     "models": {
       "type": "array",
       "minItems": 1,
       "items": {
         "type": "object",
-        "required": ["id", "aliases"],
+        "required": ["id", "aliases", "profile"],
         "properties": {
           "id": { "type": "string", "minLength": 1, "maxLength": 128 },
           "aliases": {
@@ -23,13 +24,11 @@
             "uniqueItems": true,
             "items": { "type": "string", "minLength": 1, "maxLength": 160 }
           },
-          "parameterSchema": {
-            "type": "object"
-          }
+          "profile": { "type": "string", "pattern": "^profiles/[a-z0-9][a-z0-9.-]*\\.json$" }
         },
         "additionalProperties": false
       }
     }
   },
-  "additionalProperties": true
+  "additionalProperties": false
 }

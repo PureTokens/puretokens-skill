@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://puretokensx.com/schemas/model-profile.schema.json",
+  "title": "Pure Tokens installed media model profile",
+  "type": "object",
+  "required": ["schemaVersion", "capability", "catalogUpdatedAt", "catalogCapturedAt", "id", "parameterSchema"],
+  "properties": {
+    "$schema": { "const": "https://puretokensx.com/schemas/model-profile.schema.json" },
+    "schemaVersion": { "const": 1 },
+    "capability": { "enum": ["image", "video"] },
+    "catalogUpdatedAt": { "type": "string", "minLength": 1 },
+    "catalogCapturedAt": { "type": "string", "format": "date-time" },
+    "id": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "parameterSchema": { "type": "object" }
+  },
+  "additionalProperties": false
+}

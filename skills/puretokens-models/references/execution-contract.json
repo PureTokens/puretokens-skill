@@ -5,14 +5,12 @@
   "transport": {
     "fixedApiOrigin": "https://api.puretokensx.com",
     "usesFullApiUrls": true,
-    "usesRuntimeManagedAuthentication": true,
-    "usesNarrowConfiguredCredentialResolver": true,
-    "verifiedManagedRuntimeHosts": ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode"],
+    "usesHostNativeAuthenticatedHttpsExecution": true,
+    "usesCurrentHostConfiguredCredential": true,
+    "credentialSourceNeverBecomesRequestTarget": true,
     "neverExposesCredentialsOrHostConfiguration": true,
-    "doesNotUseMcpOrFallbackTransport": true,
-    "managedRuntimePostBodyTransport": "bounded_base64_argument_never_stdin",
-    "managedRuntimeTotalDeadlineSeconds": 90,
-    "runtimeFailureEnvelope": "structured_json_with_phase"
+    "doesNotUseNodeRuntime": true,
+    "doesNotUseMcpOrFallbackTransport": true
   },
   "operations": {
     "catalog": { "method": "GET", "url": "https://api.puretokensx.com/v1/media/models" }

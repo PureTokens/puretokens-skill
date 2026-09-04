@@ -1,0 +1,145 @@
+{
+  "$schema": "https://puretokensx.com/schemas/model-profile.schema.json",
+  "schemaVersion": 1,
+  "capability": "video",
+  "catalogUpdatedAt": "2026-09-03",
+  "catalogCapturedAt": "2026-09-03T04:00:37.535Z",
+  "id": "seedance-2.0-fast",
+  "parameterSchema": {
+    "properties": {
+      "duration": {
+        "type": "integer",
+        "enum": [
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15
+        ]
+      },
+      "aspect_ratio": {
+        "type": "string",
+        "enum": [
+          "21:9",
+          "16:9",
+          "4:3",
+          "1:1",
+          "3:4",
+          "9:16"
+        ]
+      },
+      "resolution": {
+        "type": "string",
+        "enum": [
+          "480p",
+          "720p"
+        ]
+      },
+      "generate_audio": {
+        "type": "boolean",
+        "default": true
+      }
+    },
+    "operations": {
+      "image_to_video": {
+        "request": {
+          "method": "POST",
+          "path": "/v1/videos",
+          "contentType": "multipart/form-data"
+        },
+        "requiredBodyFields": [
+          "model",
+          "prompt",
+          "image"
+        ],
+        "inputs": {
+          "image": {
+            "field": "image",
+            "required": true,
+            "minItems": 1,
+            "maxItems": 1,
+            "transports": [
+              "multipart_file"
+            ]
+          }
+        }
+      },
+      "reference_image_video": {
+        "request": {
+          "method": "POST",
+          "path": "/v1/videos",
+          "contentType": "multipart/form-data"
+        },
+        "requiredBodyFields": [
+          "model",
+          "prompt",
+          "reference_images"
+        ],
+        "inputs": {
+          "reference_images": {
+            "field": "reference_images",
+            "required": true,
+            "minItems": 1,
+            "maxItems": 9,
+            "transports": [
+              "multipart_file"
+            ]
+          }
+        }
+      },
+      "reference_video": {
+        "request": {
+          "method": "POST",
+          "path": "/v1/videos",
+          "contentType": "multipart/form-data"
+        },
+        "requiredBodyFields": [
+          "model",
+          "prompt",
+          "reference_videos"
+        ],
+        "inputs": {
+          "reference_videos": {
+            "field": "reference_videos",
+            "required": true,
+            "minItems": 1,
+            "maxItems": 3,
+            "transports": [
+              "multipart_file"
+            ]
+          }
+        }
+      },
+      "reference_audio": {
+        "request": {
+          "method": "POST",
+          "path": "/v1/videos",
+          "contentType": "multipart/form-data"
+        },
+        "requiredBodyFields": [
+          "model",
+          "prompt",
+          "reference_audios"
+        ],
+        "inputs": {
+          "reference_audios": {
+            "field": "reference_audios",
+            "required": true,
+            "minItems": 1,
+            "maxItems": 3,
+            "transports": [
+              "multipart_file"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

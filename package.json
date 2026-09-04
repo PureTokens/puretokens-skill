@@ -1,6 +1,6 @@
 {
   "name": "puretokens-skill",
-  "version": "0.13.26",
+  "version": "0.14.1",
   "description": "Installable Pure Tokens skills and skill management tooling.",
   "private": true,
   "type": "module",
@@ -23,9 +23,10 @@
   ],
   "scripts": {
     "list": "node bin/puretokens-skill.js list",
-    "validate": "node scripts/validate-skills.mjs && node scripts/sync-skill-model-selection.mjs --check && node scripts/sync-readme-media-catalog.mjs --check",
+    "validate": "node scripts/validate-skills.mjs && node scripts/sync-skill-model-profiles.mjs --check && node scripts/sync-readme-media-catalog.mjs --check",
     "release:validate": "npm run validate && node scripts/check-media-catalog-freshness.mjs --max-age-days 7",
-    "docs:sync-media-models": "node scripts/sync-skill-model-selection.mjs --write && node scripts/sync-readme-media-catalog.mjs --write",
+    "docs:sync-media-models": "node scripts/sync-skill-model-profiles.mjs --write && node scripts/sync-readme-media-catalog.mjs --write",
+    "dist:build-legacy-migration-archive": "sh scripts/build-legacy-migration-archive.sh",
     "docs:sync-media-models-from-base-catalog": "node scripts/sync-media-model-catalog-from-service.mjs --write && npm run docs:sync-media-models",
     "docs:sync-media-models-from-service": "npm run docs:sync-media-models-from-base-catalog",
     "test": "node --test",
