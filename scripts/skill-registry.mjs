@@ -442,15 +442,14 @@ function validateExecutionContract(errors, directory, contract) {
 function validateUpdateContract(errors, label, contract) {
   const transport = contract.transport;
   if (!transport || transport.localSkillManager !== true || transport.usesOfficialMainBranch !== true ||
-    transport.usesCompactInstallPayload !== true || transport.payloadDownloadDeadlineSeconds !== 40 ||
-    transport.payloadDownloadAttemptDeadlineSeconds !== 20 || transport.usesOfficialGitHubApiFallback !== true ||
+    transport.requiresFreshOfficialSourceCheckout !== true || transport.doesNotUseCustomInstallPayload !== true ||
     transport.doesNotReadCredentialsOrHostConfiguration !== true || transport.doesNotUseMediaApiOrMcp !== true) {
     errors.push(`${label} must use the local official Skill manager without credentials, media APIs, or MCP`);
   }
   const sync = contract.operations?.sync;
-  if (!sync || sync.commandTemplate !== "native_platform_installer sync --host <current-supported-host>" ||
-    sync.sourceRepository !== "https://github.com/PureTokens/puretokens-skill.git" || sync.sourceBranch !== "main" || sync.validationCommand !== "native_installer_derives_host_target_and_validates_unpacked_compact_official_bundle_before_sync") {
-    errors.push(`${label} must define the validated compact official-payload sync operation`);
+  if (!sync || sync.commandTemplate !== "native_platform_sync --source <fresh-official-main-checkout> --host <current-supported-host>" ||
+    sync.sourceRepository !== "https://github.com/PureTokens/puretokens-skill.git" || sync.sourceBranch !== "main" || sync.validationCommand !== "native_sync_derives_host_target_and_validates_fresh_official_main_checkout_before_sync") {
+    errors.push(`${label} must define the validated fresh official-source sync operation`);
   }
   const result = contract.result;
   if (!result || result.installsMissingOfficialSkills !== true || result.upgradesOnlyManagedMatchingSkills !== true ||

@@ -4,6 +4,10 @@
 
 # Changelog
 
+## 0.13.26 — 2026-09-04
+
+- Removed the custom temporary install-payload ZIPs and their download chain. Installation and updates now obtain a fresh official `main` checkout, then run the source-only native sync script from that checkout. The script no longer downloads anything itself. One unlinked legacy archive remains solely to migrate the already-published 0.13.25 updater, whose update path is otherwise hard-coded to that exact file.
+
 ## 0.13.25 — 2026-09-04
 
 - Fixed direct Images and Videos submissions that could stall before any API call in Codex and other managed hosts. Every managed runtime POST now uses only a bounded canonical Base64 request-body argument; standard-input request bodies are rejected immediately instead of waiting for an EOF that a host may never send.

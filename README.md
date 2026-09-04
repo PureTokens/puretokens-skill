@@ -15,42 +15,9 @@ This repository provides six independent Skills:
 | `puretokens-video` | Generates videos and performs profile-gated image, video, or audio reference generation and video edits through the fixed Pure Tokens Videos API. |
 | `puretokens-update` | Installs or safely upgrades local official Pure Tokens Skills. |
 
-Install the Skills you need into the supported host's documented global Skill directory. This does not require Node, npm, Git, or package installation:
+Install or update through a terminal-capable local Agent. It retrieves a fresh official checkout of this repository's `main` branch, validates it, then runs the repository's native source-only sync script for the current host. There is no product install ZIP, package manager, Node, npm, or user configuration step.
 
-```bash
-# macOS or Linux — replace `codex` with the current host ID. This downloads one official install bundle.
-set -eu
-bundle_dir="$(mktemp -d)"
-bundle_file="$bundle_dir/puretokens-skill-install.zip"
-if ! curl --fail --location --proto '=https' --proto-redir '=https' --tlsv1.2 --connect-timeout 7 --max-time 20 \
-  --header 'Accept: application/vnd.github.raw+json' --header 'X-GitHub-Api-Version: 2022-11-28' \
-  'https://api.github.com/repos/PureTokens/puretokens-skill/contents/dist/puretokens-skill-install.zip?ref=main' \
-  --output "$bundle_file"; then
-  curl --fail --location --proto '=https' --proto-redir '=https' --tlsv1.2 --connect-timeout 7 --max-time 20 \
-    'https://raw.githubusercontent.com/PureTokens/puretokens-skill/main/dist/puretokens-skill-install.zip' \
-    --output "$bundle_file"
-fi
-unzip -q "$bundle_file" -d "$bundle_dir/unpacked"
-sh "$bundle_dir/unpacked/puretokens-skill-main/runtime/puretokens-skill-install.sh" sync --host codex
-rm -rf "$bundle_dir"
-```
-
-```powershell
-# Windows PowerShell — replace `codex` with the current host ID. This downloads one official install bundle.
-$bundleDir = Join-Path ([System.IO.Path]::GetTempPath()) ("puretokens-skill-" + [Guid]::NewGuid().ToString("N"))
-New-Item -ItemType Directory -Path $bundleDir | Out-Null
-$bundleFile = Join-Path $bundleDir "puretokens-skill-install.zip"
-try {
-  Invoke-WebRequest 'https://api.github.com/repos/PureTokens/puretokens-skill/contents/dist/puretokens-skill-install.zip?ref=main' -Headers @{ Accept = "application/vnd.github.raw+json"; "X-GitHub-Api-Version" = "2022-11-28" } -OutFile $bundleFile -TimeoutSec 20
-} catch {
-  Invoke-WebRequest 'https://raw.githubusercontent.com/PureTokens/puretokens-skill/main/dist/puretokens-skill-install.zip' -OutFile $bundleFile -TimeoutSec 20
-}
-Expand-Archive -LiteralPath $bundleFile -DestinationPath (Join-Path $bundleDir "unpacked")
-& (Join-Path $bundleDir "unpacked\puretokens-skill-main\runtime\puretokens-skill-install.ps1") sync -Host codex
-Remove-Item -LiteralPath $bundleDir -Recurse -Force
-```
-
-Supported installer host IDs are `claude-code`, `codex`, `workbuddy`, `gemini-cli`, `grok-build`, `opencode`, and `trae`. The installer maps them to the documented global Skill directories itself.
+The source-only sync scripts are `runtime/puretokens-skill-install.sh` for macOS/Linux and `runtime/puretokens-skill-install.ps1` for Windows. They run from that fresh checkout (or receive it by absolute `--source` / `-Source` path), derive the documented host target, verify managed files before writing, and report the synchronized version.
 
 ## Agent-assisted installation
 
@@ -106,7 +73,7 @@ The Skill never guesses a group name or claims which group contains a model: the
 
 ## Skill updates
 
-`puretokens-update` handles explicit requests to install, update, or synchronize local official Skills. Each update downloads one compact official install bundle, excluding documentation and brand assets, then runs its matching native installer with the current host ID. The installer derives the documented global Skill directory itself, statically validates the unpacked bundle, and synchronizes in the same run. It never runs an installed older updater, reuses a user configuration, or makes a second package download. It first gives GitHub's official API raw-content path 20 seconds; only if that fails, it gives GitHub raw content one further 20-second attempt. It never uses a third-party mirror, retries either source again, or starts synchronization until a bundle validates. It requires no user-installed Node, npm, package manager, Git, or dependency installation. Before a Codex sync, it lists plugins and, when the exact legacy `puretokens-media` plugin is present, removes its exact selector and lists again to prove it is gone. If inspection, removal, or verification cannot complete, the installer stops without a success receipt; the user must remove it in Codex Plugins or through the workspace administrator and run the installer again. When it was removed, fully quit and restart Codex before opening a new test conversation: an already-open conversation retains its loaded legacy instructions. After all checks succeed, it removes verified retired managed Skill directories and old matching hidden retired backups, installs missing official Skills, and upgrades only managed matching Skill directories; an unmanaged current or retired same-name directory, or an unmanaged runtime directory, stops the whole sync before any target is changed. Only the exact versioned success receipt confirms completion. It never reads connection settings or credentials, and it never runs automatically during media work.
+`puretokens-update` handles explicit requests to install, update, or synchronize local official Skills. The Agent first retrieves a fresh official checkout of this repository's `main` branch, then runs the matching source-only native sync script from that checkout with the current host ID. The script derives the documented global Skill directory, statically validates the checkout, and synchronizes in one local operation. It never downloads a custom install payload, runs an already-installed old updater, reuses user configuration, or makes a second package download. Before a Codex sync, it lists plugins and, when the exact legacy `puretokens-media` plugin is present, removes its exact selector and lists again to prove it is gone. If inspection, removal, or verification cannot complete, the sync stops without a success receipt; the user must remove it in Codex Plugins or through the workspace administrator and run the sync again. When it was removed, fully quit and restart Codex before opening a new test conversation: an already-open conversation retains its loaded legacy instructions. After all checks succeed, it removes verified retired managed Skill directories and old matching hidden retired backups, installs missing official Skills, and upgrades only managed matching Skill directories; an unmanaged current or retired same-name directory, or an unmanaged runtime directory, stops the whole sync before any target is changed. Only the exact versioned success receipt confirms completion. It never reads connection settings or credentials, and it never runs automatically during media work.
 
 ## Image sizes and count
 

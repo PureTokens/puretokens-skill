@@ -5,19 +5,17 @@
   "transport": {
     "localSkillManager": true,
     "usesOfficialMainBranch": true,
-    "usesCompactInstallPayload": true,
-    "payloadDownloadDeadlineSeconds": 40,
-    "payloadDownloadAttemptDeadlineSeconds": 20,
-    "usesOfficialGitHubApiFallback": true,
+    "requiresFreshOfficialSourceCheckout": true,
+    "doesNotUseCustomInstallPayload": true,
     "doesNotReadCredentialsOrHostConfiguration": true,
     "doesNotUseMediaApiOrMcp": true
   },
   "operations": {
     "sync": {
-      "commandTemplate": "native_platform_installer sync --host <current-supported-host>",
+      "commandTemplate": "native_platform_sync --source <fresh-official-main-checkout> --host <current-supported-host>",
       "sourceRepository": "https://github.com/PureTokens/puretokens-skill.git",
       "sourceBranch": "main",
-      "validationCommand": "native_installer_derives_host_target_and_validates_unpacked_compact_official_bundle_before_sync"
+      "validationCommand": "native_sync_derives_host_target_and_validates_fresh_official_main_checkout_before_sync"
     }
   },
   "result": {

@@ -14,9 +14,6 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$primaryArchiveUrl = "https://api.github.com/repos/PureTokens/puretokens-skill/contents/dist/puretokens-skill-install.zip?ref=main"
-$fallbackArchiveUrl = "https://raw.githubusercontent.com/PureTokens/puretokens-skill/main/dist/puretokens-skill-install.zip"
-$payloadDownloadAttemptDeadlineSeconds = 20
 $currentSkills = @("puretokens-balance", "puretokens-connection", "puretokens-models", "puretokens-image", "puretokens-video", "puretokens-update")
 $retiredSkills = @("puretokens_media", "puretokens_balance", "puretokens_connection", "puretokens_models", "puretokens_image", "puretokens_video", "puretokens_update", "puretokens_get_balance", "puretokens_get_model_price", "puretokens_workbuddy_router")
 
@@ -62,21 +59,6 @@ function Get-TargetForHost([string]$RequestedHost) {
     "opencode" { return (Join-Path $env:USERPROFILE ".config\opencode\skills") }
     "trae" { return (Join-Path $env:USERPROFILE ".trae\skills") }
     default { Fail "unsupported host: $RequestedHost" }
-  }
-}
-
-function Download-OfficialPayload([string]$Archive) {
-  Write-Output "Downloading the compact official Pure Tokens Skill install payload through the official GitHub API."
-  try {
-    Invoke-WebRequest -Uri $primaryArchiveUrl -Headers @{ Accept = "application/vnd.github.raw+json"; "X-GitHub-Api-Version" = "2022-11-28" } -OutFile $Archive -TimeoutSec $payloadDownloadAttemptDeadlineSeconds
-    return
-  } catch {
-    Write-Output "The official GitHub API download path was unavailable; trying GitHub raw content once."
-  }
-  try {
-    Invoke-WebRequest -Uri $fallbackArchiveUrl -OutFile $Archive -TimeoutSec $payloadDownloadAttemptDeadlineSeconds
-  } catch {
-    Fail "could not download the compact official Pure Tokens Skill install payload from either official GitHub path within two 20-second attempts"
   }
 }
 
@@ -129,7 +111,6 @@ function Remove-LegacyCodexPlugin([string]$TargetRoot) {
   Write-Output "Removed and verified legacy Codex plugin puretokens-media. Fully restart Codex before testing the new Skills."
 }
 
-$workspace = $null
 try {
   if (-not [string]::IsNullOrWhiteSpace($Target) -and -not [string]::IsNullOrWhiteSpace($HostId)) { Fail "use either -Host or -Target, not both" }
   if ([string]::IsNullOrWhiteSpace($Target) -and [string]::IsNullOrWhiteSpace($HostId)) { Fail "-Host or -Target is required" }
@@ -147,14 +128,7 @@ try {
       (Test-Path -LiteralPath (Join-Path $bundledSourceRoot "skills") -PathType Container)) {
       $sourceRoot = $bundledSourceRoot
     } else {
-    $workspace = Join-Path ([System.IO.Path]::GetTempPath()) ("puretokens-skill-" + [Guid]::NewGuid().ToString("N"))
-    New-Item -ItemType Directory -Path $workspace | Out-Null
-    $archive = Join-Path $workspace "puretokens-skill-install-payload.zip"
-    Download-OfficialPayload $archive
-    $unpacked = Join-Path $workspace "unpacked"
-    Expand-Archive -LiteralPath $archive -DestinationPath $unpacked
-    $sourceRoot = Join-Path $unpacked "puretokens-skill-main"
-    if (-not (Test-Path -LiteralPath $sourceRoot -PathType Container)) { Fail "official source archive has an unexpected layout" }
+    Fail "run this source-only sync script from a fresh official Pure Tokens Skills main checkout or pass -Source <absolute-checkout-directory>"
     }
   }
   Test-OfficialSource $sourceRoot
@@ -219,5 +193,5 @@ try {
   Remove-Item -LiteralPath $stageRoot -Recurse -Force
   Write-Output "Pure Tokens Skills $releaseVersion synchronized at $targetRoot"
 } finally {
-  if ($null -ne $workspace -and (Test-Path -LiteralPath $workspace)) { Remove-Item -LiteralPath $workspace -Recurse -Force }
+  # This source-only script does not create a download workspace.
 }

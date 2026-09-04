@@ -15,42 +15,9 @@
 | `puretokens-video` | 通过固定的 Pure Tokens Videos API 生视频，并按 profile 支持图生视频、参考图/视频/音频视频和视频编辑。 |
 | `puretokens-update` | 安装或安全升级本机官方 Pure Tokens Skills。 |
 
-按需安装到受支持宿主已声明的全局 Skill 目录。用户不需要安装 Node、npm、Git 或任何依赖：
+通过具备本机终端的 Agent 安装或更新。Agent 获取本仓库 `main` 的最新官方本地检出、完成校验，再从该检出运行当前宿主的原生源码同步脚本。没有产品安装 ZIP，不需要包管理器、Node、npm，也不需要用户处理连接配置。
 
-```bash
-# macOS 或 Linux：将 `codex` 替换为当前宿主 ID。只下载一次官方安装包。
-set -eu
-bundle_dir="$(mktemp -d)"
-bundle_file="$bundle_dir/puretokens-skill-install.zip"
-if ! curl --fail --location --proto '=https' --proto-redir '=https' --tlsv1.2 --connect-timeout 7 --max-time 20 \
-  --header 'Accept: application/vnd.github.raw+json' --header 'X-GitHub-Api-Version: 2022-11-28' \
-  'https://api.github.com/repos/PureTokens/puretokens-skill/contents/dist/puretokens-skill-install.zip?ref=main' \
-  --output "$bundle_file"; then
-  curl --fail --location --proto '=https' --proto-redir '=https' --tlsv1.2 --connect-timeout 7 --max-time 20 \
-    'https://raw.githubusercontent.com/PureTokens/puretokens-skill/main/dist/puretokens-skill-install.zip' \
-    --output "$bundle_file"
-fi
-unzip -q "$bundle_file" -d "$bundle_dir/unpacked"
-sh "$bundle_dir/unpacked/puretokens-skill-main/runtime/puretokens-skill-install.sh" sync --host codex
-rm -rf "$bundle_dir"
-```
-
-```powershell
-# Windows PowerShell：将 `codex` 替换为当前宿主 ID。只下载一次官方安装包。
-$bundleDir = Join-Path ([System.IO.Path]::GetTempPath()) ("puretokens-skill-" + [Guid]::NewGuid().ToString("N"))
-New-Item -ItemType Directory -Path $bundleDir | Out-Null
-$bundleFile = Join-Path $bundleDir "puretokens-skill-install.zip"
-try {
-  Invoke-WebRequest 'https://api.github.com/repos/PureTokens/puretokens-skill/contents/dist/puretokens-skill-install.zip?ref=main' -Headers @{ Accept = "application/vnd.github.raw+json"; "X-GitHub-Api-Version" = "2022-11-28" } -OutFile $bundleFile -TimeoutSec 20
-} catch {
-  Invoke-WebRequest 'https://raw.githubusercontent.com/PureTokens/puretokens-skill/main/dist/puretokens-skill-install.zip' -OutFile $bundleFile -TimeoutSec 20
-}
-Expand-Archive -LiteralPath $bundleFile -DestinationPath (Join-Path $bundleDir "unpacked")
-& (Join-Path $bundleDir "unpacked\puretokens-skill-main\runtime\puretokens-skill-install.ps1") sync -Host codex
-Remove-Item -LiteralPath $bundleDir -Recurse -Force
-```
-
-安装器支持的宿主 ID 为 `claude-code`、`codex`、`workbuddy`、`gemini-cli`、`grok-build`、`opencode`、`trae`，并会自行映射到对应宿主的全局 Skill 目录。
+源码同步脚本分别是 macOS/Linux 的 `runtime/puretokens-skill-install.sh` 和 Windows 的 `runtime/puretokens-skill-install.ps1`。它们从该最新检出运行（或接收绝对 `--source` / `-Source` 路径），自行推导宿主目录，在写入前校验受管文件，并输出同步后的版本。
 
 ## 让 Agent 协助安装
 
@@ -106,7 +73,7 @@ Skill 绝不猜测分组名称，也不会声称某模型属于哪个分组；�
 
 ## Skill 升级
 
-`puretokens-update` 专门处理用户明确提出的安装、更新或同步本机官方 Skills 的请求。每次更新只下载一次不含文档和品牌资源的紧凑官方安装包，然后从中执行对应平台安装器并传入当前宿主 ID。安装器自行推导该宿主的全局 Skill 目录，静态校验解压后的安装包，并在同一次运行中同步；不会运行已安装的旧更新器、复用用户配置或再次下载安装包。它先给 GitHub 官方 API raw-content 路径 20 秒；仅当该路径失败时，才通过 GitHub raw-content 路径再尝试一次、最多 20 秒。绝不使用第三方镜像、不再重试任一路径，也不会在安装包校验成功前开始同步。用户无需安装 Node、npm、包管理器、Git 或依赖。Codex 同步前会列出插件；若发现精确的旧 `puretokens-media` 插件，会按其精确 selector 卸载并再次列出确认已不存在。无法检查、卸载或确认时，安装器会停止且不输出成功回执；用户需在 Codex Plugins 中卸载，或联系工作区管理员，再重新执行安装。若本次已移除该插件，必须完全退出并重新启动 Codex，再新开测试对话：已经打开的对话会保留旧插件已加载的指令。全部检查成功后，安装器会删除已验证的旧受管 Skill 目录，以及同名的旧隐藏备份，安装缺失官方 Skill，只升级受管且同名的当前 Skill 目录；只要遇到当前或旧的非受管同名目录，或非受管运行器目录，整个同步会在改动前停止。只有精确的带版本成功回执才能确认同步完成。它绝不读取连接设置或凭据，也绝不会在媒体任务中自行运行。
+`puretokens-update` 专门处理用户明确提出的安装、更新或同步本机官方 Skills 的请求。Agent 先获取本仓库 `main` 的最新官方本地检出，再从该检出以当前宿主 ID 运行对应的原生源码同步脚本。脚本自行推导该宿主的全局 Skill 目录、静态校验本地检出，并在一次本地同步中完成更新；不下载自定义安装载荷、不运行已安装的旧更新器、不复用用户配置，也不会第二次下载安装包。Codex 同步前会列出插件；若发现精确的旧 `puretokens-media` 插件，会按其精确 selector 卸载并再次列出确认已不存在。无法检查、卸载或确认时，同步会停止且不输出成功回执；用户需在 Codex Plugins 中卸载，或联系工作区管理员，再重新执行安装。若本次已移除该插件，必须完全退出并重新启动 Codex，再新开测试对话：已经打开的对话会保留旧插件已加载的指令。全部检查成功后，脚本会删除已验证的旧受管 Skill 目录，以及同名的旧隐藏备份，安装缺失官方 Skill，只升级受管且同名的当前 Skill 目录；只要遇到当前或旧的非受管同名目录，或非受管运行器目录，整个同步会在改动前停止。只有精确的带版本成功回执才能确认同步完成。它绝不读取连接设置或凭据，也绝不会在媒体任务中自行运行。
 
 ## 图片尺寸和数量
 

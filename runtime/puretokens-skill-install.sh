@@ -2,9 +2,6 @@
 
 set -eu
 
-payload_archive_primary_url="https://api.github.com/repos/PureTokens/puretokens-skill/contents/dist/puretokens-skill-install.zip?ref=main"
-payload_archive_fallback_url="https://raw.githubusercontent.com/PureTokens/puretokens-skill/main/dist/puretokens-skill-install.zip"
-payload_download_attempt_deadline_seconds=20
 current_skills="puretokens-balance puretokens-connection puretokens-models puretokens-image puretokens-video puretokens-update"
 retired_skills="puretokens_media puretokens_balance puretokens_connection puretokens_models puretokens_image puretokens_video puretokens_update puretokens_get_balance puretokens_get_model_price puretokens_workbuddy_router"
 
@@ -96,27 +93,6 @@ validate_source() {
   for name in $current_skills; do
     managed_skill "$source_root/skills/$name" "$name" || fail "official source has an invalid Skill: $name"
   done
-}
-
-download_source() {
-  workspace=$1
-  archive="$workspace/puretokens-skill-install-payload.zip"
-  unpacked="$workspace/unpacked"
-  mkdir -p "$unpacked"
-  printf '%s\n' "Downloading the compact official Pure Tokens Skill install payload through the official GitHub API." >&2
-  if ! curl --fail --location --proto '=https' --proto-redir '=https' --tlsv1.2 --connect-timeout 7 --max-time "$payload_download_attempt_deadline_seconds" \
-    --header 'Accept: application/vnd.github.raw+json' --header 'X-GitHub-Api-Version: 2022-11-28' \
-    "$payload_archive_primary_url" --output "$archive"; then
-    printf '%s\n' "The official GitHub API download path was unavailable; trying GitHub raw content once." >&2
-    curl --fail --location --proto '=https' --proto-redir '=https' --tlsv1.2 --connect-timeout 7 --max-time "$payload_download_attempt_deadline_seconds" \
-      "$payload_archive_fallback_url" --output "$archive" ||
-      fail "could not download the compact official Pure Tokens Skill install payload from either official GitHub path within two 20-second attempts"
-  fi
-  unzip -q "$archive" -d "$unpacked" || fail "could not unpack the official Pure Tokens Skill source"
-  source_root="$unpacked/puretokens-skill-main"
-  [ -d "$source_root" ] || fail "official source archive has an unexpected layout"
-  validate_source "$source_root"
-  printf '%s\n' "$source_root"
 }
 
 restore_target() {
@@ -247,12 +223,7 @@ elif bundled_source_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." 2>/dev/null && 
   source_root=$bundled_source_root
   validate_source "$source_root"
 else
-  require_command curl
-  require_command unzip
-  workspace=$(mktemp -d "${TMPDIR:-/tmp}/puretokens-skill.XXXXXX") || fail "could not create a private temporary directory"
-  cleanup_workspace() { rm -rf -- "$workspace"; }
-  trap cleanup_workspace EXIT HUP INT TERM
-  source_root=$(download_source "$workspace")
+  fail "run this source-only sync script from a fresh official Pure Tokens Skills main checkout or pass --source <absolute-checkout-directory>"
 fi
 if [ "$command_name" = "check" ]; then
   printf '%s\n' "Official Pure Tokens Skill source passed native static validation."

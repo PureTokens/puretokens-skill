@@ -4,7 +4,8 @@ coverage/
 dist/
 !dist/
 dist/*
-!dist/puretokens-skill-install-payload.zip
+!dist/README.md
+!dist/puretokens-skill-install.zip
 .env
 .env.*
 !.env.example

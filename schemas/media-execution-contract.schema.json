@@ -117,10 +117,10 @@
               "sync": {
                 "required": ["commandTemplate", "sourceRepository", "sourceBranch", "validationCommand"],
                 "properties": {
-                  "commandTemplate": { "const": "native_platform_installer sync --host <current-supported-host>" },
+                  "commandTemplate": { "const": "native_platform_sync --source <fresh-official-main-checkout> --host <current-supported-host>" },
                   "sourceRepository": { "const": "https://github.com/PureTokens/puretokens-skill.git" },
                   "sourceBranch": { "const": "main" },
-                  "validationCommand": { "const": "native_installer_derives_host_target_and_validates_unpacked_compact_official_bundle_before_sync" }
+                  "validationCommand": { "const": "native_sync_derives_host_target_and_validates_fresh_official_main_checkout_before_sync" }
                 }
               }
             }
@@ -166,14 +166,12 @@
     },
     "updateTransport": {
       "type": "object",
-      "required": ["localSkillManager", "usesOfficialMainBranch", "usesCompactInstallPayload", "payloadDownloadDeadlineSeconds", "payloadDownloadAttemptDeadlineSeconds", "usesOfficialGitHubApiFallback", "doesNotReadCredentialsOrHostConfiguration", "doesNotUseMediaApiOrMcp"],
+      "required": ["localSkillManager", "usesOfficialMainBranch", "requiresFreshOfficialSourceCheckout", "doesNotUseCustomInstallPayload", "doesNotReadCredentialsOrHostConfiguration", "doesNotUseMediaApiOrMcp"],
       "properties": {
         "localSkillManager": { "const": true },
         "usesOfficialMainBranch": { "const": true },
-        "usesCompactInstallPayload": { "const": true },
-        "payloadDownloadDeadlineSeconds": { "const": 40 },
-        "payloadDownloadAttemptDeadlineSeconds": { "const": 20 },
-        "usesOfficialGitHubApiFallback": { "const": true },
+        "requiresFreshOfficialSourceCheckout": { "const": true },
+        "doesNotUseCustomInstallPayload": { "const": true },
         "doesNotReadCredentialsOrHostConfiguration": { "const": true },
         "doesNotUseMediaApiOrMcp": { "const": true }
       },
@@ -205,10 +203,10 @@
       "type": "object",
       "required": ["commandTemplate", "sourceRepository", "sourceBranch", "validationCommand"],
       "properties": {
-        "commandTemplate": { "const": "native_platform_installer sync --host <current-supported-host>" },
+        "commandTemplate": { "const": "native_platform_sync --source <fresh-official-main-checkout> --host <current-supported-host>" },
         "sourceRepository": { "const": "https://github.com/PureTokens/puretokens-skill.git" },
         "sourceBranch": { "const": "main" },
-        "validationCommand": { "const": "native_installer_derives_host_target_and_validates_unpacked_compact_official_bundle_before_sync" }
+        "validationCommand": { "const": "native_sync_derives_host_target_and_validates_fresh_official_main_checkout_before_sync" }
       },
       "additionalProperties": false
     },
