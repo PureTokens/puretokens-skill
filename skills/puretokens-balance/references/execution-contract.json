@@ -19,15 +19,19 @@
   "operations": {
     "read": {
       "method": "GET",
-      "url": "https://api.puretokensx.com/api/product/desktop/account/balance",
-      "requiresExistingAuthenticatedAccountSession": true,
-      "responseSchema": "https://puretokensx.com/schemas/balance-snapshot.schema.json"
+      "url": "https://api.puretokensx.com/v1/dashboard/billing/subscription",
+      "requiresConfiguredApiKey": true,
+      "responseSchema": "https://puretokensx.com/schemas/balance-snapshot.schema.json",
+      "usageUrl": "https://api.puretokensx.com/v1/dashboard/billing/usage"
     }
   },
   "result": {
     "reportOnlyReturnedFields": true,
     "neverEstimate": true,
     "neverRetry": true,
-    "fallbackWhenAccountSessionUnavailable": "report_direct_result_and_direct_to_puretokens_client_balance_view"
+    "fallbackWhenAccountSessionUnavailable": "report_direct_result_and_direct_to_puretokens_client_balance_view",
+    "scope": "api_account_or_key_scope_unspecified",
+    "unit": "api_display_unit_unspecified",
+    "calculation": "reported_remaining = hard_limit_usd - total_usage / 100"
   }
 }

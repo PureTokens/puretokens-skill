@@ -98,11 +98,11 @@ func TestContinuationOnlyReadsTheSuppliedTask(t *testing.T) {
 	defer server.Close()
 
 	output := &bytes.Buffer{}
-	err := executeTask(strings.NewReader(`{"kind":"image","operation":"continue","task_id":"task-1","requested_count":1,"output_dir":"`+strings.ReplaceAll(t.TempDir(), `\`, `\\`)+`","poll":{"max_status_reads":1,"deadline_seconds":1}}`), output, service{baseURL: server.URL, token: "not-output", client: server.Client()})
+	err := executeExistingTask("status", strings.NewReader(`{"kind":"image","operation":"continue","task_id":"task-1","requested_count":1,"output_dir":"`+strings.ReplaceAll(t.TempDir(), `\`, `\\`)+`","poll":{"max_status_reads":1,"deadline_seconds":1}}`), output, service{baseURL: server.URL, token: "not-output", client: server.Client()})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if posts != 0 || reads != 1 || contents != 1 {
+	if posts != 0 || reads != 1 || contents != 0 {
 		t.Fatalf("posts=%d reads=%d contents=%d", posts, reads, contents)
 	}
 	if strings.Contains(output.String(), "not-output") || !strings.Contains(output.String(), `"task_id":"task-1"`) {
@@ -125,7 +125,7 @@ func TestReconciliationStopsBeforeContentDelivery(t *testing.T) {
 	defer server.Close()
 
 	output := &bytes.Buffer{}
-	err := executeTask(strings.NewReader(`{"kind":"video","operation":"continue","task_id":"task-1","poll":{"max_status_reads":1,"deadline_seconds":1}}`), output, service{baseURL: server.URL, token: "not-output", client: server.Client()})
+	err := executeExistingTask("status", strings.NewReader(`{"kind":"video","operation":"continue","task_id":"task-1","poll":{"max_status_reads":1,"deadline_seconds":1}}`), output, service{baseURL: server.URL, token: "not-output", client: server.Client()})
 	if err == nil || contentReads != 0 || !strings.Contains(output.String(), `"reconciliation_required":true`) {
 		t.Fatalf("err=%v contentReads=%d receipt=%s", err, contentReads, output.String())
 	}
@@ -202,6 +202,10 @@ experimental_bearer_token = "wrong-key"
 
 func TestInitVerifiesIdentityWithoutReturningConfiguration(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/v1/media/models" {
+			_, _ = w.Write([]byte(`{"data":[]}`))
+			return
+		}
 		if r.URL.Path != "/v1" || r.Method != http.MethodGet {
 			t.Fatal("unexpected init request")
 		}

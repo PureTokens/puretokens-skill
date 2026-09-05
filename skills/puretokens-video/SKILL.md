@@ -7,45 +7,47 @@ description: 当前宿主使用 Pure Tokens 连接时，任何生成、创建、
 
 ## 路由优先级
 
-当前宿主以 Pure Tokens 连接处理视频请求时，无论用户是否明确说出“Pure Tokens”，都必须先选择本 Skill，再选择任何通用视频生成或编辑 Skill。本 Skill 一旦被选择，就是本次视频请求唯一的媒体执行规则；不能因缺少执行能力、模型不可用或请求失败而改用通用生视频 Skill。
+当前宿主使用 Pure Tokens 连接时，本 Skill 优先处理视频生成和编辑；不先调用通用视频 Skill。必须调用安装的原生执行器；它是唯一 API 传输。不得自行发 HTTP、读取或传递凭据、改用其他媒体 Skill、MCP、Computer Use、浏览器或桌面自动化。
 
-该优先级由已安装 Skill 的元数据和宿主当前连接上下文决定。Skill 绝不自行读取认证文件、拼接 `curl`、展示、索取、保存、记录、比较或报告 Key、Base URL、provider 或完整宿主配置。
+请求固定发送到 `https://api.puretokensx.com`。执行器只在内存中读取当前宿主明确配置的匹配凭据。用户不需要 Node、Python、Go 或 Pure Tokens Desktop。不要以 provider 标签判断连接，也不要假定聊天请求的认证会自动传给其他工具。
 
-只调用固定 Pure Tokens Videos API：`https://api.puretokensx.com/v1/videos`；视频编辑仅在精确模型资料声明时调用 `/v1/videos/edits`。每次都使用完整固定 URL，不使用已配置 Base URL 作为请求目标，也不检查 provider 名称。
+## 按需读取
 
-Skills 根目录下与当前 Skill 同级的 `../.puretokens-executor/puretokens-api` 是唯一 API 传输。Skill 只向它传递已经按 profile 校验的请求 JSON、当前附件的绝对路径和当前宿主 ID；执行器才会通过其已验证的宿主凭据适配器在内存中取得一把匹配凭据并请求固定 URL。第三方 CC Switch 与手动配置无需额外设置：只要它们已将 Pure Tokens 连接写入该宿主的有效配置，已验证的适配器即可使用。执行器不接受 Key、Base URL 或请求头作为命令参数，不使用 Node、MCP、代理、sidecar、独立上传或备用 endpoint。
+不要在每个请求加载全部模型或全部异常规则。先读 `references/model-index.json`，默认模型为 `grok-imagine-video-1.5-preview`，唯一别名映射到精确 ID；歧义先让用户选择。只读选中模型的 `references/profiles/<model>.json`。
 
-## 唯一执行路径
+普通核心 POST 可只依据本 Skill、索引和选中 profile 执行。执行器也会从安装目录读取该 profile 并校验参数。未知精确模型允许只有 model/prompt 的核心请求；额外参数或媒体操作缺少 profile 时，执行器才读取一次实时目录。不得把查余额、init 或拉取最新目录设为每次生成的前置条件。
 
-本 Skill 是本次视频请求唯一的执行规则：必须调用安装的原生执行器，不得自行发 HTTP、读取凭据、调用或回退到 Imagen 或其他图片/视频 Skill；不得申请、调用或使用 Computer Use，不得打开、点击、控制或搜索浏览器、Pure Tokens Switch、Pure Tokens Desktop 或任何图形界面。它们不是 API 传输或媒体交付通道。
+只有出现对应异常或歧义时，才读 `references/behavior-scenarios.json` 的匹配场景。完整命令和回执见 `references/executor-usage.md`；按需读取 `references/execution-contract.json` 和 `references/task-receipt.json`。
 
-执行器输入必须是单个 JSON 请求：`kind: "video"`、`operation: "generate"` 或 `"edit"`、精确 `model`、`prompt`、已声明的 `parameters`、可选 `output_dir` 和仅当前附件的 `{field,path}`。只要 profile 声明对应 multipart operation，附件就由执行器随该单个 Videos API 请求发送。执行器创建最多一个任务、保留同一 task_id、轮询并交付原生视频字节。若执行器不可用、当前宿主没有已验证的凭据适配器、无法取得当前附件绝对路径、或实际网络请求失败，必须返回它的单个安全回执；不得为寻找可用界面改用 UI、其他 Skill 或另一条传输路径。
+## 请求与附件
 
-## 按需读取资料
+从当前 SKILL.md 的绝对位置解析同级 `../.puretokens-executor/puretokens-api`，Windows 使用 `puretokens-api.exe`。不要依赖终端工作目录或 PATH。当前宿主 ID 取 `codex`、`claude-code`、`workbuddy`、`gemini-cli`、`grok-build`、`opencode`、`trae` 中实际运行的一个；不能猜测其他宿主的配置。
 
-不要在每个请求加载全部视频模型、全部 operation 和全部异常场景。按下列顺序最少读取：
+用宿主文件工具创建仅本次请求的 UTF-8 JSON 文件，不在命令行放 prompt 或附件内容，不包含 Key、Base URL、headers。调用：
 
-1. 先读 `references/model-index.json`：解析默认模型或唯一别名，并取得精确 profile 路径。
-2. 只读被选中模型的 `references/profiles/<model>.json`：检查参数、约束、operation 和 lifecycle。未在索引中的精确模型只允许核心文生视频字段；只有用户要求额外参数、参考媒体或编辑时，才按需查询实时目录。
-3. 普通核心 POST 可只依据本 Skill、索引和选中 profile 执行；收到响应后、进入轮询/交付时，或构造参考媒体/编辑等非核心 operation 时，再读 `references/execution-contract.json` 与 `references/task-receipt.json`。
-4. 只有出现对应异常、歧义、拒绝、附件或交付问题时，才读 `references/behavior-scenarios.json` 中的匹配场景。
+```text
+<executor-absolute-path> submit --host <host-id> --request <request-json-absolute-path>
+```
 
-## 模型、意图与请求
+收到回执后清理临时请求文件。请求包含 `kind: "video"`、`operation: "generate"` 或 `"edit"`、精确 `model`、`prompt`、声明的 `parameters` 和可选 `attachments: [{"field":"精确字段","path":"当前附件绝对路径"}]`。`requested_count` 可省略，执行器从 `parameters.n` 推导；两个数量字段若同时提供必须一致，绝不能把尺寸传给数量。
 
-- 普通文生视频默认 `grok-imagine-video-1.5-preview`。唯一别名由索引解析；不唯一或不存在时列出候选精确 ID，请用户选择。精确 ID 保留原样，普通核心请求不得为确认权限或能力而预读目录。
-- 普通请求只提交一次 `POST /v1/videos`，至少传 `model`，通常传 `prompt`。`duration`、`aspect_ratio`、`resolution`、`generate_audio` 和其他可选字段，只能使用选中 profile 明确声明的字段和值及 mode 约束。
-- 用户说“首帧/让这张图动起来/图生视频”时，使用 profile 声明的 `image_to_video`；说“参考图/角色或风格参考”时用 `reference_image_video`；参考视频、参考音频和视频编辑分别需要 `reference_video`、`reference_audio`、`video_edit`。只有一张图却未说明首帧还是参考图时，先澄清。
-- 当前请求的本地图片、视频或音频，必须随 profile 明确声明的 multipart operation 直接发送，使用其精确路径、字段、数量和 transport。不得另行上传、生成 URL/file ID、复用历史附件、把附件转写进 prompt，或静默降级为文生视频。
-- 用户明确提供的公网 HTTPS URL 或声明 ID，只能放入 profile 声明的字段。不得下载、探测、转存、改写或生成 URL。多个原生附件类别必须有一个明确声明的组合 operation。
-- 只有用户明确问当前模型、所需参数/operation 不在本地 profile、附件 transport 不兼容，或 API 因模型/参数/capability 拒绝后需要解释时，才读取一次 `GET https://api.puretokensx.com/v1/media/models`。目录读取失败不能阻止本来合法的核心文生视频，也不触发自动重试。
+只使用 profile 声明的字段和值。物理尺寸如 `200cm × 230cm` 无法精确满足，不传 API；明确说明限制并列出当前模型支持的尺寸或比例。数量不支持时请用户换支持该数量的模型，不能自动拆成多个付费任务。尺寸、时长、分辨率和数量被拒绝时，不自动改参重试。
 
-## 异步任务与交付
+当前附件要声明精确 `media_operation`，例如 `image_edit`、`image_to_video`、`reference_image_video`、`reference_video`、`reference_audio`、`video_edit`，并使用该 operation 的精确字段和数量。用户没说明首帧、参考或编辑用途时先澄清。只有一个声明的组合 operation 才能混合附件类别。
 
-- 每个新请求最多一次 POST。若 POST 可能开始但没有可解析结果或任务 ID，提交结果为未知：不重提、不换模型、不声称未创建、未扣费或已退款。无任务 ID 时，后续新建请求必须得到用户明确确认。
-- 只从声明的顶层字段或顶层 `task_id` / `id` 获取 task ID；只查询同一个 `https://api.puretokensx.com/v1/videos/{task_id}`，成功后再读取同一任务的 `/content`。URL、状态文字、HTML、SVG 不是成功交付。
-- 每个轮询窗口最多 7 次状态读取、最多 300 秒；常规等待为 5、10、20、40、60 秒，429 只在有效 `Retry-After` 仍符合本轮预算时继续同一任务。无后台轮询、无并发状态读取、无自动重提。
-- 只有宿主实际交付原生视频字节或附件时才报告成功。不预取、不重复读取、不缓存用户媒体；成功后结束当前回复。
+用户明确给出的公网 HTTPS URL 只能放到 profile 声明的 JSON 参考字段，使用 `generate`；不要下载、探测、转存或改写 URL。本地附件通过声明的 multipart 随一次媒体请求发送；不得单独上传、生成 URL/file ID、读取旧附件或降级为纯文本。执行器决定 profile 声明的固定 API 路径和表示方式。
 
-## 失败回执
+## 异步与交付
 
-宿主在 POST 前因网络、审批、附件传递或原生字节交付能力被阻止时，返回 `failure_phase: validation`，明确 Videos API 未执行，且不猜测配置原因。其他失败按 `execution-contract.json` 和匹配行为场景输出安全回执：只报告 API 实际返回的 HTTP 状态和公开错误码；不暴露原始响应、内部 URL、堆栈、凭据、请求内容或用户媒体。
+1. 每个新请求只调用一次 submit。创建成功立即输出 task_id 并结束命令；先把 ID 和状态告知用户，再开始等待。没有可解析回执时结果未知，不声称未创建、未扣费或已退款，不自动重提。
+2. 用 `wait --host <host-id> --request <same-task-json>` 等待原任务；`status` 只读一次。图片每个窗口最多 6 次、120 秒；视频最多 7 次、300 秒。截止时间包含网络等待，遵守 Retry-After。超时或状态读取失败保留 task_id，询问是否继续该任务，不能新建替代任务或后台轮询。
+3. 完成后用 `content`，传相同 task_id、`task_status: "completed"`、已确认的 requested_count、零起点 index 和现有输出目录绝对路径。每次只取一个 index；图片按 0..n-1，视频只取 0。将该文件实际交给用户后，才取下一份。继续下载只取尚未交付的索引。
+4. `downloaded_awaiting_host_delivery` 只表示已验证文件落盘。必须用当前宿主附件交付方式把文件交给用户，才能说交付完成。URL、HTML、SVG、空文件、状态文字或 task_id 都不是媒体成功。无法附加时说明“生成完成、已下载，但当前宿主无法交付附件”，保留原任务与文件。
+
+输出目录由用户目标或当前工作区明确选择；执行器不创建隐藏媒体缓存。验证通过的同任务文件可以直接复用，避免重复下载；请求文件和失败下载的临时文件应清理，交付文件按用户保留需求处理。
+
+## 失败引导
+
+始终保留精确模型、task_id、请求数量／非敏感参数、状态、失败阶段和下一步。仅展示 API 实际返回的公开错误码与脱敏错误；没有机器码就不编造。内容审核失败要说明实际原因并建议调整提示词，模型／分组权限不足引导用户检查连接与分组授权，余额不足引导充值或选择已明确支持的较低成本方案，不承诺退款或擅自重试。
+
+连接解析、附件准备或参数校验失败发生在 POST 前时，明确没有提交。网络中断、5xx 或无法读取提交响应时，按“提交结果未知”处理。执行器不可用时说明真实错误并引导更新／初始化当前宿主，不能改走 UI 或其他传输。

@@ -79,9 +79,9 @@ target_for_host() {
   host=$1
   [ -n "${HOME:-}" ] || fail "cannot resolve a host Skill directory because HOME is unavailable"
   case "$host" in
-    claude-code) printf '%s\n' "$HOME/.claude/skills" ;;
+    claude-code) printf '%s\n' "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills" ;;
     codex) printf '%s\n' "$HOME/.agents/skills" ;;
-    workbuddy) printf '%s\n' "$HOME/.workbuddy/skills" ;;
+    workbuddy) printf '%s\n' "${WORKBUDDY_CONFIG_DIR:-${CODEBUDDY_CONFIG_DIR:-$HOME/.workbuddy}}/skills" ;;
     gemini-cli) printf '%s\n' "$HOME/.gemini/skills" ;;
     grok-build) printf '%s\n' "$HOME/.grok/skills" ;;
     opencode) printf '%s\n' "$HOME/.config/opencode/skills" ;;
@@ -96,9 +96,10 @@ migrate_legacy_codex_plugin() {
   home_root=$(cd "$HOME" && pwd -P) || return 0
   [ "$target_root" = "$home_root/.agents/skills" ] || return 0
   if ! command -v codex >/dev/null 2>&1; then
-    fail "cannot verify removal of legacy Codex plugin puretokens-media because the Codex CLI is unavailable; remove it in Codex Plugins, then run this installer again"
+    printf '%s\n' "Legacy Codex plugin check unavailable. If an old Puretokens Media plugin appears, remove that plugin in Codex Plugins and restart Codex."
+    return 0
   fi
-  plugin_list=$(codex plugin list --json 2>/dev/null) || fail "cannot inspect Codex Plugins; remove legacy puretokens-media in Codex Plugins, then run this installer again"
+  plugin_list=$(codex plugin list --json 2>/dev/null) || { printf '%s\n' "Legacy Codex plugin inspection unavailable; check Codex Plugins only if old Media instructions remain."; return 0; }
   if ! printf '%s' "$plugin_list" | grep -Eq '"name"[[:space:]]*:[[:space:]]*"puretokens-media"'; then
     return 0
   fi
@@ -194,20 +195,121 @@ init_target() {
   usage_guide "$target_root"
 }
 
-restore_target() {
-  target_root=$1
-  stage_root=$2
-  replaced_names=$3
-  created_names=$4
-  for name in $replaced_names; do
-    destination="$target_root/$name"
-    backup="$stage_root/backup/$name"
-    [ -e "$backup" ] || continue
-    [ ! -e "$destination" ] || rm -rf -- "$destination"
-    mv "$backup" "$destination" || true
+restore_transaction() (
+  recovery_root=$1
+  recovery_stage=$2
+  [ -f "$recovery_stage/plan" ] || return 0
+  while read -r action entry; do
+    case "$entry" in puretokens-balance|puretokens-connection|puretokens-models|puretokens-image|puretokens-video|puretokens-update|.puretokens-executor) ;; *) return 1 ;; esac
+    case "$entry" in */*|*..*) return 1 ;; esac
+    if [ "$action" = replace ] && [ -e "$recovery_stage/backup/$entry" ]; then
+      [ ! -e "$recovery_root/$entry" ] || rm -rf -- "$recovery_root/$entry" || return 1
+      mv "$recovery_stage/backup/$entry" "$recovery_root/$entry" || return 1
+    elif [ "$action" = create ] && [ ! -e "$recovery_stage/$entry" ]; then
+      [ ! -e "$recovery_root/$entry" ] || rm -rf -- "$recovery_root/$entry" || return 1
+    fi
+  done < "$recovery_stage/plan"
+)
+
+finish_transaction() {
+  code=$?
+  trap - EXIT HUP INT TERM
+  if [ -n "${stage_root:-}" ] && [ -d "$stage_root" ]; then
+    if [ -f "$stage_root/committed" ] || restore_transaction "$target_root" "$stage_root"; then
+      rm -rf -- "$stage_root"
+    else
+      printf '%s\n' "Update recovery is incomplete; retained the managed recovery stage. Run sync again after resolving file access." >&2
+      code=1
+    fi
+  fi
+  release_update_lock
+  exit "$code"
+}
+
+read_lock_owner() {
+  lock_record=$(cat "$1" 2>/dev/null) || return 1
+  case "$lock_record" in
+    *" "*) lock_owner=${lock_record%% *}; lock_token=${lock_record#* } ;;
+    *) lock_owner=$lock_record; lock_token="legacy-$lock_owner" ;;
+  esac
+  case "$lock_owner" in ''|*[!0-9]*) return 1 ;; esac
+  case "$lock_token" in ''|*[!A-Za-z0-9._-]*) return 1 ;; esac
+}
+
+owns_update_lock() (
+  lock_slot="$lock_root/pid"
+  lock_seen=" "
+  while read_lock_owner "$lock_slot"; do
+    case "$lock_seen" in *" $lock_token "*) return 1 ;; esac
+    lock_seen="$lock_seen$lock_token "
+    if [ "$lock_owner" = "$$" ] && [ "$lock_token" = "${lock_candidate##*/}" ]; then return 0; fi
+    lock_slot="$lock_root/next.$lock_token"
   done
-  for name in $created_names; do
-    [ ! -e "$target_root/$name" ] || rm -rf -- "$target_root/$name"
+  return 1
+)
+
+release_update_lock() {
+  if owns_update_lock; then rm -rf -- "$lock_root"; fi
+}
+
+claim_update_lock() (
+  ln "$lock_candidate" "$lock_slot" 2>/dev/null && return 0
+  [ ! -e "$lock_slot" ] && [ ! -L "$lock_slot" ] || return 1
+  # Filesystems without hard links still support exclusive creation. Never
+  # replace a competing record; an interrupted partial write stops recovery.
+  set -C
+  cat "$lock_candidate" > "$lock_slot"
+)
+
+acquire_update_lock() {
+  lock_root="$target_root/.puretokens-install-lock"
+  mkdir "$lock_root" 2>/dev/null || [ -d "$lock_root" ] || fail "cannot create the update lock"
+  for lock_entry in "$lock_root"/* "$lock_root"/.[!.]* "$lock_root"/..?*; do
+    [ -e "$lock_entry" ] || [ -L "$lock_entry" ] || continue
+    case "${lock_entry##*/}" in
+      pid|owner.*|next.*) [ -f "$lock_entry" ] && [ ! -L "$lock_entry" ] || fail "unrecognized update lock contents; left untouched" ;;
+      *) fail "unrecognized update lock contents; left untouched" ;;
+    esac
+  done
+  lock_candidate=$(mktemp "$lock_root/owner.$$.XXXXXX") || fail "cannot prepare the update lock"
+  printf '%s %s\n' "$$" "${lock_candidate##*/}" > "$lock_candidate"
+  lock_slot="$lock_root/pid"
+  lock_seen=" "
+  # Publish complete, immutable owner records with an atomic hard link. A dead
+  # owner has exactly one successor, so simultaneous recovery cannot replace a
+  # live lock. An interrupted takeover is simply another dead owner to follow.
+  while ! claim_update_lock 2>/dev/null; do
+    if ! read_lock_owner "$lock_slot"; then
+      rm -f -- "$lock_candidate"
+      fail "another installation is starting or the update lock needs inspection"
+    fi
+    case "$lock_seen" in *" $lock_token "*) rm -f -- "$lock_candidate"; fail "invalid update lock history; left untouched" ;; esac
+    lock_seen="$lock_seen$lock_token "
+    if kill -0 "$lock_owner" 2>/dev/null; then
+      rm -f -- "$lock_candidate"
+      fail "another installation is in progress; wait for it to finish"
+    fi
+    lock_slot="$lock_root/next.$lock_token"
+  done
+  # A previous owner may have finished and removed its directory while this
+  # process was reading it. Only a claim reachable from the current root owns it.
+  if ! owns_update_lock; then
+    rm -f -- "$lock_candidate"
+    fail "another installation acquired the update lock"
+  fi
+  stage_root=
+  trap finish_transaction EXIT
+  trap 'exit 130' INT
+  trap 'exit 129' HUP
+  trap 'exit 143' TERM
+  for previous_stage in "$target_root"/.puretokens-skill-stage.*; do
+    [ -d "$previous_stage" ] || continue
+    [ -f "$previous_stage/transaction-v1" ] || fail "an unrecognized staging directory needs inspection; left untouched"
+    if [ -f "$previous_stage/committed" ] || restore_transaction "$target_root" "$previous_stage"; then
+      rm -rf -- "$previous_stage"
+    else
+      fail "previous update recovery failed; retained its backup"
+    fi
   done
 }
 
@@ -217,6 +319,7 @@ sync_target() {
   release_version=$(source_release_version "$source_root") || fail "official source has an invalid Skill version"
   [ -d "$target_root" ] || mkdir -p "$target_root"
   target_root=$(cd "$target_root" && pwd -P)
+  acquire_update_lock
 
   for name in $retired_skills; do
     for destination in "$target_root/$name" "$target_root/.$name.retired-"*; do
@@ -231,43 +334,27 @@ sync_target() {
   [ ! -e "$executor_destination" ] || managed_executor "$executor_destination" || fail "unmanaged Pure Tokens executor conflicts: $executor_destination"
 
   stage_root=$(mktemp -d "$target_root/.puretokens-skill-stage.XXXXXX") || fail "could not create a private update staging directory"
-  cleanup_stage() { [ ! -d "$stage_root" ] || rm -rf -- "$stage_root"; }
-  trap cleanup_stage EXIT HUP INT TERM
+  touch "$stage_root/transaction-v1"
   mkdir -p "$stage_root/backup"
   for name in $current_skills; do cp -R "$source_root/skills/$name" "$stage_root/$name"; done
   executor_source=$(executor_artifact "$source_root")
-  mkdir -p "$stage_root/executor"
-  cp "$executor_source" "$stage_root/executor/puretokens-api"
-  chmod 700 "$stage_root/executor/puretokens-api"
-  printf '{\n  "schemaVersion": 1,\n  "name": "puretokens-api-executor",\n  "version": "%s",\n  "platform": "%s"\n}\n' "$release_version" "$(executor_platform)" > "$stage_root/executor/runtime.json"
+  mkdir -p "$stage_root/.puretokens-executor"
+  cp "$executor_source" "$stage_root/.puretokens-executor/puretokens-api"
+  chmod 700 "$stage_root/.puretokens-executor/puretokens-api"
+  printf '{\n  "schemaVersion": 1,\n  "name": "puretokens-api-executor",\n  "version": "%s",\n  "platform": "%s"\n}\n' "$release_version" "$(executor_platform)" > "$stage_root/.puretokens-executor/runtime.json"
 
   migrate_legacy_codex_plugin "$target_root"
 
-  replaced_names=
-  created_names=
-  for name in $current_skills; do
-    destination="$target_root/$name"
-    if [ -e "$destination" ]; then
-      mv "$destination" "$stage_root/backup/$name"
-      replaced_names="$replaced_names $name"
-    else
-      created_names="$created_names $name"
-    fi
-    if ! mv "$stage_root/$name" "$destination"; then
-      restore_target "$target_root" "$stage_root" "$replaced_names" "$created_names"
-      fail "could not install Skill: $name"
-    fi
+  : > "$stage_root/plan"
+  for entry in $current_skills .puretokens-executor; do
+    if [ -e "$target_root/$entry" ]; then action=replace; else action=create; fi
+    printf '%s %s\n' "$action" "$entry" >> "$stage_root/plan"
   done
-  executor_replaced=0
-  if [ -e "$executor_destination" ]; then
-    mv "$executor_destination" "$stage_root/backup/executor" || { restore_target "$target_root" "$stage_root" "$replaced_names" "$created_names"; fail "could not stage the current Pure Tokens executor"; }
-    executor_replaced=1
-  fi
-  if ! mv "$stage_root/executor" "$executor_destination"; then
-    [ "$executor_replaced" -eq 0 ] || mv "$stage_root/backup/executor" "$executor_destination" || true
-    restore_target "$target_root" "$stage_root" "$replaced_names" "$created_names"
-    fail "could not install the Pure Tokens executor"
-  fi
+  while read -r action entry; do
+    if [ "$action" = replace ]; then mv "$target_root/$entry" "$stage_root/backup/$entry"; fi
+    mv "$stage_root/$entry" "$target_root/$entry"
+  done < "$stage_root/plan"
+  touch "$stage_root/committed"
   for name in $retired_skills; do
     for destination in "$target_root/$name" "$target_root/.$name.retired-"*; do
       [ ! -e "$destination" ] && continue
@@ -281,6 +368,10 @@ sync_target() {
     printf '%s\n' "Removed retired managed Node runtime from $legacy_runtime"
   fi
   printf '%s\n' "Pure Tokens Skills $release_version synchronized with the native API executor at $target_root"
+  rm -rf -- "$stage_root"
+  stage_root=
+  release_update_lock
+  trap - EXIT HUP INT TERM
   init_target "$target_root" "$host"
 }
 
@@ -298,9 +389,9 @@ while [ "$#" -gt 0 ]; do
     *) usage; exit 2 ;;
   esac
 done
-[ -z "$target" ] || [ -z "$host" ] || fail "use either --host or --target, not both"
+
 [ -n "$target" ] || [ -n "$host" ] || fail "--host or --target is required"
-[ -z "$host" ] || target=$(target_for_host "$host")
+[ -n "$target" ] || target=$(target_for_host "$host")
 [ "${target#/}" != "$target" ] || fail "--target must be an absolute Skill directory"
 [ -z "$source" ] || [ "${source#/}" != "$source" ] || fail "--source must be an absolute official source directory"
 case "$command_name" in check|init|sync) ;; *) usage; exit 2 ;; esac

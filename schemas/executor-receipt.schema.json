@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Native media executor receipt",
+  "type": "object",
+  "required": ["ok"],
+  "properties": {
+    "ok": {"type": "boolean"},
+    "kind": {"enum": ["image", "video"]},
+    "operation": {"type": "string"},
+    "model": {"type": "string"},
+    "task_id": {"type": "string"},
+    "status": {"type": "string"},
+    "requested_count": {"type": "integer"},
+    "parameters": {"type": "object"},
+    "submission_outcome": {"enum": ["accepted", "unknown"]},
+    "reconciliation_required": {"type": "boolean"},
+    "downloaded_paths": {"type": "array", "items": {"type": "string"}},
+    "downloaded_indexes": {"type": "array", "items": {"type": "integer", "minimum": 0}},
+    "delivery_status": {"const": "downloaded_awaiting_host_delivery"},
+    "failure_phase": {"enum": ["validation", "submission", "status", "content"]},
+    "http_status": {"type": "integer"},
+    "api_error_code": {"type": "string"},
+    "local_error_code": {"type": "string"},
+    "error_message": {"type": "string"},
+    "next_action": {"type": "string"},
+    "retry_after_seconds": {"type": "integer", "minimum": 1}
+  },
+  "additionalProperties": false
+}

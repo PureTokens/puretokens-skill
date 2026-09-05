@@ -4,7 +4,14 @@
   "apiOrigin": "https://api.puretokensx.com",
   "authentication": {
     "usesCurrentHostConfiguredCredential": true,
-    "executorCredentialAdapterHosts": ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode"],
+    "executorCredentialAdapterHosts": [
+      "claude-code",
+      "codex",
+      "workbuddy",
+      "gemini-cli",
+      "grok-build",
+      "opencode"
+    ],
     "credentialUse": "in_memory_only_for_fixed_puretokens_api_requests",
     "credentialSourceMustMatchFixedPureTokensEndpoint": true,
     "credentialSourceNeverBecomesRequestTarget": true,
@@ -34,16 +41,61 @@
     "connectionContext": "managed_native_executor_resolves_one_matching_current_connection_credential_privately_for_the_fixed_request",
     "metadataLimitation": "skill_metadata_expresses_routing_priority_but_cannot_override_a_host_that_ignores_installed_skill_selection"
   },
-  "installableHosts": ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae"],
-  "executorCredentialAdapterHosts": ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode"],
-  "requiredExecutorCapabilities": ["fixed_full_url_request", "json_task_response", "same_task_status_read", "native_media_byte_delivery", "bounded_local_resource_use"],
+  "installableHosts": [
+    "claude-code",
+    "codex",
+    "workbuddy",
+    "gemini-cli",
+    "grok-build",
+    "opencode",
+    "trae"
+  ],
+  "executorCredentialAdapterHosts": [
+    "claude-code",
+    "codex",
+    "workbuddy",
+    "gemini-cli",
+    "grok-build",
+    "opencode"
+  ],
+  "requiredExecutorCapabilities": [
+    "fixed_full_url_request",
+    "json_task_response",
+    "same_task_status_read",
+    "native_media_byte_delivery",
+    "bounded_local_resource_use"
+  ],
   "acceptanceScenarios": [
-    { "id": "api-identity-read", "request": "executor GET https://api.puretokensx.com/v1", "expect": "uses a verified active-host credential adapter only in memory and returns the API identity JSON" },
-    { "id": "catalog-read", "request": "executor GET https://api.puretokensx.com/v1/media/models", "expect": "returns the authenticated media catalog only for explicit discovery, an installed-profile gap, or post-rejection diagnosis" },
-    { "id": "media-submit", "request": "executor POST the fixed Images or Videos API URL once with the selected model and declared request body", "expect": "normal core text generation submits directly without a catalog preflight and returns a JSON task response" },
-    { "id": "same-task-status", "request": "executor GET a submitted task's fixed full status or content URL", "expect": "continues only the supplied task_id and never submits a replacement task" },
-    { "id": "native-media-delivery", "request": "executor GET a completed task's fixed full content URL", "expect": "the executor delivers validated native media bytes; URLs, HTML, SVG, task IDs, and status text are not completed delivery" },
-    { "id": "executor-request-start", "request": "a fixed API request is needed", "expect": "invokes the checksum-verified managed executor; it never asks the model to read credentials, assemble a curl request, or search for another interface" }
+    {
+      "id": "api-identity-read",
+      "request": "executor GET https://api.puretokensx.com/v1",
+      "expect": "uses a verified active-host credential adapter only in memory and returns the API identity JSON"
+    },
+    {
+      "id": "catalog-read",
+      "request": "executor GET https://api.puretokensx.com/v1/media/models",
+      "expect": "returns the authenticated media catalog only for explicit discovery, an installed-profile gap, or post-rejection diagnosis"
+    },
+    {
+      "id": "media-submit",
+      "request": "executor POST the fixed Images or Videos API URL once with the selected model and declared request body",
+      "expect": "normal core text generation submits directly without a catalog preflight and returns a JSON task response"
+    },
+    {
+      "id": "same-task-status",
+      "request": "executor GET a submitted task's fixed full status or content URL",
+      "expect": "continues only the supplied task_id and never submits a replacement task"
+    },
+    {
+      "id": "native-media-delivery",
+      "request": "executor GET a completed task's fixed full content URL",
+      "expect": "the executor delivers validated native media bytes; URLs, HTML, SVG, task IDs, and status text are not completed delivery"
+    },
+    {
+      "id": "executor-request-start",
+      "request": "a fixed API request is needed",
+      "expect": "invokes the checksum-verified managed executor; it never asks the model to read credentials, assemble a curl request, or search for another interface"
+    }
   ],
   "userMediaInput": {
     "onlyCurrentUserExplicitMedia": true,
@@ -79,10 +131,14 @@
     "fallback": "If the executor cannot hand off validated native media bytes, report same-task delivery as unavailable. Do not substitute a URL, HTML, SVG, status text, or a re-submitted task."
   },
   "balance": {
-    "url": "https://api.puretokensx.com/api/product/desktop/account/balance",
+    "url": "https://api.puretokensx.com/v1/dashboard/billing/subscription",
     "method": "GET",
-    "requiresExistingAuthenticatedAccountSession": true,
+    "requiresConfiguredApiKey": true,
     "responseSchema": "schemas/balance-snapshot.schema.json",
-    "fallback": "If the direct balance request is not authenticated or cannot be executed, report the returned result and direct the user to the Pure Tokens client balance view; do not estimate or ask for credentials."
+    "fallback": "If the direct balance request is not authenticated or cannot be executed, report the returned result and direct the user to the Pure Tokens client balance view; do not estimate or ask for credentials.",
+    "usageUrl": "https://api.puretokensx.com/v1/dashboard/billing/usage",
+    "scope": "api_account_or_key_scope_unspecified",
+    "unit": "api_display_unit_unspecified",
+    "calculation": "hard_limit_usd - total_usage / 100; sequential snapshots, not a quote"
   }
 }

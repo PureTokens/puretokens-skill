@@ -3,20 +3,80 @@
   "schemaVersion": 1,
   "kind": "update",
   "scenarios": [
-    { "id": "update-init", "when": "the user asks to initialize Pure Tokens Skills, check whether the current configuration works, or learn how to use the Skills", "then": "invoke the installed managed native executor init command once, verify only the fixed /v1 identity declaration, and show the usage guide and examples without exposing credentials or host configuration" },
-    { "id": "update-init-unverified", "when": "init cannot resolve a verified credential, cannot reach the fixed API, receives an API rejection, or receives an unconfirmed identity", "then": "state that configuration verification is incomplete, show the executor's sanitized status, message, next action, and only a returned non-zero HTTP status, then still show the usage guide; do not modify configuration, claim media availability, or expose host configuration" },
-    { "id": "update-host-unknown", "when": "the active host cannot be identified as Claude Code, Codex, WorkBuddy, Gemini CLI, Grok Build, OpenCode, or Trae", "then": "ask the user which supported host they use and do not modify files" },
-    { "id": "update-terminal-unavailable", "when": "no local terminal, PowerShell, exec, or shell execution is available", "then": "state that local synchronization cannot run in this session and direct the user to give the official repository installation prompt to a terminal-capable local Agent; do not invent a manual copy command or claim success" },
-    { "id": "update-fresh-source-checkout", "when": "an official Skill install or update is requested", "then": "use the current host's available official GitHub repository retrieval mechanism to obtain a fresh local checkout of https://github.com/PureTokens/puretokens-skill main, then run the matching native source-only Shell or PowerShell sync script from that checkout with the current supported host ID. Do not use an installed older updater, a stale checkout, a third-party mirror, a custom install payload, or a remote-content pipe into a shell." },
-    { "id": "update-source-acquisition-unavailable", "when": "the current host cannot retrieve a fresh official main checkout or cannot execute its native source-only sync script", "then": "report that local synchronization cannot be completed in this host session and stop before changing installed Skills. Do not install or require Node, npm, Git, dependencies, generators, or a custom install payload." },
-    { "id": "update-validation-failed", "when": "the fresh official checkout cannot be statically validated before sync", "then": "report the validation failure and stop before changing installed Skills. Do not run Node, npm packages, generators, docs sync, formatters, repair commands, Git writes, or any other source-mutating command to make the official checkout pass." },
-    { "id": "update-execution-unconfirmed", "when": "the host interrupts, times out, or otherwise returns before the installer prints the exact synchronized-version completion receipt", "then": "state that synchronization is unconfirmed and do not claim an update, infer a version, automatically retry, or create a background task. On the user's next explicit request, run one fresh official sync." },
-    { "id": "update-unmanaged-conflict", "when": "a current or retired target directory is missing the matching managed Skill markers", "then": "report the exact conflict and stop before changing any target directory; do not overwrite, delete, rename, or merge it" },
-    { "id": "update-managed-retired-skill", "when": "a verified retired managed Skill directory or an older hidden retired backup is present in the target root", "then": "after all current official Skills install or upgrade successfully, delete that verified retired directory so the host cannot continue discovering it; never delete an unmanaged directory" },
-    { "id": "update-managed-executor-and-legacy-node-runtime", "when": "the target is synchronized", "then": "install exactly one checksum-verified platform native executor in .puretokens-executor. If the target also contains .puretokens-runtime, remove it only when both old official files are present and runtime.json identifies puretokens-direct-api-runtime; otherwise leave it untouched." },
-    { "id": "update-codex-legacy-plugin", "when": "the target is Codex's ~/.agents/skills and the official Codex plugin list contains the exact legacy puretokens-media plugin", "then": "before synchronizing Skills, remove only the exact listed plugin selector through the official Codex plugin interface, then list plugins again and require that puretokens-media is absent; never read plugin configuration or remove another plugin" },
-    { "id": "update-codex-legacy-plugin-unavailable", "when": "the Codex CLI cannot inspect, remove, or verify removal of the legacy plugin, including workspace-managed plugin cases", "then": "stop without a synchronized-version success receipt and tell the user to remove legacy Puretokens Media in Codex Plugins or through the workspace administrator, then run the installer again" },
-    { "id": "update-codex-legacy-plugin-restart", "when": "the exact legacy puretokens-media plugin was removed and verified", "then": "require a full Codex application restart, then a brand-new conversation before testing; an existing conversation can retain the already-loaded legacy Skill instructions" },
-    { "id": "update-managed-sync", "when": "a supported host has no conflicting target directories", "then": "run the official sync command once, report every installed or upgraded Skill and the synchronized official version, then tell the user to start a new host conversation" }
+    {
+      "id": "update-init",
+      "when": "the user asks to initialize Pure Tokens Skills, check whether the current configuration works, or learn how to use the Skills",
+      "then": "invoke init once: fixed public identity followed by one authenticated catalog read; distinguish credential_verified from identity, show usage and never expose configuration"
+    },
+    {
+      "id": "update-init-unverified",
+      "when": "init cannot resolve a verified credential, cannot reach the fixed API, receives an API rejection, or receives an unconfirmed identity",
+      "then": "state that configuration verification is incomplete, show the executor's sanitized status, message, next action, and only a returned non-zero HTTP status, then still show the usage guide; do not modify configuration, claim media availability, or expose host configuration"
+    },
+    {
+      "id": "update-host-unknown",
+      "when": "the active host cannot be identified as Claude Code, Codex, WorkBuddy, Gemini CLI, Grok Build, OpenCode, or Trae",
+      "then": "Ask which supported host the user is using; do not guess the host or its configuration/Skill directory."
+    },
+    {
+      "id": "update-terminal-unavailable",
+      "when": "no local terminal, PowerShell, exec, or shell execution is available",
+      "then": "state that local synchronization cannot run in this session and direct the user to give the official repository installation prompt to a terminal-capable local Agent; do not invent a manual copy command or claim success"
+    },
+    {
+      "id": "update-fresh-source-checkout",
+      "when": "an official Skill install or update is requested",
+      "then": "use the current host's available official GitHub repository retrieval mechanism to obtain a fresh local checkout of https://github.com/PureTokens/puretokens-skill main, then run the matching native source-only Shell or PowerShell sync script from that checkout with the current supported host ID. Do not use an installed older updater, a stale checkout, a third-party mirror, a custom install payload, or a remote-content pipe into a shell."
+    },
+    {
+      "id": "update-source-acquisition-unavailable",
+      "when": "the current host cannot retrieve a fresh official main checkout or cannot execute its native source-only sync script",
+      "then": "report that local synchronization cannot be completed in this host session and stop before changing installed Skills. Do not install or require Node, npm, Git, dependencies, generators, or a custom install payload."
+    },
+    {
+      "id": "update-validation-failed",
+      "when": "the fresh official checkout cannot be statically validated before sync",
+      "then": "report the validation failure and stop before changing installed Skills. Do not run Node, npm packages, generators, docs sync, formatters, repair commands, Git writes, or any other source-mutating command to make the official checkout pass."
+    },
+    {
+      "id": "update-execution-unconfirmed",
+      "when": "the host interrupts, times out, or otherwise returns before the installer prints the exact synchronized-version completion receipt",
+      "then": "state that synchronization is unconfirmed and do not claim an update, infer a version, automatically retry, or create a background task. On the user's next explicit request, run one fresh official sync."
+    },
+    {
+      "id": "update-unmanaged-conflict",
+      "when": "a current or retired target directory is missing the matching managed Skill markers",
+      "then": "report the exact conflict and stop before changing any target directory; do not overwrite, delete, rename, or merge it"
+    },
+    {
+      "id": "update-managed-retired-skill",
+      "when": "a verified retired managed Skill directory or an older hidden retired backup is present in the target root",
+      "then": "after all current official Skills install or upgrade successfully, delete that verified retired directory so the host cannot continue discovering it; never delete an unmanaged directory"
+    },
+    {
+      "id": "update-managed-executor-and-legacy-node-runtime",
+      "when": "the target is synchronized",
+      "then": "install exactly one checksum-verified platform native executor in .puretokens-executor. If the target also contains .puretokens-runtime, remove it only when both old official files are present and runtime.json identifies puretokens-direct-api-runtime; otherwise leave it untouched."
+    },
+    {
+      "id": "update-codex-legacy-plugin",
+      "when": "the target is Codex's ~/.agents/skills and the official Codex plugin list contains the exact legacy puretokens-media plugin",
+      "then": "before synchronizing Skills, remove only the exact listed plugin selector through the official Codex plugin interface, then list plugins again and require that puretokens-media is absent; never read plugin configuration or remove another plugin"
+    },
+    {
+      "id": "update-codex-legacy-plugin-unavailable",
+      "when": "the Codex CLI cannot inspect, remove, or verify removal of the legacy plugin, including workspace-managed plugin cases",
+      "then": "If plugin inspection is unavailable, report that limitation and continue normal installation. If a legacy plugin was actually discovered but cannot be removed and verified, stop migration and guide its removal in Codex Plugins."
+    },
+    {
+      "id": "update-codex-legacy-plugin-restart",
+      "when": "the exact legacy puretokens-media plugin was removed and verified",
+      "then": "require a full Codex application restart, then a brand-new conversation before testing; an existing conversation can retain the already-loaded legacy Skill instructions"
+    },
+    {
+      "id": "update-managed-sync",
+      "when": "a supported host has no conflicting target directories",
+      "then": "run the official sync command once, report every installed or upgraded Skill and the synchronized official version, then tell the user to start a new host conversation"
+    }
   ]
 }

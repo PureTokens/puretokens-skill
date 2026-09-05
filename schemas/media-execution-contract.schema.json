@@ -102,7 +102,7 @@
         "properties": {
           "operations": {
             "required": ["read"],
-            "properties": { "read": { "properties": { "method": { "const": "GET" }, "url": { "const": "https://api.puretokensx.com/api/product/desktop/account/balance" } } } }
+            "properties": { "read": { "properties": { "method": { "const": "GET" }, "url": { "const": "https://api.puretokensx.com/v1/dashboard/billing/subscription" } } } }
           }
         }
       }
@@ -127,7 +127,7 @@
             }
           },
           "result": {
-            "required": ["installsMissingOfficialSkills", "upgradesOnlyManagedMatchingSkills", "neverOverwritesUnmanagedDirectories", "removesVerifiedRetiredManagedSkills", "removesVerifiedLegacyNodeRuntime", "installsChecksumVerifiedNativeApiExecutor", "reportsSynchronizedVersion", "removesLegacyCodexPluginWhenPresent", "requiresVerifiedLegacyCodexPluginRemovalBeforeSync", "doesNotClaimSuccessWithoutVersionReceipt", "neverModifiesOfficialCheckout", "requiresFullCodexRestartAfterLegacyPluginRemoval", "requiresNewHostConversationAfterSuccess"],
+            "required": ["installsMissingOfficialSkills", "upgradesOnlyManagedMatchingSkills", "neverOverwritesUnmanagedDirectories", "removesVerifiedRetiredManagedSkills", "removesVerifiedLegacyNodeRuntime", "installsChecksumVerifiedNativeApiExecutor", "reportsSynchronizedVersion", "removesLegacyCodexPluginWhenPresent", "requiresVerifiedRemovalWhenLegacyCodexPluginDetected", "doesNotClaimSuccessWithoutVersionReceipt", "neverModifiesOfficialCheckout", "requiresFullCodexRestartAfterLegacyPluginRemoval", "requiresNewHostConversationAfterSuccess"],
             "properties": {
               "installsMissingOfficialSkills": { "const": true },
               "upgradesOnlyManagedMatchingSkills": { "const": true },
@@ -137,7 +137,7 @@
               "installsChecksumVerifiedNativeApiExecutor": { "const": true },
               "reportsSynchronizedVersion": { "const": true },
               "removesLegacyCodexPluginWhenPresent": { "const": true },
-              "requiresVerifiedLegacyCodexPluginRemovalBeforeSync": { "const": true },
+              "requiresVerifiedRemovalWhenLegacyCodexPluginDetected": { "const": true },
               "doesNotClaimSuccessWithoutVersionReceipt": { "const": true },
               "neverModifiesOfficialCheckout": { "const": true },
               "requiresFullCodexRestartAfterLegacyPluginRemoval": { "const": true },
@@ -154,7 +154,7 @@
       "required": ["commandTemplate", "checks", "usageGuide"],
       "properties": {
         "commandTemplate": { "const": "native_executor init --host <current-supported-host>" },
-        "checks": { "const": "one_fixed_identity_request_without_displaying_credentials_or_host_configuration" },
+        "checks": { "const": "public_identity_then_one_authenticated_catalog_check_without_displaying_configuration" },
         "usageGuide": { "const": "references/usage-guide.md" }
       },
       "additionalProperties": false
@@ -208,7 +208,8 @@
         "requiresDeclaredProfileOperation": { "type": "string" },
         "inputSource": { "type": "string" },
         "transport": { "type": "string" },
-        "requiresExistingAuthenticatedAccountSession": { "type": "boolean" },
+        "requiresConfiguredApiKey": { "type": "boolean" },
+        "usageUrl": { "type": "string" },
         "responseSchema": { "type": "string" }
       },
       "oneOf": [{ "required": ["url"] }, { "required": ["urlTemplate"] }, { "required": ["allowedPaths"] }],

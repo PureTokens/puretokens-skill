@@ -3,8 +3,8 @@
   "schemaVersion": 1,
   "kind": "balance",
   "scenarios": [
-    { "id": "balance-account-session-unavailable", "when": "GET https://api.puretokensx.com/api/product/desktop/account/balance is not authenticated or cannot be executed", "then": "report the returned status or error and direct the user to the Pure Tokens client balance view; do not estimate or request credentials" },
-    { "id": "balance-direct-request-start", "when": "a balance read is requested", "then": "invoke the installed managed native executor with the current host ID for the fixed balance GET; do not look for a separate balance interface" },
-    { "id": "balance-response", "when": "the fixed Pure Tokens balance API returns a balance response", "then": "report only returned fields once; do not retry or infer omitted values" }
+    { "id": "balance-bearer-read-unavailable", "when": "GET https://api.puretokensx.com/v1/dashboard/billing/subscription is not authenticated or cannot be executed", "then": "report the returned status or error and direct the user to the Pure Tokens web console; do not estimate or request credentials" },
+    { "id": "balance-direct-request-start", "when": "a balance read is requested", "then": "invoke the installed managed native executor with the current host ID for the two fixed billing GETs; do not look for a separate balance interface" },
+    { "id": "balance-response", "when": "the fixed Pure Tokens balance API returns a balance response", "then": "report returned totals and the defined subtraction once, state the unspecified display unit and account/key scope, and do not retry or infer currency" }
   ]
 }

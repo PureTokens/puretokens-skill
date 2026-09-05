@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "name": "puretokens-models",
-  "version": "0.15.2",
+  "version": "0.16.0",
   "entry": "SKILL.md",
   "displayName": "Pure Tokens Models",
   "description": "Inspect fixed-Pure-Tokens authenticated media models, declared parameters, and media operations.",
@@ -64,5 +64,6 @@
     "compatibilityShortlistsRequireLiveCapabilityAndInputSchema": true,
     "doesNotRankUndeclaredModelAttributes": true,
     "doesNotUseMcpOrFallbackTransport": true
-  }
+  },
+  "sourceSha256": "28340a24067113608f91eb50b1c43c7d9baa44c519c161a5942c7847953cc9c0"
 }

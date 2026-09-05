@@ -8,48 +8,48 @@
       "delivery": "manual-source",
       "globalSkillDirectory": "~/.claude/skills",
       "directMediaExecution": "managed-native-executor",
-      "credentialAdapter": "verified",
-      "guidance": "Install each specialist Skill into ~/.claude/skills. The managed executor reads only the effective Claude Code connection record and uses its matching credential privately for fixed Pure Tokens API requests."
+      "credentialAdapter": "fixture-tested",
+      "guidance": "Install into ~/.claude/skills. The native executor has credential-format fixture coverage; actual host API and attachment delivery acceptance is pending."
     },
     {
       "id": "codex",
       "delivery": "manual-source",
       "globalSkillDirectory": "~/.agents/skills",
       "directMediaExecution": "managed-native-executor",
-      "credentialAdapter": "verified",
-      "guidance": "Install each specialist Skill into ~/.agents/skills. The managed executor uses Codex's verified effective Pure Tokens connection adapter for fixed API requests."
+      "credentialAdapter": "fixture-tested",
+      "guidance": "Install into ~/.agents/skills. The native executor has credential-format fixture coverage; actual host API and attachment delivery acceptance is pending."
     },
     {
       "id": "workbuddy",
       "delivery": "manual-source",
       "globalSkillDirectory": "~/.workbuddy/skills",
       "directMediaExecution": "managed-native-executor",
-      "credentialAdapter": "verified",
-      "guidance": "Install each specialist Skill into ~/.workbuddy/skills. The managed executor reads only the unambiguous matching WorkBuddy model connection credential privately for fixed Pure Tokens API requests."
+      "credentialAdapter": "fixture-tested",
+      "guidance": "Install into ~/.workbuddy/skills. The native executor has credential-format fixture coverage; actual host API and attachment delivery acceptance is pending."
     },
     {
       "id": "gemini-cli",
       "delivery": "manual-source",
       "globalSkillDirectory": "~/.gemini/skills",
       "directMediaExecution": "managed-native-executor",
-      "credentialAdapter": "verified",
-      "guidance": "Install each specialist Skill into ~/.gemini/skills. The managed executor reads only the effective Gemini CLI connection record and uses its matching credential privately for fixed Pure Tokens API requests."
+      "credentialAdapter": "fixture-tested",
+      "guidance": "Install into ~/.gemini/skills. The native executor has credential-format fixture coverage; actual host API and attachment delivery acceptance is pending."
     },
     {
       "id": "grok-build",
       "delivery": "manual-source",
       "globalSkillDirectory": "~/.grok/skills",
       "directMediaExecution": "managed-native-executor",
-      "credentialAdapter": "verified",
-      "guidance": "Install each specialist Skill into ~/.grok/skills. The managed executor reads only the active Grok Build model connection credential privately for fixed Pure Tokens API requests."
+      "credentialAdapter": "fixture-tested",
+      "guidance": "Install into ~/.grok/skills. The native executor has credential-format fixture coverage; actual host API and attachment delivery acceptance is pending."
     },
     {
       "id": "opencode",
       "delivery": "manual-source",
       "globalSkillDirectory": "~/.config/opencode/skills",
       "directMediaExecution": "managed-native-executor",
-      "credentialAdapter": "verified",
-      "guidance": "Install each specialist Skill into ~/.config/opencode/skills. The managed executor reads only the active OpenCode provider connection credential privately for fixed Pure Tokens API requests."
+      "credentialAdapter": "fixture-tested",
+      "guidance": "Install into ~/.config/opencode/skills. The native executor has credential-format fixture coverage; actual host API and attachment delivery acceptance is pending."
     },
     {
       "id": "trae",

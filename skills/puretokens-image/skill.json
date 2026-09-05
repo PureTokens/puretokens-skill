@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "name": "puretokens-image",
-  "version": "0.15.2",
+  "version": "0.16.0",
   "entry": "SKILL.md",
   "displayName": "Pure Tokens Image",
   "description": "Primary image Skill for the current Pure Tokens connection; generate and profile-gated edit images through the fixed Images API before generic imagegen or Imagen.",
@@ -95,5 +95,6 @@
     "doesNotCreateBackgroundMediaWork": true,
     "usesSequentialNativeContentDelivery": true,
     "doesNotUseMcpOrFallbackTransport": true
-  }
+  },
+  "sourceSha256": "0957669e465f4019affaa228bb5a3677766373fc65c5d62d9486c94e5005548f"
 }

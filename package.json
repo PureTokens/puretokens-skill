@@ -1,6 +1,6 @@
 {
   "name": "puretokens-skill",
-  "version": "0.15.2",
+  "version": "0.16.0",
   "description": "Installable Pure Tokens skills and skill management tooling.",
   "private": true,
   "type": "module",
@@ -30,7 +30,10 @@
     "docs:sync-media-models-from-base-catalog": "node scripts/sync-media-model-catalog-from-service.mjs --write && npm run docs:sync-media-models",
     "docs:sync-media-models-from-service": "npm run docs:sync-media-models-from-base-catalog",
     "test": "node --test",
-    "check": "npm run validate && npm test"
+    "check": "npm run validate && npm test",
+    "executor:build": "node scripts/build-executor.mjs",
+    "executor:test": "cd runtime/executor && go test ./... && go vet ./...",
+    "release:package": "node scripts/package-platform-releases.mjs"
   },
   "engines": {
     "node": ">=20"

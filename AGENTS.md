@@ -10,13 +10,13 @@ This repository owns the six installable Skill instructions, model selections, c
 - Do not display, log, copy, persist, ask for, compare or report credentials, Base URLs, provider labels or host configuration. Do not add or require Node, npm, Python, MCP, a proxy, sidecar, separate upload service, or another authentication path.
 - Computer Use, browser automation, desktop/mobile UI automation, and opening or clicking Pure Tokens Switch/Desktop are never API transports. Do not use them to submit a request, poll a task, retrieve media, or recover from an actual terminal/network failure.
 - API-facing Skills must not invoke Imagen or another image/video Skill as a fallback. Never gate the fixed request on a separate “authenticated image/video interface” discovery step: use the active connection credential and issue the fixed API request through the current host's terminal or native HTTPS/API capability. Only an actual terminal, network, credential-resolution, attachment-byte, or API failure may produce the documented failure receipt.
-- The fixed endpoints are `/v1`, `/v1/media/models`, `/api/product/desktop/account/balance`, `/v1/images/generations`, `/v1/images/edits`, `/v1/videos`, and `/v1/videos/edits`, plus declared same-task status/content paths.
+- The fixed endpoints are `/v1`, `/v1/media/models`, `/v1/dashboard/billing/subscription`, `/v1/dashboard/billing/usage`, `/v1/images/generations`, `/v1/images/edits`, `/v1/videos`, and `/v1/videos/edits`, plus declared same-task status/content paths.
 - JSON and declared multipart requests are sent only by the native executor. Current user attachments are sent only with their declared operation; never upload, rehost, convert them to a text prompt, or silently downgrade a media-reference request.
 - If an active host has no verified credential adapter, if policy blocks the executor, if attachment transport is unavailable, or if native byte delivery fails, stop with the documented safe receipt. Do not suggest a fallback transport.
 
 ## Skill behavior
 
-- Media submissions are asynchronous. Submit once, retain only the same returned task ID, and never automatically resubmit after uncertain output, status failure, timeout or delivery failure.
+- Media submissions are asynchronous. Submit once and immediately return the receipt before any wait or download; use separate status/wait/content commands, retain only the same returned task ID, and never automatically resubmit after uncertain output, status failure, timeout or delivery failure.
 - Do not make `/v1/media/models` a preflight for ordinary core generation. Read the small installed model index, then only the selected model profile; read the live catalog only for explicit discovery, an installed-profile gap, or post-rejection diagnosis.
 - Treat physical dimensions as a request for guidance, not an API size value. Only declared model fields and values may be sent.
 - Native bytes, not URLs, HTML, SVG, task IDs or status text, are required for successful delivery.
@@ -31,3 +31,6 @@ This repository owns the six installable Skill instructions, model selections, c
 ## Validation
 
 Run `npm run check`, `npm run release:validate`, and `go test ./...` from `runtime/executor` before release. Node is permitted for repository development and validation only; it is never a user runtime dependency for media work.
+
+- Credential adapter fixture coverage is not real-host end-to-end acceptance; record the latter separately.
+- User output files are explicit artifacts, never a hidden cache. Download one index per invocation; reuse a validated same-task file in the same directory and attach it before requesting the next index.

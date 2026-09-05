@@ -23,7 +23,7 @@
         "delivery": { "const": "manual-source" },
         "globalSkillDirectory": { "type": "string", "pattern": "^~/(?:\\.[a-z-]+/)*(?:[a-z-]+/)?skills$" },
         "directMediaExecution": { "const": "managed-native-executor" },
-        "credentialAdapter": { "enum": ["verified", "pending"] },
+        "credentialAdapter": { "enum": ["fixture-tested", "pending"] },
         "guidance": { "type": "string", "minLength": 1 },
         "directApiOrigin": { "const": "https://api.puretokensx.com" }
       },

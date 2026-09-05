@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Native executor request JSON (submit/status/wait/content)",
+  "type": "object",
+  "required": ["kind"],
+  "properties": {
+    "kind": {"enum": ["image", "video"]},
+    "operation": {"enum": ["generate", "edit", "continue"]},
+    "media_operation": {"type": "string"},
+    "model": {"type": "string"},
+    "prompt": {"type": "string"},
+    "parameters": {"type": "object"},
+    "task_id": {"type": "string", "pattern": "^[A-Za-z0-9_-]{1,256}$"},
+    "task_status": {"enum": ["completed", "succeeded", "success"]},
+    "requested_count": {"type": "integer", "minimum": 1, "maximum": 6},
+    "index": {"type": "integer", "minimum": 0, "maximum": 5},
+    "output_dir": {"type": "string"},
+    "poll": {"type": "object", "properties": {"max_status_reads": {"type": "integer", "minimum": 1, "maximum": 7}, "deadline_seconds": {"type": "integer", "minimum": 1, "maximum": 300}}, "additionalProperties": false},
+    "attachments": {"type": "array", "items": {"type": "object", "required": ["field", "path"], "properties": {"field": {"type": "string"}, "path": {"type": "string"}}, "additionalProperties": false}}
+  },
+  "additionalProperties": false
+}

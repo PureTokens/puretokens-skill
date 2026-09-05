@@ -144,7 +144,7 @@ async function readHostSupport(errors) {
         errors.push(`references/host-support.json: ${host?.id || "unnamed host"} needs guidance`);
       }
       if (host?.delivery !== "manual-source" || typeof host.globalSkillDirectory !== "string" || !/^~\/(?:\.[a-z-]+\/)*(?:[a-z-]+\/)?skills$/.test(host.globalSkillDirectory) ||
-        host.directMediaExecution !== "managed-native-executor" || !["verified", "pending"].includes(host.credentialAdapter)) {
+        host.directMediaExecution !== "managed-native-executor" || !["fixture-tested", "pending"].includes(host.credentialAdapter)) {
         errors.push(`references/host-support.json: ${host?.id || "unnamed host"} needs a manual-source global Skill directory`);
       }
     }
@@ -220,8 +220,8 @@ function validateDirectApiExecutionContract(errors, contract, hostSupport) {
     errors.push(`${label} must define the seven installable hosts, verified executor credential adapters, and required executor capabilities`);
   }
   const balance = contract.balance;
-  if (!balance || balance.method !== "GET" || balance.url !== `${directApiOrigin}/api/product/desktop/account/balance` ||
-    balance.requiresExistingAuthenticatedAccountSession !== true || balance.responseSchema !== "schemas/balance-snapshot.schema.json" ||
+  if (!balance || balance.method !== "GET" || balance.url !== `${directApiOrigin}/v1/dashboard/billing/subscription` ||
+    balance.usageUrl !== `${directApiOrigin}/v1/dashboard/billing/usage` || balance.requiresConfiguredApiKey !== true || balance.responseSchema !== "schemas/balance-snapshot.schema.json" ||
     typeof balance.fallback !== "string" || !balance.fallback) {
     errors.push(`${label} must define the fixed direct balance endpoint and fallback`);
   }
@@ -348,9 +348,9 @@ function validateExecutionContract(errors, directory, contract) {
     return;
   }
   if (kind === "balance") {
-    validateRequest(errors, `${label} read`, operations.read, "GET", `${directApiOrigin}/api/product/desktop/account/balance`);
-    if (operations.read?.requiresExistingAuthenticatedAccountSession !== true || operations.read?.responseSchema !== "https://puretokensx.com/schemas/balance-snapshot.schema.json") {
-      errors.push(`${label} read must require an existing account session and the balance snapshot schema`);
+    validateRequest(errors, `${label} read`, operations.read, "GET", `${directApiOrigin}/v1/dashboard/billing/subscription`);
+    if (operations.read?.usageUrl !== `${directApiOrigin}/v1/dashboard/billing/usage` || operations.read?.requiresConfiguredApiKey !== true || operations.read?.responseSchema !== "https://puretokensx.com/schemas/balance-snapshot.schema.json") {
+      errors.push(`${label} read must require the configured API key and the balance snapshot schema`);
     }
     if (contract.result?.reportOnlyReturnedFields !== true || contract.result?.neverEstimate !== true || contract.result?.neverRetry !== true ||
       contract.result?.fallbackWhenAccountSessionUnavailable !== "report_direct_result_and_direct_to_puretokens_client_balance_view") {
@@ -473,7 +473,7 @@ function validateUpdateContract(errors, label, contract) {
   }
   const init = contract.operations?.init;
   if (!init || init.commandTemplate !== "native_executor init --host <current-supported-host>" ||
-    init.checks !== "one_fixed_identity_request_without_displaying_credentials_or_host_configuration" ||
+    init.checks !== "public_identity_then_one_authenticated_catalog_check_without_displaying_configuration" ||
     init.usageGuide !== "references/usage-guide.md") {
     errors.push(`${label} must define the safe init identity check and usage guide`);
   }
@@ -482,7 +482,7 @@ function validateUpdateContract(errors, label, contract) {
     result.neverOverwritesUnmanagedDirectories !== true || result.removesVerifiedRetiredManagedSkills !== true ||
     result.removesVerifiedLegacyNodeRuntime !== true || result.installsChecksumVerifiedNativeApiExecutor !== true ||
     result.reportsSynchronizedVersion !== true ||
-    result.removesLegacyCodexPluginWhenPresent !== true || result.requiresVerifiedLegacyCodexPluginRemovalBeforeSync !== true ||
+    result.removesLegacyCodexPluginWhenPresent !== true || result.requiresVerifiedRemovalWhenLegacyCodexPluginDetected !== true ||
     result.doesNotClaimSuccessWithoutVersionReceipt !== true ||
     result.neverModifiesOfficialCheckout !== true ||
     result.requiresFullCodexRestartAfterLegacyPluginRemoval !== true || result.requiresNewHostConversationAfterSuccess !== true) {
@@ -689,7 +689,9 @@ async function validateSchemaDocuments(errors) {
     "schemas/direct-api-execution-contract.schema.json",
     "schemas/catalog-freshness.schema.json",
     "schemas/balance-snapshot.schema.json",
-    "schemas/task-receipt.schema.json"
+    "schemas/task-receipt.schema.json",
+    "schemas/executor-request.schema.json",
+    "schemas/executor-receipt.schema.json"
   ];
   for (const schema of schemas) await verifyJsonFile(errors, schema, `schema ${schema}`);
 }

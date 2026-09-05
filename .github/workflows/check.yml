@@ -1,0 +1,37 @@
+name: Skill checks
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  executor:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: runtime/executor/go.mod
+          cache-dependency-path: runtime/executor/go.sum
+      - run: go test ./... -count=1
+        working-directory: runtime/executor
+      - run: go vet ./...
+        working-directory: runtime/executor
+      - name: Windows installer lifecycle (isolated configuration)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./test/windows-installer.test.ps1
+  repository:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm run check
+      - run: node scripts/package-platform-releases.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: platform-release-candidates
+          path: dist/releases/*

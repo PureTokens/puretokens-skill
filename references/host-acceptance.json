@@ -1,0 +1,120 @@
+{
+  "schemaVersion": 1,
+  "version": "0.16.0",
+  "checkedAt": "2026-09-05",
+  "method": "isolated fixtures and local HTTP servers; no real credentials or paid tasks",
+  "hosts": [
+    {
+      "host": "claude-code",
+      "credentialFixtures": "passed",
+      "macOS": {
+        "installation": "pending",
+        "authenticatedAPI": "pending",
+        "sameTaskResume": "pending",
+        "nativeAttachmentDelivery": "pending"
+      },
+      "windows": {
+        "installation": "pending",
+        "authenticatedAPI": "pending",
+        "sameTaskResume": "pending",
+        "nativeAttachmentDelivery": "pending"
+      }
+    },
+    {
+      "host": "codex",
+      "credentialFixtures": "passed",
+      "macOS": {
+        "installation": "pending",
+        "authenticatedAPI": "pending",
+        "sameTaskResume": "pending",
+        "nativeAttachmentDelivery": "pending"
+      },
+      "windows": {
+        "installation": "pending",
+        "authenticatedAPI": "pending",
+        "sameTaskResume": "pending",
+        "nativeAttachmentDelivery": "pending"
+      }
+    },
+    {
+      "host": "workbuddy",
+      "credentialFixtures": "passed",
+      "macOS": {
+        "installation": "pending",
+        "authenticatedAPI": "pending",
+        "sameTaskResume": "pending",
+        "nativeAttachmentDelivery": "pending"
+      },
+      "windows": {
+        "installation": "pending",
+        "authenticatedAPI": "pending",
+        "sameTaskResume": "pending",
+        "nativeAttachmentDelivery": "pending"
+      }
+    },
+    {
+      "host": "gemini-cli",
+      "credentialFixtures": "passed",
+      "macOS": {
+        "installation": "pending",
+        "authenticatedAPI": "pending",
+        "sameTaskResume": "pending",
+        "nativeAttachmentDelivery": "pending"
+      },
+      "windows": {
+        "installation": "pending",
+        "authenticatedAPI": "pending",
+        "sameTaskResume": "pending",
+        "nativeAttachmentDelivery": "pending"
+      }
+    },
+    {
+      "host": "grok-build",
+      "credentialFixtures": "passed",
+      "macOS": {
+        "installation": "pending",
+        "authenticatedAPI": "pending",
+        "sameTaskResume": "pending",
+        "nativeAttachmentDelivery": "pending"
+      },
+      "windows": {
+        "installation": "pending",
+        "authenticatedAPI": "pending",
+        "sameTaskResume": "pending",
+        "nativeAttachmentDelivery": "pending"
+      }
+    },
+    {
+      "host": "opencode",
+      "credentialFixtures": "passed",
+      "macOS": {
+        "installation": "pending",
+        "authenticatedAPI": "pending",
+        "sameTaskResume": "pending",
+        "nativeAttachmentDelivery": "pending"
+      },
+      "windows": {
+        "installation": "pending",
+        "authenticatedAPI": "pending",
+        "sameTaskResume": "pending",
+        "nativeAttachmentDelivery": "pending"
+      }
+    },
+    {
+      "host": "trae",
+      "credentialFixtures": "unavailable",
+      "macOS": {
+        "installation": "pending",
+        "authenticatedAPI": "pending",
+        "sameTaskResume": "pending",
+        "nativeAttachmentDelivery": "pending"
+      },
+      "windows": {
+        "installation": "pending",
+        "authenticatedAPI": "pending",
+        "sameTaskResume": "pending",
+        "nativeAttachmentDelivery": "pending"
+      }
+    }
+  ]
+}

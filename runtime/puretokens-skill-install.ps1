@@ -130,9 +130,9 @@ function Invoke-Init([string]$TargetRoot, [string]$RequestedHost) {
 function Get-TargetForHost([string]$RequestedHost) {
   if ([string]::IsNullOrWhiteSpace($env:USERPROFILE)) { Fail "cannot resolve a host Skill directory because USERPROFILE is unavailable" }
   switch ($RequestedHost) {
-    "claude-code" { return (Join-Path $env:USERPROFILE ".claude\skills") }
+    "claude-code" { if ($env:CLAUDE_CONFIG_DIR) { return (Join-Path $env:CLAUDE_CONFIG_DIR "skills") }; return (Join-Path $env:USERPROFILE ".claude\skills") }
     "codex" { return (Join-Path $env:USERPROFILE ".agents\skills") }
-    "workbuddy" { return (Join-Path $env:USERPROFILE ".workbuddy\skills") }
+    "workbuddy" { if ($env:WORKBUDDY_CONFIG_DIR) { return (Join-Path $env:WORKBUDDY_CONFIG_DIR "skills") }; if ($env:CODEBUDDY_CONFIG_DIR) { return (Join-Path $env:CODEBUDDY_CONFIG_DIR "skills") }; return (Join-Path $env:USERPROFILE ".workbuddy\skills") }
     "gemini-cli" { return (Join-Path $env:USERPROFILE ".gemini\skills") }
     "grok-build" { return (Join-Path $env:USERPROFILE ".grok\skills") }
     "opencode" { return (Join-Path $env:USERPROFILE ".config\opencode\skills") }
@@ -141,17 +141,19 @@ function Get-TargetForHost([string]$RequestedHost) {
   }
 }
 
-function Restore-Target([string]$TargetRoot, [string]$StageRoot, [string[]]$Replaced, [string[]]$Created) {
-  foreach ($name in $Replaced) {
-    $destination = Join-Path $TargetRoot $name
-    $backup = Join-Path (Join-Path $StageRoot "backup") $name
-    if (-not (Test-Path -LiteralPath $backup)) { continue }
-    if (Test-Path -LiteralPath $destination) { Remove-Item -LiteralPath $destination -Recurse -Force }
-    Move-Item -LiteralPath $backup -Destination $destination -Force
-  }
-  foreach ($name in $Created) {
-    $destination = Join-Path $TargetRoot $name
-    if (Test-Path -LiteralPath $destination) { Remove-Item -LiteralPath $destination -Recurse -Force }
+function Restore-Transaction([string]$TargetRoot, [string]$StageRoot) {
+  $planFile = Join-Path $StageRoot "plan.json"
+  if (-not (Test-Path -LiteralPath $planFile)) { return }
+  foreach ($entry in @(Get-Content -LiteralPath $planFile -Raw | ConvertFrom-Json)) {
+    if ($entry.name -notin ($currentSkills + @(".puretokens-executor"))) { Fail "unknown recovery entry; retained backup" }
+    $destination = Join-Path $TargetRoot $entry.name
+    $backup = Join-Path (Join-Path $StageRoot "backup") $entry.name
+    if ($entry.action -eq "replace" -and (Test-Path -LiteralPath $backup)) {
+      if (Test-Path -LiteralPath $destination) { Remove-Item -LiteralPath $destination -Recurse -Force }
+      Move-Item -LiteralPath $backup -Destination $destination
+    } elseif ($entry.action -eq "create" -and -not (Test-Path -LiteralPath (Join-Path $StageRoot $entry.name))) {
+      if (Test-Path -LiteralPath $destination) { Remove-Item -LiteralPath $destination -Recurse -Force }
+    }
   }
 }
 
@@ -159,13 +161,13 @@ function Remove-LegacyCodexPlugin([string]$TargetRoot) {
   $codexTarget = [System.IO.Path]::GetFullPath((Join-Path $env:USERPROFILE ".agents\skills")).TrimEnd('\\')
   if (-not [string]::Equals($TargetRoot.TrimEnd('\\'), $codexTarget, [System.StringComparison]::OrdinalIgnoreCase)) { return }
   $codex = Get-Command codex -ErrorAction SilentlyContinue
-  if ($null -eq $codex) { Fail "cannot verify removal of legacy Codex plugin puretokens-media because the Codex CLI is unavailable; remove it in Codex Plugins, then run this installer again" }
+  if ($null -eq $codex) { Write-Output "Legacy Codex plugin check unavailable. If old Puretokens Media instructions appear, remove that plugin in Codex Plugins and restart Codex."; return }
   try {
     $pluginOutput = & $codex.Source plugin list --json 2>$null
     if ($LASTEXITCODE -ne 0) { throw "plugin list failed" }
     $plugins = ($pluginOutput -join "`n") | ConvertFrom-Json
     $legacyPlugin = @($plugins.installed | Where-Object { $_.name -eq "puretokens-media" })
-  } catch { Fail "cannot inspect Codex Plugins; remove legacy puretokens-media in Codex Plugins, then run this installer again" }
+  } catch { Write-Output "Legacy Codex plugin inspection unavailable; check Codex Plugins only if old Media instructions remain."; return }
   if ($legacyPlugin.Count -eq 0) { return }
   foreach ($plugin in $legacyPlugin) {
     $selector = if (-not [string]::IsNullOrWhiteSpace($plugin.pluginId)) { $plugin.pluginId } elseif (-not [string]::IsNullOrWhiteSpace($plugin.marketplaceName)) { "$($plugin.name)@$($plugin.marketplaceName)" } else { $plugin.name }
@@ -183,10 +185,10 @@ function Remove-LegacyCodexPlugin([string]$TargetRoot) {
 }
 
 $stageRoot = $null
+$updateLock = $null
 try {
-  if (-not [string]::IsNullOrWhiteSpace($Target) -and -not [string]::IsNullOrWhiteSpace($HostId)) { Fail "use either -Host or -Target, not both" }
   if ([string]::IsNullOrWhiteSpace($Target) -and [string]::IsNullOrWhiteSpace($HostId)) { Fail "-Host or -Target is required" }
-  if (-not [string]::IsNullOrWhiteSpace($HostId)) { $Target = Get-TargetForHost $HostId }
+  if ([string]::IsNullOrWhiteSpace($Target)) { $Target = Get-TargetForHost $HostId }
   if (-not [System.IO.Path]::IsPathRooted($Target)) { Fail "-Target must be an absolute Skill directory" }
 
   if ($Command -eq "init") {
@@ -211,6 +213,12 @@ try {
 
   New-Item -ItemType Directory -Path $Target -Force | Out-Null
   $targetRoot = (Resolve-Path -LiteralPath $Target).Path
+  try { $updateLock = [System.IO.File]::Open((Join-Path $targetRoot ".puretokens-install.lock"), [System.IO.FileMode]::OpenOrCreate, [System.IO.FileAccess]::ReadWrite, [System.IO.FileShare]::None) } catch { Fail "another update is in progress or the update lock is not writable" }
+  foreach ($previous in @(Get-ChildItem -LiteralPath $targetRoot -Directory -Force | Where-Object { $_.Name -like ".puretokens-skill-stage-*" })) {
+    if (-not (Test-Path -LiteralPath (Join-Path $previous.FullName "transaction-v1"))) { Fail "unknown staging directory; left untouched" }
+    if (-not (Test-Path -LiteralPath (Join-Path $previous.FullName "committed"))) { Restore-Transaction $targetRoot $previous.FullName }
+    Remove-Item -LiteralPath $previous.FullName -Recurse -Force
+  }
   foreach ($name in $retiredSkills) {
     $destinations = @((Join-Path $targetRoot $name))
     $destinations += @(Get-ChildItem -LiteralPath $targetRoot -Force | Where-Object { $_.Name -like ("." + $name + ".retired-*") } | ForEach-Object { $_.FullName })
@@ -225,32 +233,27 @@ try {
 
   $stageRoot = Join-Path $targetRoot (".puretokens-skill-stage-" + [Guid]::NewGuid().ToString("N"))
   New-Item -ItemType Directory -Path (Join-Path $stageRoot "backup") -Force | Out-Null
+  New-Item -ItemType File -Path (Join-Path $stageRoot "transaction-v1") | Out-Null
   foreach ($name in $currentSkills) { Copy-Item -LiteralPath (Join-Path (Join-Path $sourceRoot "skills") $name) -Destination $stageRoot -Recurse }
   $executorSource = Get-ExecutorArtifact $sourceRoot
-  $stageExecutor = Join-Path $stageRoot "executor"
+  $stageExecutor = Join-Path $stageRoot ".puretokens-executor"
   New-Item -ItemType Directory -Path $stageExecutor -Force | Out-Null
   Copy-Item -LiteralPath $executorSource -Destination (Join-Path $stageExecutor "puretokens-api.exe")
   [PSCustomObject]@{ schemaVersion = 1; name = "puretokens-api-executor"; version = $releaseVersion; platform = (Get-ExecutorPlatform) } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $stageExecutor "runtime.json") -Encoding utf8
 
   Remove-LegacyCodexPlugin $targetRoot
-  $replaced = @()
-  $created = @()
-  try {
-    foreach ($name in $currentSkills) {
-      $destination = Join-Path $targetRoot $name
-      if (Test-Path -LiteralPath $destination) { Move-Item -LiteralPath $destination -Destination (Join-Path (Join-Path $stageRoot "backup") $name); $replaced += $name } else { $created += $name }
-      Move-Item -LiteralPath (Join-Path $stageRoot $name) -Destination $destination
-    }
-    $executorReplaced = $false
-    if (Test-Path -LiteralPath $executorDestination) {
-      Move-Item -LiteralPath $executorDestination -Destination (Join-Path (Join-Path $stageRoot "backup") "executor")
-      $executorReplaced = $true
-    }
-    try { Move-Item -LiteralPath $stageExecutor -Destination $executorDestination } catch {
-      if ($executorReplaced) { Move-Item -LiteralPath (Join-Path (Join-Path $stageRoot "backup") "executor") -Destination $executorDestination -ErrorAction SilentlyContinue }
-      throw
-    }
-  } catch { Restore-Target $targetRoot $stageRoot $replaced $created; throw }
+  $plan = @()
+  foreach ($name in ($currentSkills + @(".puretokens-executor"))) {
+    $action = if (Test-Path -LiteralPath (Join-Path $targetRoot $name)) { "replace" } else { "create" }
+    $plan += [PSCustomObject]@{ name = $name; action = $action }
+  }
+  $plan | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $stageRoot "plan.json") -Encoding utf8
+  foreach ($entry in $plan) {
+    $destination = Join-Path $targetRoot $entry.name
+    if ($entry.action -eq "replace") { Move-Item -LiteralPath $destination -Destination (Join-Path (Join-Path $stageRoot "backup") $entry.name) }
+    Move-Item -LiteralPath (Join-Path $stageRoot $entry.name) -Destination $destination
+  }
+  New-Item -ItemType File -Path (Join-Path $stageRoot "committed") | Out-Null
   foreach ($name in $retiredSkills) {
     $destinations = @((Join-Path $targetRoot $name))
     $destinations += @(Get-ChildItem -LiteralPath $targetRoot -Force | Where-Object { $_.Name -like ("." + $name + ".retired-*") } | ForEach-Object { $_.FullName })
@@ -259,7 +262,15 @@ try {
   $legacyRuntime = Join-Path $targetRoot ".puretokens-runtime"
   if ((Test-Path -LiteralPath $legacyRuntime) -and (Test-LegacyNodeRuntime $legacyRuntime)) { Remove-Item -LiteralPath $legacyRuntime -Recurse -Force; Write-Output "Removed retired managed Node runtime from $legacyRuntime" }
   Write-Output "Pure Tokens Skills $releaseVersion synchronized with the native API executor at $targetRoot"
+  Remove-Item -LiteralPath $stageRoot -Recurse -Force
+  $stageRoot = $null
+  $updateLock.Dispose(); $updateLock = $null
   Invoke-Init $targetRoot $HostId
 } finally {
-  if ($null -ne $stageRoot -and (Test-Path -LiteralPath $stageRoot)) { Remove-Item -LiteralPath $stageRoot -Recurse -Force -ErrorAction SilentlyContinue }
+  try {
+    if ($null -ne $stageRoot -and (Test-Path -LiteralPath $stageRoot)) {
+      if (-not (Test-Path -LiteralPath (Join-Path $stageRoot "committed"))) { Restore-Transaction $targetRoot $stageRoot }
+      Remove-Item -LiteralPath $stageRoot -Recurse -Force
+    }
+  } finally { if ($null -ne $updateLock) { $updateLock.Dispose() } }
 }

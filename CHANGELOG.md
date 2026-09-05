@@ -4,6 +4,16 @@
 
 # Changelog
 
+## 0.16.0 — 2026-09-05
+
+- Parse standard TOML and explicit Codex profile, directory and credential sources.
+- Return submitted task IDs immediately; separate submit/status/wait/content, preserve identity on failures, cancel requests at deadlines and reject redirects.
+- Validate selected model profiles, counts, JSON URL references and multipart operations before billing; preserve string fields correctly.
+- Validate binary media and container boundaries, remove failed partial files, protect concurrent output files, support output filesystems without hard links, and distinguish downloads from host attachment delivery.
+- Delegate the legacy CLI to platform installers; add update locking, rollback and interrupted-transaction recovery without requiring a plugin CLI for clean Codex installs.
+- Authenticate init independently from public identity and use existing bearer billing endpoints with explicit unspecified-unit/scope semantics.
+- Add behavioral regressions, separate host acceptance evidence from credential fixtures, and simplify media Skills with cross-platform command examples.
+
 ## 0.15.2 — 2026-09-05
 
 - Made `init` failures actionable without exposing connection data. The executor and both platform installers now distinguish active-connection resolution failures, missing credentials, ambiguous WorkBuddy credentials, network failures, rejected identity checks with a returned HTTP status, unreadable responses, and identity mismatches. Installation still succeeds independently of a non-billable `init` check.

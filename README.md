@@ -31,7 +31,7 @@ Install or update the official Pure Tokens Skills from https://github.com/PureTo
 
 The media Skills always use full fixed URLs under `https://api.puretokensx.com`: Images uses `/v1/images/generations`; Videos uses `/v1/videos`. They do not send media work to an arbitrary configured Base URL, MCP server, local proxy, sidecar, or a second endpoint.
 
-Each request is performed by the single-file native executor installed with the Skills. It runs only for that command, connects to the fixed API, then exits; it does not start a port, background service, proxy, sidecar, or desktop automation. The executor reads only the active connection record at the supported host's documented configuration path, verifies that record targets Pure Tokens, and keeps one matching credential in memory for the fixed request. This works with Pure Tokens Switch, CC Switch, or a manual connection that uses that host's documented configuration shape. Neither the Skill nor the user passes a key or Base URL. It never scans home directories, checks a provider label, asks for, displays, stores, logs, or reports an API key, Base URL, or host configuration.
+Each request is performed by the single-file native executor installed with the Skills. It runs only for that command, connects to the fixed API, then exits; it does not start a port, background service, proxy, sidecar, or desktop automation. The executor reads only the active connection record at the supported host's documented configuration path, verifies that record targets Pure Tokens, and keeps one matching credential in memory for the fixed request. Pure Tokens Switch, CC Switch and manual configurations can use the exact records listed in `references/credential-adapters.md`; unpersisted project/session overrides are not verified. Neither the Skill nor the user passes a key or Base URL. It never scans home directories, checks a provider label, asks for, displays, stores, logs, or reports an API key, Base URL, or host configuration.
 
 No Node, npm, Python, Go, Pure Tokens Desktop, MCP, or upload relay is required to generate media. The installer verifies and places the platform-native executor, which performs fixed requests, multipart attachments, same-task polling, and bounded native-media delivery. Only an actual executor, network, verified credential-adapter, attachment-path, attachment-byte, or API failure may stop a request before billing.
 
@@ -47,12 +47,12 @@ The priority is carried by the installed Skill metadata and the host's current c
 
 | Host | Global Skill directory | Direct execution |
 | --- | --- | --- |
-| Claude Code | `~/.claude/skills` | Verified native-executor credential adapter |
-| Codex | `~/.agents/skills` | Verified native-executor credential adapter |
-| WorkBuddy | `~/.workbuddy/skills` | Verified native-executor credential adapter |
-| Gemini CLI | `~/.gemini/skills` | Verified native-executor credential adapter |
-| Grok Build | `~/.grok/skills` | Verified native-executor credential adapter |
-| OpenCode | `~/.config/opencode/skills` | Verified native-executor credential adapter |
+| Claude Code | `~/.claude/skills` | Credential fixtures tested; host end-to-end acceptance pending |
+| Codex | `~/.agents/skills` | Credential fixtures tested; host end-to-end acceptance pending |
+| WorkBuddy | `~/.workbuddy/skills` | Credential fixtures tested; host end-to-end acceptance pending |
+| Gemini CLI | `~/.gemini/skills` | Credential fixtures tested; host end-to-end acceptance pending |
+| Grok Build | `~/.grok/skills` | Credential fixtures tested; host end-to-end acceptance pending |
+| OpenCode | `~/.config/opencode/skills` | Credential fixtures tested; host end-to-end acceptance pending |
 | Trae | `~/.trae/skills` | Installable; no Switch-managed credential record exists, so requests stop safely |
 
 The repository contract defines the same seven hosts in `references/host-support.json`. It does not infer support from a provider-name field.
@@ -116,7 +116,7 @@ Every media result gives the exact model when returned, task ID when returned, s
 
 The source sync scripts are `runtime/puretokens-skill-install.sh` for macOS/Linux and `runtime/puretokens-skill-install.ps1` for Windows. They install, verify, and place the platform executor; users do not need Node, npm, Python, Go, or a package manager.
 
-After every successful installation or update, the installer automatically runs `init`. It performs one non-billable fixed `/v1` identity check without displaying credentials or host configuration, then prints the current usage guide and examples. If verification does not complete, it reports a sanitized reason such as no active matching connection, missing credential, API rejection with its HTTP status, network failure, or an unconfirmed API identity; it never prints the configured URL, provider, or key. To run it again later, ask the host Agent to initialize Pure Tokens Skills or check the current Pure Tokens connection; it must invoke the installed executor's `init` command and show the guide without modifying configuration.
+After every successful installation or update, the installer automatically runs `init`. It performs a non-billable fixed `/v1` identity check followed by one authenticated `/v1/media/models` request without displaying credentials or host configuration, then prints the current usage guide and examples. If verification does not complete, it reports a sanitized reason such as no active matching connection, missing credential, API rejection with its HTTP status, network failure, or an unconfirmed API identity; it never prints the configured URL, provider, or key. To run it again later, ask the host Agent to initialize Pure Tokens Skills or check the current Pure Tokens connection; it must invoke the installed executor's `init` command and show the guide without modifying configuration.
 
 ## Development validation
 
@@ -126,3 +126,11 @@ Maintainers can run:
 npm run check
 npm run release:validate
 ```
+
+## Executor receipts and acceptance
+
+The 0.16 command flow is submit → immediate task ID → bounded wait/status → one-index content download → host attachment delivery. No per-generation balance, init, or catalog preflight is added. A downloaded file is not yet a delivered attachment. Request JSON files replace interactive stdin; see each media Skill’s executor-usage reference.
+
+Balance uses the existing bearer-authenticated `/v1/dashboard/billing/subscription` and `/v1/dashboard/billing/usage` pair. Reported remaining is limit minus usage/100 in unspecified API display units; currency, account/key scope and unlimited status are not inferred.
+
+`references/host-acceptance.json` distinguishes tested credential fixtures from real host acceptance. Local automated checks do not prove Windows/macOS host attachment delivery.

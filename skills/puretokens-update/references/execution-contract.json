@@ -19,7 +19,7 @@
     },
     "init": {
       "commandTemplate": "native_executor init --host <current-supported-host>",
-      "checks": "one_fixed_identity_request_without_displaying_credentials_or_host_configuration",
+      "checks": "public_identity_then_one_authenticated_catalog_check_without_displaying_configuration",
       "usageGuide": "references/usage-guide.md"
     }
   },
@@ -32,7 +32,7 @@
     "installsChecksumVerifiedNativeApiExecutor": true,
     "reportsSynchronizedVersion": true,
     "removesLegacyCodexPluginWhenPresent": true,
-    "requiresVerifiedLegacyCodexPluginRemovalBeforeSync": true,
+    "requiresVerifiedRemovalWhenLegacyCodexPluginDetected": true,
     "doesNotClaimSuccessWithoutVersionReceipt": true,
     "neverModifiesOfficialCheckout": true,
     "requiresFullCodexRestartAfterLegacyPluginRemoval": true,

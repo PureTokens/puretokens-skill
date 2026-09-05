@@ -12,6 +12,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/pelletier/go-toml/v2"
 )
 
 const pureTokensHost = "api.puretokensx.com"
@@ -43,7 +45,11 @@ func credentialFromCodex() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return credentialFromCodexFile(filepath.Join(home, ".codex", "config.toml"))
+	directory, err := configuredDirectory(home, ".codex", "CODEX_HOME")
+	if err != nil {
+		return "", err
+	}
+	return credentialFromCodexFile(filepath.Join(directory, "config.toml"))
 }
 
 func credentialFromCodexFile(configPath string) (string, error) {
@@ -52,15 +58,33 @@ func credentialFromCodexFile(configPath string) (string, error) {
 		return "", err
 	}
 	active := tomlValue(document, nil, "model_provider")
+	if profile := tomlValue(document, nil, "profile"); profile != "" {
+		if selected := tomlValue(document, []string{"profiles", profile}, "model_provider"); selected != "" {
+			active = selected
+		}
+	}
 	if active == "" {
-		return "", credentialFailure("active_connection_unavailable", "Codex does not have an active configured connection for this check.", "Select and apply the Pure Tokens connection in Codex, then run init again.")
+		return "", credentialFailure("active_connection_unavailable", "Codex has no active configured connection.", "Apply the Pure Tokens connection in Codex, then run init again.")
 	}
 	table := []string{"model_providers", active}
-	return matchingCredential(
-		tomlValue(document, table, "base_url"),
-		tomlValue(document, table, "experimental_bearer_token"),
-		"/v1", "/v1/",
-	)
+	endpoint := tomlValue(document, table, "base_url")
+	// Check the effective provider BEFORE touching its declared credential source.
+	if !matchesPureTokensEndpoint(endpoint, "/v1", "/v1/") {
+		return matchingCredential(endpoint, "", "/v1", "/v1/")
+	}
+	token := tomlValue(document, table, "experimental_bearer_token")
+	if token == "" {
+		if envKey := tomlValue(document, table, "env_key"); envKey != "" {
+			token = os.Getenv(envKey) // Only the exact variable selected by this provider.
+		} else if tomlTable(document, table)["requires_openai_auth"] == true {
+			auth, err := readJSONObject(filepath.Join(filepath.Dir(configPath), "auth.json"))
+			if err != nil {
+				return "", err
+			}
+			token = jsonString(auth["OPENAI_API_KEY"])
+		}
+	}
+	return matchingCredential(endpoint, token, "/v1", "/v1/")
 }
 
 func credentialFromClaudeCode() (string, error) {
@@ -125,12 +149,22 @@ func credentialFromWorkBuddyFile(configPath string) (string, error) {
 		return "", credentialFailure("active_connection_unavailable", "WorkBuddy does not have an active configured connection for this check.", "Select and apply the Pure Tokens connection in WorkBuddy, then run init again.")
 	}
 	keys := make(map[string]struct{})
+	matchedEndpoint := false
 	for _, item := range items {
 		record := jsonObject(item)
+		if matchesPureTokensEndpoint(jsonString(record["url"]), "/v1/chat/completions") {
+			matchedEndpoint = true
+		}
 		key, err := matchingCredential(jsonString(record["url"]), jsonString(record["apiKey"]), "/v1/chat/completions")
 		if err == nil {
 			keys[key] = struct{}{}
 		}
+	}
+	if len(keys) == 0 {
+		if matchedEndpoint {
+			return "", credentialFailure("active_connection_credential_missing", "The configured Pure Tokens record has no usable credential.", "Apply the Pure Tokens connection in WorkBuddy again, then run init.")
+		}
+		return "", credentialFailure("active_connection_not_puretokens", "No supported Pure Tokens connection record was found.", "Apply the Pure Tokens connection in WorkBuddy, then run init.")
 	}
 	if len(keys) != 1 {
 		return "", credentialFailure("active_connection_ambiguous", "WorkBuddy has no single unambiguous Pure Tokens credential for this check.", "Keep one active Pure Tokens connection in WorkBuddy, then run init again.")
@@ -296,165 +330,33 @@ func readEnvConfig(path string) (map[string]string, error) {
 	return values, nil
 }
 
-type tomlConfig map[string]map[string]string
+type tomlConfig map[string]any
 
 func readTomlConfig(path string) (tomlConfig, error) {
-	bytes, err := readBoundedFile(path, maxConfigBytes)
+	data, err := readBoundedFile(path, maxConfigBytes)
 	if err != nil {
 		return nil, err
 	}
-	return parseTomlConfig(string(bytes))
+	return parseTomlConfig(string(data))
 }
 
 func parseTomlConfig(source string) (tomlConfig, error) {
-	document := tomlConfig{"": {}}
-	current := ""
-	for _, rawLine := range strings.Split(source, "\n") {
-		line := strings.TrimSpace(stripTomlComment(strings.TrimSuffix(rawLine, "\r")))
-		if line == "" {
-			continue
-		}
-		if strings.HasPrefix(line, "[") && strings.HasSuffix(line, "]") && !strings.HasPrefix(line, "[[") {
-			path, err := parseTomlPath(line[1 : len(line)-1])
-			if err != nil || len(path) == 0 {
-				return nil, errors.New("host configuration is unreadable")
-			}
-			current = strings.Join(path, "\x1f")
-			if document[current] == nil {
-				document[current] = map[string]string{}
-			}
-			continue
-		}
-		key, value, found := splitTomlAssignment(line)
-		if !found {
-			continue
-		}
-		path, err := parseTomlPath(key)
-		if err != nil || len(path) != 1 {
-			return nil, errors.New("host configuration is unreadable")
-		}
-		parsedValue, err := parseTomlString(value)
-		if err != nil {
-			return nil, errors.New("host configuration is unreadable")
-		}
-		document[current][path[0]] = parsedValue
+	var document tomlConfig
+	if err := toml.Unmarshal([]byte(source), &document); err != nil {
+		return nil, errors.New("host configuration is unreadable")
 	}
 	return document, nil
 }
 
+func tomlTable(document tomlConfig, path []string) map[string]any {
+	table := map[string]any(document)
+	for _, name := range path {
+		table, _ = table[name].(map[string]any)
+	}
+	return table
+}
+
 func tomlValue(document tomlConfig, table []string, key string) string {
-	values := document[strings.Join(table, "\x1f")]
-	return values[key]
-}
-
-func stripTomlComment(value string) string {
-	inQuotes := false
-	escaped := false
-	for index, character := range value {
-		if inQuotes && escaped {
-			escaped = false
-			continue
-		}
-		if inQuotes && character == '\\' {
-			escaped = true
-			continue
-		}
-		if character == '"' {
-			inQuotes = !inQuotes
-			continue
-		}
-		if character == '#' && !inQuotes {
-			return value[:index]
-		}
-	}
+	value, _ := tomlTable(document, table)[key].(string)
 	return value
-}
-
-func splitTomlAssignment(value string) (string, string, bool) {
-	inQuotes := false
-	escaped := false
-	for index, character := range value {
-		if inQuotes && escaped {
-			escaped = false
-			continue
-		}
-		if inQuotes && character == '\\' {
-			escaped = true
-			continue
-		}
-		if character == '"' {
-			inQuotes = !inQuotes
-			continue
-		}
-		if character == '=' && !inQuotes {
-			return strings.TrimSpace(value[:index]), strings.TrimSpace(value[index+1:]), true
-		}
-	}
-	return "", "", false
-}
-
-func parseTomlString(value string) (string, error) {
-	value = strings.TrimSpace(value)
-	if len(value) < 2 || value[0] != '"' || value[len(value)-1] != '"' {
-		return "", errors.New("not a basic string")
-	}
-	return strconv.Unquote(value)
-}
-
-func parseTomlPath(value string) ([]string, error) {
-	var result []string
-	value = strings.TrimSpace(value)
-	for len(value) > 0 {
-		value = strings.TrimLeft(value, " \t")
-		if value == "" {
-			break
-		}
-		var part string
-		if value[0] == '"' {
-			end := 1
-			escaped := false
-			for ; end < len(value); end++ {
-				if escaped {
-					escaped = false
-					continue
-				}
-				if value[end] == '\\' {
-					escaped = true
-					continue
-				}
-				if value[end] == '"' {
-					break
-				}
-			}
-			if end == len(value) {
-				return nil, errors.New("unterminated key")
-			}
-			var err error
-			part, err = strconv.Unquote(value[:end+1])
-			if err != nil {
-				return nil, err
-			}
-			value = value[end+1:]
-		} else {
-			end := strings.IndexByte(value, '.')
-			if end < 0 {
-				end = len(value)
-			}
-			part = strings.TrimSpace(value[:end])
-			value = value[end:]
-		}
-		if part == "" {
-			return nil, errors.New("empty key")
-		}
-		result = append(result, part)
-		value = strings.TrimLeft(value, " \t")
-		if value == "" {
-			break
-		}
-		if value[0] != '.' {
-			return nil, errors.New("invalid key separator")
-		}
-		value = value[1:]
-	}
-	return result, nil
 }

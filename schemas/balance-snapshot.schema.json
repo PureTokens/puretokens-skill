@@ -4,12 +4,24 @@
   "title": "Pure Tokens authenticated balance snapshot",
   "type": "object",
   "properties": {
-    "balance_display": { "type": ["string", "null"] },
-    "balance_minor": { "type": ["integer", "null"] },
-    "quota_remaining": { "type": ["integer", "null"] },
-    "quota_total": { "type": ["integer", "null"] },
-    "quota_per_unit": { "type": ["integer", "null"], "minimum": 1 },
-    "quota_display_type": { "type": ["string", "null"] }
+    "reported_limit": {
+      "type": "number"
+    },
+    "reported_usage": {
+      "type": "number"
+    },
+    "reported_remaining": {
+      "type": "number"
+    },
+    "unit": {
+      "const": "api_display_unit_unspecified"
+    },
+    "scope": {
+      "const": "api_account_or_key_scope_unspecified"
+    },
+    "note": {
+      "type": "string"
+    }
   },
   "additionalProperties": true
 }
