@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://puretokensx.com/schemas/balance-receipt.schema.json",
+  "title": "Successful native API-key balance receipt",
+  "type": "object",
+  "required": [
+    "ok",
+    "command",
+    "result"
+  ],
+  "properties": {
+    "ok": {
+      "const": true
+    },
+    "command": {
+      "const": "balance"
+    },
+    "result": {
+      "$ref": "balance-snapshot.schema.json"
+    }
+  },
+  "additionalProperties": false
+}

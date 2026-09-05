@@ -5,8 +5,8 @@
   "scenarios": [
     {
       "id": "update-init",
-      "when": "the user asks to initialize Pure Tokens Skills, check whether the current configuration works, or learn how to use the Skills",
-      "then": "invoke init once: fixed public identity followed by one authenticated catalog read; distinguish credential_verified from identity, show usage and never expose configuration"
+      "when": "the user explicitly asks to initialize or verify the current connection",
+      "then": "invoke init once for public identity followed by one authenticated catalog read; separate credential verification from identity and show only the relevant sanitized result"
     },
     {
       "id": "update-init-unverified",
@@ -26,22 +26,22 @@
     {
       "id": "update-fresh-source-checkout",
       "when": "an official Skill install or update is requested",
-      "then": "use the current host's available official GitHub repository retrieval mechanism to obtain a fresh local checkout of https://github.com/PureTokens/puretokens-skill main, then run the matching native source-only Shell or PowerShell sync script from that checkout with the current supported host ID. Do not use an installed older updater, a stale checkout, a third-party mirror, a custom install payload, or a remote-content pipe into a shell."
+      "then": "Use the official native fetch wrapper, installed or freshly downloaded to a local file. It pins official main to one commit and version, selects matching checksum-verified platform assets or retrieves that exact official source archive, then invokes its sync. No third-party mirror, remote shell pipe or user runtime installation."
     },
     {
       "id": "update-source-acquisition-unavailable",
-      "when": "the current host cannot retrieve a fresh official main checkout or cannot execute its native source-only sync script",
-      "then": "report that local synchronization cannot be completed in this host session and stop before changing installed Skills. Do not install or require Node, npm, Git, dependencies, generators, or a custom install payload."
+      "when": "the official pinned package/source cannot be downloaded or the native installer cannot execute",
+      "then": "Report the actual failure and stop before installed-file writes. Do not install Git, Node, Python, Go, dependencies or an alternate transport."
     },
     {
       "id": "update-validation-failed",
-      "when": "the fresh official checkout cannot be statically validated before sync",
+      "when": "the pinned official package or source fails checksum or source validation",
       "then": "report the validation failure and stop before changing installed Skills. Do not run Node, npm packages, generators, docs sync, formatters, repair commands, Git writes, or any other source-mutating command to make the official checkout pass."
     },
     {
       "id": "update-execution-unconfirmed",
       "when": "the host interrupts, times out, or otherwise returns before the installer prints the exact synchronized-version completion receipt",
-      "then": "state that synchronization is unconfirmed and do not claim an update, infer a version, automatically retry, or create a background task. On the user's next explicit request, run one fresh official sync."
+      "then": "Report synchronization as unconfirmed without automatic retry. On the next explicit request, the official fetch/sync path can recover a managed interrupted transaction."
     },
     {
       "id": "update-unmanaged-conflict",
@@ -76,7 +76,22 @@
     {
       "id": "update-managed-sync",
       "when": "a supported host has no conflicting target directories",
-      "then": "run the official sync command once, report every installed or upgraded Skill and the synchronized official version, then tell the user to start a new host conversation"
+      "then": "Run the official sync once, report the synchronized version and relevant changes, then advise a new host conversation. Do not repeat the full six-Skill version list."
+    },
+    {
+      "id": "update-help-only",
+      "when": "the user only asks how to use installed Skills",
+      "then": "Read the installed usage guide and answer directly. No init, doctor, credential access, network read or update."
+    },
+    {
+      "id": "update-check-only",
+      "when": "the user asks whether an update exists",
+      "then": "Run fetch check-update for the current host. It reads the pinned official version and managed installed version without synchronization or init. Report a difference without claiming that files changed."
+    },
+    {
+      "id": "update-doctor",
+      "when": "the user explicitly requests installation or connection diagnostics",
+      "then": "Invoke the installed native doctor once with the current host. Report known-directory version/duplicate findings and separate public identity, credential checks, checksum status and unverified host attachment delivery. Do not scan unrelated paths or auto-fix."
     }
   ]
 }

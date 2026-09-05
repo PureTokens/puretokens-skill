@@ -32,7 +32,7 @@ test("legacy CLI sync installs the native executor", async t => {
  await execFile(process.execPath, ["bin/puretokens-skill.js", "sync", "--target", f.target], { cwd: repositoryRoot, env: f.env });
  const executor = path.join(f.target, ".puretokens-executor/puretokens-api");
  const { stdout } = await execFile(executor, ["--version"]);
- assert.equal(stdout.trim(), "0.16.0");
+ assert.equal(stdout.trim(), JSON.parse(await readFile(path.join(repositoryRoot, "package.json"), "utf8")).version);
 });
 test("a failed update restores every existing Skill and releases its lock", async t => {
  const f = await fixture(t); await install(f);
@@ -168,4 +168,22 @@ test("Codex plugin inspection failure does not block a clean installation", asyn
  const {stdout}=await install(f,{...f.env,PATH:`${tools}${path.delimiter}${f.env.PATH}`},["--host","codex"]);
  assert.match(stdout,/synchronized with the native API executor/);
  assert.match(stdout,/plugin inspection unavailable/);
+});
+test("Gemini selects an existing shared Skill and detects its lower-priority duplicate", async t => {
+ const f = await fixture(t);
+ const shared = path.join(f.env.HOME, ".agents/skills");
+ const legacy = path.join(f.env.HOME, ".gemini/skills");
+ await mkdir(shared, { recursive: true });
+ await mkdir(legacy, { recursive: true });
+ await cp(path.join(repositoryRoot, "skills/puretokens-image"), path.join(shared, "puretokens-image"), { recursive: true });
+ await cp(path.join(repositoryRoot, "skills/puretokens-image"), path.join(legacy, "puretokens-image"), { recursive: true });
+ const { stdout: selected } = await execFile("sh", [installer, "locate", "--host", "gemini-cli"], { env: f.env });
+ assert.equal(selected.trim(), shared);
+ f.target = shared;
+ const { stdout } = await install(f, f.env, ["--host", "gemini-cli"]);
+ assert.match(stdout, /Managed duplicate detected/);
+ assert.match(await readFile(path.join(legacy, "puretokens-image/SKILL.md"), "utf8"), /Pure Tokens/);
+ assert.match(await readFile(path.join(shared, ".puretokens-executor/puretokens-skill-fetch.sh"), "utf8"), /check-update/);
+ f.target = legacy;
+ await assert.rejects(install(f, f.env, ["--host", "gemini-cli"]), /higher-priority/);
 });

@@ -1,6 +1,8 @@
 # Credential adapter scope
 
-Only the native executor reads credentials, after checking the fixed Pure Tokens hostname, HTTPS and a documented path. Credentials are not arguments, request-file fields, receipts, logs or persistent executor state. The configured origin never replaces the fixed API origin.
+Only the native executor reads the documented connection records. It verifies the configured Pure Tokens hostname, HTTPS and path before using the matching credential for a fixed API request. Credentials are not arguments, request-file fields, receipts, logs or persistent executor state. The configured origin never replaces the fixed API origin.
+
+Balance uses the same verified credential on the fixed `https://console.puretokensx.com/api/product/console/api-keys/usage` route used by the official CC Switch integration. This is an API-key route, not a browser-session route. Its public `/api/product/console/status` metadata read carries no credential. The console-origin exception applies only to balance; media, models and connection remain on the fixed API origin.
 
 | Host | Explicit record read by this release | Evidence / boundary |
 | --- | --- | --- |
@@ -13,3 +15,5 @@ Only the native executor reads credentials, after checking the fixed Pure Tokens
 | Trae | No managed credential adapter | Stops before any API request; installing the Skills does not imply media availability. |
 
 The README's fixture-tested status refers only to these exact records. Complete host acceptance also requires the real host to execute the installed binary, identify the current connection, resume a task and deliver its file. Record those checks per OS in `host-acceptance.json`; do not mark pending cells passed from compilation or mock API tests.
+
+`doctor` inspects only the loaded installation and documented Skill directories for the selected host before the existing init check. These local manifest checks neither resolve project/session credential overrides nor prove host attachment delivery. Help and update-version checks never invoke a credential adapter.

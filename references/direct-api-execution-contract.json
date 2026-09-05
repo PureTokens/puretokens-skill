@@ -99,7 +99,6 @@
   ],
   "userMediaInput": {
     "onlyCurrentUserExplicitMedia": true,
-    "publicUrlOrDeclaredIdRequiresInstalledOrOnDemandProfilePropertyAndTransport": true,
     "publicUrlImageEditRequiresExactDeclaredJsonOperation": true,
     "requiresInstalledOrOnDemandDeclaredTransport": true,
     "skillNeverDownloadsOrRehosts": true,
@@ -108,15 +107,16 @@
     "nativeAttachmentMustNeverFallBackToJsonTextSubmission": true,
     "untransportableNativeReferenceMustNeverBeConvertedToTextPrompt": true,
     "currentRequestScopeOnly": true,
-    "fallback": "If the executor cannot receive an explicitly attached file by absolute path through the declared multipart representation, stop before submission, explain the declared transport, and do not invent a URL, file ID, or upload path."
+    "fallback": "If the executor cannot receive an explicitly attached file by absolute path through the declared multipart representation, stop before submission, explain the declared transport, and do not invent a URL, file ID, or upload path.",
+    "publicUrlRequiresInstalledOrOnDemandProfilePropertyAndTransport": true
   },
   "asyncTaskHandling": {
-    "reconciliationRequiredPrecedesLifecycle": true,
     "reconciliationOutcome": "stop_ordinary_polling_retain_same_task_id_do_not_submit_replacement_or_infer_refund",
     "submissionOutputUnknown": "treat_submission_outcome_as_unknown_do_not_repeat_post_or_submit_replacement_task",
     "statusHttp429": "honor_valid_positive_retry_after_then_continue_same_task_if_remaining_budget",
     "non429StatusReadFailure": "stop_bounded_window_without_replacement_task",
-    "doesNotInventApiErrorCode": true
+    "doesNotInventApiErrorCode": true,
+    "reconciliationRequiredPrecedesStateClassification": true
   },
   "mediaDeliveryResourceBounds": {
     "oneInFlightStatusReadPerTask": true,
@@ -131,14 +131,32 @@
     "fallback": "If the executor cannot hand off validated native media bytes, report same-task delivery as unavailable. Do not substitute a URL, HTML, SVG, status text, or a re-submitted task."
   },
   "balance": {
-    "url": "https://api.puretokensx.com/v1/dashboard/billing/subscription",
+    "url": "https://console.puretokensx.com/api/product/console/api-keys/usage",
     "method": "GET",
     "requiresConfiguredApiKey": true,
+    "requiresBrowserSession": false,
     "responseSchema": "schemas/balance-snapshot.schema.json",
-    "fallback": "If the direct balance request is not authenticated or cannot be executed, report the returned result and direct the user to the Pure Tokens client balance view; do not estimate or ask for credentials.",
-    "usageUrl": "https://api.puretokensx.com/v1/dashboard/billing/usage",
-    "scope": "api_account_or_key_scope_unspecified",
-    "unit": "api_display_unit_unspecified",
-    "calculation": "hard_limit_usd - total_usage / 100; sequential snapshots, not a quote"
+    "unitMetadataUrl": "https://console.puretokensx.com/api/product/console/status",
+    "unitMetadataRequiresConfiguredApiKey": false,
+    "maxRequests": 2,
+    "deadlineSeconds": 30,
+    "scopeRule": "unlimited_quota_true_account_wallet_else_key_allowance",
+    "unit": "USD",
+    "includesSubscriptionQuota": false,
+    "calculation": "each_returned_quota_divided_by_public_quota_per_unit_in_USD_never_subtract_used_from_available",
+    "fallback": "On an actual API, format or unit-metadata failure, report the sanitized reason without an amount or automatic retry. Guide authentication failures to the existing connection settings; otherwise offer a later query or the Pure Tokens console. Never estimate or request credentials."
+  },
+  "optionalCommands": {
+    "preflight": "Explicit request check only; never media POST, may read one catalog for a profile gap.",
+    "doctor": "Explicit diagnostics: local managed install checks and existing read-only init checks; no paid task.",
+    "filteredModels": "One explicit authenticated catalog GET, filtered by declared kind/model/operation/parameters.",
+    "taskRecord": "Explicit absolute user/workspace JSON with task identity and safe continuation metadata; never credentials, prompt, reference URLs or media bytes.",
+    "resume": "Reads only the recorded task; never discovers tasks or submits replacements.",
+    "delivered": "Local progress acknowledgment only after actual host handoff."
+  },
+  "unimplementedServerDependencies": {
+    "exactQuote": "No authoritative media price quote endpoint is implemented by this repository.",
+    "idempotentSubmit": "No server idempotency guarantee is implemented; unknown submissions must not be repeated automatically.",
+    "unknownTaskLookup": "No task discovery exists for submissions that returned no task ID."
   }
 }

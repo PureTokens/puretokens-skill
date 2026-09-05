@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://puretokensx.com/schemas/init-receipt.schema.json",
+  "title": "Read-only identity and credential verification receipt",
+  "type": "object",
+  "required": [
+    "ok",
+    "command",
+    "executor_version",
+    "configuration_status",
+    "api_request_executed",
+    "credential_verified",
+    "api_identity_confirmed",
+    "message",
+    "next_action",
+    "usage_examples"
+  ],
+  "properties": {
+    "ok": {
+      "type": "boolean"
+    },
+    "command": {
+      "const": "init"
+    },
+    "executor_version": {
+      "type": "string"
+    },
+    "configuration_status": {
+      "type": "string"
+    },
+    "api_request_executed": {
+      "type": "boolean"
+    },
+    "credential_verified": {
+      "type": "boolean"
+    },
+    "api_identity_confirmed": {
+      "type": "boolean"
+    },
+    "http_status": {
+      "type": "integer",
+      "minimum": 100,
+      "maximum": 599
+    },
+    "message": {
+      "type": "string"
+    },
+    "next_action": {
+      "type": "string"
+    },
+    "usage_examples": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": false
+}

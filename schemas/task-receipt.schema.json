@@ -3,32 +3,86 @@
   "$id": "https://puretokensx.com/schemas/task-receipt.schema.json",
   "title": "Pure Tokens media task user receipt",
   "type": "object",
-  "required": ["schemaVersion", "kind", "submission", "continuation", "reconciliation", "completion", "failure"],
+  "required": [
+    "schemaVersion",
+    "kind",
+    "submission",
+    "continuation",
+    "reconciliation",
+    "completion",
+    "failure",
+    "machineReceipt"
+  ],
   "properties": {
-    "$schema": { "const": "https://puretokensx.com/schemas/task-receipt.schema.json" },
-    "schemaVersion": { "const": 1 },
-    "kind": { "enum": ["image", "video"] },
-    "submission": { "$ref": "#/$defs/receipt" },
-    "continuation": { "$ref": "#/$defs/receipt" },
-    "reconciliation": { "$ref": "#/$defs/receipt" },
-    "completion": { "$ref": "#/$defs/receipt" },
-    "failure": { "$ref": "#/$defs/receipt" }
+    "$schema": {
+      "const": "https://puretokensx.com/schemas/task-receipt.schema.json"
+    },
+    "schemaVersion": {
+      "const": 1
+    },
+    "kind": {
+      "enum": [
+        "image",
+        "video"
+      ]
+    },
+    "submission": {
+      "$ref": "#/$defs/receipt"
+    },
+    "continuation": {
+      "$ref": "#/$defs/receipt"
+    },
+    "reconciliation": {
+      "$ref": "#/$defs/receipt"
+    },
+    "completion": {
+      "$ref": "#/$defs/receipt"
+    },
+    "failure": {
+      "$ref": "#/$defs/receipt"
+    },
+    "machineReceipt": {
+      "type": "string",
+      "minLength": 1
+    }
   },
   "$defs": {
     "receipt": {
       "type": "object",
-      "required": ["requiredFields", "nextAction"],
+      "required": [
+        "requiredFields",
+        "nextAction"
+      ],
       "properties": {
         "requiredFields": {
           "type": "array",
           "uniqueItems": true,
-          "items": { "enum": ["exact_model_id", "task_id", "returned_state", "requested_operation", "requested_count", "requested_size_or_parameters", "reconciliation_required", "delivered_count", "failure_phase", "api_error_code", "http_status", "error_message", "retry_after_seconds", "next_action"] }
+          "items": {
+            "enum": [
+              "task_id",
+              "status",
+              "reconciliation_required",
+              "delivered_count",
+              "failure_phase",
+              "api_error_code",
+              "http_status",
+              "error_message",
+              "retry_after_seconds",
+              "next_action"
+            ]
+          }
         },
         "conditionalFields": {
           "type": "object",
-          "additionalProperties": { "type": "string", "minLength": 1 }
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          }
         },
-        "nextAction": { "type": "string", "minLength": 1 }
+        "nextAction": {
+          "type": "string",
+          "minLength": 1
+        }
       },
       "additionalProperties": false
     }

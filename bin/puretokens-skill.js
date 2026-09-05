@@ -16,10 +16,15 @@ try {
     if (target && !path.isAbsolute(target)) throw new Error("--target must be absolute.");
     const windows = process.platform === "win32";
     const script = path.join(repositoryRoot, "runtime", `puretokens-skill-install.${windows ? "ps1" : "sh"}`);
-    const invocation = windows ? ["-NoProfile", "-File", script, "sync"] : [script, "sync"];
+    const invocation = windows ? ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script, "sync"] : [script, "sync"];
     if (target) invocation.push(windows ? "-Target" : "--target", target);
     if (host) invocation.push(windows ? "-Host" : "--host", host);
-    execFileSync(windows ? "powershell.exe" : "sh", invocation, { stdio: "inherit" });
+    try {
+      execFileSync(windows ? "powershell.exe" : "sh", invocation, { stdio: "inherit" });
+    } catch (error) {
+      if (windows) console.error("If Windows policy blocked this command, use an approved PowerShell session or ask your administrator. The installer does not change machine-wide execution policy.");
+      throw error;
+    }
   } else if (command === "validate") {
     const errors = await validateRepository();
     if (errors.length) throw new Error(errors.join("\n"));

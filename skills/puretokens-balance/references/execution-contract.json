@@ -3,7 +3,7 @@
   "schemaVersion": 1,
   "kind": "balance",
   "transport": {
-    "fixedApiOrigin": "https://api.puretokensx.com",
+    "fixedApiOrigin": "https://console.puretokensx.com",
     "usesFullApiUrls": true,
     "usesManagedNativeExecutor": true,
     "usesCurrentHostConfiguredCredential": true,
@@ -19,19 +19,26 @@
   "operations": {
     "read": {
       "method": "GET",
-      "url": "https://api.puretokensx.com/v1/dashboard/billing/subscription",
+      "url": "https://console.puretokensx.com/api/product/console/api-keys/usage",
       "requiresConfiguredApiKey": true,
-      "responseSchema": "https://puretokensx.com/schemas/balance-snapshot.schema.json",
-      "usageUrl": "https://api.puretokensx.com/v1/dashboard/billing/usage"
+      "requiresBrowserSession": false,
+      "unitMetadataUrl": "https://console.puretokensx.com/api/product/console/status",
+      "unitMetadataRequiresConfiguredApiKey": false,
+      "maxRequests": 2,
+      "deadlineSeconds": 30,
+      "responseSchema": "https://puretokensx.com/schemas/balance-snapshot.schema.json"
     }
   },
   "result": {
     "reportOnlyReturnedFields": true,
     "neverEstimate": true,
     "neverRetry": true,
-    "fallbackWhenAccountSessionUnavailable": "report_direct_result_and_direct_to_puretokens_client_balance_view",
-    "scope": "api_account_or_key_scope_unspecified",
-    "unit": "api_display_unit_unspecified",
-    "calculation": "reported_remaining = hard_limit_usd - total_usage / 100"
+    "scopeRule": "unlimited_quota_true_account_wallet_else_key_allowance",
+    "unit": "USD",
+    "includesSubscriptionQuota": false,
+    "calculation": "each_returned_quota_divided_by_public_quota_per_unit_in_USD_never_subtract_used_from_available",
+    "fallbackWhenBalanceUnavailable": "report_actual_sanitized_failure_without_amount_and_guide_connection_settings_or_later_query",
+    "defaultPresentation": "one_line_remaining_with_wallet_or_key_allowance_label",
+    "legacyBillingFallbackAllowed": false
   }
 }

@@ -2,7 +2,8 @@ package main
 
 // Credential adapters read only the active connection records written by a
 // supported host or by Pure Tokens Switch for that host. They never use the
-// configured URL as the API target: every request still goes to apiOrigin.
+// configured URL as the API target: requests use apiOrigin, or balanceOrigin
+// for the documented balance-only console API endpoints.
 
 import (
 	"encoding/json"

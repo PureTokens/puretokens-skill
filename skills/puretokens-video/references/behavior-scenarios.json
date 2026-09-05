@@ -3,57 +3,275 @@
   "schemaVersion": 1,
   "kind": "video",
   "scenarios": [
-    { "id": "video-specialist-routing-priority", "when": "the current host uses a Pure Tokens connection and the user asks to generate, create, make, or edit a video without naming a Skill", "then": "select puretokens-video before a generic video Skill. Once selected, use only the fixed Videos API path; a missing executor, rejection, or failure must stop safely and must not invoke a generic media Skill." },
-    { "id": "video-model-alias-ambiguous", "when": "an alias resolves to multiple exact model IDs", "then": "ask the user to choose an exact ID; do not submit" },
-    { "id": "video-normal-submission-skips-catalog", "when": "a user asks for text-to-video with the default model, a uniquely resolved installed alias, or an exact model ID using only known core fields", "then": "submit directly without reading /v1/media/models first" },
-    { "id": "video-failure-receipt-safe", "when": "validation, submission, task-status, or content delivery fails", "then": "return failure_phase, api_error_code only when the public API explicitly returned that exact code or not returned otherwise, returned HTTP status or not returned, a sanitized user-facing error message, and an actionable next step; expose retry_after_seconds only for HTTP 429 with a valid positive Retry-After and never expose raw response bodies, upstream identifiers, internal URLs, stacks, request data, credentials, or user media" },
-    { "id": "video-content-safety-failure", "when": "a terminal failure has an explicit public API code content_moderation or sanitized public API detail that unambiguously says the request did not pass safety review", "then": "tell the user the video was not generated because it did not pass safety review, suggest adjusting the prompt or reference media, do not invent an API code when none was returned, and never retry automatically" },
-    { "id": "video-submission-model-parameter-rejected", "when": "the Videos API explicitly rejects a model, parameter, or capability and returns no task ID", "then": "read the catalog at most once for diagnosis, show returned current candidates or allowed values, and require an explicit corrected new request; never resubmit automatically" },
-    { "id": "video-submission-rate-limited", "when": "the Videos API returns 429 before a task ID is confirmed", "then": "report Retry-After when returned, ask the user to wait and explicitly retry, and do not poll, wait, or retry automatically" },
-    { "id": "video-submission-outcome-unknown", "when": "a submission has a 5xx response, transport error, or timeout before a task ID is confirmed", "then": "state that task acceptance is unknown, do not claim the task was not created, and never automatically resubmit" },
-    { "id": "video-executor-structured-failure", "when": "the managed native executor returns a parseable sanitized failure", "then": "use its phase: validation means the POST did not start and must be reported as a local pre-submit failure; submission means acceptance may be unknown and must never be retried; status or content means retain any verified same task_id and do not create a replacement task." },
-    { "id": "video-host-execution-policy-blocked", "when": "the host blocks the API request before it starts because of system policy, approval policy, or external-network execution permission", "then": "return failure_phase validation with task_id, http_status, and api_error_code all not returned; state that the Videos API did not execute and no video task was created; do not call it submission, claim charging, refunding, or API rejection, or repeat POST. Tell the user to retry only in a host session that allows external network requests and approval of that operation; never claim the Skill can request, elevate, or bypass host permissions." },
-    { "id": "video-executor-request-start", "when": "the user requests a video, media reference, or video edit", "then": "invoke the installed managed native executor with the current host ID and the declared fixed Videos API request. For a current attachment and declared operation, give it only that exact multipart attachment path; never invoke another media Skill, a browser, Switch, Desktop, or Computer Use." },
-    { "id": "video-executor-validation-failure", "when": "the executor cannot start, cannot resolve a verified credential, is blocked from the network, or cannot send the current attachment bytes in the declared multipart request", "then": "stop before POST with failure_phase validation, state the local limitation without exposing configuration, and state that the Videos API did not execute and no task was created. Never fall back to another media Skill, a browser, Switch, Desktop, or Computer Use." },
-    { "id": "video-submission-executor-output-unknown", "when": "the executor POST started but returns an execution error, empty output, truncated output, or output that cannot be parsed before a task ID is confirmed", "then": "treat submission acceptance as unknown and do not invoke POST again, submit a replacement task, or claim the task was not created, charged, or refunded. If no verified task_id is available, return one unknown-submission receipt and end the current response without further tool, status, polling, or deliberation work." },
-    { "id": "video-unknown-submission-continuation-without-id", "when": "a later user message says continue, retry, or similar but supplies no verified task ID for an earlier unknown submission", "then": "state that the original task cannot be continued, ask the user to explicitly confirm a new paid video request, and do not submit until that confirmation arrives in a new user turn." },
-    { "id": "video-model-unavailable", "when": "an on-demand live catalog read, used only for an installed-profile gap or post-rejection diagnosis, lacks the exact requested video ID or capability", "then": "state that the current authenticated connection did not return the exact model, list returned catalog candidates, and do not resubmit or switch models. If the user expects access, direct them to the Pure Tokens client configuration to select a group that contains that exact model, create or select a managed key covering the selected groups, verify and apply it to the current host, then start a new host conversation and explicitly retry. Do not claim which group contains the model unless an authenticated API response explicitly returned that mapping." },
-    { "id": "video-model-parameter-profile-unavailable", "when": "the installed index/selected profile and any permitted one-time on-demand catalog read have no schema for a requested duration, aspect ratio, resolution, size, or other optional parameter", "then": "explain that the model parameter profile is not published, ask the user to remove that option or choose a model with an explicit profile, and do not submit that unverified option" },
-    { "id": "video-model-parameter-unsupported", "when": "a requested optional parameter is absent from the installed or on-demand schema, or its value violates the declared enum or range", "then": "list the profile-supported values and ask the user to choose one; do not submit" },
-    { "id": "video-catalog-on-demand-unavailable", "when": "a one-time live catalog read is needed for an explicit unsupported option, media operation, or diagnosis but fails", "then": "report that read failure; do not let it block a normal core text-to-video submission, and do not retry or resubmit automatically" },
-    { "id": "video-execution-unavailable", "when": "a direct fixed-Pure-Tokens API request fails before task acceptance or native video bytes cannot be handed off", "then": "report the returned failure or delivery state, state whether a task_id was returned, and do not guess a configuration cause or submit a replacement task" },
-    { "id": "video-parameter-unsupported", "when": "a requested duration, aspect ratio, resolution, or size is rejected or unsupported", "then": "report the unsupported parameter and ask the user for a supported value; do not alter it silently" },
-    { "id": "video-first-frame-operation-mapping", "when": "the user explicitly asks to animate an image, use it as the first frame, or make it the opening frame", "then": "select image_to_video and use its exact declared multipart field, such as first_frame_image for Wan. If one attached image has no stated first-frame or reference role, ask the user to choose; do not guess." },
-    { "id": "video-generate-audio-intent-mapping", "when": "the user asks for generated sound or silence and the selected profile declares boolean generate_audio", "then": "send generate_audio true for generated sound or false for silence. A supplied audio attachment remains a reference_audio operation and is never substituted by generate_audio." },
-    { "id": "video-resolution-mode-unsupported", "when": "a requested resolution is outside the installed or permitted on-demand profile's resolution_by_mode set for text, image, or reference generation, or the request cannot map its operation to a declared mode", "then": "list the applicable mode's declared resolution values when available, ask the user to choose one or remove the unresolved parameter, and do not submit" },
-    { "id": "video-image-operation-profile-unavailable", "when": "the user attaches an image for image-to-video or reference-image video and the installed or permitted on-demand profile lacks the matching operation", "then": "state that the selected model has not published that native-attachment operation and do not submit or switch models" },
-    { "id": "video-media-operation-profile-unavailable", "when": "the user attaches reference video, reference audio, or a source video for editing and the installed or permitted on-demand profile lacks that complete operation", "then": "state that the selected model has not published the native-attachment operation and do not submit or switch models" },
-    { "id": "video-image-transport-unavailable", "when": "the user media cannot be delivered in one of the selected profile's declared transports", "then": "list the declared transports, explain why the current attachment/reference is unavailable, and do not create a URL, use a separate upload path, or downgrade it" },
-    { "id": "video-native-attachment-route-locked", "when": "the current request includes a native image, video, or audio attachment and the selected profile declares a matching multipart operation", "then": "select that exact operation before building the request, submit only its declared method, full fixed-origin URL, fields, file field names, and count range, and never replace the attachment request with a model-and-prompt JSON submission. The managed executor sends only the current request attachment bytes." },
-    { "id": "video-native-attachment-path-unavailable", "when": "the current host does not expose an explicit absolute local path for a current native attachment required by the selected multipart operation", "then": "stop before POST, explain that the declared multipart attachment cannot be delivered by this host session, and do not submit text-only JSON, create a URL, or upload the media separately." },
-    { "id": "video-public-url-reference-profile-unavailable", "when": "the user provides a public image, video, or audio URL, or a file/voice ID, but the installed or permitted on-demand profile lacks a matching property and declared transport", "then": "state that the selected model has not published a compatible public-reference field, list any declared fields, and do not submit or switch models" },
-    { "id": "video-public-url-reference-invalid", "when": "the user provides a URL reference that is not a public HTTPS URL", "then": "explain that the selected profile requires a public HTTPS URL and ask the user to provide one; do not submit" },
-    { "id": "video-public-url-reference-not-public", "when": "a reference URL contains credentials, localhost, a .local host, or an explicit loopback, private, or link-local IP", "then": "reject it as non-public without DNS lookup or probing and ask for a public HTTPS URL; do not submit" },
-    { "id": "video-public-url-reference-ambiguous", "when": "more than one exact authenticated public-reference field could represent the user's URL or declared ID", "then": "list the declared fields and ask the user to choose the intended input mode; do not guess or submit" },
-    { "id": "video-prompt-requirement", "when": "a request omits prompt without the installed or permitted on-demand profile declaring that the selected single-reference mode permits omission", "then": "explain that prompt is required for the selected mode and ask the user to provide it; do not submit" },
-    { "id": "video-attachment-direct-api", "when": "the current host can send the user's current multipart image, video, or audio attachment through the declared Videos API operation", "then": "send it only with that single direct Videos API request; do not call a separate upload path or expose internal attachment handling" },
-    { "id": "video-image-count-unsupported", "when": "the requested media/reference count violates the selected profile's declared minItems or maxItems", "then": "state the allowed count and do not submit" },
-    { "id": "video-media-combination-unsupported", "when": "the user attaches more than one media type but the selected profile does not declare that exact combined operation", "then": "explain that only one declared media operation can be submitted, ask the user to retain one supported input, and do not split, drop, or submit attachments" },
-    { "id": "video-input-media-unsupported", "when": "the user asks for an undeclared media operation or gives a media type/field that does not match the selected profile", "then": "state that the selected model profile does not support that media operation and do not upload media" },
-    { "id": "video-task-id-normalization", "when": "a submission returns an installed lifecycle create.idField such as top-level id, or otherwise top-level task_id or id", "then": "report that opaque value under the receipt field task_id and use it only as a percent-encoded status/content path segment" },
-    { "id": "video-task-id-missing", "when": "a submission response has no declared lifecycle ID field and no top-level task_id or id", "then": "report that task_id was not returned and cannot be safely continued; do not derive one from URLs or nested data, poll, download, or resubmit" },
-    { "id": "video-task-id-invalid", "when": "a continuation request provides a URL, multiple IDs, or an empty task ID", "then": "ask for exactly one opaque task ID and do not extract, concatenate, or query an ID" },
-    { "id": "video-task-state-unrecognized", "when": "a status response has no declared lifecycle classification and its status is not a documented fallback state", "then": "report the raw state as unrecognized, stop automatic polling, and require an explicit same-task continuation before another status read" },
-    { "id": "video-task-reconciliation-required", "when": "a same-task status response contains reconciliation_required: true regardless of its status value", "then": "treat it as a terminal operational outcome: stop ordinary polling, retain the same task_id, report that status verification is required, and do not resubmit, switch models, infer a refund, or expose provider or billing details" },
-    { "id": "video-task-pending", "when": "the same task is in an installed-lifecycle pending state or a documented fallback processing state", "then": "report the current state and continue reading only that task" },
-    { "id": "video-task-poll-delay", "when": "the same task is in an installed-lifecycle pending state or a documented fallback processing state", "then": "honor a valid positive Retry-After delay when returned; otherwise wait 5, 10, 20, 40, then 60 seconds, with at most seven same-task status reads during a submission or explicit same-task continuation turn" },
-    { "id": "video-task-poll-rate-limited", "when": "a same-task status request returns HTTP 429", "then": "when a valid positive Retry-After fits the remaining automatic-polling budget, wait that duration and continue querying the same task; otherwise report the limit and stop this window; never submit a replacement task" },
-    { "id": "video-task-poll-resource-bound", "when": "a task is in an installed-lifecycle pending state or a documented fallback processing state", "then": "keep at most one same-task status request in flight, never create a background timer or queue, and stop automatic polling after a non-429 5xx response, transport error, or timeout" },
-    { "id": "video-task-polling-deadline", "when": "300 seconds have elapsed since a task submission response and the task is still in an installed-lifecycle pending state or a documented fallback processing state", "then": "report the current state, stop automatic polling, and require an explicit user request to continue the same task; do not resubmit" },
-    { "id": "video-task-explicit-continuation", "when": "the user explicitly asks to continue querying the returned task_id", "then": "start a new bounded polling window for that same task only; do not submit, inspect, or substitute another task" },
-    { "id": "video-task-terminal-failure", "when": "the same task reports failure, cancellation, or expiry", "then": "report the returned failure and require an explicit new request before another submission" },
-    { "id": "video-task-timeout-or-unknown", "when": "the status request times out or the submission outcome is unknown", "then": "report the uncertainty, offer to continue querying the same task if an ID exists, and never auto-resubmit" },
-    { "id": "video-content-delivery-failure", "when": "a task is complete but native content cannot be delivered", "then": "report the delivery failure and offer only a same-task content retry; do not claim success" },
-    { "id": "video-content-resource-bound", "when": "a task is complete", "then": "read at most one native video content response at a time, hand it off before any explicit same-task retry, and never prefetch or re-fetch delivered content" }
+    {
+      "id": "video-specialist-routing-priority",
+      "when": "the current host uses a Pure Tokens connection and the user asks to generate, create, make, or edit a video without naming a Skill",
+      "then": "select puretokens-video before a generic video Skill. Once selected, use only the fixed Videos API path; a missing executor, rejection, or failure must stop safely and must not invoke a generic media Skill."
+    },
+    {
+      "id": "video-model-alias-ambiguous",
+      "when": "an alias resolves to multiple exact model IDs",
+      "then": "ask the user to choose an exact ID; do not submit"
+    },
+    {
+      "id": "video-normal-submission-skips-catalog",
+      "when": "a user asks for text-to-video with the default model, a uniquely resolved installed alias, or an exact model ID using only known core fields",
+      "then": "submit directly without reading /v1/media/models first"
+    },
+    {
+      "id": "video-failure-receipt-safe",
+      "when": "validation, submission, task-status, or content delivery fails",
+      "then": "return failure_phase, api_error_code only when the public API explicitly returned that exact code and omit it otherwise, HTTP status only when returned, a sanitized user-facing error message, and an actionable next step; include retry_after_seconds when the executor returns a valid positive Retry-After and never expose raw response bodies, upstream identifiers, internal URLs, stacks, request data, credentials, or user media"
+    },
+    {
+      "id": "video-content-safety-failure",
+      "when": "a terminal failure has an explicit public API code content_moderation or sanitized public API detail that unambiguously says the request did not pass safety review",
+      "then": "tell the user the video was not generated because it did not pass safety review, suggest adjusting the prompt or reference media, do not invent an API code when none was returned, and never retry automatically"
+    },
+    {
+      "id": "video-submission-model-parameter-rejected",
+      "when": "the Videos API explicitly rejects a model, parameter, or capability and returns no task ID",
+      "then": "read the catalog at most once for diagnosis, show returned current candidates or allowed values, and require an explicit corrected new request; never resubmit automatically"
+    },
+    {
+      "id": "video-submission-rate-limited",
+      "when": "the Videos API returns 429 before a task ID is confirmed",
+      "then": "report Retry-After when returned, ask the user to wait and explicitly retry, and do not poll, wait, or retry automatically"
+    },
+    {
+      "id": "video-submission-outcome-unknown",
+      "when": "a submission has a 5xx response, transport error, or timeout before a task ID is confirmed",
+      "then": "state that task acceptance is unknown, do not claim the task was not created, and never automatically resubmit"
+    },
+    {
+      "id": "video-executor-structured-failure",
+      "when": "the managed native executor returns a parseable sanitized failure",
+      "then": "Preserve the native command, failure phase, submission_outcome and available task context. For submit, validation confirms no POST; transmission/submission uncertainty never authorizes repetition. For status, wait, resume or content, validation means that command failed locally and says nothing about whether the already known task exists. Keep its ID and correct only the local continuation request."
+    },
+    {
+      "id": "video-host-execution-policy-blocked",
+      "when": "the host blocks the API request before it starts because of system policy, approval policy, or external-network execution permission",
+      "then": "return failure_phase validation with task_id, http_status, and api_error_code all not returned; state that the Videos API did not execute and no video task was created; do not call it submission, claim charging, refunding, or API rejection, or repeat POST. Tell the user to retry only in a host session that allows external network requests and approval of that operation; never claim the Skill can request, elevate, or bypass host permissions."
+    },
+    {
+      "id": "video-executor-request-start",
+      "when": "the user requests a video, media reference, or video edit",
+      "then": "invoke the installed managed native executor with the current host ID and the declared fixed Videos API request. For a current attachment and declared operation, give it only that exact multipart attachment path; never invoke another media Skill, a browser, Switch, Desktop, or Computer Use."
+    },
+    {
+      "id": "video-executor-validation-failure",
+      "when": "the executor cannot start or confirms a credential, parameter or attachment-preparation failure before the media POST begins",
+      "then": "Preserve the native receipt phase. Only a confirmed pre-POST validation failure means no media task was submitted. Attachment/network transmission failures after POST may have started are unknown submissions; retain any task ID and never automatically resubmit or use another transport."
+    },
+    {
+      "id": "video-submission-executor-output-unknown",
+      "when": "the executor POST started but returns an execution error, empty output, truncated output, or output that cannot be parsed before a task ID is confirmed",
+      "then": "treat submission acceptance as unknown and do not invoke POST again, submit a replacement task, or claim the task was not created, charged, or refunded. If no verified task_id is available, return one unknown-submission receipt and end the current response without further tool, status, polling, or deliberation work."
+    },
+    {
+      "id": "video-unknown-submission-continuation-without-id",
+      "when": "a later user message says continue, retry, or similar but supplies no verified task ID for an earlier unknown submission",
+      "then": "state that the original task cannot be continued, ask the user to explicitly confirm a new paid video request, and do not submit until that confirmation arrives in a new user turn."
+    },
+    {
+      "id": "video-model-unavailable",
+      "when": "an on-demand live catalog read, used only for an installed-profile gap or post-rejection diagnosis, lacks the exact requested video ID or capability",
+      "then": "state that the current authenticated connection did not return the exact model, list returned catalog candidates, and do not resubmit or switch models. If the user expects access, direct them to the Pure Tokens client configuration to select a group that contains that exact model, create or select a managed key covering the selected groups, verify and apply it to the current host, then start a new host conversation and explicitly retry. Do not claim which group contains the model unless an authenticated API response explicitly returned that mapping."
+    },
+    {
+      "id": "video-model-parameter-profile-unavailable",
+      "when": "the installed index/selected profile and any permitted one-time on-demand catalog read have no schema for a requested duration, aspect ratio, resolution, size, or other optional parameter",
+      "then": "explain that the model parameter profile is not published, ask the user to remove that option or choose a model with an explicit profile, and do not submit that unverified option"
+    },
+    {
+      "id": "video-model-parameter-unsupported",
+      "when": "a requested optional parameter is absent from the installed or on-demand schema, or its value violates the declared enum or range",
+      "then": "list the profile-supported values and ask the user to choose one; do not submit"
+    },
+    {
+      "id": "video-catalog-on-demand-unavailable",
+      "when": "a one-time live catalog read is needed for an explicit unsupported option, media operation, or diagnosis but fails",
+      "then": "report that read failure; do not let it block a normal core text-to-video submission, and do not retry or resubmit automatically"
+    },
+    {
+      "id": "video-execution-unavailable",
+      "when": "a direct fixed-Pure-Tokens API request fails before task acceptance or native video bytes cannot be handed off",
+      "then": "report the returned failure or delivery state, state whether a task_id was returned, and do not guess a configuration cause or submit a replacement task"
+    },
+    {
+      "id": "video-parameter-unsupported",
+      "when": "a requested duration, aspect ratio, resolution, or size is rejected or unsupported",
+      "then": "report the unsupported parameter and ask the user for a supported value; do not alter it silently"
+    },
+    {
+      "id": "video-first-frame-operation-mapping",
+      "when": "the user explicitly asks to animate an image, use it as the first frame, or make it the opening frame",
+      "then": "select image_to_video and use its exact declared multipart field, such as first_frame_image for Wan. If one attached image has no stated first-frame or reference role, ask the user to choose; do not guess."
+    },
+    {
+      "id": "video-generate-audio-intent-mapping",
+      "when": "the user asks for generated sound or silence and the selected profile declares boolean generate_audio",
+      "then": "send generate_audio true for generated sound or false for silence. A supplied audio attachment remains a reference_audio operation and is never substituted by generate_audio."
+    },
+    {
+      "id": "video-resolution-mode-unsupported",
+      "when": "a requested resolution is outside the installed or permitted on-demand profile's resolution_by_mode set for text, image, or reference generation, or the request cannot map its operation to a declared mode",
+      "then": "list the applicable mode's declared resolution values when available, ask the user to choose one or remove the unresolved parameter, and do not submit"
+    },
+    {
+      "id": "video-image-operation-profile-unavailable",
+      "when": "the user attaches an image for image-to-video or reference-image video and the installed or permitted on-demand profile lacks the matching operation",
+      "then": "state that the selected model has not published that native-attachment operation and do not submit or switch models"
+    },
+    {
+      "id": "video-media-operation-profile-unavailable",
+      "when": "the user attaches reference video, reference audio, or a source video for editing and the installed or permitted on-demand profile lacks that complete operation",
+      "then": "state that the selected model has not published the native-attachment operation and do not submit or switch models"
+    },
+    {
+      "id": "video-image-transport-unavailable",
+      "when": "the user media cannot be delivered in one of the selected profile's declared transports",
+      "then": "list the declared transports, explain why the current attachment/reference is unavailable, and do not create a URL, use a separate upload path, or downgrade it"
+    },
+    {
+      "id": "video-native-attachment-route-locked",
+      "when": "the current request includes a native image, video, or audio attachment and the selected profile declares a matching multipart operation",
+      "then": "select that exact operation before building the request, submit only its declared method, full fixed-origin URL, fields, file field names, and count range, and never replace the attachment request with a model-and-prompt JSON submission. The managed executor sends only the current request attachment bytes."
+    },
+    {
+      "id": "video-native-attachment-path-unavailable",
+      "when": "the current host does not expose an explicit absolute local path for a current native attachment required by the selected multipart operation",
+      "then": "stop before POST, explain that the declared multipart attachment cannot be delivered by this host session, and do not submit text-only JSON, create a URL, or upload the media separately."
+    },
+    {
+      "id": "video-public-url-reference-profile-unavailable",
+      "when": "the user provides a public image, video, or audio URL,  but the installed or permitted on-demand profile lacks a matching property and declared transport",
+      "then": "state that the selected model has not published a compatible public-reference field, list any declared fields, and do not submit or switch models"
+    },
+    {
+      "id": "video-public-url-reference-invalid",
+      "when": "the user provides a URL reference that is not a public HTTPS URL",
+      "then": "explain that the selected profile requires a public HTTPS URL and ask the user to provide one; do not submit"
+    },
+    {
+      "id": "video-public-url-reference-not-public",
+      "when": "a reference URL contains credentials, localhost, a .local host, or an explicit loopback, private, or link-local IP",
+      "then": "reject it as non-public without DNS lookup or probing and ask for a public HTTPS URL; do not submit"
+    },
+    {
+      "id": "video-public-url-reference-ambiguous",
+      "when": "more than one declared public-reference field could represent the user's URL",
+      "then": "list the declared fields and ask the user to choose the intended input mode; do not guess or submit"
+    },
+    {
+      "id": "video-prompt-requirement",
+      "when": "a video request omits a non-empty prompt",
+      "then": "A non-empty prompt is required; ask the user to describe the intended result before submitting."
+    },
+    {
+      "id": "video-attachment-direct-api",
+      "when": "the current host can send the user's current multipart image, video, or audio attachment through the declared Videos API operation",
+      "then": "send it only with that single direct Videos API request; do not call a separate upload path or expose internal attachment handling"
+    },
+    {
+      "id": "video-image-count-unsupported",
+      "when": "the requested media/reference count violates the selected profile's declared minItems or maxItems",
+      "then": "state the allowed count and do not submit"
+    },
+    {
+      "id": "video-media-combination-unsupported",
+      "when": "the user attaches more than one media type but the selected profile does not declare that exact combined operation",
+      "then": "explain that only one declared media operation can be submitted, ask the user to retain one supported input, and do not split, drop, or submit attachments"
+    },
+    {
+      "id": "video-input-media-unsupported",
+      "when": "the user asks for an undeclared media operation or gives a media type/field that does not match the selected profile",
+      "then": "state that the selected model profile does not support that media operation and do not upload media"
+    },
+    {
+      "id": "video-task-id-normalization",
+      "when": "a submission returns a valid top-level task_id, or top-level id when task_id is absent",
+      "then": "Use the executor-returned task_id unchanged. Supported IDs contain only ASCII letters, digits, underscores or hyphens and have length 1..256. Never derive an ID from URLs or nested data."
+    },
+    {
+      "id": "video-task-id-missing",
+      "when": "a submission response has no supported top-level task_id or id",
+      "then": "report that task_id was not returned and cannot be safely continued; do not derive one from URLs or nested data, poll, download, or resubmit"
+    },
+    {
+      "id": "video-task-id-invalid",
+      "when": "a continuation request provides a URL, multiple IDs, or an empty task ID",
+      "then": "ask for exactly one opaque task ID and do not extract, concatenate, or query an ID"
+    },
+    {
+      "id": "video-task-state-unrecognized",
+      "when": "the executor returns status unknown for an unsupported API status",
+      "then": "Report that the state could not be classified, retain the task ID, stop automatic polling and require an explicit same-task continuation. Do not seek or display the raw API state."
+    },
+    {
+      "id": "video-task-reconciliation-required",
+      "when": "a same-task status response contains reconciliation_required: true regardless of its status value",
+      "then": "treat it as a terminal operational outcome: stop ordinary polling, retain the same task_id, report that status verification is required, and do not resubmit, switch models, infer a refund, or expose provider or billing details"
+    },
+    {
+      "id": "video-task-pending",
+      "when": "the same task is in a supported pending state",
+      "then": "report the current state and continue reading only that task"
+    },
+    {
+      "id": "video-task-poll-delay",
+      "when": "the same task is in a supported pending state",
+      "then": "honor a valid positive Retry-After delay when returned; otherwise wait 5, 10, 20, 40, then 60 seconds, with at most seven same-task status reads during a submission or explicit same-task continuation turn"
+    },
+    {
+      "id": "video-task-poll-rate-limited",
+      "when": "a same-task status request returns HTTP 429",
+      "then": "when a valid positive Retry-After fits the remaining automatic-polling budget, wait that duration and continue querying the same task; otherwise report the limit and stop this window; never submit a replacement task"
+    },
+    {
+      "id": "video-task-poll-resource-bound",
+      "when": "a task is in a supported pending state",
+      "then": "keep at most one same-task status request in flight, never create a background timer or queue, and stop automatic polling after a non-429 5xx response, transport error, or timeout"
+    },
+    {
+      "id": "video-task-polling-deadline",
+      "when": "300 seconds have elapsed since a task submission response and the task is still in a supported pending state",
+      "then": "report the current state, stop automatic polling, and require an explicit user request to continue the same task; do not resubmit"
+    },
+    {
+      "id": "video-task-explicit-continuation",
+      "when": "the user explicitly asks to continue querying the returned task_id",
+      "then": "start a new bounded polling window for that same task only; do not submit, inspect, or substitute another task"
+    },
+    {
+      "id": "video-task-terminal-failure",
+      "when": "the same task reports failure, cancellation, or expiry",
+      "then": "report the returned failure and require an explicit new request before another submission"
+    },
+    {
+      "id": "video-task-timeout-or-unknown",
+      "when": "the status request times out or the submission outcome is unknown",
+      "then": "report the uncertainty, offer to continue querying the same task if an ID exists, and never auto-resubmit"
+    },
+    {
+      "id": "video-content-delivery-failure",
+      "when": "a task is complete but native content cannot be delivered",
+      "then": "report the delivery failure and offer only a same-task content retry; do not claim success"
+    },
+    {
+      "id": "video-content-resource-bound",
+      "when": "a task is complete",
+      "then": "read at most one native video content response at a time, hand it off before any explicit same-task retry, and never prefetch or re-fetch delivered content"
+    },
+    {
+      "id": "video-explicit-validation",
+      "when": "the user explicitly asks to check request parameters without generation",
+      "then": "invoke preflight once with the finite request file; it never POSTs. A required profile-gap catalog GET is allowed. Do not claim a price, funds, authorization or successful generation from validation."
+    },
+    {
+      "id": "video-optional-task-record",
+      "when": "an explicit user/workspace task record is useful for later continuation",
+      "then": "pass its absolute path with submit --record. Keep only task identity, original operation, safe parameters and progress; no credentials, prompt or reference media. Resume only the recorded task and mark an index delivered only after actual host handoff."
+    }
   ]
 }

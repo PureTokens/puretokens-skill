@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://puretokensx.com/schemas/model-query-receipt.schema.json",
+  "title": "Successful native filtered model catalog receipt",
+  "type": "object",
+  "required": [
+    "ok",
+    "command",
+    "result"
+  ],
+  "properties": {
+    "ok": {
+      "const": true
+    },
+    "command": {
+      "const": "models"
+    },
+    "result": {
+      "type": "object",
+      "required": [
+        "data",
+        "matched_count",
+        "filter",
+        "matching_scope",
+        "note"
+      ],
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "capabilities",
+              "input_schema"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_.-]{1,160}$"
+              },
+              "capabilities": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "image",
+                    "video"
+                  ]
+                }
+              },
+              "input_schema": {
+                "type": "object",
+                "properties": {
+                  "properties": {},
+                  "constraints": {},
+                  "operations": {},
+                  "lifecycle": {},
+                  "outputSizes": {}
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "matched_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "filter": {
+          "type": "object",
+          "required": [
+            "kind",
+            "model",
+            "operation",
+            "parameter_names"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "",
+                "image",
+                "video"
+              ]
+            },
+            "model": {
+              "type": "string"
+            },
+            "operation": {
+              "type": "string"
+            },
+            "parameter_names": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_.-]{1,100}$"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "matching_scope": {
+          "const": "declared_schema_only"
+        },
+        "note": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

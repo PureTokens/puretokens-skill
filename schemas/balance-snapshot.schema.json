@@ -1,27 +1,39 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://puretokensx.com/schemas/balance-snapshot.schema.json",
-  "title": "Pure Tokens authenticated balance snapshot",
+  "title": "Sanitized API-key usage balance in USD, with explicit wallet or Key scope",
   "type": "object",
   "properties": {
-    "reported_limit": {
+    "remaining": {
       "type": "number"
     },
-    "reported_usage": {
-      "type": "number"
+    "used": {
+      "type": "number",
+      "minimum": 0
     },
-    "reported_remaining": {
+    "total": {
       "type": "number"
     },
     "unit": {
-      "const": "api_display_unit_unspecified"
+      "const": "USD"
     },
     "scope": {
-      "const": "api_account_or_key_scope_unspecified"
+      "enum": [
+        "account_wallet",
+        "key_allowance"
+      ]
     },
-    "note": {
-      "type": "string"
+    "includes_subscription_quota": {
+      "const": false
     }
   },
-  "additionalProperties": true
+  "additionalProperties": false,
+  "required": [
+    "remaining",
+    "used",
+    "total",
+    "unit",
+    "scope",
+    "includes_subscription_quota"
+  ]
 }

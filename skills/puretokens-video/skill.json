@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "name": "puretokens-video",
-  "version": "0.16.0",
+  "version": "0.17.0",
   "entry": "SKILL.md",
   "displayName": "Pure Tokens Video",
   "description": "Primary video Skill for the current Pure Tokens connection; generate and profile-gated animate, reference, or edit video through the fixed Videos API before generic video Skills.",
@@ -70,7 +70,6 @@
     "liveCatalogOnDemandOnly": true,
     "aliasSelectionRequiresUniqueMatch": true,
     "videosAlwaysAsync": true,
-    "profiledPublicUrlOrDeclaredIdReferenceSupported": true,
     "profiledImageToVideoSupported": true,
     "profiledReferenceImageVideoSupported": true,
     "profiledReferenceVideoSupported": true,
@@ -79,7 +78,6 @@
     "mapsExplicitFirstFrameIntentToProfiledImageToVideo": true,
     "mapsDeclaredGenerateAudioIntent": true,
     "nativeAttachmentsMustUseExactDeclaredMultipartOperation": true,
-    "nativeAttachmentsUseHostMultipart": true,
     "nativeAttachmentNeverFallsBackToTextSubmission": true,
     "usesSafeStructuredFailureReceipts": true,
     "neverAutoResubmitAfterError": true,
@@ -93,7 +91,12 @@
     "usesResourceBoundedPolling": true,
     "doesNotCreateBackgroundMediaWork": true,
     "usesSequentialNativeContentDelivery": true,
-    "doesNotUseMcpOrFallbackTransport": true
+    "doesNotUseMcpOrFallbackTransport": true,
+    "profiledPublicUrlReferenceSupported": true,
+    "nativeAttachmentsUseExecutorMultipart": true,
+    "supportsExplicitValidationWithoutSubmission": true,
+    "supportsOptionalContinuationRecord": true,
+    "userReceiptIsConcise": true
   },
-  "sourceSha256": "502efb8fc877e24cebcdd5bbbeb59cd96193303f706533a5c3efb3737df16bb0"
+  "sourceSha256": "57f3829c58d84d211b593cd92f1eefb77392da67a2e0a2f1f67d733682a03e23"
 }

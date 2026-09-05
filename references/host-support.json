@@ -5,59 +5,66 @@
   "supported": [
     {
       "id": "claude-code",
-      "delivery": "manual-source",
+      "delivery": "native-installer",
       "globalSkillDirectory": "~/.claude/skills",
       "directMediaExecution": "managed-native-executor",
       "credentialAdapter": "fixture-tested",
-      "guidance": "Install into ~/.claude/skills. The native executor has credential-format fixture coverage; actual host API and attachment delivery acceptance is pending."
+      "guidance": "Install into ~/.claude/skills. The native executor has credential-format fixture coverage; actual host API and attachment delivery acceptance is pending.",
+      "directorySelection": "CLAUDE_CONFIG_DIR/skills when explicitly configured; otherwise the default global directory."
     },
     {
       "id": "codex",
-      "delivery": "manual-source",
+      "delivery": "native-installer",
       "globalSkillDirectory": "~/.agents/skills",
       "directMediaExecution": "managed-native-executor",
       "credentialAdapter": "fixture-tested",
-      "guidance": "Install into ~/.agents/skills. The native executor has credential-format fixture coverage; actual host API and attachment delivery acceptance is pending."
+      "guidance": "Install into ~/.agents/skills. The native executor has credential-format fixture coverage; actual host API and attachment delivery acceptance is pending.",
+      "directorySelection": "Use the documented default unless the user explicitly supplies an absolute target."
     },
     {
       "id": "workbuddy",
-      "delivery": "manual-source",
+      "delivery": "native-installer",
       "globalSkillDirectory": "~/.workbuddy/skills",
       "directMediaExecution": "managed-native-executor",
       "credentialAdapter": "fixture-tested",
-      "guidance": "Install into ~/.workbuddy/skills. The native executor has credential-format fixture coverage; actual host API and attachment delivery acceptance is pending."
+      "guidance": "Install into ~/.workbuddy/skills. The native executor has credential-format fixture coverage; actual host API and attachment delivery acceptance is pending.",
+      "directorySelection": "WORKBUDDY_CONFIG_DIR/skills, then CODEBUDDY_CONFIG_DIR/skills when explicitly configured; otherwise the default."
     },
     {
       "id": "gemini-cli",
-      "delivery": "manual-source",
+      "delivery": "native-installer",
       "globalSkillDirectory": "~/.gemini/skills",
       "directMediaExecution": "managed-native-executor",
       "credentialAdapter": "fixture-tested",
-      "guidance": "Install into ~/.gemini/skills. The native executor has credential-format fixture coverage; actual host API and attachment delivery acceptance is pending."
+      "guidance": "Install into ~/.gemini/skills. The native executor has credential-format fixture coverage; actual host API and attachment delivery acceptance is pending.",
+      "directorySelection": "Use ~/.agents/skills when an official Skill already exists there, because Gemini discovers it before ~/.gemini/skills; report lower-priority managed duplicates without deleting them."
     },
     {
       "id": "grok-build",
-      "delivery": "manual-source",
+      "delivery": "native-installer",
       "globalSkillDirectory": "~/.grok/skills",
       "directMediaExecution": "managed-native-executor",
       "credentialAdapter": "fixture-tested",
-      "guidance": "Install into ~/.grok/skills. The native executor has credential-format fixture coverage; actual host API and attachment delivery acceptance is pending."
+      "guidance": "Install into ~/.grok/skills. The native executor has credential-format fixture coverage; actual host API and attachment delivery acceptance is pending.",
+      "directorySelection": "Use the documented default unless the user explicitly supplies an absolute target."
     },
     {
       "id": "opencode",
-      "delivery": "manual-source",
+      "delivery": "native-installer",
       "globalSkillDirectory": "~/.config/opencode/skills",
       "directMediaExecution": "managed-native-executor",
       "credentialAdapter": "fixture-tested",
-      "guidance": "Install into ~/.config/opencode/skills. The native executor has credential-format fixture coverage; actual host API and attachment delivery acceptance is pending."
+      "guidance": "Install into ~/.config/opencode/skills. The native executor has credential-format fixture coverage; actual host API and attachment delivery acceptance is pending.",
+      "directorySelection": "Use the documented default unless the user explicitly supplies an absolute target."
     },
     {
       "id": "trae",
-      "delivery": "manual-source",
+      "delivery": "native-installer",
       "globalSkillDirectory": "~/.trae/skills",
       "directMediaExecution": "managed-native-executor",
       "credentialAdapter": "pending",
-      "guidance": "Install each specialist Skill into ~/.trae/skills. The managed executor is installed with the Skills; the Trae credential adapter is not yet verified, so it stops before a request."
+      "guidance": "The Skills can be installed, but this release has no Trae credential adapter; API commands stop before a request.",
+      "directorySelection": "Use the documented default unless the user explicitly supplies an absolute target."
     }
   ]
 }

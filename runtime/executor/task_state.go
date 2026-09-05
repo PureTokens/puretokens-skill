@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"math"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -41,13 +42,76 @@ func taskReceipt(request taskRequest, id, status string) receipt {
 	// Media URLs, prompts and file paths are deliberately excluded from receipts.
 	for _, key := range []string{"n", "size", "image_size", "aspect_ratio", "width", "height", "duration", "resolution", "generate_audio", "strength"} {
 		if value, exists := request.Parameters[key]; exists {
-			if text, ok := value.(string); ok && safePublicString(text) == "" {
+			switch v := value.(type) {
+			case string:
+				if safePublicString(v) == "" {
+					continue
+				}
+			case float64, int, bool:
+			default:
 				continue
+			}
+			if key == "n" || key == "width" || key == "height" || key == "duration" {
+				var number float64
+				switch v := value.(type) {
+				case float64:
+					number = v
+				case int:
+					number = float64(v)
+				default:
+					continue
+				}
+				if math.IsNaN(number) || math.IsInf(number, 0) || number <= 0 {
+					continue
+				}
+				if key == "n" && (number > 6 || math.Trunc(number) != number) {
+					continue
+				}
+			}
+			if key == "generate_audio" {
+				if _, ok := value.(bool); !ok {
+					continue
+				}
+			}
+			if key == "size" || key == "image_size" || key == "aspect_ratio" || key == "resolution" || key == "strength" {
+				if _, ok := value.(string); !ok {
+					continue
+				}
 			}
 			parameters[key] = value
 		}
 	}
-	return receipt{OK: true, Kind: request.Kind, Operation: request.Operation, Model: request.Model, TaskID: id, Status: status, RequestedCount: max(1, request.RequestedCount), Parameters: parameters}
+	original := request.OriginalOperation
+	if original == "" && request.Operation != "continue" {
+		original = request.Operation
+		if request.MediaOperation != "" {
+			original = request.MediaOperation
+		}
+	}
+	if safePublicCode(original) == "" {
+		original = ""
+	}
+	model := ""
+	if regexp.MustCompile(`^[A-Za-z0-9_.-]{1,160}$`).MatchString(request.Model) {
+		model = request.Model
+	}
+	count := request.RequestedCount
+	if count < 0 || count > 6 {
+		count = 0
+	}
+	kind := request.Kind
+	if kind != "image" && kind != "video" {
+		kind = ""
+	}
+	operation := safePublicCode(request.Operation)
+	if status != "" {
+		status = continuationStatus(status)
+	}
+	retryAt := request.RetryNotBefore
+	if _, err := time.Parse(time.RFC3339, retryAt); err != nil {
+		retryAt = ""
+	}
+	return receipt{OK: true, Kind: kind, Operation: operation, OriginalOperation: original, Model: model, TaskID: id, Status: status, RequestedCount: count, Parameters: parameters, RetryNotBefore: retryAt, ReconciliationRequired: request.ReconciliationRequired}
 }
 func mergeFailure(current, failure receipt) receipt {
 	current.OK = false
@@ -57,6 +121,7 @@ func mergeFailure(current, failure receipt) receipt {
 	current.ErrorMessage = failure.ErrorMessage
 	current.NextAction = failure.NextAction
 	current.RetryAfterSecs = failure.RetryAfterSecs
+	current.LocalErrorCode = failure.LocalErrorCode
 	return current
 }
 func applyTaskStatus(result receipt, body []byte, httpStatus int) (receipt, error) {
@@ -93,18 +158,29 @@ func executeExistingTask(command string, input io.Reader, output io.Writer, svc 
 		return err
 	}
 	request.Operation = "continue"
+	result := taskReceipt(request, request.TaskID, continuationStatus(request.TaskStatus))
 	if err = validateTaskRequest(request); err != nil || !validTaskID(request.TaskID) {
-		writeReceipt(output, validationFailure("Choose image or video and a valid existing task ID."))
+		if !validTaskID(request.TaskID) {
+			result.TaskID = ""
+		}
+		writeReceipt(output, mergeFailure(result, validationFailure("Choose image or video, a valid existing task ID, and valid continuation metadata.")))
 		return errors.New("invalid existing task")
 	}
-	result := taskReceipt(request, request.TaskID, "pending")
 	if command == "wait" {
 		return pollAndDeliver(output, svc, request, result)
+	}
+	if retryDelay(result.RetryNotBefore, svc.clock()) > 0 {
+		result.OK = false
+		result.FailurePhase = "status"
+		result.LocalErrorCode = "retry_wait_required"
+		result.NextAction = "Wait until retry_not_before before reading this task again; do not resubmit."
+		writeReceipt(output, result)
+		return errors.New("retry wait required")
 	}
 	if command == "content" {
 		// The caller must supply the completed state from the last same-task receipt.
 		// The content endpoint itself is authoritative and rejects unfinished tasks.
-		if !terminalSuccess(request.TaskStatus) {
+		if !terminalSuccess(request.TaskStatus) || request.ReconciliationRequired {
 			writeReceipt(output, mergeFailure(result, validationFailure("Read the same task status first; content requires task_status completed.")))
 			return errors.New("completion not confirmed")
 		}
@@ -113,11 +189,11 @@ func executeExistingTask(command string, input io.Reader, output io.Writer, svc 
 	}
 	body, status, retry, code, message, err := svc.request(context.Background(), http.MethodGet, statusPath(request.Kind, result.TaskID), nil, "")
 	if err != nil || status < 200 || status >= 300 {
-		writeReceipt(output, mergeFailure(result, apiFailure("status", status, retry, code, message, "Keep this task ID; continue the same task later.")))
+		writeReceipt(output, withRetry(mergeFailure(result, apiFailure("status", status, retry, code, message, "Keep this task ID; continue the same task later.")), retry, svc.clock()))
 		return errors.New("status failed")
 	}
 	result, err = applyTaskStatus(result, body, status)
-	result.RetryAfterSecs = retry
+	result = withRetry(result, retry, svc.clock())
 	if err == nil {
 		result.NextAction = "Continue this same task if pending; use content if completed. Never submit it again."
 	}
@@ -135,13 +211,6 @@ func readAPIObject(body []byte) (map[string]any, error) {
 	}
 	return result, nil
 }
-func scrubSecret(body []byte, token string) []byte {
-	if token == "" {
-		return body
-	}
-	return []byte(strings.ReplaceAll(string(body), token, "[redacted credential]"))
-}
-
 func projectCatalog(value any) any {
 	document := jsonObject(value)
 	projected := []any{}

@@ -21,7 +21,9 @@ jobs:
       - name: Windows installer lifecycle (isolated configuration)
         if: runner.os == 'Windows'
         shell: pwsh
-        run: ./test/windows-installer.test.ps1
+        run: |
+          ./test/windows-installer.test.ps1
+          ./test/windows-distribution.test.ps1
   repository:
     runs-on: ubuntu-latest
     steps:
@@ -29,7 +31,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: runtime/executor/go.mod
+          cache-dependency-path: runtime/executor/go.sum
       - run: npm run check
+      - run: npm run release:validate
       - run: node scripts/package-platform-releases.mjs
       - uses: actions/upload-artifact@v4
         with:

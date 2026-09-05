@@ -1,22 +1,200 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Native executor request JSON (submit/status/wait/content)",
+  "title": "Native media submit/preflight or same-task request",
   "type": "object",
-  "required": ["kind"],
+  "required": [
+    "kind"
+  ],
   "properties": {
-    "kind": {"enum": ["image", "video"]},
-    "operation": {"enum": ["generate", "edit", "continue"]},
-    "media_operation": {"type": "string"},
-    "model": {"type": "string"},
-    "prompt": {"type": "string"},
-    "parameters": {"type": "object"},
-    "task_id": {"type": "string", "pattern": "^[A-Za-z0-9_-]{1,256}$"},
-    "task_status": {"enum": ["completed", "succeeded", "success"]},
-    "requested_count": {"type": "integer", "minimum": 1, "maximum": 6},
-    "index": {"type": "integer", "minimum": 0, "maximum": 5},
-    "output_dir": {"type": "string"},
-    "poll": {"type": "object", "properties": {"max_status_reads": {"type": "integer", "minimum": 1, "maximum": 7}, "deadline_seconds": {"type": "integer", "minimum": 1, "maximum": 300}}, "additionalProperties": false},
-    "attachments": {"type": "array", "items": {"type": "object", "required": ["field", "path"], "properties": {"field": {"type": "string"}, "path": {"type": "string"}}, "additionalProperties": false}}
+    "kind": {
+      "enum": [
+        "image",
+        "video"
+      ]
+    },
+    "operation": {
+      "enum": [
+        "generate",
+        "edit",
+        "continue"
+      ]
+    },
+    "media_operation": {
+      "type": "string"
+    },
+    "model": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]{1,160}$"
+    },
+    "prompt": {
+      "type": "string"
+    },
+    "parameters": {
+      "type": "object"
+    },
+    "task_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,256}$"
+    },
+    "task_status": {
+      "enum": [
+        "pending",
+        "queued",
+        "processing",
+        "running",
+        "in_progress",
+        "completed",
+        "succeeded",
+        "success",
+        "failed",
+        "cancelled",
+        "canceled",
+        "expired",
+        "error",
+        "unknown"
+      ]
+    },
+    "requested_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 6,
+      "description": "Zero/omitted is unknown on continuation; submission infers n or one. Image content requires the accepted positive count."
+    },
+    "index": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 5
+    },
+    "output_dir": {
+      "type": "string"
+    },
+    "poll": {
+      "type": "object",
+      "properties": {
+        "max_status_reads": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 7
+        },
+        "deadline_seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 300
+        }
+      },
+      "additionalProperties": false
+    },
+    "attachments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "field",
+          "path"
+        ],
+        "properties": {
+          "field": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "original_operation": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]{1,100}$",
+      "description": "Original generate/edit or declared media operation, preserved across same-task commands."
+    },
+    "retry_not_before": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "reconciliation_required": {
+      "type": "boolean"
+    }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "$id": "https://puretokensx.com/schemas/executor-request.schema.json",
+  "anyOf": [
+    {
+      "required": [
+        "task_id"
+      ]
+    },
+    {
+      "required": [
+        "operation",
+        "model",
+        "prompt"
+      ],
+      "properties": {
+        "operation": {
+          "enum": [
+            "generate",
+            "edit"
+          ]
+        },
+        "prompt": {
+          "type": "string",
+          "pattern": "\\S"
+        }
+      }
+    }
+  ],
+  "allOf": [
+    {
+      "if": {
+        "required": [
+          "operation"
+        ],
+        "properties": {
+          "operation": {
+            "enum": [
+              "generate",
+              "edit"
+            ]
+          }
+        }
+      },
+      "then": {
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "task_id"
+              ]
+            },
+            {
+              "required": [
+                "task_status"
+              ]
+            },
+            {
+              "required": [
+                "original_operation"
+              ]
+            },
+            {
+              "required": [
+                "retry_not_before"
+              ]
+            },
+            {
+              "required": [
+                "reconciliation_required"
+              ]
+            }
+          ]
+        },
+        "properties": {
+          "index": {
+            "const": 0
+          }
+        }
+      }
+    }
+  ]
 }

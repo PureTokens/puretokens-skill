@@ -17,7 +17,10 @@
     "whenManagedNativeExecutorUnavailable": "report_only_an_actual_executor_network_credential_adapter_or_attachment_byte_failure_and_never_open_a_browser_desktop_ui_or_computer_use"
   },
   "operations": {
-    "identity": { "method": "GET", "url": "https://api.puretokensx.com/v1" }
+    "identity": {
+      "method": "GET",
+      "url": "https://api.puretokensx.com/v1"
+    }
   },
   "result": {
     "identitySource": "api_declared_public_health",
@@ -26,6 +29,7 @@
     "expectedBasePath": "/v1",
     "neverRetry": true,
     "doesNotExposeHostConfiguration": true,
-    "unconfirmedDoesNotProveOtherService": true
+    "unconfirmedDoesNotProveOtherService": true,
+    "neverClaimsCredentialOrMediaAvailability": true
   }
 }

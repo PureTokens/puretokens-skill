@@ -8,6 +8,11 @@ export const skillsRoot = path.join(repositoryRoot, "skills");
 
 const forbiddenPattern = /(BEGIN [A-Z ]*PRIVATE|127\.0\.0\.1:|\/Users\/)/i;
 const directApiOrigin = "https://api.puretokensx.com";
+const balanceApiOrigin = "https://console.puretokensx.com";
+const balanceUsageUrl = `${balanceApiOrigin}/api/product/console/api-keys/usage`;
+const balanceUnitUrl = `${balanceApiOrigin}/api/product/console/status`;
+const balanceScopeRule = "unlimited_quota_true_account_wallet_else_key_allowance";
+const balanceCalculation = "each_returned_quota_divided_by_public_quota_per_unit_in_USD_never_subtract_used_from_available";
 const directAcceptanceScenarioIds = ["api-identity-read", "catalog-read", "media-submit", "same-task-status", "native-media-delivery", "executor-request-start"];
 const directExecutorCapabilities = ["fixed_full_url_request", "json_task_response", "same_task_status_read", "native_media_byte_delivery", "bounded_local_resource_use"];
 const executorCredentialAdapterHostIds = ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode"];
@@ -15,8 +20,8 @@ const mediaRoutingPriority = "when_current_host_connection_uses_puretokens_selec
 const mediaRoutingMetadataLimitation = "skill_metadata_expresses_routing_priority_but_cannot_override_a_host_that_ignores_installed_skill_selection";
 const executorRequestStart = "invoke_the_checksum_verified_managed_native_executor_with_the_current_host_id_and_fixed_request";
 const executorRequestActualFailureOnly = "report_only_an_actual_executor_network_credential_adapter_or_attachment_byte_failure_and_never_open_a_browser_desktop_ui_or_computer_use";
-const receiptCoreFields = ["exact_model_id", "task_id", "returned_state", "requested_operation", "requested_count", "requested_size_or_parameters", "next_action"];
-const failureReceiptRequiredFields = ["failure_phase", "api_error_code", "http_status", "error_message", "next_action"];
+const receiptPhaseFields = { submission: ["task_id", "status"], continuation: ["task_id", "status"], reconciliation: ["task_id", "reconciliation_required"], completion: ["delivered_count"], failure: ["error_message", "next_action"] };
+const failureReceiptRequiredFields = ["failure_phase", "error_message", "next_action"];
 const failureReceiptPhases = ["validation", "submission", "status", "content"];
 const failureReceiptForbiddenDisclosure = ["raw_response_body", "upstream_or_provider_identifier", "internal_hostname_or_url", "stack_trace", "request_headers", "request_body", "credentials_or_session_data", "user_reference_url_or_attachment_bytes"];
 
@@ -143,9 +148,9 @@ async function readHostSupport(errors) {
       if (!host || typeof host.guidance !== "string" || !host.guidance) {
         errors.push(`references/host-support.json: ${host?.id || "unnamed host"} needs guidance`);
       }
-      if (host?.delivery !== "manual-source" || typeof host.globalSkillDirectory !== "string" || !/^~\/(?:\.[a-z-]+\/)*(?:[a-z-]+\/)?skills$/.test(host.globalSkillDirectory) ||
+      if (host?.delivery !== "native-installer" || typeof host.globalSkillDirectory !== "string" || !/^~\/(?:\.[a-z-]+\/)*(?:[a-z-]+\/)?skills$/.test(host.globalSkillDirectory) ||
         host.directMediaExecution !== "managed-native-executor" || !["fixture-tested", "pending"].includes(host.credentialAdapter)) {
-        errors.push(`references/host-support.json: ${host?.id || "unnamed host"} needs a manual-source global Skill directory`);
+        errors.push(`references/host-support.json: ${host?.id || "unnamed host"} needs a native-installer global Skill directory`);
       }
     }
     return { supported: support.supported };
@@ -220,14 +225,18 @@ function validateDirectApiExecutionContract(errors, contract, hostSupport) {
     errors.push(`${label} must define the seven installable hosts, verified executor credential adapters, and required executor capabilities`);
   }
   const balance = contract.balance;
-  if (!balance || balance.method !== "GET" || balance.url !== `${directApiOrigin}/v1/dashboard/billing/subscription` ||
-    balance.usageUrl !== `${directApiOrigin}/v1/dashboard/billing/usage` || balance.requiresConfiguredApiKey !== true || balance.responseSchema !== "schemas/balance-snapshot.schema.json" ||
+  if (!balance || balance.method !== "GET" || balance.url !== balanceUsageUrl ||
+    balance.unitMetadataUrl !== balanceUnitUrl || balance.unitMetadataRequiresConfiguredApiKey !== false ||
+    balance.requiresBrowserSession !== false || balance.maxRequests !== 2 || balance.deadlineSeconds !== 30 ||
+    balance.scopeRule !== balanceScopeRule || balance.unit !== "USD" || balance.includesSubscriptionQuota !== false ||
+    balance.calculation !== balanceCalculation ||
+    balance.requiresConfiguredApiKey !== true || balance.responseSchema !== "schemas/balance-snapshot.schema.json" ||
     typeof balance.fallback !== "string" || !balance.fallback) {
     errors.push(`${label} must define the fixed direct balance endpoint and fallback`);
   }
   const userMediaInput = contract.userMediaInput;
   if (!userMediaInput || userMediaInput.onlyCurrentUserExplicitMedia !== true ||
-    userMediaInput.publicUrlOrDeclaredIdRequiresInstalledOrOnDemandProfilePropertyAndTransport !== true ||
+    userMediaInput.publicUrlRequiresInstalledOrOnDemandProfilePropertyAndTransport !== true ||
     userMediaInput.publicUrlImageEditRequiresExactDeclaredJsonOperation !== true ||
     userMediaInput.requiresInstalledOrOnDemandDeclaredTransport !== true ||
     userMediaInput.skillNeverDownloadsOrRehosts !== true ||
@@ -240,7 +249,7 @@ function validateDirectApiExecutionContract(errors, contract, hostSupport) {
     errors.push(`${label} must define the fail-closed direct user-media input contract`);
   }
   const asyncTaskHandling = contract.asyncTaskHandling;
-  if (!asyncTaskHandling || asyncTaskHandling.reconciliationRequiredPrecedesLifecycle !== true ||
+  if (!asyncTaskHandling || asyncTaskHandling.reconciliationRequiredPrecedesStateClassification !== true ||
     asyncTaskHandling.reconciliationOutcome !== "stop_ordinary_polling_retain_same_task_id_do_not_submit_replacement_or_infer_refund" ||
     asyncTaskHandling.submissionOutputUnknown !== "treat_submission_outcome_as_unknown_do_not_repeat_post_or_submit_replacement_task" ||
     asyncTaskHandling.statusHttp429 !== "honor_valid_positive_retry_after_then_continue_same_task_if_remaining_budget" ||
@@ -301,7 +310,7 @@ function validateHostDistributions(errors, directory, manifest, hostSupport) {
   }
   const expectedKeys = new Set();
   for (const host of hostSupport.supported) {
-    if (host.delivery !== "manual-source") continue;
+    if (host.delivery !== "native-installer") continue;
     const key = distributionKeyForHost(host.id);
     expectedKeys.add(key);
     const delivery = distribution[key];
@@ -341,19 +350,24 @@ function validateExecutionContract(errors, directory, contract) {
     validateUpdateContract(errors, label, contract);
     return;
   }
-  validateDirectTransport(errors, label, contract.transport, kind === "image" || kind === "video");
+  validateDirectTransport(errors, label, contract.transport, kind === "image" || kind === "video", kind === "balance" ? balanceApiOrigin : directApiOrigin);
   const operations = contract.operations;
   if (!operations || typeof operations !== "object") {
     errors.push(`${label} must define operations`);
     return;
   }
   if (kind === "balance") {
-    validateRequest(errors, `${label} read`, operations.read, "GET", `${directApiOrigin}/v1/dashboard/billing/subscription`);
-    if (operations.read?.usageUrl !== `${directApiOrigin}/v1/dashboard/billing/usage` || operations.read?.requiresConfiguredApiKey !== true || operations.read?.responseSchema !== "https://puretokensx.com/schemas/balance-snapshot.schema.json") {
+    validateRequest(errors, `${label} read`, operations.read, "GET", balanceUsageUrl);
+    if (operations.read?.unitMetadataUrl !== balanceUnitUrl || operations.read?.unitMetadataRequiresConfiguredApiKey !== false ||
+      operations.read?.requiresBrowserSession !== false || operations.read?.maxRequests !== 2 || operations.read?.deadlineSeconds !== 30 ||
+      operations.read?.requiresConfiguredApiKey !== true || operations.read?.responseSchema !== "https://puretokensx.com/schemas/balance-snapshot.schema.json") {
       errors.push(`${label} read must require the configured API key and the balance snapshot schema`);
     }
     if (contract.result?.reportOnlyReturnedFields !== true || contract.result?.neverEstimate !== true || contract.result?.neverRetry !== true ||
-      contract.result?.fallbackWhenAccountSessionUnavailable !== "report_direct_result_and_direct_to_puretokens_client_balance_view") {
+      contract.result?.scopeRule !== balanceScopeRule || contract.result?.unit !== "USD" || contract.result?.includesSubscriptionQuota !== false ||
+      contract.result?.calculation !== balanceCalculation || contract.result?.legacyBillingFallbackAllowed !== false ||
+      contract.result?.defaultPresentation !== "one_line_remaining_with_wallet_or_key_allowance_label" ||
+      contract.result?.fallbackWhenBalanceUnavailable !== "report_actual_sanitized_failure_without_amount_and_guide_connection_settings_or_later_query") {
       errors.push(`${label} must report only returned balance fields and use the direct-request fallback`);
     }
     return;
@@ -424,12 +438,12 @@ function validateExecutionContract(errors, directory, contract) {
     validateRequest(errors, `${label} edit`, operations.edit, "POST", `${directApiOrigin}/v1/videos/edits`);
     validateRequest(errors, `${label} status`, operations.status, "GET", `${directApiOrigin}/v1/videos/{task_id}`, true);
     validateRequest(errors, `${label} content`, operations.content, "GET", `${directApiOrigin}/v1/videos/{task_id}/content`, true);
-    validateRequiredBodyFields(errors, `${label} submit`, operations.submit, ["model"]);
+    validateRequiredBodyFields(errors, `${label} submit`, operations.submit, ["model", "prompt"]);
     if (contract.parameterValidation?.normalSubmissionUsesInstalledModelIndexAndSelectedProfile !== true ||
       contract.parameterValidation?.exactModelCoreSubmissionDoesNotRequireCatalogPreflight !== true ||
       contract.parameterValidation?.onDemandLiveCatalogRead !== "only_for_explicit_discovery_installed_profile_gap_or_post_rejection_diagnosis" ||
       contract.parameterValidation?.allModelsOptionalParametersRequire !== "installed_model_index_and_selected_profile_parameter_schema_or_on_demand_live_input_schema" ||
-      contract.parameterValidation?.promptRequirementUsesInstalledOrOnDemandPropertiesAndConstraints !== true ||
+      contract.parameterValidation?.promptRequired !== true ||
       contract.parameterValidation?.resolutionUsesInstalledOrOnDemandModeConstraint !== true || contract.result?.successRequires !== "native_video_bytes") {
       errors.push(`${label} must use its installed selection for normal video submissions, limit live catalog reads to on-demand cases, and require native video bytes`);
     }
@@ -462,14 +476,14 @@ function validateExecutionContract(errors, directory, contract) {
 function validateUpdateContract(errors, label, contract) {
   const transport = contract.transport;
   if (!transport || transport.localSkillManager !== true || transport.usesOfficialMainBranch !== true ||
-    transport.requiresFreshOfficialSourceCheckout !== true || transport.doesNotUseCustomInstallPayload !== true ||
-    transport.doesNotReadCredentialsOrHostConfiguration !== true || transport.doesNotUseMediaApiOrMcp !== true) {
-    errors.push(`${label} must use the local official Skill manager without credentials, media APIs, or MCP`);
+    transport.requiresPinnedOfficialSourceRevision !== true || transport.doesNotUseCustomInstallPayload !== true ||
+    transport.doesNotReadCredentialsOrHostConfiguration !== true || transport.doesNotSubmitMediaOrUseMcp !== true) {
+    errors.push(`${label} must use the local official Skill manager without reading credentials, submitting media, or using MCP`);
   }
   const sync = contract.operations?.sync;
-  if (!sync || sync.commandTemplate !== "native_platform_sync --source <fresh-official-main-checkout> --host <current-supported-host>" ||
-    sync.sourceRepository !== "https://github.com/PureTokens/puretokens-skill.git" || sync.sourceBranch !== "main" || sync.validationCommand !== "native_sync_derives_host_target_and_validates_fresh_official_main_checkout_before_sync") {
-    errors.push(`${label} must define the validated fresh official-source sync operation`);
+  if (!sync || sync.commandTemplate !== "native_fetch install_or_update --host <current-supported-host>" ||
+    sync.sourceRepository !== "https://github.com/PureTokens/puretokens-skill.git" || sync.sourceBranch !== "main" || sync.validationCommand !== "pin_main_revision_verify_matching_platform_package_or_pinned_source_then_native_sync") {
+    errors.push(`${label} must define the pinned official package/source sync operation`);
   }
   const init = contract.operations?.init;
   if (!init || init.commandTemplate !== "native_executor init --host <current-supported-host>" ||
@@ -490,8 +504,8 @@ function validateUpdateContract(errors, label, contract) {
   }
 }
 
-function validateDirectTransport(errors, label, transport, requiresNativeMediaByteDelivery) {
-  if (!transport || transport.fixedApiOrigin !== directApiOrigin || transport.usesFullApiUrls !== true ||
+function validateDirectTransport(errors, label, transport, requiresNativeMediaByteDelivery, fixedApiOrigin = directApiOrigin) {
+  if (!transport || transport.fixedApiOrigin !== fixedApiOrigin || transport.usesFullApiUrls !== true ||
     transport.usesManagedNativeExecutor !== true || transport.usesCurrentHostConfiguredCredential !== true ||
     transport.credentialSourceNeverBecomesRequestTarget !== true ||
     transport.neverExposesCredentialsOrHostConfiguration !== true ||
@@ -518,20 +532,20 @@ function validateImageRetrieval(errors, label, contract) {
 
 function validateTaskIdentityStateAndSubmissionFailure(errors, label, contract, image) {
   const identity = contract.taskIdentity;
-  if (!identity || identity.receiptField !== "task_id" || identity.preferredResponseFieldSource !== "installed_model_lifecycle_create_idField" ||
-    !sameArray(identity.fallbackTopLevelResponseFields, ["task_id", "id"]) || identity.neverDerivesIdFromUrlsNestedObjectsOrPrompt !== true ||
+  if (!identity || identity.receiptField !== "task_id" || identity.acceptedFormat !== "^[A-Za-z0-9_-]{1,256}$" ||
+    !sameArray(identity.topLevelResponseFields, ["task_id", "id"]) || identity.neverDerivesIdFromUrlsNestedObjectsOrPrompt !== true ||
     identity.pathEncoding !== "percent_encode_opaque_id_as_one_path_segment" || identity.whenMissing !== "report_task_id_not_returned_and_do_not_poll_download_or_resubmit") {
     errors.push(`${label} must normalize only a declared top-level task ID and fail closed when it is missing`);
   }
   const state = contract.taskState;
-  if (!state || state.declaredStateSource !== "installed_model_lifecycle_poll" ||
+  if (!state ||
     state.reconciliationRequiredField !== "reconciliation_required" || state.reconciliationPrecedesLifecycle !== true ||
     state.whenReconciliationRequired !== "stop_ordinary_polling_retain_same_task_id_do_not_submit_replacement_or_infer_refund" ||
-    !sameArray(state.fallbackPendingStates, ["pending", "queued", "running", "in_progress"]) ||
-    !sameArray(state.fallbackSuccessStates, ["completed", "succeeded", "success"]) ||
-    !sameArray(state.fallbackFailureStates, ["failed", "cancelled", "canceled", "expired", "error"]) ||
-    state.whenUnrecognized !== "report_raw_state_stop_automatic_polling_and_require_explicit_same_task_continuation") {
-    errors.push(`${label} must use declared or bounded fallback task states and stop on an unrecognized state`);
+    !sameArray(state.pendingStates, ["pending", "queued", "processing", "running", "in_progress"]) ||
+    !sameArray(state.successStates, ["completed", "succeeded", "success"]) ||
+    !sameArray(state.failureStates, ["failed", "cancelled", "canceled", "expired", "error"]) ||
+    state.whenUnrecognized !== "report_unknown_state_stop_automatic_polling_and_require_explicit_same_task_continuation") {
+    errors.push(`${label} must use the executor task states and stop on an unrecognized state`);
   }
   const failure = contract.submissionFailure;
   if (!failure || failure.modelParameterOrCapabilityRejection !== "one_on_demand_catalog_read_then_require_explicit_corrected_new_request" ||
@@ -552,10 +566,10 @@ function validateTaskIdentityStateAndSubmissionFailure(errors, label, contract, 
 function validateFailureReceipt(errors, label, receipt) {
   if (!receipt || !sameArray(receipt.requiredFields, failureReceiptRequiredFields) ||
     !sameArray(receipt.allowedFailurePhases, failureReceiptPhases) ||
-    receipt.httpStatus !== "numeric_when_returned_otherwise_not_returned" ||
-    receipt.apiErrorCode !== "exact_explicit_public_api_error_code_otherwise_not_returned" ||
+    receipt.httpStatus !== "numeric_only_when_returned_otherwise_omit" ||
+    receipt.apiErrorCode !== "exact_explicit_public_api_error_code_otherwise_omit" ||
     receipt.errorMessage !== "safe_user_facing_summary_using_only_sanitized_public_api_detail_or_a_fixed_local_explanation" ||
-    receipt.retryAfterSeconds !== "include_only_for_http_429_when_a_valid_positive_retry_after_is_returned" ||
+    receipt.retryAfterSeconds !== "include_when_a_valid_positive_retry_after_is_returned" ||
     !sameArray(receipt.forbiddenDisclosure, failureReceiptForbiddenDisclosure)) {
     errors.push(`${label} must use the safe structured failure receipt without exposing internal, upstream, credential, request, or user-media data`);
   }
@@ -659,8 +673,8 @@ function validateTaskReceipt(errors, directory, receipt) {
   }
   for (const phase of ["submission", "continuation", "reconciliation", "completion", "failure"]) {
     const fields = receipt[phase]?.requiredFields;
-    if (!Array.isArray(fields) || receiptCoreFields.some((field) => !fields.includes(field)) || typeof receipt[phase]?.nextAction !== "string" || !receipt[phase].nextAction) {
-      errors.push(`${label} ${phase} must include the core user-visible receipt fields`);
+    if (typeof receipt.machineReceipt !== "string" || !Array.isArray(fields) || receiptPhaseFields[phase].some((field) => !fields.includes(field)) || typeof receipt[phase]?.nextAction !== "string" || !receipt[phase].nextAction) {
+      errors.push(`${label} ${phase} must include only the relevant concise user receipt fields`);
     }
     if (phase === "completion" && !fields?.includes("delivered_count")) {
       errors.push(`${label} completion must include delivered_count`);
@@ -689,9 +703,15 @@ async function validateSchemaDocuments(errors) {
     "schemas/direct-api-execution-contract.schema.json",
     "schemas/catalog-freshness.schema.json",
     "schemas/balance-snapshot.schema.json",
+    "schemas/balance-receipt.schema.json",
     "schemas/task-receipt.schema.json",
     "schemas/executor-request.schema.json",
-    "schemas/executor-receipt.schema.json"
+    "schemas/executor-receipt.schema.json",
+    "schemas/model-query.schema.json",
+    "schemas/model-query-receipt.schema.json",
+    "schemas/task-record.schema.json",
+    "schemas/init-receipt.schema.json",
+    "schemas/doctor-receipt.schema.json"
   ];
   for (const schema of schemas) await verifyJsonFile(errors, schema, `schema ${schema}`);
 }
@@ -704,6 +724,9 @@ async function validateInstallerSources(errors) {
   try {
     if (!(await stat(shellInstallerPath)).isFile()) errors.push("runtime/puretokens-skill-install.sh is required");
     if (!(await stat(powerShellInstallerPath)).isFile()) errors.push("runtime/puretokens-skill-install.ps1 is required");
+    for (const extension of ["sh", "ps1"]) {
+      if (!(await stat(path.join(runtimeDirectory, `puretokens-skill-fetch.${extension}`))).isFile()) errors.push(`runtime/puretokens-skill-fetch.${extension} is required`);
+    }
     const executorManifest = JSON.parse(await readFile(executorManifestPath, "utf8"));
     if (executorManifest?.schemaVersion !== 1 || executorManifest?.name !== "puretokens-api-executor" || !executorManifest?.artifacts || typeof executorManifest.artifacts !== "object") {
       errors.push("runtime/executor/manifest.json must define the managed native executor artifacts");

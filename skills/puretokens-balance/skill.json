@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "name": "puretokens-balance",
-  "version": "0.16.0",
+  "version": "0.17.0",
   "entry": "SKILL.md",
   "displayName": "Pure Tokens Balance",
   "description": "Read a balance through the fixed Pure Tokens API.",
@@ -59,8 +59,8 @@
     "doesNotInvokeOtherMediaSkillsAsApiFallback": true,
     "neverExposesCredentialsOrHostConfiguration": true,
     "balanceQueryDoesNotEstimateOrRetry": true,
-    "balanceRequiresExistingAccountSession": true,
+    "balanceRequiresExistingAccountSession": false,
     "doesNotUseMcpOrFallbackTransport": true
   },
-  "sourceSha256": "ed1fcfbe49571fdf337f4653a1dec2895b919962a4306c947e8421158ec043f7"
+  "sourceSha256": "65ba079393ba2f34ae90d88e94fb0c50167e8254b7943a05bdb6de244bc5e262"
 }

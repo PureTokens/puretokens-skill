@@ -3,145 +3,647 @@
   "$id": "https://puretokensx.com/schemas/media-execution-contract.schema.json",
   "title": "Pure Tokens specialist direct API execution contract",
   "type": "object",
-  "required": ["schemaVersion", "kind", "transport", "result"],
+  "required": [
+    "schemaVersion",
+    "kind",
+    "transport",
+    "result"
+  ],
   "properties": {
-    "$schema": { "const": "https://puretokensx.com/schemas/media-execution-contract.schema.json" },
-    "schemaVersion": { "const": 1 },
-    "kind": { "enum": ["balance", "connection", "models", "image", "video", "update"] },
-    "transport": { "oneOf": [{ "$ref": "#/$defs/directTransport" }, { "$ref": "#/$defs/updateTransport" }] },
+    "$schema": {
+      "const": "https://puretokensx.com/schemas/media-execution-contract.schema.json"
+    },
+    "schemaVersion": {
+      "const": 1
+    },
+    "kind": {
+      "enum": [
+        "balance",
+        "connection",
+        "models",
+        "image",
+        "video",
+        "update"
+      ]
+    },
+    "transport": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/directTransport"
+        },
+        {
+          "$ref": "#/$defs/updateTransport"
+        }
+      ]
+    },
     "operations": {
       "type": "object",
       "properties": {
-        "catalog": { "$ref": "#/$defs/request" },
-        "submit": { "$ref": "#/$defs/request" },
-        "edit": { "$ref": "#/$defs/request" },
-        "status": { "$ref": "#/$defs/request" },
-        "content": { "$ref": "#/$defs/request" },
-        "identity": { "$ref": "#/$defs/request" },
-        "read": { "$ref": "#/$defs/request" },
-        "sync": { "$ref": "#/$defs/syncOperation" },
-        "init": { "$ref": "#/$defs/initOperation" }
+        "catalog": {
+          "$ref": "#/$defs/request"
+        },
+        "submit": {
+          "$ref": "#/$defs/request"
+        },
+        "edit": {
+          "$ref": "#/$defs/request"
+        },
+        "status": {
+          "$ref": "#/$defs/request"
+        },
+        "content": {
+          "$ref": "#/$defs/request"
+        },
+        "identity": {
+          "$ref": "#/$defs/request"
+        },
+        "read": {
+          "$ref": "#/$defs/request"
+        },
+        "sync": {
+          "$ref": "#/$defs/syncOperation"
+        },
+        "init": {
+          "$ref": "#/$defs/initOperation"
+        },
+        "checkUpdate": {
+          "type": "object",
+          "required": [
+            "commandTemplate",
+            "checks"
+          ],
+          "properties": {
+            "commandTemplate": {
+              "const": "native_fetch check-update --host <current-supported-host>"
+            },
+            "checks": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "help": {
+          "type": "object",
+          "required": [
+            "source",
+            "networkRequests",
+            "credentialReads"
+          ],
+          "properties": {
+            "source": {
+              "const": "references/usage-guide.md"
+            },
+            "networkRequests": {
+              "const": 0
+            },
+            "credentialReads": {
+              "const": 0
+            }
+          },
+          "additionalProperties": false
+        },
+        "doctor": {
+          "type": "object",
+          "required": [
+            "commandTemplate",
+            "checks",
+            "doesNotRepair"
+          ],
+          "properties": {
+            "commandTemplate": {
+              "const": "native_executor doctor --host <current-supported-host>"
+            },
+            "checks": {
+              "type": "string"
+            },
+            "doesNotRepair": {
+              "const": true
+            }
+          },
+          "additionalProperties": false
+        }
       },
       "additionalProperties": false
     },
-    "result": { "type": "object", "minProperties": 1, "additionalProperties": true },
-    "unsupportedInput": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
-    "parameterValidation": { "type": "object", "additionalProperties": true },
-    "inputMediaValidation": { "type": "object", "additionalProperties": true },
-    "contentRetrieval": { "type": "object", "additionalProperties": true },
-    "polling": { "type": "object", "additionalProperties": true },
-    "taskIdentity": { "type": "object", "additionalProperties": true },
-    "taskState": { "type": "object", "additionalProperties": true },
-    "submissionFailure": { "type": "object", "additionalProperties": true },
-    "failureReceipt": { "$ref": "#/$defs/failureReceipt" }
+    "result": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": true
+    },
+    "unsupportedInput": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "parameterValidation": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "inputMediaValidation": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "contentRetrieval": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "polling": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "taskIdentity": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "taskState": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "submissionFailure": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "failureReceipt": {
+      "$ref": "#/$defs/failureReceipt"
+    },
+    "continuationRecord": {
+      "type": "object"
+    }
   },
   "allOf": [
     {
-      "if": { "properties": { "kind": { "const": "connection" } } },
-      "then": {
-        "required": ["operations"],
+      "if": {
         "properties": {
-          "operations": {
-            "required": ["identity"],
-            "properties": { "identity": { "properties": { "method": { "const": "GET" }, "url": { "const": "https://api.puretokensx.com/v1" } } } }
+          "kind": {
+            "const": "connection"
           }
         }
-      }
-    },
-    {
-      "if": { "properties": { "kind": { "const": "models" } } },
+      },
       "then": {
-        "required": ["operations"],
+        "required": [
+          "operations"
+        ],
         "properties": {
           "operations": {
-            "required": ["catalog"],
-            "properties": { "catalog": { "properties": { "method": { "const": "GET" }, "url": { "const": "https://api.puretokensx.com/v1/media/models" } } } }
-          }
-        }
-      }
-    },
-    {
-      "if": { "properties": { "kind": { "const": "image" } } },
-      "then": {
-        "required": ["operations", "unsupportedInput", "parameterValidation", "inputMediaValidation", "contentRetrieval", "polling", "taskIdentity", "taskState", "submissionFailure", "failureReceipt"],
-        "properties": {
-          "operations": {
-            "required": ["catalog", "submit", "edit", "status", "content"],
+            "required": [
+              "identity"
+            ],
             "properties": {
-              "catalog": { "properties": { "method": { "const": "GET" }, "url": { "const": "https://api.puretokensx.com/v1/media/models" } } },
-              "submit": { "properties": { "method": { "const": "POST" }, "url": { "const": "https://api.puretokensx.com/v1/images/generations" } } },
-              "status": { "properties": { "method": { "const": "GET" }, "urlTemplate": { "const": "https://api.puretokensx.com/v1/images/{task_id}" } } },
-              "content": { "properties": { "method": { "const": "GET" }, "urlTemplate": { "const": "https://api.puretokensx.com/v1/images/{task_id}/content?index={index}" } } }
+              "identity": {
+                "properties": {
+                  "method": {
+                    "const": "GET"
+                  },
+                  "url": {
+                    "const": "https://api.puretokensx.com/v1"
+                  }
+                }
+              }
             }
           }
         }
       }
     },
     {
-      "if": { "properties": { "kind": { "const": "video" } } },
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "models"
+          }
+        }
+      },
       "then": {
-        "required": ["operations", "unsupportedInput", "parameterValidation", "inputMediaValidation", "contentRetrieval", "polling", "taskIdentity", "taskState", "submissionFailure", "failureReceipt"],
+        "required": [
+          "operations"
+        ],
         "properties": {
           "operations": {
-            "required": ["catalog", "submit", "edit", "status", "content"],
+            "required": [
+              "catalog"
+            ],
             "properties": {
-              "catalog": { "properties": { "method": { "const": "GET" }, "url": { "const": "https://api.puretokensx.com/v1/media/models" } } },
-              "submit": { "properties": { "method": { "const": "POST" }, "url": { "const": "https://api.puretokensx.com/v1/videos" } } },
-              "edit": { "properties": { "method": { "const": "POST" }, "url": { "const": "https://api.puretokensx.com/v1/videos/edits" } } },
-              "status": { "properties": { "method": { "const": "GET" }, "urlTemplate": { "const": "https://api.puretokensx.com/v1/videos/{task_id}" } } },
-              "content": { "properties": { "method": { "const": "GET" }, "urlTemplate": { "const": "https://api.puretokensx.com/v1/videos/{task_id}/content" } } }
+              "catalog": {
+                "properties": {
+                  "method": {
+                    "const": "GET"
+                  },
+                  "url": {
+                    "const": "https://api.puretokensx.com/v1/media/models"
+                  }
+                }
+              }
             }
           }
         }
       }
     },
     {
-      "if": { "properties": { "kind": { "const": "balance" } } },
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "image"
+          }
+        }
+      },
       "then": {
-        "required": ["operations"],
+        "required": [
+          "operations",
+          "unsupportedInput",
+          "parameterValidation",
+          "inputMediaValidation",
+          "contentRetrieval",
+          "polling",
+          "taskIdentity",
+          "taskState",
+          "submissionFailure",
+          "failureReceipt"
+        ],
         "properties": {
           "operations": {
-            "required": ["read"],
-            "properties": { "read": { "properties": { "method": { "const": "GET" }, "url": { "const": "https://api.puretokensx.com/v1/dashboard/billing/subscription" } } } }
+            "required": [
+              "catalog",
+              "submit",
+              "edit",
+              "status",
+              "content"
+            ],
+            "properties": {
+              "catalog": {
+                "properties": {
+                  "method": {
+                    "const": "GET"
+                  },
+                  "url": {
+                    "const": "https://api.puretokensx.com/v1/media/models"
+                  }
+                }
+              },
+              "submit": {
+                "properties": {
+                  "method": {
+                    "const": "POST"
+                  },
+                  "url": {
+                    "const": "https://api.puretokensx.com/v1/images/generations"
+                  }
+                }
+              },
+              "status": {
+                "properties": {
+                  "method": {
+                    "const": "GET"
+                  },
+                  "urlTemplate": {
+                    "const": "https://api.puretokensx.com/v1/images/{task_id}"
+                  }
+                }
+              },
+              "content": {
+                "properties": {
+                  "method": {
+                    "const": "GET"
+                  },
+                  "urlTemplate": {
+                    "const": "https://api.puretokensx.com/v1/images/{task_id}/content?index={index}"
+                  }
+                }
+              }
+            }
           }
         }
       }
     },
     {
-      "if": { "properties": { "kind": { "const": "update" } } },
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "video"
+          }
+        }
+      },
       "then": {
-        "required": ["operations"],
+        "required": [
+          "operations",
+          "unsupportedInput",
+          "parameterValidation",
+          "inputMediaValidation",
+          "contentRetrieval",
+          "polling",
+          "taskIdentity",
+          "taskState",
+          "submissionFailure",
+          "failureReceipt"
+        ],
         "properties": {
           "operations": {
-            "required": ["sync"],
+            "required": [
+              "catalog",
+              "submit",
+              "edit",
+              "status",
+              "content"
+            ],
+            "properties": {
+              "catalog": {
+                "properties": {
+                  "method": {
+                    "const": "GET"
+                  },
+                  "url": {
+                    "const": "https://api.puretokensx.com/v1/media/models"
+                  }
+                }
+              },
+              "submit": {
+                "properties": {
+                  "method": {
+                    "const": "POST"
+                  },
+                  "url": {
+                    "const": "https://api.puretokensx.com/v1/videos"
+                  }
+                }
+              },
+              "edit": {
+                "properties": {
+                  "method": {
+                    "const": "POST"
+                  },
+                  "url": {
+                    "const": "https://api.puretokensx.com/v1/videos/edits"
+                  }
+                }
+              },
+              "status": {
+                "properties": {
+                  "method": {
+                    "const": "GET"
+                  },
+                  "urlTemplate": {
+                    "const": "https://api.puretokensx.com/v1/videos/{task_id}"
+                  }
+                }
+              },
+              "content": {
+                "properties": {
+                  "method": {
+                    "const": "GET"
+                  },
+                  "urlTemplate": {
+                    "const": "https://api.puretokensx.com/v1/videos/{task_id}/content"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "balance"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "operations"
+        ],
+        "properties": {
+          "operations": {
+            "required": [
+              "read"
+            ],
+            "properties": {
+              "read": {
+                "required": [
+                  "method",
+                  "url",
+                  "requiresConfiguredApiKey",
+                  "requiresBrowserSession",
+                  "unitMetadataUrl",
+                  "unitMetadataRequiresConfiguredApiKey",
+                  "maxRequests",
+                  "deadlineSeconds",
+                  "responseSchema"
+                ],
+                "properties": {
+                  "method": {
+                    "const": "GET"
+                  },
+                  "url": {
+                    "const": "https://console.puretokensx.com/api/product/console/api-keys/usage"
+                  },
+                  "requiresConfiguredApiKey": {
+                    "const": true
+                  },
+                  "requiresBrowserSession": {
+                    "const": false
+                  },
+                  "unitMetadataUrl": {
+                    "const": "https://console.puretokensx.com/api/product/console/status"
+                  },
+                  "unitMetadataRequiresConfiguredApiKey": {
+                    "const": false
+                  },
+                  "maxRequests": {
+                    "const": 2
+                  },
+                  "deadlineSeconds": {
+                    "const": 30
+                  },
+                  "responseSchema": {
+                    "const": "https://puretokensx.com/schemas/balance-snapshot.schema.json"
+                  }
+                }
+              }
+            }
+          },
+          "transport": {
+            "properties": {
+              "fixedApiOrigin": {
+                "const": "https://console.puretokensx.com"
+              }
+            }
+          },
+          "result": {
+            "required": [
+              "reportOnlyReturnedFields",
+              "neverEstimate",
+              "neverRetry",
+              "scopeRule",
+              "unit",
+              "includesSubscriptionQuota",
+              "calculation",
+              "fallbackWhenBalanceUnavailable",
+              "defaultPresentation",
+              "legacyBillingFallbackAllowed"
+            ],
+            "properties": {
+              "reportOnlyReturnedFields": {
+                "const": true
+              },
+              "neverEstimate": {
+                "const": true
+              },
+              "neverRetry": {
+                "const": true
+              },
+              "scopeRule": {
+                "const": "unlimited_quota_true_account_wallet_else_key_allowance"
+              },
+              "unit": {
+                "const": "USD"
+              },
+              "includesSubscriptionQuota": {
+                "const": false
+              },
+              "calculation": {
+                "const": "each_returned_quota_divided_by_public_quota_per_unit_in_USD_never_subtract_used_from_available"
+              },
+              "fallbackWhenBalanceUnavailable": {
+                "const": "report_actual_sanitized_failure_without_amount_and_guide_connection_settings_or_later_query"
+              },
+              "defaultPresentation": {
+                "const": "one_line_remaining_with_wallet_or_key_allowance_label"
+              },
+              "legacyBillingFallbackAllowed": {
+                "const": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "update"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "operations"
+        ],
+        "properties": {
+          "operations": {
+            "required": [
+              "sync"
+            ],
             "properties": {
               "sync": {
-                "required": ["commandTemplate", "sourceRepository", "sourceBranch", "validationCommand"],
+                "required": [
+                  "commandTemplate",
+                  "sourceRepository",
+                  "sourceBranch",
+                  "validationCommand"
+                ],
                 "properties": {
-                  "commandTemplate": { "const": "native_platform_sync --source <fresh-official-main-checkout> --host <current-supported-host>" },
-                  "sourceRepository": { "const": "https://github.com/PureTokens/puretokens-skill.git" },
-                  "sourceBranch": { "const": "main" },
-                  "validationCommand": { "const": "native_sync_derives_host_target_and_validates_fresh_official_main_checkout_before_sync" }
+                  "commandTemplate": {
+                    "const": "native_fetch install_or_update --host <current-supported-host>"
+                  },
+                  "sourceRepository": {
+                    "const": "https://github.com/PureTokens/puretokens-skill.git"
+                  },
+                  "sourceBranch": {
+                    "const": "main"
+                  },
+                  "validationCommand": {
+                    "const": "pin_main_revision_verify_matching_platform_package_or_pinned_source_then_native_sync"
+                  }
                 }
               }
             }
           },
           "result": {
-            "required": ["installsMissingOfficialSkills", "upgradesOnlyManagedMatchingSkills", "neverOverwritesUnmanagedDirectories", "removesVerifiedRetiredManagedSkills", "removesVerifiedLegacyNodeRuntime", "installsChecksumVerifiedNativeApiExecutor", "reportsSynchronizedVersion", "removesLegacyCodexPluginWhenPresent", "requiresVerifiedRemovalWhenLegacyCodexPluginDetected", "doesNotClaimSuccessWithoutVersionReceipt", "neverModifiesOfficialCheckout", "requiresFullCodexRestartAfterLegacyPluginRemoval", "requiresNewHostConversationAfterSuccess"],
+            "required": [
+              "installsMissingOfficialSkills",
+              "upgradesOnlyManagedMatchingSkills",
+              "neverOverwritesUnmanagedDirectories",
+              "removesVerifiedRetiredManagedSkills",
+              "removesVerifiedLegacyNodeRuntime",
+              "installsChecksumVerifiedNativeApiExecutor",
+              "reportsSynchronizedVersion",
+              "removesLegacyCodexPluginWhenPresent",
+              "requiresVerifiedRemovalWhenLegacyCodexPluginDetected",
+              "doesNotClaimSuccessWithoutVersionReceipt",
+              "neverModifiesOfficialCheckout",
+              "requiresFullCodexRestartAfterLegacyPluginRemoval",
+              "requiresNewHostConversationAfterSuccess"
+            ],
             "properties": {
-              "installsMissingOfficialSkills": { "const": true },
-              "upgradesOnlyManagedMatchingSkills": { "const": true },
-              "neverOverwritesUnmanagedDirectories": { "const": true },
-              "removesVerifiedRetiredManagedSkills": { "const": true },
-              "removesVerifiedLegacyNodeRuntime": { "const": true },
-              "installsChecksumVerifiedNativeApiExecutor": { "const": true },
-              "reportsSynchronizedVersion": { "const": true },
-              "removesLegacyCodexPluginWhenPresent": { "const": true },
-              "requiresVerifiedRemovalWhenLegacyCodexPluginDetected": { "const": true },
-              "doesNotClaimSuccessWithoutVersionReceipt": { "const": true },
-              "neverModifiesOfficialCheckout": { "const": true },
-              "requiresFullCodexRestartAfterLegacyPluginRemoval": { "const": true },
-              "requiresNewHostConversationAfterSuccess": { "const": true }
+              "installsMissingOfficialSkills": {
+                "const": true
+              },
+              "upgradesOnlyManagedMatchingSkills": {
+                "const": true
+              },
+              "neverOverwritesUnmanagedDirectories": {
+                "const": true
+              },
+              "removesVerifiedRetiredManagedSkills": {
+                "const": true
+              },
+              "removesVerifiedLegacyNodeRuntime": {
+                "const": true
+              },
+              "installsChecksumVerifiedNativeApiExecutor": {
+                "const": true
+              },
+              "reportsSynchronizedVersion": {
+                "const": true
+              },
+              "removesLegacyCodexPluginWhenPresent": {
+                "const": true
+              },
+              "requiresVerifiedRemovalWhenLegacyCodexPluginDetected": {
+                "const": true
+              },
+              "doesNotClaimSuccessWithoutVersionReceipt": {
+                "const": true
+              },
+              "neverModifiesOfficialCheckout": {
+                "const": true
+              },
+              "requiresFullCodexRestartAfterLegacyPluginRemoval": {
+                "const": true
+              },
+              "requiresNewHostConversationAfterSuccess": {
+                "const": true
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "enum": [
+              "image",
+              "video",
+              "models",
+              "connection"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "transport": {
+            "properties": {
+              "fixedApiOrigin": {
+                "const": "https://api.puretokensx.com"
+              }
             }
           }
         }
@@ -151,97 +653,301 @@
   "$defs": {
     "initOperation": {
       "type": "object",
-      "required": ["commandTemplate", "checks", "usageGuide"],
+      "required": [
+        "commandTemplate",
+        "checks",
+        "usageGuide"
+      ],
       "properties": {
-        "commandTemplate": { "const": "native_executor init --host <current-supported-host>" },
-        "checks": { "const": "public_identity_then_one_authenticated_catalog_check_without_displaying_configuration" },
-        "usageGuide": { "const": "references/usage-guide.md" }
+        "commandTemplate": {
+          "const": "native_executor init --host <current-supported-host>"
+        },
+        "checks": {
+          "const": "public_identity_then_one_authenticated_catalog_check_without_displaying_configuration"
+        },
+        "usageGuide": {
+          "const": "references/usage-guide.md"
+        }
       },
       "additionalProperties": false
     },
     "directTransport": {
       "type": "object",
-      "required": ["fixedApiOrigin", "usesFullApiUrls", "usesManagedNativeExecutor", "usesCurrentHostConfiguredCredential", "credentialSourceNeverBecomesRequestTarget", "neverExposesCredentialsOrHostConfiguration", "doesNotUseNodeRuntime", "doesNotUseMcpOrFallbackTransport", "doesNotUseComputerUseOrUiAutomation", "doesNotInvokeOtherMediaSkillsAsApiFallback", "executionStart", "whenManagedNativeExecutorUnavailable"],
+      "required": [
+        "fixedApiOrigin",
+        "usesFullApiUrls",
+        "usesManagedNativeExecutor",
+        "usesCurrentHostConfiguredCredential",
+        "credentialSourceNeverBecomesRequestTarget",
+        "neverExposesCredentialsOrHostConfiguration",
+        "doesNotUseNodeRuntime",
+        "doesNotUseMcpOrFallbackTransport",
+        "doesNotUseComputerUseOrUiAutomation",
+        "doesNotInvokeOtherMediaSkillsAsApiFallback",
+        "executionStart",
+        "whenManagedNativeExecutorUnavailable"
+      ],
       "properties": {
-        "fixedApiOrigin": { "const": "https://api.puretokensx.com" },
-        "usesFullApiUrls": { "const": true },
-        "usesManagedNativeExecutor": { "const": true },
-        "usesCurrentHostConfiguredCredential": { "const": true },
-        "credentialSourceNeverBecomesRequestTarget": { "const": true },
-        "neverExposesCredentialsOrHostConfiguration": { "const": true },
-        "doesNotUseNodeRuntime": { "const": true },
-        "doesNotUseMcpOrFallbackTransport": { "const": true },
-        "doesNotUseComputerUseOrUiAutomation": { "const": true },
-        "doesNotInvokeOtherMediaSkillsAsApiFallback": { "const": true },
-        "executionStart": { "const": "invoke_the_checksum_verified_managed_native_executor_with_the_current_host_id_and_fixed_request" },
-        "whenManagedNativeExecutorUnavailable": { "const": "report_only_an_actual_executor_network_credential_adapter_or_attachment_byte_failure_and_never_open_a_browser_desktop_ui_or_computer_use" },
-        "requiresNativeMediaByteDelivery": { "const": true }
+        "fixedApiOrigin": {
+          "enum": [
+            "https://api.puretokensx.com",
+            "https://console.puretokensx.com"
+          ]
+        },
+        "usesFullApiUrls": {
+          "const": true
+        },
+        "usesManagedNativeExecutor": {
+          "const": true
+        },
+        "usesCurrentHostConfiguredCredential": {
+          "const": true
+        },
+        "credentialSourceNeverBecomesRequestTarget": {
+          "const": true
+        },
+        "neverExposesCredentialsOrHostConfiguration": {
+          "const": true
+        },
+        "doesNotUseNodeRuntime": {
+          "const": true
+        },
+        "doesNotUseMcpOrFallbackTransport": {
+          "const": true
+        },
+        "doesNotUseComputerUseOrUiAutomation": {
+          "const": true
+        },
+        "doesNotInvokeOtherMediaSkillsAsApiFallback": {
+          "const": true
+        },
+        "executionStart": {
+          "const": "invoke_the_checksum_verified_managed_native_executor_with_the_current_host_id_and_fixed_request"
+        },
+        "whenManagedNativeExecutorUnavailable": {
+          "const": "report_only_an_actual_executor_network_credential_adapter_or_attachment_byte_failure_and_never_open_a_browser_desktop_ui_or_computer_use"
+        },
+        "requiresNativeMediaByteDelivery": {
+          "const": true
+        }
       },
       "additionalProperties": false
     },
     "updateTransport": {
       "type": "object",
-      "required": ["localSkillManager", "usesOfficialMainBranch", "requiresFreshOfficialSourceCheckout", "doesNotUseCustomInstallPayload", "doesNotReadCredentialsOrHostConfiguration", "doesNotUseMediaApiOrMcp"],
+      "required": [
+        "localSkillManager",
+        "usesOfficialMainBranch",
+        "requiresPinnedOfficialSourceRevision",
+        "doesNotUseCustomInstallPayload",
+        "doesNotReadCredentialsOrHostConfiguration",
+        "doesNotSubmitMediaOrUseMcp"
+      ],
       "properties": {
-        "localSkillManager": { "const": true },
-        "usesOfficialMainBranch": { "const": true },
-        "requiresFreshOfficialSourceCheckout": { "const": true },
-        "doesNotUseCustomInstallPayload": { "const": true },
-        "doesNotReadCredentialsOrHostConfiguration": { "const": true },
-        "doesNotUseMediaApiOrMcp": { "const": true }
+        "localSkillManager": {
+          "const": true
+        },
+        "usesOfficialMainBranch": {
+          "const": true
+        },
+        "doesNotUseCustomInstallPayload": {
+          "const": true
+        },
+        "doesNotReadCredentialsOrHostConfiguration": {
+          "const": true
+        },
+        "requiresPinnedOfficialSourceRevision": {
+          "const": true
+        },
+        "doesNotSubmitMediaOrUseMcp": {
+          "const": true
+        }
       },
       "additionalProperties": false
     },
     "request": {
       "type": "object",
-      "required": ["method"],
+      "required": [
+        "method"
+      ],
       "properties": {
-        "method": { "enum": ["GET", "POST"] },
-        "url": { "type": "string", "pattern": "^https://api\\.puretokensx\\.com/" },
-        "urlTemplate": { "type": "string", "pattern": "^https://api\\.puretokensx\\.com/" },
-        "allowedPaths": { "type": "array", "items": { "type": "string", "pattern": "^/v1/" } },
-        "pathSource": { "type": "string" },
-        "contentType": { "type": "string", "minLength": 1 },
-        "requiredBodyFields": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
-        "fixedBody": { "type": "object" },
-        "conditionalBodyFields": { "type": ["object", "array"] },
-        "requiresDeclaredProfileOperation": { "type": "string" },
-        "inputSource": { "type": "string" },
-        "transport": { "type": "string" },
-        "requiresConfiguredApiKey": { "type": "boolean" },
-        "usageUrl": { "type": "string" },
-        "responseSchema": { "type": "string" }
+        "method": {
+          "enum": [
+            "GET",
+            "POST"
+          ]
+        },
+        "url": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^https://api\\.puretokensx\\.com/"
+            },
+            {
+              "const": "https://console.puretokensx.com/api/product/console/api-keys/usage"
+            }
+          ]
+        },
+        "urlTemplate": {
+          "type": "string",
+          "pattern": "^https://api\\.puretokensx\\.com/"
+        },
+        "allowedPaths": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^/v1/"
+          }
+        },
+        "pathSource": {
+          "type": "string"
+        },
+        "contentType": {
+          "type": "string",
+          "minLength": 1
+        },
+        "requiredBodyFields": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "fixedBody": {
+          "type": "object"
+        },
+        "conditionalBodyFields": {
+          "type": [
+            "object",
+            "array"
+          ]
+        },
+        "requiresDeclaredProfileOperation": {
+          "type": "string"
+        },
+        "inputSource": {
+          "type": "string"
+        },
+        "transport": {
+          "type": "string"
+        },
+        "requiresConfiguredApiKey": {
+          "type": "boolean"
+        },
+        "responseSchema": {
+          "type": "string"
+        },
+        "requiresBrowserSession": {
+          "const": false
+        },
+        "unitMetadataUrl": {
+          "const": "https://console.puretokensx.com/api/product/console/status"
+        },
+        "unitMetadataRequiresConfiguredApiKey": {
+          "const": false
+        },
+        "maxRequests": {
+          "const": 2
+        },
+        "deadlineSeconds": {
+          "const": 30
+        }
       },
-      "oneOf": [{ "required": ["url"] }, { "required": ["urlTemplate"] }, { "required": ["allowedPaths"] }],
+      "oneOf": [
+        {
+          "required": [
+            "url"
+          ]
+        },
+        {
+          "required": [
+            "urlTemplate"
+          ]
+        },
+        {
+          "required": [
+            "allowedPaths"
+          ]
+        }
+      ],
       "additionalProperties": false
     },
     "syncOperation": {
       "type": "object",
-      "required": ["commandTemplate", "sourceRepository", "sourceBranch", "validationCommand"],
+      "required": [
+        "commandTemplate",
+        "sourceRepository",
+        "sourceBranch",
+        "validationCommand"
+      ],
       "properties": {
-        "commandTemplate": { "const": "native_platform_sync --source <fresh-official-main-checkout> --host <current-supported-host>" },
-        "sourceRepository": { "const": "https://github.com/PureTokens/puretokens-skill.git" },
-        "sourceBranch": { "const": "main" },
-        "validationCommand": { "const": "native_sync_derives_host_target_and_validates_fresh_official_main_checkout_before_sync" }
+        "commandTemplate": {
+          "const": "native_fetch install_or_update --host <current-supported-host>"
+        },
+        "sourceRepository": {
+          "const": "https://github.com/PureTokens/puretokens-skill.git"
+        },
+        "sourceBranch": {
+          "const": "main"
+        },
+        "validationCommand": {
+          "const": "pin_main_revision_verify_matching_platform_package_or_pinned_source_then_native_sync"
+        }
       },
       "additionalProperties": false
     },
     "failureReceipt": {
       "type": "object",
-      "required": ["requiredFields", "allowedFailurePhases", "httpStatus", "apiErrorCode", "errorMessage", "retryAfterSeconds", "forbiddenDisclosure"],
+      "required": [
+        "requiredFields",
+        "allowedFailurePhases",
+        "httpStatus",
+        "apiErrorCode",
+        "errorMessage",
+        "retryAfterSeconds",
+        "forbiddenDisclosure"
+      ],
       "properties": {
         "requiredFields": {
-          "const": ["failure_phase", "api_error_code", "http_status", "error_message", "next_action"]
+          "const": [
+            "failure_phase",
+            "error_message",
+            "next_action"
+          ]
         },
         "allowedFailurePhases": {
-          "const": ["validation", "submission", "status", "content"]
+          "const": [
+            "validation",
+            "submission",
+            "status",
+            "content"
+          ]
         },
-        "httpStatus": { "const": "numeric_when_returned_otherwise_not_returned" },
-        "apiErrorCode": { "const": "exact_explicit_public_api_error_code_otherwise_not_returned" },
-        "errorMessage": { "const": "safe_user_facing_summary_using_only_sanitized_public_api_detail_or_a_fixed_local_explanation" },
-        "retryAfterSeconds": { "const": "include_only_for_http_429_when_a_valid_positive_retry_after_is_returned" },
+        "httpStatus": {
+          "const": "numeric_only_when_returned_otherwise_omit"
+        },
+        "apiErrorCode": {
+          "const": "exact_explicit_public_api_error_code_otherwise_omit"
+        },
+        "errorMessage": {
+          "const": "safe_user_facing_summary_using_only_sanitized_public_api_detail_or_a_fixed_local_explanation"
+        },
+        "retryAfterSeconds": {
+          "const": "include_when_a_valid_positive_retry_after_is_returned"
+        },
         "forbiddenDisclosure": {
-          "const": ["raw_response_body", "upstream_or_provider_identifier", "internal_hostname_or_url", "stack_trace", "request_headers", "request_body", "credentials_or_session_data", "user_reference_url_or_attachment_bytes"]
+          "const": [
+            "raw_response_body",
+            "upstream_or_provider_identifier",
+            "internal_hostname_or_url",
+            "stack_trace",
+            "request_headers",
+            "request_body",
+            "credentials_or_session_data",
+            "user_reference_url_or_attachment_bytes"
+          ]
         }
       },
       "additionalProperties": false

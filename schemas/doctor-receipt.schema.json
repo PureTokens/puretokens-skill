@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://puretokensx.com/schemas/doctor-receipt.schema.json",
+  "title": "Read-only local install diagnostics and connection checks",
+  "type": "object",
+  "required": [
+    "ok",
+    "command",
+    "host",
+    "executor_version",
+    "local",
+    "message",
+    "next_action"
+  ],
+  "properties": {
+    "ok": {
+      "type": "boolean"
+    },
+    "command": {
+      "const": "doctor"
+    },
+    "host": {
+      "type": "string"
+    },
+    "executor_version": {
+      "type": "string"
+    },
+    "local": {
+      "type": "object",
+      "required": [
+        "status",
+        "installations",
+        "duplicate_skills",
+        "checksum_status",
+        "checksum_reason",
+        "attachment_delivery_status"
+      ],
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "installations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "locations",
+              "loaded",
+              "status",
+              "skills",
+              "executor"
+            ],
+            "properties": {
+              "locations": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "loaded": {
+                "type": "boolean"
+              },
+              "status": {
+                "type": "string"
+              },
+              "skills": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "name",
+                    "status"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "executor": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "status"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "version": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "duplicate_skills": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "checksum_status": {
+          "type": "string"
+        },
+        "checksum_reason": {
+          "type": "string"
+        },
+        "attachment_delivery_status": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "connection": {
+      "$ref": "init-receipt.schema.json"
+    },
+    "message": {
+      "type": "string"
+    },
+    "next_action": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

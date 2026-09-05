@@ -3,62 +3,300 @@
   "schemaVersion": 1,
   "kind": "image",
   "scenarios": [
-    { "id": "image-specialist-routing-priority", "when": "the current host uses a Pure Tokens connection and the user asks to generate, create, draw, or edit an image without naming a Skill", "then": "select puretokens-image before generic imagegen, Imagen, or another image Skill. Once selected, use only the fixed Images API path; a missing executor, rejection, or failure must stop safely and must not invoke a generic media Skill." },
-    { "id": "image-model-alias-ambiguous", "when": "an alias resolves to multiple exact model IDs", "then": "ask the user to choose an exact ID; do not submit" },
-    { "id": "image-normal-submission-skips-catalog", "when": "a user asks for text-to-image with the default model, a uniquely resolved installed alias, or an exact model ID using only known core fields", "then": "submit directly without reading /v1/media/models first" },
-    { "id": "image-failure-receipt-safe", "when": "validation, submission, task-status, or content delivery fails", "then": "return failure_phase, api_error_code only when the public API explicitly returned that exact code or not returned otherwise, returned HTTP status or not returned, a sanitized user-facing error message, and an actionable next step; expose retry_after_seconds only for HTTP 429 with a valid positive Retry-After and never expose raw response bodies, upstream identifiers, internal URLs, stacks, request data, credentials, or user media" },
-    { "id": "image-content-safety-failure", "when": "a terminal failure has an explicit public API code content_moderation or sanitized public API detail that unambiguously says the request did not pass safety review", "then": "tell the user the image was not generated because it did not pass safety review, suggest adjusting the prompt or reference media, do not invent an API code when none was returned, and never retry automatically" },
-    { "id": "image-input-role-ambiguous", "when": "the user provides a current image URL or attachment but does not state whether it is a visual reference or the image to edit", "then": "ask the user to choose reference or edit before a billable submission; do not infer a role from the file, URL, or model name" },
-    { "id": "image-request-scope-boundary", "when": "the user asks for a poster, cover, illustration, or other visual design without explicitly requesting maps, geographic research, workspace/history search, or a quality review", "then": "treat it as the stated visual-design task only; do not invoke unrelated Skills, search prior conversations or files, inspect old media, or extend the task with compliance or research work" },
-    { "id": "image-distinct-assets", "when": "one request contains multiple distinct image briefs or assets", "then": "do not map the briefs to n, split the request into multiple billable submissions, or silently drop an item; ask the user to choose the first asset for this request" },
-    { "id": "image-prompt-shaping", "when": "preparing a text-to-image, reference-image, or edit prompt", "then": "preserve explicit purpose, subject, scene, style, composition, verbatim text, and constraints; only add intent-preserving detail to an underspecified request, identify each input image role, and do not invent brands, subjects, copy, or a different operation" },
-    { "id": "image-submission-model-parameter-rejected", "when": "the Images API explicitly rejects a model, parameter, or capability and returns no task ID", "then": "read the catalog at most once for diagnosis, show returned current candidates or allowed values, and require an explicit corrected new request; never resubmit automatically" },
-    { "id": "image-submission-rate-limited", "when": "the Images API returns 429 before a task ID is confirmed", "then": "report Retry-After when returned, ask the user to wait and explicitly retry, and do not poll, wait, or retry automatically" },
-    { "id": "image-submission-outcome-unknown", "when": "a submission has a 5xx response, transport error, or timeout before a task ID is confirmed", "then": "state that task acceptance is unknown, do not claim the task was not created, and never automatically resubmit" },
-    { "id": "image-executor-structured-failure", "when": "the managed native executor returns a parseable sanitized failure", "then": "use its phase: validation means the POST did not start and must be reported as a local pre-submit failure; submission means acceptance may be unknown and must never be retried; status or content means retain any verified same task_id and do not create a replacement task." },
-    { "id": "image-host-execution-policy-blocked", "when": "the host blocks the API request before it starts because of system policy, approval policy, or external-network execution permission", "then": "return failure_phase validation with task_id, http_status, and api_error_code all not returned; state that the Images API did not execute and no image task was created; do not call it submission, claim charging, refunding, or API rejection, or repeat POST. Tell the user to retry only in a host session that allows external network requests and approval of that operation; never claim the Skill can request, elevate, or bypass host permissions." },
-    { "id": "image-executor-request-start", "when": "the user requests an image, visual reference, or image edit", "then": "invoke the installed managed native executor with the current host ID and the declared fixed Images API request. For a current attachment and declared image_edit operation, give it only that exact multipart attachment path; never invoke Imagen, another media Skill, a browser, Switch, Desktop, or Computer Use." },
-    { "id": "image-executor-validation-failure", "when": "the executor cannot start, cannot resolve a verified credential, is blocked from the network, or cannot send the current attachment bytes in the declared multipart request", "then": "stop before POST with failure_phase validation, state the local limitation without exposing configuration, and state that the Images API did not execute and no task was created. Never fall back to Imagen, another media Skill, a browser, Switch, Desktop, or Computer Use." },
-    { "id": "image-submission-executor-output-unknown", "when": "the executor POST started but returns an execution error, empty output, truncated output, or output that cannot be parsed before a task ID is confirmed", "then": "treat submission acceptance as unknown and do not invoke POST again, submit a replacement task, or claim the task was not created, charged, or refunded. If no verified task_id is available, return one unknown-submission receipt and end the current response without further tool, status, polling, or deliberation work." },
-    { "id": "image-unknown-submission-continuation-without-id", "when": "a later user message says continue, retry, or similar but supplies no verified task ID for an earlier unknown submission", "then": "state that the original task cannot be continued, ask the user to explicitly confirm a new paid image request, and do not submit until that confirmation arrives in a new user turn." },
-    { "id": "image-model-unavailable", "when": "an on-demand live catalog read, used only for an installed-profile gap or post-rejection diagnosis, lacks the exact requested image ID or capability", "then": "state that the current authenticated connection did not return the exact model, list returned catalog candidates, and do not resubmit or switch models. If the user expects access, direct them to the Pure Tokens client configuration to select a group that contains that exact model, create or select a managed key covering the selected groups, verify and apply it to the current host, then start a new host conversation and explicitly retry. Do not claim which group contains the model unless an authenticated API response explicitly returned that mapping." },
-    { "id": "image-model-parameter-profile-unavailable", "when": "the installed index/selected profile and any permitted one-time on-demand catalog read have no schema for a requested n, size, image_size, aspect ratio, reference field, or other optional parameter", "then": "explain that the model parameter profile is not published, ask the user to remove that option or choose a model with an explicit profile, and do not submit that unverified option" },
-    { "id": "image-model-parameter-unsupported", "when": "a requested optional parameter is absent from the installed or on-demand schema, or its value violates the declared enum or range", "then": "list the profile-supported values and ask the user to choose one; do not submit" },
-    { "id": "image-size-expression-constraints", "when": "the exact image profile declares requires_together or size_expression_precedence constraints and the user supplies width, height, aspect ratio, or size", "then": "require every declared companion field such as width plus height. When more than one declared size expression is supplied, send only the highest-precedence user-supplied expression, state that expression in the receipt, and never mix lower-precedence fields." },
-    { "id": "image-catalog-on-demand-unavailable", "when": "a one-time live catalog read is needed for an explicit unsupported option, media operation, or diagnosis but fails", "then": "report that read failure; do not let it block a normal core text-to-image submission, and do not retry or resubmit automatically" },
-    { "id": "image-execution-unavailable", "when": "a direct fixed-Pure-Tokens API request fails before task acceptance or native image bytes cannot be handed off", "then": "report the returned failure or delivery state, state whether a task_id was returned, and do not guess a configuration cause or submit a replacement task" },
-    { "id": "image-count-invalid", "when": "the requested count is not allowed by the exact authenticated model's input_schema.properties.n", "then": "explain the one-task limit, list the profile-declared count values or range, and ask for a supported count; do not submit" },
-    { "id": "image-pixel-size-invalid", "when": "a requested pixel canvas, semantic image size, aspect ratio, or other image parameter is not declared by the exact authenticated model profile", "then": "list the profile-declared options for that field and ask the user to choose one; do not submit" },
-    { "id": "image-physical-size", "when": "the request uses a physical dimension such as 200cm x 230cm", "then": "explain that physical dimensions cannot be guaranteed and ask for a supported pixel canvas; do not submit" },
-    { "id": "image-edit-profile-unavailable", "when": "the user attaches an image and the installed or permitted on-demand profile has no compatible image_edit operation", "then": "state that this exact model has not published native image-attachment capability and do not submit or switch models" },
-    { "id": "image-public-url-reference-profile-unavailable", "when": "the user provides a public reference-image URL but the installed or permitted on-demand profile lacks a matching property and declared public-URL reference transport", "then": "state that the selected model has not published a compatible public-URL reference field, list any declared reference fields, and do not submit or switch models" },
-    { "id": "image-public-url-edit-profile-unavailable", "when": "the user asks to edit a public image URL but the installed profile and permitted one-time on-demand catalog read lack an image_edit operation with application/json, an exact public-URL field, and declared public-URL transport", "then": "state that the selected model has not published public-URL editing; if it has only a reference field, ask whether the user wants a new image using it as a reference, and do not downgrade or submit without explicit confirmation" },
-    { "id": "image-public-url-reference-invalid", "when": "the user provides a reference-image URL that is not a public HTTPS URL", "then": "explain that the selected profile requires a public HTTPS URL and ask the user to provide one; do not submit" },
-    { "id": "image-public-url-reference-not-public", "when": "a reference URL contains credentials, localhost, a .local host, or an explicit loopback, private, or link-local IP", "then": "reject it as non-public without DNS lookup or probing and ask for a public HTTPS URL; do not submit" },
-    { "id": "image-public-url-reference-ambiguous", "when": "more than one exact authenticated public-URL reference field could represent the user's request", "then": "list the declared fields and ask the user to choose the intended input mode; do not guess or submit" },
-    { "id": "image-native-reference-attachment-direct-api", "when": "the user designates a current local native image attachment as a visual reference and the selected profile declares image_edit multipart_file input", "then": "use that exact declared image_edit operation, path, fields, and count limits in one direct Images API request. Preserve the user's reference intent in the prompt; do not upload, rehost, create a URL, or silently turn it into text-only generation." },
-    { "id": "image-native-reference-attachment-unavailable", "when": "the user designates a current local native image attachment as a visual reference but the selected profile has no image_edit multipart_file operation, the attachment count is outside its declared range, or the host cannot hand off its bytes", "then": "stop before POST and ask for a public HTTPS URL for that image, or an explicit new text-only request that ignores the attachment. Do not inspect, describe, summarize, transcribe, recreate, or infer from the attachment for a text-to-image prompt; do not upload it, make a URL, search historical images, or silently downgrade." },
-    { "id": "image-edit-attachment-unavailable", "when": "an image-edit profile requires multipart_file but the current host cannot send the user's explicit attachment bytes with the direct API request", "then": "stop before submission, explain that attachment-byte delivery is unavailable, and do not read credentials, create a URL, or downgrade to text-to-image" },
-    { "id": "image-edit-attachment-direct-api", "when": "the current host can send the user's current multipart image attachment through the declared Images API operation for a visual reference or explicit edit", "then": "send it only with that single direct Images API request; do not call a separate upload path or expose internal attachment handling" },
-    { "id": "image-edit-input-unsupported", "when": "an edit request includes a mask, multiple references, or another field not explicitly declared by the installed or permitted on-demand image_edit profile", "then": "list the declared operation limits and ask the user to adjust the request; do not submit" },
-    { "id": "image-task-id-normalization", "when": "a submission returns an installed lifecycle create.idField such as top-level id, or otherwise top-level task_id or id", "then": "report that opaque value under the receipt field task_id and use it only as a percent-encoded status/content path segment" },
-    { "id": "image-task-id-missing", "when": "a submission response has no declared lifecycle ID field and no top-level task_id or id", "then": "report that task_id was not returned and cannot be safely continued; do not derive one from URLs or nested data, poll, download, or resubmit" },
-    { "id": "image-task-id-invalid", "when": "a continuation request provides a URL, multiple IDs, or an empty task ID", "then": "ask for exactly one opaque task ID and do not extract, concatenate, or query an ID" },
-    { "id": "image-task-state-unrecognized", "when": "a status response has no declared lifecycle classification and its status is not a documented fallback state", "then": "report the raw state as unrecognized, stop automatic polling, and require an explicit same-task continuation before another status read" },
-    { "id": "image-task-reconciliation-required", "when": "a same-task status response contains reconciliation_required: true regardless of its status value", "then": "treat it as a terminal operational outcome: stop ordinary polling, retain the same task_id, report that status verification is required, and do not resubmit, switch models, infer a refund, or expose provider or billing details" },
-    { "id": "image-task-request-count-unknown", "when": "a task continuation has no trustworthy original requested n", "then": "ask the user for the original image count before content delivery; do not guess indexes or report partial delivery as complete" },
-    { "id": "image-task-pending", "when": "the same task is in an installed-lifecycle pending state or a documented fallback processing state", "then": "report the current state and continue reading only that task" },
-    { "id": "image-task-poll-delay", "when": "the same task is in an installed-lifecycle pending state or a documented fallback processing state", "then": "honor a valid positive Retry-After delay when returned; otherwise wait 3, 6, 12, 24, then 30 seconds, with at most six same-task status reads during a submission or explicit same-task continuation turn" },
-    { "id": "image-task-poll-rate-limited", "when": "a same-task status request returns HTTP 429", "then": "when a valid positive Retry-After fits the remaining automatic-polling budget, wait that duration and continue querying the same task; otherwise report the limit and stop this window; never submit a replacement task" },
-    { "id": "image-task-poll-resource-bound", "when": "a task is in an installed-lifecycle pending state or a documented fallback processing state", "then": "keep at most one same-task status request in flight, never create a background timer or queue, and stop automatic polling after a non-429 5xx response, transport error, or timeout" },
-    { "id": "image-task-polling-deadline", "when": "120 seconds have elapsed since a task submission response and the task is still in an installed-lifecycle pending state or a documented fallback processing state", "then": "report the current state, stop automatic polling, and require an explicit user request to continue the same task; do not resubmit" },
-    { "id": "image-task-explicit-continuation", "when": "the user explicitly asks to continue querying the returned task_id", "then": "start a new bounded polling window for that same task only; do not submit, inspect, or substitute another task" },
-    { "id": "image-task-terminal-failure", "when": "the same task reports failure, cancellation, or expiry", "then": "report the returned failure and require an explicit new request before another submission" },
-    { "id": "image-task-timeout-or-unknown", "when": "the status request times out or the submission outcome is unknown", "then": "report the uncertainty, offer to continue querying the same task if an ID exists, and never auto-resubmit" },
-    { "id": "image-content-delivery-failure", "when": "a task is complete but native content cannot be delivered", "then": "report the delivery failure and offer only a same-task content retry; do not claim success" },
-    { "id": "image-content-delivery-location", "when": "native image bytes have been handed off after a completed task", "then": "report an attachment or local path only when the current host actually confirms it; otherwise state that bytes were delivered through the current host and do not invent a preview, filename, or directory" },
-    { "id": "image-delivery-terminal-boundary", "when": "the requested image bytes have been successfully delivered for the current task", "then": "return one completion receipt and end the current response. Do not automatically inspect quality, open the image, search workspace or conversation history, invoke another Skill, or create another media task; wait for a new explicit user request." },
-    { "id": "image-content-index-missing", "when": "a multi-image task has delivered some but not every requested zero-based content index from 0 through n-1", "then": "report the delivered and missing indexes, offer only same-task retrieval for the missing indexes, and never resubmit" },
-    { "id": "image-content-resource-bound", "when": "a completed task has multiple image results", "then": "read zero-based content indexes sequentially, hand off each native byte result before the next read, and do not prefetch, concurrently fetch, or re-fetch delivered content" }
+    {
+      "id": "image-specialist-routing-priority",
+      "when": "the current host uses a Pure Tokens connection and the user asks to generate, create, draw, or edit an image without naming a Skill",
+      "then": "select puretokens-image before generic imagegen, Imagen, or another image Skill. Once selected, use only the fixed Images API path; a missing executor, rejection, or failure must stop safely and must not invoke a generic media Skill."
+    },
+    {
+      "id": "image-model-alias-ambiguous",
+      "when": "an alias resolves to multiple exact model IDs",
+      "then": "ask the user to choose an exact ID; do not submit"
+    },
+    {
+      "id": "image-normal-submission-skips-catalog",
+      "when": "a user asks for text-to-image with the default model, a uniquely resolved installed alias, or an exact model ID using only known core fields",
+      "then": "submit directly without reading /v1/media/models first"
+    },
+    {
+      "id": "image-failure-receipt-safe",
+      "when": "validation, submission, task-status, or content delivery fails",
+      "then": "return failure_phase, api_error_code only when the public API explicitly returned that exact code and omit it otherwise, HTTP status only when returned, a sanitized user-facing error message, and an actionable next step; include retry_after_seconds when the executor returns a valid positive Retry-After and never expose raw response bodies, upstream identifiers, internal URLs, stacks, request data, credentials, or user media"
+    },
+    {
+      "id": "image-content-safety-failure",
+      "when": "a terminal failure has an explicit public API code content_moderation or sanitized public API detail that unambiguously says the request did not pass safety review",
+      "then": "tell the user the image was not generated because it did not pass safety review, suggest adjusting the prompt or reference media, do not invent an API code when none was returned, and never retry automatically"
+    },
+    {
+      "id": "image-input-role-ambiguous",
+      "when": "the user provides a current image URL or attachment but does not state whether it is a visual reference or the image to edit",
+      "then": "ask the user to choose reference or edit before a billable submission; do not infer a role from the file, URL, or model name"
+    },
+    {
+      "id": "image-request-scope-boundary",
+      "when": "the user asks for a poster, cover, illustration, or other visual design without explicitly requesting maps, geographic research, workspace/history search, or a quality review",
+      "then": "treat it as the stated visual-design task only; do not invoke unrelated Skills, search prior conversations or files, inspect old media, or extend the task with compliance or research work"
+    },
+    {
+      "id": "image-distinct-assets",
+      "when": "one request contains multiple distinct image briefs or assets",
+      "then": "do not map the briefs to n, split the request into multiple billable submissions, or silently drop an item; ask the user to choose the first asset for this request"
+    },
+    {
+      "id": "image-prompt-shaping",
+      "when": "preparing a text-to-image, reference-image, or edit prompt",
+      "then": "preserve explicit purpose, subject, scene, style, composition, verbatim text, and constraints; only add intent-preserving detail to an underspecified request, identify each input image role, and do not invent brands, subjects, copy, or a different operation"
+    },
+    {
+      "id": "image-submission-model-parameter-rejected",
+      "when": "the Images API explicitly rejects a model, parameter, or capability and returns no task ID",
+      "then": "read the catalog at most once for diagnosis, show returned current candidates or allowed values, and require an explicit corrected new request; never resubmit automatically"
+    },
+    {
+      "id": "image-submission-rate-limited",
+      "when": "the Images API returns 429 before a task ID is confirmed",
+      "then": "report Retry-After when returned, ask the user to wait and explicitly retry, and do not poll, wait, or retry automatically"
+    },
+    {
+      "id": "image-submission-outcome-unknown",
+      "when": "a submission has a 5xx response, transport error, or timeout before a task ID is confirmed",
+      "then": "state that task acceptance is unknown, do not claim the task was not created, and never automatically resubmit"
+    },
+    {
+      "id": "image-executor-structured-failure",
+      "when": "the managed native executor returns a parseable sanitized failure",
+      "then": "Preserve the native command, failure phase, submission_outcome and available task context. For submit, validation confirms no POST; transmission/submission uncertainty never authorizes repetition. For status, wait, resume or content, validation means that command failed locally and says nothing about whether the already known task exists. Keep its ID and correct only the local continuation request."
+    },
+    {
+      "id": "image-host-execution-policy-blocked",
+      "when": "the host blocks the API request before it starts because of system policy, approval policy, or external-network execution permission",
+      "then": "return failure_phase validation with task_id, http_status, and api_error_code all not returned; state that the Images API did not execute and no image task was created; do not call it submission, claim charging, refunding, or API rejection, or repeat POST. Tell the user to retry only in a host session that allows external network requests and approval of that operation; never claim the Skill can request, elevate, or bypass host permissions."
+    },
+    {
+      "id": "image-executor-request-start",
+      "when": "the user requests an image, visual reference, or image edit",
+      "then": "invoke the installed managed native executor with the current host ID and the declared fixed Images API request. For a current attachment and declared image_edit operation, give it only that exact multipart attachment path; never invoke Imagen, another media Skill, a browser, Switch, Desktop, or Computer Use."
+    },
+    {
+      "id": "image-executor-validation-failure",
+      "when": "the executor cannot start or confirms a credential, parameter or attachment-preparation failure before the media POST begins",
+      "then": "Preserve the native receipt phase. Only a confirmed pre-POST validation failure means no media task was submitted. Attachment/network transmission failures after POST may have started are unknown submissions; retain any task ID and never automatically resubmit or use another transport."
+    },
+    {
+      "id": "image-submission-executor-output-unknown",
+      "when": "the executor POST started but returns an execution error, empty output, truncated output, or output that cannot be parsed before a task ID is confirmed",
+      "then": "treat submission acceptance as unknown and do not invoke POST again, submit a replacement task, or claim the task was not created, charged, or refunded. If no verified task_id is available, return one unknown-submission receipt and end the current response without further tool, status, polling, or deliberation work."
+    },
+    {
+      "id": "image-unknown-submission-continuation-without-id",
+      "when": "a later user message says continue, retry, or similar but supplies no verified task ID for an earlier unknown submission",
+      "then": "state that the original task cannot be continued, ask the user to explicitly confirm a new paid image request, and do not submit until that confirmation arrives in a new user turn."
+    },
+    {
+      "id": "image-model-unavailable",
+      "when": "an on-demand live catalog read, used only for an installed-profile gap or post-rejection diagnosis, lacks the exact requested image ID or capability",
+      "then": "state that the current authenticated connection did not return the exact model, list returned catalog candidates, and do not resubmit or switch models. If the user expects access, direct them to the Pure Tokens client configuration to select a group that contains that exact model, create or select a managed key covering the selected groups, verify and apply it to the current host, then start a new host conversation and explicitly retry. Do not claim which group contains the model unless an authenticated API response explicitly returned that mapping."
+    },
+    {
+      "id": "image-model-parameter-profile-unavailable",
+      "when": "the installed index/selected profile and any permitted one-time on-demand catalog read have no schema for a requested n, size, image_size, aspect ratio, reference field, or other optional parameter",
+      "then": "explain that the model parameter profile is not published, ask the user to remove that option or choose a model with an explicit profile, and do not submit that unverified option"
+    },
+    {
+      "id": "image-model-parameter-unsupported",
+      "when": "a requested optional parameter is absent from the installed or on-demand schema, or its value violates the declared enum or range",
+      "then": "list the profile-supported values and ask the user to choose one; do not submit"
+    },
+    {
+      "id": "image-size-expression-constraints",
+      "when": "the exact image profile declares requires_together or size_expression_precedence constraints and the user supplies width, height, aspect ratio, or size",
+      "then": "require every declared companion field such as width plus height. When more than one declared size expression is supplied, send only the highest-precedence user-supplied expression, state that expression in the receipt, and never mix lower-precedence fields."
+    },
+    {
+      "id": "image-catalog-on-demand-unavailable",
+      "when": "a one-time live catalog read is needed for an explicit unsupported option, media operation, or diagnosis but fails",
+      "then": "report that read failure; do not let it block a normal core text-to-image submission, and do not retry or resubmit automatically"
+    },
+    {
+      "id": "image-execution-unavailable",
+      "when": "a direct fixed-Pure-Tokens API request fails before task acceptance or native image bytes cannot be handed off",
+      "then": "report the returned failure or delivery state, state whether a task_id was returned, and do not guess a configuration cause or submit a replacement task"
+    },
+    {
+      "id": "image-count-invalid",
+      "when": "the requested count is not allowed by the selected model profile's properties.n",
+      "then": "explain the one-task limit, list the profile-declared count values or range, and ask for a supported count; do not submit"
+    },
+    {
+      "id": "image-pixel-size-invalid",
+      "when": "a requested pixel canvas, semantic image size, aspect ratio, or other image parameter is not declared by the exact authenticated model profile",
+      "then": "list the profile-declared options for that field and ask the user to choose one; do not submit"
+    },
+    {
+      "id": "image-physical-size",
+      "when": "the request uses a physical dimension such as 200cm x 230cm",
+      "then": "explain that physical dimensions cannot be guaranteed and ask for a supported pixel canvas; do not submit"
+    },
+    {
+      "id": "image-edit-profile-unavailable",
+      "when": "the user attaches an image and the installed or permitted on-demand profile has no compatible image_edit operation",
+      "then": "state that this exact model has not published native image-attachment capability and do not submit or switch models"
+    },
+    {
+      "id": "image-public-url-reference-profile-unavailable",
+      "when": "the user provides a public reference-image URL but the installed or permitted on-demand profile lacks a matching property and declared public-URL reference transport",
+      "then": "state that the selected model has not published a compatible public-URL reference field, list any declared reference fields, and do not submit or switch models"
+    },
+    {
+      "id": "image-public-url-edit-profile-unavailable",
+      "when": "the user asks to edit a public image URL but the installed profile and permitted one-time on-demand catalog read lack an image_edit operation with application/json, an exact public-URL field, and declared public-URL transport",
+      "then": "state that the selected model has not published public-URL editing; if it has only a reference field, ask whether the user wants a new image using it as a reference, and do not downgrade or submit without explicit confirmation"
+    },
+    {
+      "id": "image-public-url-reference-invalid",
+      "when": "the user provides a reference-image URL that is not a public HTTPS URL",
+      "then": "explain that the selected profile requires a public HTTPS URL and ask the user to provide one; do not submit"
+    },
+    {
+      "id": "image-public-url-reference-not-public",
+      "when": "a reference URL contains credentials, localhost, a .local host, or an explicit loopback, private, or link-local IP",
+      "then": "reject it as non-public without DNS lookup or probing and ask for a public HTTPS URL; do not submit"
+    },
+    {
+      "id": "image-public-url-reference-ambiguous",
+      "when": "more than one declared public-URL reference field could represent the user's request",
+      "then": "list the declared fields and ask the user to choose the intended input mode; do not guess or submit"
+    },
+    {
+      "id": "image-native-reference-attachment-direct-api",
+      "when": "the user designates a current local native image attachment as a visual reference and the selected profile declares image_edit multipart_file input",
+      "then": "use that exact declared image_edit operation, path, fields, and count limits in one direct Images API request. Preserve the user's reference intent in the prompt; do not upload, rehost, create a URL, or silently turn it into text-only generation."
+    },
+    {
+      "id": "image-native-reference-attachment-unavailable",
+      "when": "the user designates a current local native image attachment as a visual reference but the selected profile has no image_edit multipart_file operation, the attachment count is outside its declared range, or the host cannot hand off its bytes",
+      "then": "stop before POST and ask for a public HTTPS URL for that image, or an explicit new text-only request that ignores the attachment. Do not inspect, describe, summarize, transcribe, recreate, or infer from the attachment for a text-to-image prompt; do not upload it, make a URL, search historical images, or silently downgrade."
+    },
+    {
+      "id": "image-edit-attachment-unavailable",
+      "when": "an image-edit profile requires multipart_file but the current host cannot send the user's explicit attachment bytes with the direct API request",
+      "then": "stop before submission, explain that attachment-byte delivery is unavailable, and do not read credentials, create a URL, or downgrade to text-to-image"
+    },
+    {
+      "id": "image-edit-attachment-direct-api",
+      "when": "the current host can send the user's current multipart image attachment through the declared Images API operation for a visual reference or explicit edit",
+      "then": "send it only with that single direct Images API request; do not call a separate upload path or expose internal attachment handling"
+    },
+    {
+      "id": "image-edit-input-unsupported",
+      "when": "an edit request includes a mask, multiple references, or another field not explicitly declared by the installed or permitted on-demand image_edit profile",
+      "then": "list the declared operation limits and ask the user to adjust the request; do not submit"
+    },
+    {
+      "id": "image-task-id-normalization",
+      "when": "a submission returns a valid top-level task_id, or top-level id when task_id is absent",
+      "then": "Use the executor-returned task_id unchanged. Supported IDs contain only ASCII letters, digits, underscores or hyphens and have length 1..256. Never derive an ID from URLs or nested data."
+    },
+    {
+      "id": "image-task-id-missing",
+      "when": "a submission response has no supported top-level task_id or id",
+      "then": "report that task_id was not returned and cannot be safely continued; do not derive one from URLs or nested data, poll, download, or resubmit"
+    },
+    {
+      "id": "image-task-id-invalid",
+      "when": "a continuation request provides a URL, multiple IDs, or an empty task ID",
+      "then": "ask for exactly one opaque task ID and do not extract, concatenate, or query an ID"
+    },
+    {
+      "id": "image-task-state-unrecognized",
+      "when": "the executor returns status unknown for an unsupported API status",
+      "then": "Report that the state could not be classified, retain the task ID, stop automatic polling and require an explicit same-task continuation. Do not seek or display the raw API state."
+    },
+    {
+      "id": "image-task-reconciliation-required",
+      "when": "a same-task status response contains reconciliation_required: true regardless of its status value",
+      "then": "treat it as a terminal operational outcome: stop ordinary polling, retain the same task_id, report that status verification is required, and do not resubmit, switch models, infer a refund, or expose provider or billing details"
+    },
+    {
+      "id": "image-task-request-count-unknown",
+      "when": "a task continuation has no trustworthy original requested n",
+      "then": "ask the user for the original image count before content delivery; do not guess indexes or report partial delivery as complete"
+    },
+    {
+      "id": "image-task-pending",
+      "when": "the same task is in a supported pending state",
+      "then": "report the current state and continue reading only that task"
+    },
+    {
+      "id": "image-task-poll-delay",
+      "when": "the same task is in a supported pending state",
+      "then": "honor a valid positive Retry-After delay when returned; otherwise wait 3, 6, 12, 24, then 30 seconds, with at most six same-task status reads during a submission or explicit same-task continuation turn"
+    },
+    {
+      "id": "image-task-poll-rate-limited",
+      "when": "a same-task status request returns HTTP 429",
+      "then": "when a valid positive Retry-After fits the remaining automatic-polling budget, wait that duration and continue querying the same task; otherwise report the limit and stop this window; never submit a replacement task"
+    },
+    {
+      "id": "image-task-poll-resource-bound",
+      "when": "a task is in a supported pending state",
+      "then": "keep at most one same-task status request in flight, never create a background timer or queue, and stop automatic polling after a non-429 5xx response, transport error, or timeout"
+    },
+    {
+      "id": "image-task-polling-deadline",
+      "when": "120 seconds have elapsed since a task submission response and the task is still in a supported pending state",
+      "then": "report the current state, stop automatic polling, and require an explicit user request to continue the same task; do not resubmit"
+    },
+    {
+      "id": "image-task-explicit-continuation",
+      "when": "the user explicitly asks to continue querying the returned task_id",
+      "then": "start a new bounded polling window for that same task only; do not submit, inspect, or substitute another task"
+    },
+    {
+      "id": "image-task-terminal-failure",
+      "when": "the same task reports failure, cancellation, or expiry",
+      "then": "report the returned failure and require an explicit new request before another submission"
+    },
+    {
+      "id": "image-task-timeout-or-unknown",
+      "when": "the status request times out or the submission outcome is unknown",
+      "then": "report the uncertainty, offer to continue querying the same task if an ID exists, and never auto-resubmit"
+    },
+    {
+      "id": "image-content-delivery-failure",
+      "when": "a task is complete but native content cannot be delivered",
+      "then": "report the delivery failure and offer only a same-task content retry; do not claim success"
+    },
+    {
+      "id": "image-content-delivery-location",
+      "when": "native image bytes have been handed off after a completed task",
+      "then": "report an attachment or local path only when the current host actually confirms it; otherwise state that bytes were delivered through the current host and do not invent a preview, filename, or directory"
+    },
+    {
+      "id": "image-delivery-terminal-boundary",
+      "when": "the requested image bytes have been successfully delivered for the current task",
+      "then": "return one completion receipt and end the current response. Do not automatically inspect quality, open the image, search workspace or conversation history, invoke another Skill, or create another media task; wait for a new explicit user request."
+    },
+    {
+      "id": "image-content-index-missing",
+      "when": "a multi-image task has delivered some but not every requested zero-based content index from 0 through n-1",
+      "then": "report the delivered and missing indexes, offer only same-task retrieval for the missing indexes, and never resubmit"
+    },
+    {
+      "id": "image-content-resource-bound",
+      "when": "a completed task has multiple image results",
+      "then": "read zero-based content indexes sequentially, hand off each native byte result before the next read, and do not prefetch, concurrently fetch, or re-fetch delivered content"
+    },
+    {
+      "id": "image-explicit-validation",
+      "when": "the user explicitly asks to check request parameters without generation",
+      "then": "invoke preflight once with the finite request file; it never POSTs. A required profile-gap catalog GET is allowed. Do not claim a price, funds, authorization or successful generation from validation."
+    },
+    {
+      "id": "image-optional-task-record",
+      "when": "an explicit user/workspace task record is useful for later continuation",
+      "then": "pass its absolute path with submit --record. Keep only task identity, original operation, safe parameters and progress; no credentials, prompt or reference media. Resume only the recorded task and mark an index delivered only after actual host handoff."
+    }
   ]
 }

@@ -4,6 +4,16 @@
 
 # Changelog
 
+## 0.17.0 — 2026-09-05
+
+- Fix balance queries to use the existing CC Switch API-key usage route and public USD conversion metadata. Report actual wallet balance or Key allowance concisely, exclude subscription quotas, and reject legacy unlimited placeholders or missing units without inventing money. No browser login or media preflight is added.
+- Preserve original task counts, parameters, operations and IDs through continuation failures; retain Retry-After across commands without adding automatic submission retries.
+- Add explicit task records, same-task resume and host-confirmed delivery acknowledgement. Records exclude prompts, reference media and credentials.
+- Add optional doctor, parameter preflight and declared-capability model filtering; ordinary generation still uses only its selected installed profile, refreshing a missing declaration at most once.
+- Give media downloads a separate bounded transfer window and actionable local failure guidance. Redact credentials after JSON decoding and reject normalized local-only reference URLs.
+- Add lightweight update checks, pinned-source retrieval and checksum-verified platform package selection when matching assets are published; handle Gemini discovery precedence and Windows PowerShell UTF-8.
+- Align installed examples, public contracts and response schemas; retain the legacy migration bridge and keep real-host acceptance distinct from fixture tests.
+
 ## 0.16.0 — 2026-09-05
 
 - Parse standard TOML and explicit Codex profile, directory and credential sources.

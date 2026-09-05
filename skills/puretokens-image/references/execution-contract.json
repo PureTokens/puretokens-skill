@@ -18,33 +18,64 @@
     "whenManagedNativeExecutorUnavailable": "report_only_an_actual_executor_network_credential_adapter_or_attachment_byte_failure_and_never_open_a_browser_desktop_ui_or_computer_use"
   },
   "operations": {
-    "catalog": { "method": "GET", "url": "https://api.puretokensx.com/v1/media/models" },
+    "catalog": {
+      "method": "GET",
+      "url": "https://api.puretokensx.com/v1/media/models"
+    },
     "submit": {
       "method": "POST",
       "url": "https://api.puretokensx.com/v1/images/generations",
-      "requiredBodyFields": ["model", "prompt", "async"],
-      "fixedBody": { "async": true },
+      "requiredBodyFields": [
+        "model",
+        "prompt",
+        "async"
+      ],
+      "fixedBody": {
+        "async": true
+      },
       "conditionalBodyFields": {
         "all_user_optional_fields": "only_when_the_installed_exact_model_index_and_selected_profile_or_an_on_demand_live_input_schema_declares_the_field_and_value"
       }
     },
     "edit": {
       "method": "POST",
-      "allowedPaths": ["/v1/images/generations", "/v1/images/edits"],
+      "allowedPaths": [
+        "/v1/images/generations",
+        "/v1/images/edits"
+      ],
       "pathSource": "installed_model_index_and_selected_profile_or_on_demand_live_profile_operation_path",
       "contentType": "profile_declared_json_or_multipart",
       "requiresDeclaredProfileOperation": "image_edit",
-      "requiredBodyFields": ["model", "prompt", "async"],
-      "fixedBody": { "async": true },
+      "requiredBodyFields": [
+        "model",
+        "prompt",
+        "async"
+      ],
+      "fixedBody": {
+        "async": true
+      },
       "inputSource": "current_user_explicit_public_url_or_native_media_only",
       "transport": "profile_declared_json_public_url_or_multipart_file"
     },
-    "status": { "method": "GET", "urlTemplate": "https://api.puretokensx.com/v1/images/{task_id}" },
-    "content": { "method": "GET", "urlTemplate": "https://api.puretokensx.com/v1/images/{task_id}/content?index={index}" }
+    "status": {
+      "method": "GET",
+      "urlTemplate": "https://api.puretokensx.com/v1/images/{task_id}"
+    },
+    "content": {
+      "method": "GET",
+      "urlTemplate": "https://api.puretokensx.com/v1/images/{task_id}/content?index={index}"
+    }
   },
   "result": {
     "successRequires": "native_image_bytes",
-    "notSuccess": ["task_id", "status_text", "html", "svg", "component", "remote_url"],
+    "notSuccess": [
+      "task_id",
+      "status_text",
+      "html",
+      "svg",
+      "component",
+      "remote_url"
+    ],
     "sameTaskOnly": true,
     "neverAutoResubmit": true,
     "afterConfirmedDelivery": "return_one_completion_receipt_and_end_turn_without_quality_review_history_search_or_new_media_submission",
@@ -52,21 +83,39 @@
   },
   "taskIdentity": {
     "receiptField": "task_id",
-    "preferredResponseFieldSource": "installed_model_lifecycle_create_idField",
-    "fallbackTopLevelResponseFields": ["task_id", "id"],
+    "topLevelResponseFields": [
+      "task_id",
+      "id"
+    ],
+    "acceptedFormat": "^[A-Za-z0-9_-]{1,256}$",
     "neverDerivesIdFromUrlsNestedObjectsOrPrompt": true,
     "pathEncoding": "percent_encode_opaque_id_as_one_path_segment",
     "whenMissing": "report_task_id_not_returned_and_do_not_poll_download_or_resubmit"
   },
   "taskState": {
-    "declaredStateSource": "installed_model_lifecycle_poll",
     "reconciliationRequiredField": "reconciliation_required",
     "reconciliationPrecedesLifecycle": true,
     "whenReconciliationRequired": "stop_ordinary_polling_retain_same_task_id_do_not_submit_replacement_or_infer_refund",
-    "fallbackPendingStates": ["pending", "queued", "running", "in_progress"],
-    "fallbackSuccessStates": ["completed", "succeeded", "success"],
-    "fallbackFailureStates": ["failed", "cancelled", "canceled", "expired", "error"],
-    "whenUnrecognized": "report_raw_state_stop_automatic_polling_and_require_explicit_same_task_continuation"
+    "whenUnrecognized": "report_unknown_state_stop_automatic_polling_and_require_explicit_same_task_continuation",
+    "pendingStates": [
+      "pending",
+      "queued",
+      "processing",
+      "running",
+      "in_progress"
+    ],
+    "successStates": [
+      "completed",
+      "succeeded",
+      "success"
+    ],
+    "failureStates": [
+      "failed",
+      "cancelled",
+      "canceled",
+      "expired",
+      "error"
+    ]
   },
   "parameterValidation": {
     "defaultModel": "gpt-image-2",
@@ -76,7 +125,8 @@
     "allOptionalParametersRequire": "installed_model_index_and_selected_profile_parameter_schema_or_on_demand_live_input_schema",
     "enforcesDeclaredRequiresTogether": true,
     "sizeExpressionPrecedence": "send_only_the_highest_precedence_user_supplied_declared_size_expression",
-    "whenProfileIsMissing": "do_not_submit_requested_optional_parameters_or_media_operations"
+    "whenProfileIsMissing": "do_not_submit_requested_optional_parameters_or_media_operations",
+    "explicitPreflightCommand": "preflight --host <host-id> --request <request-file>; never POST; not a normal-generation preflight"
   },
   "inputMediaValidation": {
     "publicUrlReferenceRequires": "installed_model_index_and_selected_profile_or_on_demand_live_profile_property_and_declared_reference_transport",
@@ -112,7 +162,13 @@
     "serverDelay": "honor_valid_positive_retry_after_before_fallback",
     "serverDelayMustFitRemainingAutomaticDeadline": true,
     "afterHttp429": "honor_valid_positive_retry_after_then_continue_same_task_if_remaining_budget",
-    "fallbackDelaysSeconds": [3, 6, 12, 24, 30],
+    "fallbackDelaysSeconds": [
+      3,
+      6,
+      12,
+      24,
+      30
+    ],
     "steadyDelaySeconds": 30,
     "automaticDeadlineSeconds": 120,
     "maxAutomaticStatusReads": 6,
@@ -132,13 +188,63 @@
     "noTaskIdLaterContinuation": "require_explicit_confirmation_of_a_new_billable_request_before_one_new_post"
   },
   "failureReceipt": {
-    "requiredFields": ["failure_phase", "api_error_code", "http_status", "error_message", "next_action"],
-    "allowedFailurePhases": ["validation", "submission", "status", "content"],
-    "httpStatus": "numeric_when_returned_otherwise_not_returned",
-    "apiErrorCode": "exact_explicit_public_api_error_code_otherwise_not_returned",
+    "requiredFields": [
+      "failure_phase",
+      "error_message",
+      "next_action"
+    ],
+    "allowedFailurePhases": [
+      "validation",
+      "submission",
+      "status",
+      "content"
+    ],
+    "httpStatus": "numeric_only_when_returned_otherwise_omit",
+    "apiErrorCode": "exact_explicit_public_api_error_code_otherwise_omit",
     "errorMessage": "safe_user_facing_summary_using_only_sanitized_public_api_detail_or_a_fixed_local_explanation",
-    "retryAfterSeconds": "include_only_for_http_429_when_a_valid_positive_retry_after_is_returned",
-    "forbiddenDisclosure": ["raw_response_body", "upstream_or_provider_identifier", "internal_hostname_or_url", "stack_trace", "request_headers", "request_body", "credentials_or_session_data", "user_reference_url_or_attachment_bytes"]
+    "retryAfterSeconds": "include_when_a_valid_positive_retry_after_is_returned",
+    "forbiddenDisclosure": [
+      "raw_response_body",
+      "upstream_or_provider_identifier",
+      "internal_hostname_or_url",
+      "stack_trace",
+      "request_headers",
+      "request_body",
+      "credentials_or_session_data",
+      "user_reference_url_or_attachment_bytes"
+    ]
   },
-  "unsupportedInput": ["mask", "undeclared_image_edit_extensions", "non_current_user_media"]
+  "unsupportedInput": [
+    "mask",
+    "undeclared_image_edit_extensions",
+    "non_current_user_media"
+  ],
+  "continuationRecord": {
+    "optional": true,
+    "location": "explicit_absolute_user_or_workspace_artifact",
+    "commands": [
+      "resume",
+      "content",
+      "delivered"
+    ],
+    "preserves": [
+      "kind",
+      "task_id",
+      "model",
+      "operation",
+      "requested_count",
+      "safe_parameters",
+      "output_directory",
+      "downloaded_indexes",
+      "delivered_indexes"
+    ],
+    "excludes": [
+      "credentials",
+      "prompt",
+      "reference_urls",
+      "attachment_bytes"
+    ],
+    "resumeNeverSubmits": true,
+    "deliveryRequiresActualHostHandoff": true
+  }
 }

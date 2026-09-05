@@ -1,29 +1,229 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Native media executor receipt",
+  "title": "Native media executor machine receipt",
   "type": "object",
-  "required": ["ok"],
+  "required": [
+    "ok"
+  ],
   "properties": {
-    "ok": {"type": "boolean"},
-    "kind": {"enum": ["image", "video"]},
-    "operation": {"type": "string"},
-    "model": {"type": "string"},
-    "task_id": {"type": "string"},
-    "status": {"type": "string"},
-    "requested_count": {"type": "integer"},
-    "parameters": {"type": "object"},
-    "submission_outcome": {"enum": ["accepted", "unknown"]},
-    "reconciliation_required": {"type": "boolean"},
-    "downloaded_paths": {"type": "array", "items": {"type": "string"}},
-    "downloaded_indexes": {"type": "array", "items": {"type": "integer", "minimum": 0}},
-    "delivery_status": {"const": "downloaded_awaiting_host_delivery"},
-    "failure_phase": {"enum": ["validation", "submission", "status", "content"]},
-    "http_status": {"type": "integer"},
-    "api_error_code": {"type": "string"},
-    "local_error_code": {"type": "string"},
-    "error_message": {"type": "string"},
-    "next_action": {"type": "string"},
-    "retry_after_seconds": {"type": "integer", "minimum": 1}
+    "ok": {
+      "type": "boolean"
+    },
+    "kind": {
+      "enum": [
+        "image",
+        "video"
+      ]
+    },
+    "operation": {
+      "type": "string"
+    },
+    "model": {
+      "type": "string"
+    },
+    "task_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,256}$"
+    },
+    "status": {
+      "type": "string"
+    },
+    "requested_count": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 6
+    },
+    "parameters": {
+      "$ref": "task-record.schema.json#/properties/parameters"
+    },
+    "submission_outcome": {
+      "enum": [
+        "accepted",
+        "rejected",
+        "unknown",
+        "not_submitted"
+      ]
+    },
+    "reconciliation_required": {
+      "type": "boolean"
+    },
+    "downloaded_paths": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "downloaded_indexes": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "delivery_status": {
+      "enum": [
+        "downloaded_awaiting_host_delivery",
+        "partially_delivered",
+        "delivered"
+      ]
+    },
+    "failure_phase": {
+      "enum": [
+        "validation",
+        "submission",
+        "status",
+        "content"
+      ]
+    },
+    "http_status": {
+      "type": "integer",
+      "minimum": 100,
+      "maximum": 599
+    },
+    "api_error_code": {
+      "type": "string"
+    },
+    "local_error_code": {
+      "type": "string"
+    },
+    "error_message": {
+      "type": "string"
+    },
+    "next_action": {
+      "type": "string"
+    },
+    "retry_after_seconds": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "original_operation": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]{1,100}$",
+      "description": "Original generate/edit or declared media operation, preserved across same-task commands."
+    },
+    "retry_not_before": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "record_path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "delivered_indexes": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 5
+      }
+    },
+    "command": {
+      "enum": [
+        "submit",
+        "task",
+        "preflight",
+        "status",
+        "wait",
+        "resume",
+        "content",
+        "delivered"
+      ]
+    }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "$id": "https://puretokensx.com/schemas/executor-receipt.schema.json",
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "ok": {
+            "const": true
+          }
+        },
+        "required": [
+          "ok"
+        ]
+      },
+      "then": {
+        "required": [
+          "kind",
+          "operation"
+        ]
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "task_id"
+        ]
+      },
+      "then": {
+        "required": [
+          "kind",
+          "operation"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "submission_outcome": {
+            "const": "accepted"
+          }
+        },
+        "required": [
+          "submission_outcome"
+        ]
+      },
+      "then": {
+        "required": [
+          "task_id",
+          "status"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "ok": {
+            "const": false
+          }
+        },
+        "required": [
+          "ok"
+        ]
+      },
+      "then": {
+        "required": [
+          "next_action"
+        ],
+        "anyOf": [
+          {
+            "required": [
+              "failure_phase"
+            ]
+          },
+          {
+            "required": [
+              "local_error_code"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "delivery_status"
+        ]
+      },
+      "then": {
+        "required": [
+          "task_id",
+          "status"
+        ]
+      }
+    }
+  ]
 }

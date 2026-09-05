@@ -7,8 +7,8 @@
     "capturedAt": "2026-09-03T04:00:37.535Z"
   },
   "availabilityNotice": {
-    "en": "This list is generated from Pure Tokens' base model catalog using explicit image/video capabilities. At execution time, the exact model and required capability must still appear in the authenticated GET https://api.puretokensx.com/v1/media/models response.",
-    "zh": "这份清单由 Pure Tokens 基础模型目录中的明确图片/视频能力生成。实际执行时，精确模型和所需能力仍必须出现在认证后的 GET https://api.puretokensx.com/v1/media/models 响应中。"
+    "en": "This list is an installed selection aid from the base catalog, not a per-request authorization check. Ordinary generation uses only the selected installed profile without a live-catalog preflight; explicit discovery, a requested profile gap or rejection diagnosis may read the authenticated catalog once. The media API decides access.",
+    "zh": "这份清单用于安装后的模型选择，不是每次请求的认证检查。普通生成只读取选中 profile，不预查实时目录；明确查询、所需字段／操作缺口或拒绝诊断时才读取一次认证目录，访问权限以媒体 API 实际响应为准。"
   },
   "models": [
     {

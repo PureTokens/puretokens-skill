@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "name": "puretokens-connection",
-  "version": "0.16.0",
+  "version": "0.17.0",
   "entry": "SKILL.md",
   "displayName": "Pure Tokens Connection",
   "description": "Check the fixed Pure Tokens API identity declaration.",
@@ -63,7 +63,8 @@
     "doesNotReadActualBaseUrl": true,
     "doesNotInferIdentityFromModelCatalog": true,
     "neverRetry": true,
-    "doesNotUseMcpOrFallbackTransport": true
+    "doesNotUseMcpOrFallbackTransport": true,
+    "identityDoesNotVerifyCredentials": true
   },
-  "sourceSha256": "fc142f76130a567c86016ca53c700697a823b09843103b3e92df0c3699c2399f"
+  "sourceSha256": "445ad33b66e9d8557df07b9f2dd1cb18cd5537c54d922e2e89795a59830d2a41"
 }

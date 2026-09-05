@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://puretokensx.com/schemas/task-record.schema.json",
+  "title": "Explicit user/workspace continuation artifact; no credentials, prompts or reference media",
+  "type": "object",
+  "required": [
+    "format",
+    "kind"
+  ],
+  "properties": {
+    "format": {
+      "const": "puretokens-task-v1"
+    },
+    "kind": {
+      "enum": [
+        "image",
+        "video"
+      ]
+    },
+    "task_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,256}$"
+    },
+    "model": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]{1,160}$"
+    },
+    "original_operation": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]{1,100}$",
+      "description": "Original generate/edit or declared media operation, preserved across same-task commands."
+    },
+    "requested_count": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 6
+    },
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "n": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 6
+        },
+        "size": {
+          "type": "string"
+        },
+        "image_size": {
+          "type": "string"
+        },
+        "aspect_ratio": {
+          "type": "string"
+        },
+        "width": {
+          "type": "number"
+        },
+        "height": {
+          "type": "number"
+        },
+        "duration": {
+          "type": "number"
+        },
+        "resolution": {
+          "type": "string"
+        },
+        "generate_audio": {
+          "type": "boolean"
+        },
+        "strength": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "status": {
+      "enum": [
+        "pending",
+        "queued",
+        "processing",
+        "running",
+        "in_progress",
+        "completed",
+        "succeeded",
+        "success",
+        "failed",
+        "cancelled",
+        "canceled",
+        "expired",
+        "error",
+        "unknown"
+      ]
+    },
+    "submission_outcome": {
+      "enum": [
+        "accepted",
+        "rejected",
+        "unknown",
+        "not_submitted"
+      ]
+    },
+    "reconciliation_required": {
+      "type": "boolean"
+    },
+    "retry_not_before": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "output_dir": {
+      "type": "string",
+      "minLength": 1
+    },
+    "downloaded": {
+      "type": "object",
+      "patternProperties": {
+        "^[0-5]$": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "delivered": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 5
+      }
+    }
+  },
+  "additionalProperties": false
+}

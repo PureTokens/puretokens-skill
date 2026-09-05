@@ -3,8 +3,50 @@
   "schemaVersion": 1,
   "kind": "balance",
   "scenarios": [
-    { "id": "balance-bearer-read-unavailable", "when": "GET https://api.puretokensx.com/v1/dashboard/billing/subscription is not authenticated or cannot be executed", "then": "report the returned status or error and direct the user to the Pure Tokens web console; do not estimate or request credentials" },
-    { "id": "balance-direct-request-start", "when": "a balance read is requested", "then": "invoke the installed managed native executor with the current host ID for the two fixed billing GETs; do not look for a separate balance interface" },
-    { "id": "balance-response", "when": "the fixed Pure Tokens balance API returns a balance response", "then": "report returned totals and the defined subtraction once, state the unspecified display unit and account/key scope, and do not retry or infer currency" }
+    {
+      "id": "balance-direct-request-start",
+      "when": "the user asks for balance",
+      "then": "invoke the installed executor once with the active host; read fixed console api-keys/usage with the matching API key, then public status without a credential; at most two GETs within 30 seconds, no init, catalog, browser login or media preflight"
+    },
+    {
+      "id": "balance-wallet-response",
+      "when": "usage succeeds with unlimited_quota true and a positive public quota_per_unit",
+      "then": "divide actual total_available by quota_per_unit; default to one concise account wallet balance line in USD; never call the wallet unlimited or subtract used again"
+    },
+    {
+      "id": "balance-key-response",
+      "when": "usage succeeds with unlimited_quota false and valid unit metadata",
+      "then": "report current Key remaining allowance in USD, explicitly not account wallet balance; show used and total only on request"
+    },
+    {
+      "id": "balance-zero-negative-small",
+      "when": "available amount is zero, negative or nonzero below 0.01 USD",
+      "then": "preserve actual zero or overdraft; show a small positive amount as below 0.01 USD instead of zero; never infer infinity"
+    },
+    {
+      "id": "balance-subscription-scope",
+      "when": "the user asks for combined balance, subscription funds or a mismatch with the account overview",
+      "then": "explain that this API reports wallet or Key allowance without subscription quota; direct combined-balance questions to the Pure Tokens console, do not add or invent amounts"
+    },
+    {
+      "id": "balance-legacy-placeholder",
+      "when": "a legacy billing limit such as 100000000 is supplied instead of token_usage data",
+      "then": "reject it as unusable, never calculate a balance from the placeholder and never call a legacy fallback endpoint"
+    },
+    {
+      "id": "balance-bearer-read-unavailable",
+      "when": "the usage request fails authentication, returns an HTTP or logical error, or lacks declared balance fields",
+      "then": "stop after the one request with no amount; show the actual sanitized reason, guide 401/403 to active connection and Key settings; other failures to a later query or the console; no automatic retry or credential request"
+    },
+    {
+      "id": "balance-unit-unavailable",
+      "when": "public status fails or quota_per_unit is absent, invalid or non-positive",
+      "then": "report balance unconfirmed without monetary amounts; public metadata rejection does not prove the Key is invalid; do not assume a default divisor, use raw quota as money, or retry"
+    },
+    {
+      "id": "balance-not-a-quote",
+      "when": "the user asks if balance covers a generation",
+      "then": "do not infer a price or guarantee payment; compare only an actual quote with matching currency and scope, and let the submission API decide; no balance preflight per media task"
+    }
   ]
 }

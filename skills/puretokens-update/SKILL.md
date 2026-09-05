@@ -1,33 +1,37 @@
 ---
 name: puretokens-update
-description: 用户要求检查、安装或升级本机已安装的 Pure Tokens Skills 时使用。
+description: 用户要求检查版本、安装、升级、诊断或了解 Pure Tokens Skills 用法时使用。
 ---
 
 # Pure Tokens Update
 
-用于用户主动要求安装、升级、初始化或了解用法。普通媒体请求不自动更新。安装提示来源是官方仓库 `https://github.com/PureTokens/puretokens-skill`。读取 `references/usage-guide.md`，异常时按需读 `references/behavior-scenarios.json`。
+只响应用户主动的安装、升级、检查或帮助请求。普通媒体生成不自动更新、初始化或诊断。仅问用法时直接读 `references/usage-guide.md` 回答，不运行 init／doctor，不查凭据或访问网络。异常时才读 `references/behavior-scenarios.json`。
 
-## 安装和更新
+## 检查、安装和更新
 
-取得官方 main 的最新本地源码（可用宿主现成 GitHub 下载能力，无需给用户安装 Git、Node、Python 或 Go），从源码执行：
+已安装时，从本 SKILL.md 的绝对目录解析同级 `.puretokens-executor/puretokens-skill-fetch.sh`（Windows 为 `.ps1`）。首次安装由宿主现成 HTTPS 下载能力把官方仓库 `runtime/puretokens-skill-fetch.sh`／`.ps1` 下载为本地文件，再运行；不把远程响应管道进 shell，不安装 Git、Node、Python 或 Go。
 
 ```text
-macOS/Linux: sh runtime/puretokens-skill-install.sh sync --host <当前宿主 ID>
-Windows: powershell -NoProfile -File runtime/puretokens-skill-install.ps1 sync -Host <当前宿主 ID>
+macOS/Linux: sh <fetch脚本绝对路径> check-update --host <当前宿主ID>
+macOS/Linux: sh <fetch脚本绝对路径> install --host <当前宿主ID>
+macOS/Linux: sh <fetch脚本绝对路径> update --host <当前宿主ID>
+Windows: powershell.exe -NoProfile -ExecutionPolicy Bypass -File <fetch脚本绝对路径> check-update -Host <当前宿主ID>
 ```
 
-宿主 ID 为 claude-code、codex、workbuddy、gemini-cli、grok-build、opencode、trae；识别不了先询问。自定义安装目录可同时传 --target/-Target 的绝对路径，保留 host 供 init 使用。不要以当前工作目录猜宿主。
+Windows 的 install／update 使用相同参数形式替换子命令。ExecutionPolicy 只作用于该进程，不修改系统策略；宿主明确阻止执行时停止，不绕过审批。
 
-安装器统一同步六个 Skill、当前平台校验过的执行器，保护非受管同名目录。更新锁阻止并发写入；失败恢复已替换文件，中断留下的受管事务在下次 sync 时恢复。只删除确认受管的旧 Skill／Node runtime，不能清理未知文件或用户配置。
+宿主 ID 为 claude-code、codex、workbuddy、gemini-cli、grok-build、opencode、trae；识别不了先询问。自定义路径可同时传 --target／-Target 绝对目录，保留 host 供 init 使用。fetch 会解析官方 main 的精确提交和版本；check-update 只报告版本差异，不修改安装或执行 init。安装／更新优先选择版本及提交匹配、SHA-256 校验通过的平台包；没有匹配已发布包时，取得相同提交的官方源码归档，再执行其中的 sync。下载或校验失败不重复安装、不改用镜像。已有明确官方检出也可运行它的 `runtime/puretokens-skill-install.sh/.ps1 sync`。
 
-Codex CLI 可用时用官方 plugin list 检查旧 puretokens-media：确实发现后才移除并复核。检查接口不可用不阻挡正常安装，但说明插件检查未完成；若用户仍看到旧 Media 指令，引导在 Codex Plugins 中卸载旧插件后完全重启。已发现插件却移除失败时停止，不称迁移成功。
+只由 sync 写入六个 Skill 和一个当前平台原生执行器及下载／同步脚本。它保护非受管目录；更新锁阻止并发，中断的受管事务在下次显式 sync 时恢复。Gemini 如已有较高优先级的共享 `.agents/skills`，更新其有效目录并报告重复的低优先级副本，不擅自删除。只删除确认受管的旧官方 Skill／Node runtime；未知文件和用户配置保持不动。
 
-只在收到 `Pure Tokens Skills <版本> synchronized with the native API executor at <目录>` 后报告安装版本。然后展示 init 结果；初始化失败不等于文件同步失败。超时／中断不能声称完成或自动重试。更新后新开对话；移除旧插件后完全退出并重启 Codex。
+Codex 只用官方 plugin 接口检查旧 puretokens-media；确实发现后才移除并复核。检查不可用要说明但不阻挡正常安装；已发现却无法移除时停止。移除后完全重启 Codex，再新开对话。
 
-## 初始化
+只在收到 `Pure Tokens Skills <版本> synchronized with the native API executor at <目录>` 后报告同步完成；随后 init 失败不回滚已完成的文件同步。超时／中断不能声称完成或自动重试。成功后提醒新开宿主对话，不重复列出六份相同版本信息。
 
-按 SKILL.md 位置解析同级 `../.puretokens-executor/puretokens-api init --host <当前宿主 ID>`，Windows 为 `.exe`，不依赖 PATH。执行器先请求固定 `https://api.puretokensx.com/v1` 检查公开身份，再请求一次 `/v1/media/models` 验证当前凭据认证。总共最多两次只读请求，不创建付费任务。
+## 初始化与诊断
 
-只有 `configuration_status: "verified"`、`api_identity_confirmed: true`、`credential_verified: true` 同时成立时，才说“API 可达且当前凭据认证通过”；不能保证所有模型权限、余额、媒体创建或宿主附件交付都可用。其他情况展示脱敏状态、说明和下一步，不猜配置错误；仍展示版本及 `references/usage-guide.md` 使用须知。
+从当前 SKILL.md 的绝对目录解析同级 `../.puretokens-executor/puretokens-api`；Windows 使用 `puretokens-api.exe`，不依赖 PATH。`init --host <host-id>` 先请求固定 `/v1` 公开身份，再请求一次 `/v1/media/models` 验证认证；最多两次只读请求，无付费任务。`doctor --host <host-id>` 额外检查本次加载位置和当前宿主已知 Skill 目录中的安装版本／重复项，再执行同样的只读检查；不扫描 Home、不读取其他宿主配置，也不自动修复。
 
-Skill 和安装脚本不读取或修改用户认证文件；仅执行器按当前宿主的明确凭据来源在内存中读取匹配 Key。不扫描 Home、不打印配置、不索取 Key、不安装运行时、不运行开发生成器，不使用 MCP、代理或 Computer Use。
+只有 init 的 configuration_status 为 verified 且 api_identity_confirmed、credential_verified 均为 true，才说身份与凭据认证通过。doctor 不能证明安装二进制校验、任意会话配置覆盖或宿主附件交付成功；按返回字段说明已检查项目与未验证项，不承诺模型权限、余额或媒体可用性。
+
+Skill 和安装脚本不读取、显示或修改认证文件。只有原生执行器按当前宿主明确记录在内存中读取匹配凭据；不使用其他认证、MCP、代理或 Computer Use。

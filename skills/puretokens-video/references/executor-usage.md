@@ -1,51 +1,58 @@
-# Native executor commands
+# Native video executor commands
 
-Resolve the executor absolute path from the loaded Skill directory: sibling `.puretokens-executor/puretokens-api` on macOS/Linux; `.puretokens-executor/puretokens-api.exe` on Windows. The process working directory is irrelevant. Use the current host ID, not a provider label.
-
-macOS/Linux example (substitute actual absolute paths):
+Resolve the executable from this Skill's absolute directory: sibling `.puretokens-executor/puretokens-api` on macOS/Linux; `.puretokens-executor/puretokens-api.exe` on Windows. Use the current host ID. All commands are one-shot; no user runtime is required.
 
 ```sh
 "/absolute/skills/.puretokens-executor/puretokens-api" submit --host codex --request "/absolute/request.json"
 ```
 
-Windows PowerShell example:
-
 ```powershell
 & "C:\absolute\skills\.puretokens-executor\puretokens-api.exe" submit --host codex --request "C:\absolute\request.json"
 ```
 
-Create the UTF-8 request using the host file tool. Do not put credentials in it. Remove the request file after the command completes. JSON input is finite; no interactive stdin, heredoc improvisation, open terminal pipe or shell-escaped prompt is needed.
+Create UTF-8 JSON using the host file tool; use escaped backslashes or forward slashes for Windows paths. Remove the request file after the command. Never put credentials in requests or prompts on the command line.
+
+Generation:
 
 ```json
-{"kind":"image","operation":"generate","model":"gpt-image-2","prompt":"A mountain lake at sunrise","parameters":{"image_size":"1K"}}
+{"kind":"video","operation":"generate","model":"grok-imagine-video-1.5-preview","prompt":"A slow camera movement over a mountain lake","parameters":{"duration":5}}
 ```
 
-Local image edit:
+Current local first-frame image:
 
 ```json
-{"kind":"image","operation":"edit","media_operation":"image_edit","model":"gpt-image-2","prompt":"Change only the sky","attachments":[{"field":"image","path":"/absolute/current.png"}]}
+{"kind":"video","operation":"generate","media_operation":"image_to_video","model":"grok-imagine-video-1.5-preview","prompt":"A gentle camera movement","attachments":[{"field":"image","path":"/absolute/current.png"}]}
 ```
 
-Reference-image video:
+`submit` returns the task ID immediately; it never polls or downloads. Do not repeat a submission with unknown output. `status` reads once and `wait` performs one bounded window. Carry the original operation as `original_operation`, model, confirmed count and safe parameters into a same-task request:
 
 ```json
-{"kind":"video","operation":"generate","media_operation":"reference_image_video","model":"seedance-2.0-mini","prompt":"A gentle camera movement preserving the character","attachments":[{"field":"reference_images","path":"/absolute/current.png"}]}
+{"kind":"video","original_operation":"generate","task_id":"RETURNED_ID","model":"grok-imagine-video-1.5-preview","requested_count":1,"parameters":{"duration":5}}
 ```
 
-`submit` returns one immediate JSON receipt. It never polls or downloads. Legacy `task` is a compatibility alias with the same immediate-submit behavior. Do not issue another submit after a started request with missing output.
-
-`status` reads once; `wait` performs one bounded window. Use the returned task_id:
+After a completed same-task receipt, `content --host codex --request <file>` downloads one index:
 
 ```json
-{"kind":"image","task_id":"RETURNED_ID","model":"gpt-image-2","requested_count":1}
+{"kind":"video","original_operation":"generate","task_id":"RETURNED_ID","model":"grok-imagine-video-1.5-preview","requested_count":1,"parameters":{"duration":5},"task_status":"completed","index":0,"output_dir":"/absolute/existing/output-directory"}
 ```
 
-`content` downloads one index, only after a same-task completed status:
+A video task has one output, index 0. Attach the returned `downloaded_paths` file before requesting another index. Downloading is not delivery. Existing validated same-task files in the same directory are reused.
 
-```json
-{"kind":"image","task_id":"RETURNED_ID","task_status":"completed","requested_count":1,"index":0,"output_dir":"/absolute/existing/output-directory"}
+## Optional continuation record
+
+Set `--record <absolute-task-json>` on submit only when an explicit user/workspace artifact is useful. Choose the output location with `content --output-dir <existing-absolute-directory>`; it can also be retained from an explicit submission output_dir. The record contains task ID, kind, model, original operation, requested count, safe parameters and progress; no prompt, credentials, reference URL or media bytes. Do not edit it by hand.
+
+```text
+<executor> submit --host codex --request <request-file> --record <absolute-task-json>
+<executor> resume --host codex --record <absolute-task-json>
+<executor> content --host codex --record <absolute-task-json> --index 0 --output-dir <existing-absolute-output-directory>
+<executor> delivered --record <absolute-task-json> --index 0
 ```
 
-For Windows paths, use JSON-escaped backslashes or forward slashes. Attach the returned downloaded_paths file to the user before retrieving the next index. It is not delivered merely because it exists locally. A same-task validated file in the same output directory is reused without another content request. Output files are user artifacts, not a hidden cache; preserve or clean them according to the user's chosen output location.
+`status`, `wait` and `resume` accept an existing `--record` instead of `--request`; never combine both. `resume` performs a bounded wait for only the recorded task. Call `delivered` only after the host actually hands off that downloaded file. Records and output files are explicit user artifacts, retained or cleaned according to the user's chosen location. A record cannot recover an unknown submission that returned no task ID.
 
-Receipts preserve model/task identity on failure. `submission_outcome: unknown` never authorizes resubmission. `api_error_code` is present only when returned by the API; local classifications use `local_error_code`. `init` checks public identity then one authenticated catalog response without creating a media task. `connection` checks public identity only. `balance` reads two bearer billing endpoints and reports API display units, without inventing a currency, unlimited status or account scope.
+## Explicit validation
+
+`preflight --host codex --request <file>` checks the requested model parameters and attachment representation without a POST. Use it only for an explicit check; normal generation validates during submit. It is not a price quote or a guarantee of permission, balance or media delivery. A profile gap may require one catalog GET.
+
+Machine receipts preserve available context with `original_operation` separate from the invoked command. `retry_not_before` is an RFC3339 lower bound for the next same-task read; preserve it across continuation. An omitted continuation count is unknown, not one; image content requires the confirmed original count. Report `submission_outcome: unknown` as uncertainty; never automatically resubmit. Show API codes only if actually returned, and retain only sanitized error detail. Keep user-facing updates to task ID/status, actual artifact delivery or the needed corrective action.

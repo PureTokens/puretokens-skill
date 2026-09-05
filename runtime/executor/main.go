@@ -33,7 +33,7 @@ const (
 	maxVideoBytes    int64 = 512 << 20
 )
 
-var executorVersion = "0.16.0"
+var executorVersion = "0.17.0"
 
 type attachment struct {
 	Field string `json:"field"`
@@ -41,10 +41,13 @@ type attachment struct {
 }
 
 type taskRequest struct {
-	MediaOperation string `json:"media_operation,omitempty"`
-	Index          int    `json:"index,omitempty"`
-	TaskStatus     string `json:"task_status,omitempty"`
-	route          string
+	MediaOperation         string `json:"media_operation,omitempty"`
+	Index                  int    `json:"index,omitempty"`
+	TaskStatus             string `json:"task_status,omitempty"`
+	OriginalOperation      string `json:"original_operation,omitempty"`
+	RetryNotBefore         string `json:"retry_not_before,omitempty"`
+	ReconciliationRequired bool   `json:"reconciliation_required,omitempty"`
+	route                  string
 
 	Kind           string         `json:"kind"`
 	Operation      string         `json:"operation"`
@@ -71,6 +74,10 @@ type receipt struct {
 	DownloadedIndexes []int          `json:"downloaded_indexes,omitempty"`
 	DeliveryStatus    string         `json:"delivery_status,omitempty"`
 	LocalErrorCode    string         `json:"local_error_code,omitempty"`
+	OriginalOperation string         `json:"original_operation,omitempty"`
+	RetryNotBefore    string         `json:"retry_not_before,omitempty"`
+	RecordPath        string         `json:"record_path,omitempty"`
+	DeliveredIndexes  []int          `json:"delivered_indexes,omitempty"`
 
 	OK                     bool   `json:"ok"`
 	Kind                   string `json:"kind,omitempty"`
@@ -104,9 +111,12 @@ type initReceipt struct {
 type service struct {
 	profilesRoot string
 
-	baseURL string
-	client  *http.Client
-	token   string
+	baseURL         string
+	client          *http.Client
+	token           string
+	downloadTimeout time.Duration
+	now             func() time.Time
+	wait            func(context.Context, time.Duration) bool
 }
 
 func main() {
@@ -133,53 +143,107 @@ func run(args []string, input io.Reader, output io.Writer) error {
 	flags.SetOutput(io.Discard)
 	host := flags.String("host", "", "")
 	requestFile := flags.String("request", "", "")
-	if err := flags.Parse(args[1:]); err != nil || *host == "" || len(flags.Args()) != 0 {
-		writeReceipt(output, validationFailure("The current host must be identified before the API request can start."))
+	recordFile := flags.String("record", "", "")
+	index := flags.Int("index", 0, "")
+	outputDir := flags.String("output-dir", "", "")
+	if err := flags.Parse(args[1:]); err != nil || (*host == "" && command != "delivered") || len(flags.Args()) != 0 {
+		writeReceipt(output, validationFailure("Identify the current host and use supported command options before starting the request."))
 		return errors.New("invalid command")
 	}
-
+	isTask := command == "submit" || command == "task" || command == "status" || command == "wait" || command == "content" || command == "resume" || command == "delivered" || command == "preflight"
+	if !isTask && command != "init" && command != "doctor" && command != "connection" && command != "balance" && command != "models" {
+		writeReceipt(output, validationFailure("Choose init, doctor, connection, balance, models, preflight, submit, status, wait, content, resume or delivered."))
+		return errors.New("unknown command")
+	}
+	if (*recordFile != "" && (!isTask || command == "preflight")) || ((*index != 0 || *outputDir != "") && (*recordFile == "" || (command != "content" && command != "delivered"))) || ((command == "resume" || command == "delivered") && *recordFile == "") || (*recordFile != "" && *requestFile != "" && command != "submit" && command != "task") || (!isTask && command != "models" && *requestFile != "") {
+		writeReceipt(output, validationFailure("Use --request for media JSON, --record for same-task recovery, and --index/--output-dir only for recorded content. Never submit into an existing record."))
+		return errors.New("incompatible command options")
+	}
+	if *requestFile != "" {
+		data, err := readBoundedFile(*requestFile, maxResponseBytes)
+		if err != nil || !json.Valid(data) {
+			writeReceipt(output, validationFailure("The request file must contain one readable JSON object; no API request was sent."))
+			return errors.New("invalid request file")
+		}
+		input = bytes.NewReader(data)
+	}
+	var request taskRequest
+	if isTask {
+		if *recordFile != "" && command != "submit" && command != "task" {
+			record, err := loadTaskRecord(*recordFile)
+			if err != nil {
+				writeReceipt(output, validationFailure("The task record could not be read. Recover the original receipt; do not submit again."))
+				return err
+			}
+			request = record.request()
+		} else {
+			var err error
+			request, err = decodeTaskRequest(input)
+			if err != nil {
+				writeReceipt(output, validationFailure("A complete media request JSON is required; no API request was sent."))
+				return err
+			}
+		}
+		if command == "status" || command == "wait" || command == "content" || command == "resume" || command == "delivered" {
+			request.Operation = "continue"
+		}
+	}
+	svc := service{baseURL: apiOrigin, client: &http.Client{Timeout: 90 * time.Second, CheckRedirect: rejectRedirect}, profilesRoot: installedSkillsRoot()}
+	if command == "delivered" {
+		return executeRecordedTask(command, *recordFile, request, *index, *outputDir, output, svc)
+	}
 	token, err := credentialForHost(*host)
 	if err != nil {
 		if command == "init" {
 			writeJSON(output, initCredentialFailure(err))
 			return err
 		}
+		if command == "doctor" {
+			return executeDoctorCredentialFailure(output, svc, *host, err)
+		}
 		status, message, next := credentialFailureDetails(err)
-		writeReceipt(output, receipt{OK: false, FailurePhase: "validation", LocalErrorCode: status, ErrorMessage: message, NextAction: next})
+		result := receipt{}
+		if isTask {
+			if !validTaskID(request.TaskID) {
+				request.TaskID = ""
+			}
+			result = taskReceipt(request, request.TaskID, request.TaskStatus)
+		}
+		writeReceipt(output, mergeFailure(result, receipt{FailurePhase: "validation", LocalErrorCode: status, ErrorMessage: message, NextAction: next}))
 		return err
 	}
 	defer clearString(&token)
-	svc := service{baseURL: apiOrigin, token: token, client: &http.Client{Timeout: 90 * time.Second, CheckRedirect: rejectRedirect}, profilesRoot: installedSkillsRoot()}
-	if *requestFile != "" {
-		data, err := readBoundedFile(*requestFile, maxResponseBytes)
-		if err != nil {
-			writeReceipt(output, validationFailure("The request file could not be read; no API request was sent."))
-			return err
-		}
-		data = bytes.TrimPrefix(data, []byte{0xef, 0xbb, 0xbf})
-		if !json.Valid(data) {
-			writeReceipt(output, validationFailure("The request file must contain exactly one valid JSON object."))
-			return errors.New("invalid request file")
-		}
+	svc.token = token
+	if *recordFile != "" {
+		return executeRecordedTask(command, *recordFile, request, *index, *outputDir, output, svc)
+	}
+	if isTask {
+		data, _ := json.Marshal(request)
 		input = bytes.NewReader(data)
 	}
-
 	switch command {
 	case "init":
 		return executeInit(output, svc)
+	case "doctor":
+		return executeDoctor(output, svc, *host)
 	case "connection":
 		return executeReadOnly(output, svc, "/v1", "connection")
 	case "balance":
 		return executeBalance(output, svc)
 	case "models":
-		return executeReadOnly(output, svc, "/v1/media/models", "models")
+		if *requestFile == "" {
+			input = nil
+		}
+		return executeModelQuery(output, svc, input)
+	case "preflight":
+		return executePreflight(output, svc, request)
 	case "task", "submit":
 		return executeTask(input, output, svc)
 	case "status", "wait", "content":
 		return executeExistingTask(command, input, output, svc)
 	default:
-		writeReceipt(output, validationFailure("Choose one of: init, connection, balance, models, submit, status, wait, content."))
-		return errors.New("unknown command")
+		writeReceipt(output, validationFailure("This command is unavailable."))
+		return errors.New("unavailable command")
 	}
 }
 
@@ -360,7 +424,7 @@ func executeTask(input io.Reader, output io.Writer, svc service) error {
 		return err
 	}
 	if request.Operation == "continue" {
-		result := receipt{OK: true, Kind: request.Kind, Operation: request.Operation, TaskID: request.TaskID, Status: "pending"}
+		result := taskReceipt(request, request.TaskID, continuationStatus(request.TaskStatus))
 		return pollAndDeliver(output, svc, request, result)
 	}
 
@@ -378,9 +442,9 @@ func executeTask(input io.Reader, output io.Writer, svc service) error {
 	}
 	response, status, retryAfter, apiCode, apiMessage, err := svc.request(context.Background(), http.MethodPost, path, body, contentType)
 	if err != nil || status < 200 || status >= 300 {
-		result := apiFailure("submission", status, retryAfter, apiCode, apiMessage, "Review the returned error before changing this request.")
-		result.Kind = request.Kind
-		result.Model = request.Model
+		result := mergeFailure(taskReceipt(request, "", ""), apiFailure("submission", status, retryAfter, apiCode, apiMessage, "Review the returned error before changing this request."))
+		result.SubmissionOutcome = "rejected"
+		result = withRetry(result, retryAfter, svc.clock())
 		if err != nil || status >= 500 || (status >= 300 && status < 400) {
 			result.SubmissionOutcome = "unknown"
 			result.NextAction = "Submission may have started. Do not automatically repeat the POST or infer billing; ask the user before creating another task."
@@ -391,10 +455,13 @@ func executeTask(input io.Reader, output io.Writer, svc service) error {
 
 	taskID, state, reconciliationRequired, ok := taskIdentity(response)
 	if !ok {
-		writeReceipt(output, receipt{OK: false, Kind: request.Kind, Operation: request.Operation, Model: request.Model, FailurePhase: "submission", HTTPStatus: status, SubmissionOutcome: "unknown", ErrorMessage: "The API accepted a response but did not return a usable task ID. The submission outcome is unknown.", NextAction: "Do not resubmit automatically. Ask the user before creating a new billable request."})
+		result := mergeFailure(taskReceipt(request, "", ""), receipt{FailurePhase: "submission", HTTPStatus: status, ErrorMessage: "The API accepted a response but did not return a usable task ID. The submission outcome is unknown.", NextAction: "Do not resubmit automatically. Ask the user before creating a new billable request."})
+		result.SubmissionOutcome = "unknown"
+		writeReceipt(output, withRetry(result, retryAfter, svc.clock()))
 		return errors.New("task id missing")
 	}
 	result := taskReceipt(request, taskID, state)
+	result = withRetry(result, retryAfter, svc.clock())
 	result.SubmissionOutcome = "accepted"
 	result.ReconciliationRequired = reconciliationRequired
 	if reconciliationRequired {
@@ -461,7 +528,7 @@ func validateTaskRequest(request taskRequest) error {
 	if request.RequestedCount < 0 || request.RequestedCount > 6 {
 		return errors.New("invalid requested count")
 	}
-	if request.OutputDir != "" {
+	if request.Operation != "continue" && request.OutputDir != "" {
 		info, err := os.Stat(request.OutputDir)
 		if err != nil || !info.IsDir() {
 			return errors.New("invalid output directory")
@@ -471,7 +538,15 @@ func validateTaskRequest(request taskRequest) error {
 		if !validTaskID(request.TaskID) || len(request.Attachments) != 0 {
 			return errors.New("invalid continuation")
 		}
+		if request.RetryNotBefore != "" {
+			if _, err := time.Parse(time.RFC3339, request.RetryNotBefore); err != nil {
+				return errors.New("invalid retry time")
+			}
+		}
 		return nil
+	}
+	if request.TaskID != "" || request.TaskStatus != "" || request.OriginalOperation != "" || request.RetryNotBefore != "" || request.ReconciliationRequired || request.Index != 0 {
+		return errors.New("new submissions cannot contain existing-task metadata")
 	}
 	if strings.TrimSpace(request.Model) == "" || strings.TrimSpace(request.Prompt) == "" {
 		return errors.New("missing model or prompt")
@@ -596,27 +671,31 @@ func pollAndDeliver(output io.Writer, svc service, request taskRequest, result r
 	policy := pollingPolicy(request.Kind, request.Poll)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(policy.deadline)*time.Second)
 	defer cancel()
+	if request.ReconciliationRequired || terminalFailure(result.Status) || terminalSuccess(result.Status) {
+		return finishKnownTask(output, result)
+	}
 	for read := 0; read < policy.maxReads; read++ {
-		delay := policy.delays[min(read, len(policy.delays)-1)]
-		if !waitContext(ctx, time.Duration(delay)*time.Second) {
+		delay := time.Duration(policy.delays[min(read, len(policy.delays)-1)]) * time.Second
+		if result.RetryNotBefore != "" {
+			delay = retryDelay(result.RetryNotBefore, svc.clock())
+		}
+		if !svc.waitFor(ctx, delay) {
 			break
 		}
+		result.RetryNotBefore = ""
+		result.RetryAfterSecs = 0
 		body, status, retry, code, message, err := svc.request(ctx, http.MethodGet, statusPath(request.Kind, result.TaskID), nil, "")
 		if err != nil || status < 200 || status >= 300 {
+			result = withRetry(mergeFailure(result, apiFailure("status", status, retry, code, message, "Keep this task ID. Continue this same task when the API is available; do not resubmit.")), retry, svc.clock())
 			if status == 429 && retry > 0 && read+1 < policy.maxReads {
-				if !waitContext(ctx, time.Duration(retry)*time.Second) {
-					break
-				}
-				// Retry-After replaces, rather than adds to, the next ordinary delay.
-				policy.delays = append([]int(nil), policy.delays...)
-				policy.delays[min(read+1, len(policy.delays)-1)] = 0
 				continue
 			}
-			failed := mergeFailure(result, apiFailure("status", status, retry, code, message, "Keep this task ID. Continue this same task when the API is available; do not resubmit."))
-			writeReceipt(output, failed)
+			writeReceipt(output, result)
 			return errors.New("status read failed")
 		}
+		result = clearTaskFailure(result)
 		result, err = applyTaskStatus(result, body, status)
+		result = withRetry(result, retry, svc.clock())
 		if err != nil {
 			writeReceipt(output, result)
 			return err
@@ -626,10 +705,16 @@ func pollAndDeliver(output io.Writer, svc service, request taskRequest, result r
 			writeReceipt(output, result)
 			return nil
 		}
-		if retry > 0 && read+1 < policy.maxReads {
-			policy.delays = append([]int(nil), policy.delays...)
-			policy.delays[min(read+1, len(policy.delays)-1)] = retry
+	}
+	if result.HTTPStatus == http.StatusTooManyRequests || retryDelay(result.RetryNotBefore, svc.clock()) > 0 {
+		result.OK = false
+		result.FailurePhase = "status"
+		result.NextAction = "Wait until retry_not_before, then continue this same task. The automatic wait window ended; do not submit again."
+		if result.ErrorMessage == "" {
+			result.ErrorMessage = "The API requested a wait longer than the remaining automatic wait window."
 		}
+		writeReceipt(output, result)
+		return errors.New("retry exceeds wait window")
 	}
 	result.OK = false
 	result.FailurePhase = "status"
@@ -684,19 +769,33 @@ func deliverTask(output io.Writer, svc service, request taskRequest, result rece
 		writeReceipt(output, mergeFailure(result, validationFailure("Choose an existing absolute output directory for the media file.")))
 		return errors.New("output directory required")
 	}
+	if info, err := os.Stat(request.OutputDir); err != nil || !info.IsDir() {
+		result = mergeFailure(result, validationFailure("The output directory is missing or unavailable. Choose an existing output directory, then retrieve this same task."))
+		result.LocalErrorCode = "output_directory_unavailable"
+		writeReceipt(output, result)
+		return errors.New("output directory unavailable")
+	}
+	if request.Kind == "image" && request.RequestedCount == 0 {
+		result = mergeFailure(result, validationFailure("The original image count is unknown. Recover requested_count from the original submission receipt or task record before downloading."))
+		result.LocalErrorCode = "original_count_unknown"
+		writeReceipt(output, result)
+		return errors.New("unknown image count")
+	}
 	if request.Index < 0 || request.Index >= max(1, request.RequestedCount) || (request.Kind == "video" && request.Index != 0) {
 		writeReceipt(output, mergeFailure(result, validationFailure("Choose a valid zero-based content index.")))
 		return errors.New("invalid index")
 	}
 	destination, status, retry, code, message, err := svc.download(context.Background(), contentPath(request.Kind, result.TaskID, request.Index), request.Kind, request.OutputDir)
 	if err != nil {
-		writeReceipt(output, mergeFailure(result, apiFailure("content", status, retry, code, message, "Keep this task ID. Retrieve only the missing index; do not submit another task.")))
+		failure := contentFailure(err, status, retry, code, message)
+		writeReceipt(output, withRetry(mergeFailure(result, failure), retry, svc.clock()))
 		return err
 	}
 	result.DownloadedPaths = []string{destination}
 	result.DownloadedIndexes = []int{request.Index}
 	result.DeliveryStatus = "downloaded_awaiting_host_delivery"
 	result.Status = "completed"
+	result = withRetry(result, retry, svc.clock())
 	result.NextAction = "Attach this local file to the user. Download the next missing index only after handing off this file. Keep outputs only as requested by the user."
 	writeReceipt(output, result)
 	return nil
@@ -740,11 +839,17 @@ func terminalFailure(state string) bool {
 }
 
 func (svc service) request(ctx context.Context, method, path string, body io.Reader, contentType string) ([]byte, int, int, string, string, error) {
+	return svc.requestWithAuthentication(ctx, method, path, body, contentType, true)
+}
+
+func (svc service) requestWithAuthentication(ctx context.Context, method, path string, body io.Reader, contentType string, authenticated bool) ([]byte, int, int, string, string, error) {
 	req, err := http.NewRequestWithContext(ctx, method, svc.baseURL+path, body)
 	if err != nil {
 		return nil, 0, 0, "", "", err
 	}
-	req.Header.Set("Authorization", "Bearer "+svc.token)
+	if authenticated && svc.token != "" {
+		req.Header.Set("Authorization", "Bearer "+svc.token)
+	}
 	req.Header.Set("Accept", "application/json")
 	if contentType != "" {
 		req.Header.Set("Content-Type", contentType)
@@ -758,7 +863,10 @@ func (svc service) request(ctx context.Context, method, path string, body io.Rea
 	if readErr != nil || len(bodyBytes) > maxResponseBytes {
 		return nil, response.StatusCode, retryAfter(response), "", "", errors.New("response unreadable")
 	}
-	bodyBytes = scrubSecret(bodyBytes, svc.token)
+	bodyBytes = sanitizeResponseJSON(bodyBytes, svc.token)
+	if bodyBytes == nil && response.StatusCode >= 200 && response.StatusCode < 300 {
+		return nil, response.StatusCode, retryAfter(response), "", "", errors.New("response unreadable")
+	}
 	code, message := publicAPIError(bodyBytes)
 	return bodyBytes, response.StatusCode, retryAfter(response), code, message, nil
 }
@@ -783,14 +891,16 @@ func (svc service) download(ctx context.Context, path, kind, outputDir string) (
 		return "", 0, 0, "", "", err
 	}
 	req.Header.Set("Authorization", "Bearer "+svc.token)
-	response, err := fixedClient(svc.client).Do(req)
+	client := fixedClient(svc.client)
+	client.Timeout = svc.contentTimeout()
+	response, err := client.Do(req)
 	if err != nil {
 		return "", 0, 0, "", "", err
 	}
 	defer response.Body.Close()
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
 		body, _ := io.ReadAll(io.LimitReader(response.Body, maxResponseBytes))
-		code, message := publicAPIError(scrubSecret(body, svc.token))
+		code, message := publicAPIError(sanitizeResponseJSON(body, svc.token))
 		return "", response.StatusCode, retryAfter(response), code, message, errors.New("content request rejected")
 	}
 	contentType := strings.ToLower(strings.TrimSpace(strings.Split(response.Header.Get("Content-Type"), ";")[0]))
@@ -823,7 +933,10 @@ func (svc service) download(ctx context.Context, path, kind, outputDir string) (
 	writer := io.LimitReader(reader, limit+1)
 	written, copyErr := io.Copy(file, writer)
 	closeErr := file.Close()
-	if copyErr != nil || closeErr != nil || written == 0 || written > limit || !validMediaFile(name, contentType) {
+	if copyErr != nil || closeErr != nil {
+		return "", response.StatusCode, retryAfter(response), "", "", errors.Join(copyErr, closeErr)
+	}
+	if written == 0 || written > limit || !validMediaFile(name, contentType) {
 		_ = os.Remove(name)
 		return "", response.StatusCode, retryAfter(response), "", "", errors.New("media delivery exceeded limit")
 	}
@@ -864,7 +977,7 @@ func retryAfter(response *http.Response) int {
 			value = int(time.Until(at).Seconds()) + 1
 		}
 	}
-	if value <= 0 || value > 300 {
+	if value <= 0 {
 		return 0
 	}
 	return value
@@ -919,6 +1032,10 @@ func validationFailure(message string) receipt {
 }
 
 func writeReceipt(output io.Writer, result receipt) {
+	if writer, ok := output.(*recordReceiptWriter); ok {
+		writer.writeReceipt(result)
+		return
+	}
 	writeJSON(output, result)
 }
 

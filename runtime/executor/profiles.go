@@ -51,31 +51,170 @@ func loadProfile(request taskRequest, svc service) (modelProfile, error) {
 	if svc.profilesRoot != "" {
 		file := filepath.Join(svc.profilesRoot, "puretokens-"+request.Kind, "references", "profiles", request.Model+".json")
 		if body, err := readBoundedFile(file, maxResponseBytes); err == nil && json.Unmarshal(body, &profile) == nil && profile.ID == request.Model && profile.Capability == request.Kind {
-			return profile, nil
+			gap, err := profileRequestGap(request, profile)
+			if err != nil {
+				return profile, err
+			}
+			if !gap {
+				return profile, nil
+			}
+			return loadLiveProfile(request, svc)
 		}
 	}
 	// Unknown exact IDs can still submit core text requests without a preflight.
 	if request.Operation == "generate" && len(request.Parameters) == 0 && len(request.Attachments) == 0 && request.MediaOperation == "" && request.RequestedCount <= 1 {
 		return modelProfile{ID: request.Model, Capability: request.Kind}, nil
 	}
+	return loadLiveProfile(request, svc)
+}
+
+func loadLiveProfile(request taskRequest, svc service) (modelProfile, error) {
 	body, status, _, _, _, err := svc.request(context.Background(), http.MethodGet, "/v1/media/models", nil, "")
 	if err == nil && status == 200 {
 		var catalog struct {
-			Data []struct {
+			Error   any   `json:"error"`
+			Success *bool `json:"success"`
+			Data    []struct {
 				ID           string          `json:"id"`
 				Capabilities []string        `json:"capabilities"`
 				InputSchema  parameterSchema `json:"input_schema"`
 			} `json:"data"`
 		}
-		if json.Unmarshal(body, &catalog) == nil {
+		if json.Unmarshal(body, &catalog) == nil && catalog.Error == nil && (catalog.Success == nil || *catalog.Success) {
 			for _, entry := range catalog.Data {
 				if entry.ID == request.Model && contains(entry.Capabilities, request.Kind) {
-					return modelProfile{ID: entry.ID, Capability: request.Kind, Parameters: entry.InputSchema}, nil
+					profile := modelProfile{ID: entry.ID, Capability: request.Kind, Parameters: entry.InputSchema}
+					gap, err := profileRequestGap(request, profile)
+					if err != nil {
+						return profile, err
+					}
+					if !gap {
+						return profile, nil
+					}
+					break
 				}
 			}
 		}
 	}
-	return profile, errors.New("The selected model's required parameters or operation could not be confirmed. Ask for current model details; no media task was created.")
+	return modelProfile{}, errors.New("The selected model's required parameters or operation could not be confirmed. Ask for current model details; no media task was created.")
+}
+
+// Refresh missing declarations only. Existing type, range and enum failures
+// remain invalid even when another part of the request needs a refresh.
+func profileRequestGap(request taskRequest, profile modelProfile) (bool, error) {
+	if rule, exists := profile.Parameters.Properties["prompt"]; exists {
+		if err := validateProperty("prompt", request.Prompt, rule); err != nil {
+			return false, err
+		}
+	}
+	for key, value := range request.Parameters {
+		if key == "model" || key == "prompt" || key == "async" {
+			return false, errors.New("Model, prompt and async are reserved request fields.")
+		}
+		if rule, exists := profile.Parameters.Properties[key]; exists {
+			if err := validateProperty(key, value, rule); err != nil {
+				return false, err
+			}
+		}
+		if _, unsupported := profile.Parameters.Constraints["unsupported_inputs"][key]; unsupported {
+			return false, errors.New("The selected model explicitly excludes this input.")
+		}
+	}
+	if request.RequestedCount > 1 {
+		if rule, exists := profile.Parameters.Properties["n"]; exists {
+			if err := validateProperty("n", request.RequestedCount, rule); err != nil {
+				return false, err
+			}
+		}
+	}
+	opName, err := requestedMediaOperation(request)
+	if err != nil {
+		return false, err
+	}
+	operation, declared := profile.Parameters.Operations[opName]
+	gap := opName != "" && !declared
+	if opName != "" && declared {
+		if operation.Request.Method == "" || operation.Request.Path == "" || operation.Request.ContentType == "" {
+			gap = true
+		}
+		if (len(request.Attachments) > 0 && operation.Request.ContentType != "multipart/form-data") ||
+			(len(request.Attachments) == 0 && operation.Request.ContentType == "multipart/form-data") {
+			gap = true
+		}
+	}
+	counts := make(map[string]int)
+	for _, file := range request.Attachments {
+		counts[file.Field]++
+		found := false
+		for _, input := range operation.Inputs {
+			if input.Field != file.Field {
+				continue
+			}
+			found = contains(input.Transports, "multipart_file")
+			if input.Max > 0 && counts[file.Field] > input.Max {
+				return false, fmt.Errorf("The attachment count exceeds the declared maximum of %d.", input.Max)
+			}
+		}
+		if !found {
+			gap = true
+		}
+	}
+	for key, value := range request.Parameters {
+		if counts[key] > 0 {
+			return false, errors.New("Do not send the same media field as both a file and a JSON parameter.")
+		}
+		_, propertyExists := profile.Parameters.Properties[key]
+		input, inputExists := operation.Inputs[key]
+		if !propertyExists && (!inputExists || operation.Request.ContentType != "application/json") {
+			gap = true
+		}
+		transports, referenceDeclared := profile.Parameters.Constraints["reference_transport"][key]
+		if referenceDeclared || inputExists || mediaReferenceField(key) {
+			if inputExists && opName != "" {
+				if !contains(input.Transports, "public_https_url") {
+					gap = true
+				}
+				if !referenceDeclared {
+					transports = input.Transports
+				}
+			}
+			if !hasValue(array(transports), "public_https_url") {
+				gap = true
+			}
+			// Validate public-host and count restrictions before any refresh.
+			if err := validateReferences(value, append(array(transports), "public_https_url")); err != nil {
+				return false, err
+			}
+		}
+	}
+	if request.RequestedCount > 1 {
+		if _, exists := profile.Parameters.Properties["n"]; !exists {
+			gap = true
+		}
+	}
+	return gap, nil
+}
+
+func mediaReferenceField(key string) bool {
+	switch key {
+	case "image", "image_urls", "audio_urls", "first_frame_image", "last_frame_image", "reference_images", "reference_videos", "reference_audios", "video", "audio":
+		return true
+	}
+	return false
+}
+
+func requestedMediaOperation(request taskRequest) (string, error) {
+	opName := request.MediaOperation
+	if request.Operation == "edit" && opName == "" {
+		opName = request.Kind + "_edit"
+	}
+	if request.Operation == "edit" && opName != request.Kind+"_edit" {
+		return "", errors.New("The edit request must select the model's declared edit operation.")
+	}
+	if len(request.Attachments) > 0 && opName == "" {
+		return "", errors.New("Specify the attachment role as media_operation, such as image_to_video or reference_image_video.")
+	}
+	return opName, nil
 }
 func prepareProfileRequest(request *taskRequest, svc service) error {
 	if request.Parameters == nil {
@@ -90,15 +229,9 @@ func prepareProfileRequest(request *taskRequest, svc service) error {
 			return err
 		}
 	}
-	opName := request.MediaOperation
-	if request.Operation == "edit" && opName == "" {
-		opName = request.Kind + "_edit"
-	}
-	if request.Operation == "edit" && opName != request.Kind+"_edit" {
-		return errors.New("The edit request must select the model's declared edit operation.")
-	}
-	if len(request.Attachments) > 0 && opName == "" {
-		return errors.New("Specify the attachment role as media_operation, such as image_to_video or reference_image_video.")
+	opName, err := requestedMediaOperation(*request)
+	if err != nil {
+		return err
 	}
 	var operation mediaOperation
 	if opName != "" {
@@ -404,10 +537,16 @@ func validateReferences(value, transport any) error {
 			return errors.New("Reference inputs must contain only public HTTPS URLs.")
 		}
 		u, err := url.Parse(text)
-		if err != nil || u.Scheme != "https" || u.Hostname() == "" || u.User != nil || u.Fragment != "" || strings.EqualFold(u.Hostname(), "localhost") || strings.HasSuffix(strings.ToLower(u.Hostname()), ".local") {
+		if err != nil || u.Scheme != "https" || u.Hostname() == "" || u.User != nil || u.Fragment != "" {
 			return errors.New("Reference URLs must be explicit public HTTPS URLs without embedded credentials.")
 		}
-		if ip := net.ParseIP(u.Hostname()); ip != nil && (ip.IsPrivate() || ip.IsLoopback() || ip.IsUnspecified() || ip.IsLinkLocalUnicast() || ip.IsMulticast()) {
+		// A trailing DNS dot does not turn a local host into a public one.
+		// Scoped IPv6 addresses identify an interface and are never public URLs.
+		host := strings.TrimRight(strings.ToLower(u.Hostname()), ".")
+		if host == "" || host == "localhost" || strings.HasSuffix(host, ".localhost") || strings.HasSuffix(host, ".local") || strings.Contains(host, "%") {
+			return errors.New("Reference URLs must be explicit public HTTPS URLs without embedded credentials.")
+		}
+		if ip := net.ParseIP(host); ip != nil && (ip.IsPrivate() || ip.IsLoopback() || ip.IsUnspecified() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() || ip.IsMulticast()) {
 			return errors.New("Reference URLs must use publicly reachable hosts.")
 		}
 	}

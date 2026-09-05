@@ -1,4 +1,5 @@
 #!/bin/sh
+# puretokens-locate-v1
 
 set -eu
 
@@ -6,7 +7,7 @@ current_skills="puretokens-balance puretokens-connection puretokens-models puret
 retired_skills="puretokens_media puretokens_balance puretokens_connection puretokens_models puretokens_image puretokens_video puretokens_update puretokens_get_balance puretokens_get_model_price puretokens_workbuddy_router"
 
 usage() {
-  printf '%s\n' "Usage: puretokens-skill-install.sh <check|init|sync> (--host <claude-code|codex|workbuddy|gemini-cli|grok-build|opencode|trae> | --target <absolute-skill-directory>) [--source <absolute-official-source-directory>]"
+  printf '%s\n' "Usage: puretokens-skill-install.sh <check|init|sync|locate> (--host <claude-code|codex|workbuddy|gemini-cli|grok-build|opencode|trae> | --target <absolute-skill-directory>) [--source <absolute-official-source-directory>]"
 }
 
 fail() {
@@ -82,12 +83,35 @@ target_for_host() {
     claude-code) printf '%s\n' "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills" ;;
     codex) printf '%s\n' "$HOME/.agents/skills" ;;
     workbuddy) printf '%s\n' "${WORKBUDDY_CONFIG_DIR:-${CODEBUDDY_CONFIG_DIR:-$HOME/.workbuddy}}/skills" ;;
-    gemini-cli) printf '%s\n' "$HOME/.gemini/skills" ;;
+    gemini-cli)
+      # Gemini resolves each .agents Skill before the same .gemini Skill.
+      for skill in $current_skills; do
+        if [ -e "$HOME/.agents/skills/$skill" ] || [ -L "$HOME/.agents/skills/$skill" ]; then
+          printf '%s\n' "$HOME/.agents/skills"
+          return
+        fi
+      done
+      printf '%s\n' "$HOME/.gemini/skills"
+      ;;
     grok-build) printf '%s\n' "$HOME/.grok/skills" ;;
     opencode) printf '%s\n' "$HOME/.config/opencode/skills" ;;
     trae) printf '%s\n' "$HOME/.trae/skills" ;;
     *) fail "unsupported host: $host" ;;
   esac
+}
+
+check_gemini_duplicates() {
+  [ "$host" = gemini-cli ] && [ -n "${HOME:-}" ] || return 0
+  shared_root="$HOME/.agents/skills"
+  if [ -d "$shared_root" ]; then shared_root=$(cd "$shared_root" && pwd -P); fi
+  for skill in $current_skills; do
+    if [ "$target_root" != "$shared_root" ] && { [ -e "$shared_root/$skill" ] || [ -L "$shared_root/$skill" ]; }; then
+      fail "Gemini would load $skill from its higher-priority .agents/skills directory. Run sync --host gemini-cli without a custom target; existing directories were left untouched"
+    fi
+    if [ "$target_root" = "$shared_root" ] && managed_skill "$HOME/.gemini/skills/$skill" "$skill"; then
+      printf '%s\n' "Managed duplicate detected: Gemini will use the updated shared $skill; its lower-priority .gemini copy was left untouched."
+    fi
+  done
 }
 
 migrate_legacy_codex_plugin() {
@@ -122,6 +146,7 @@ validate_source() {
   source_release_version "$source_root" >/dev/null || fail "official source has an invalid Skill version"
   [ -f "$source_root/runtime/puretokens-skill-install.sh" ] || fail "official source is missing the macOS/Linux installer"
   [ -f "$source_root/runtime/puretokens-skill-install.ps1" ] || fail "official source is missing the Windows installer"
+  [ -f "$source_root/runtime/puretokens-skill-fetch.sh" ] || fail "official source is missing the download wrapper"
   [ -f "$source_root/runtime/executor/manifest.json" ] || fail "official source is missing the executor manifest"
   executor_artifact "$source_root" >/dev/null
   for name in $current_skills; do
@@ -319,7 +344,18 @@ sync_target() {
   release_version=$(source_release_version "$source_root") || fail "official source has an invalid Skill version"
   [ -d "$target_root" ] || mkdir -p "$target_root"
   target_root=$(cd "$target_root" && pwd -P)
+  check_gemini_duplicates
   acquire_update_lock
+  # Downloads happen outside this lock. Re-read the installed version after
+  # acquiring it so an older download cannot overwrite a newer completed sync.
+  installed_manifest="$target_root/.puretokens-executor/runtime.json"
+  if managed_executor "$target_root/.puretokens-executor"; then
+    installed_version=$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([0-9][0-9.]*\)".*/\1/p' "$installed_manifest" | sed -n '1p')
+    printf '%s\n' "$installed_version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || fail "installed executor version is invalid; left untouched"
+    if awk -v current="$installed_version" -v available="$release_version" 'BEGIN {split(current,c,"."); split(available,a,"."); for(i=1;i<=3;i++){if(c[i]+0>a[i]+0)exit 0;if(c[i]+0<a[i]+0)exit 1}exit 1}'; then
+      fail "a newer executor version is already installed; downgrade was stopped under the update lock"
+    fi
+  fi
 
   for name in $retired_skills; do
     for destination in "$target_root/$name" "$target_root/.$name.retired-"*; do
@@ -340,6 +376,7 @@ sync_target() {
   executor_source=$(executor_artifact "$source_root")
   mkdir -p "$stage_root/.puretokens-executor"
   cp "$executor_source" "$stage_root/.puretokens-executor/puretokens-api"
+  cp "$source_root/runtime/puretokens-skill-install.sh" "$source_root/runtime/puretokens-skill-fetch.sh" "$stage_root/.puretokens-executor/"
   chmod 700 "$stage_root/.puretokens-executor/puretokens-api"
   printf '{\n  "schemaVersion": 1,\n  "name": "puretokens-api-executor",\n  "version": "%s",\n  "platform": "%s"\n}\n' "$release_version" "$(executor_platform)" > "$stage_root/.puretokens-executor/runtime.json"
 
@@ -391,10 +428,16 @@ while [ "$#" -gt 0 ]; do
 done
 
 [ -n "$target" ] || [ -n "$host" ] || fail "--host or --target is required"
+case "$host" in ''|claude-code|codex|workbuddy|gemini-cli|grok-build|opencode|trae) ;; *) fail "unsupported host" ;; esac
 [ -n "$target" ] || target=$(target_for_host "$host")
 [ "${target#/}" != "$target" ] || fail "--target must be an absolute Skill directory"
 [ -z "$source" ] || [ "${source#/}" != "$source" ] || fail "--source must be an absolute official source directory"
-case "$command_name" in check|init|sync) ;; *) usage; exit 2 ;; esac
+case "$command_name" in check|init|sync|locate) ;; *) usage; exit 2 ;; esac
+
+if [ "$command_name" = locate ]; then
+  printf '%s\n' "$target"
+  exit 0
+fi
 
 if [ "$command_name" = "init" ]; then
   [ -n "$target" ] || fail "--target or --host is required for init"

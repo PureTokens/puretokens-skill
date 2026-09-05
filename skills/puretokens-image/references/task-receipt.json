@@ -2,28 +2,46 @@
   "$schema": "https://puretokensx.com/schemas/task-receipt.schema.json",
   "schemaVersion": 1,
   "kind": "image",
+  "machineReceipt": "executor JSON retains available model, operation, task identity, requested count, safe parameters, command and progress; do not rename or reconstruct these fields",
   "submission": {
-    "requiredFields": ["exact_model_id", "task_id", "returned_state", "requested_operation", "requested_count", "requested_size_or_parameters", "next_action"],
-    "nextAction": "Explain that the task will be read only by its task_id; do not promise image delivery until native bytes arrive."
+    "requiredFields": [
+      "task_id",
+      "status"
+    ],
+    "nextAction": "Briefly state that the task was accepted; then wait only for this task."
   },
   "continuation": {
-    "requiredFields": ["exact_model_id", "task_id", "returned_state", "requested_operation", "requested_count", "requested_size_or_parameters", "next_action"],
-    "nextAction": "State whether the same task remains pending, the exact wait before its next same-task read, whether automatic polling has reached its deadline, or whether it has terminally failed."
+    "requiredFields": [
+      "task_id",
+      "status"
+    ],
+    "nextAction": "Report only a meaningful status change or the need for explicit continuation."
   },
   "reconciliation": {
-    "requiredFields": ["exact_model_id", "task_id", "returned_state", "requested_operation", "requested_count", "requested_size_or_parameters", "reconciliation_required", "next_action"],
-    "nextAction": "State that reconciliation_required was returned, ordinary polling stopped, the same task_id was retained, no replacement task was submitted, and no refund was inferred."
+    "requiredFields": [
+      "task_id",
+      "reconciliation_required"
+    ],
+    "nextAction": "Explain that verification is required; retain this task and do not infer a refund or submit a replacement."
   },
   "completion": {
-    "requiredFields": ["exact_model_id", "task_id", "returned_state", "requested_operation", "requested_count", "requested_size_or_parameters", "delivered_count", "next_action"],
-    "nextAction": "For n results, report delivered and missing zero-based indexes; success requires every requested item as native bytes."
+    "requiredFields": [
+      "delivered_count"
+    ],
+    "nextAction": "Provide the actual attachment and note missing indexes if any; do not repeat the entire task receipt."
   },
   "failure": {
-    "requiredFields": ["exact_model_id", "task_id", "returned_state", "requested_operation", "requested_count", "requested_size_or_parameters", "failure_phase", "api_error_code", "http_status", "error_message", "next_action"],
+    "requiredFields": [
+      "error_message",
+      "next_action"
+    ],
     "conditionalFields": {
-      "retry_after_seconds": "Include only when the API returned HTTP 429 and a valid positive Retry-After value.",
-      "api_error_code": "Use only the exact public API error code explicitly returned by the API; otherwise write not returned."
+      "task_id": "Retain a known task ID; never invent one.",
+      "failure_phase": "Explain the phase when it changes the next action.",
+      "http_status": "Only when returned and useful; otherwise omit.",
+      "api_error_code": "Only the exact returned public code; otherwise omit.",
+      "retry_after_seconds": "Only when returned and useful."
     },
-    "nextAction": "Offer only an explicit new request or a same-task status/content read, according to the returned state."
+    "nextAction": "State what failed and the next safe action; unknown submission never authorizes automatic repetition."
   }
 }

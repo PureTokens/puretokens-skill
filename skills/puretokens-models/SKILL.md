@@ -5,13 +5,13 @@ description: 查询当前 Pure Tokens 连接实际可用的图片和视频模型
 
 # Pure Tokens Models
 
-只读查询固定 Pure Tokens API `https://api.puretokensx.com/v1/media/models` 的当前认证媒体目录。调用 Skills 根目录下与当前 Skill 同级的 `../.puretokens-executor/puretokens-api models --host <当前宿主 ID>` 一次；执行器使用固定 GET，并且只由已验证的宿主适配器在内存中取得一把匹配凭据。Skill 不读取认证文件、不拼接 HTTP 请求、不传递 Key/Base URL，也不检查 provider 标签。第三方 CC Switch 或手工配置只要已经使该宿主的 Pure Tokens 连接生效，已验证适配器即可使用。
+通过安装的单次 Go 执行器查询模型目录。从当前 SKILL.md 的绝对目录解析同级 `../.puretokens-executor/puretokens-api`；Windows 使用 `puretokens-api.exe`，不要依赖工作目录或 PATH。调用 `<绝对执行器路径> models --host <当前宿主 ID>`。仅执行器私密读取文档列出的当前宿主明确连接记录；凭据格式夹具通过不代表项目／会话覆盖或真实宿主端到端验收。Skill 不读取配置、不传 Key／Base URL，不自行 HTTP，也不使用其他传输。
 
 不得申请、调用或使用 Computer Use，也不得打开、点击或控制浏览器、Pure Tokens Switch、Pure Tokens Desktop 或其他图形界面来发现模型、读取配置或替代执行器；不得调用其他 Skill 作为回退。
 
 只处理执行器返回的结构化结果；不得把响应原文、请求头或配置内容直接展示给用户。仅当执行器返回实际本地或 API 失败时，按安全回执处理，明确目录请求是否执行且不猜测配置原因。
 
-先读取已安装的 `references/execution-contract.json` 和 `references/behavior-scenarios.json`；它们定义模型目录、能力筛选和用户可见输出的约束。
+详细字段按需读 `references/execution-contract.json`；只有对应异常时才读 `references/behavior-scenarios.json`。
 
 ## 查询规则
 
@@ -27,3 +27,5 @@ description: 查询当前 Pure Tokens 连接实际可用的图片和视频模型
 - 每个模型仅展示实际返回的：精确 ID、capability、可选参数名称、`required` 标记、类型、默认值、`enum` 值、数值范围、非请求字段的条件限制（例如 `resolution_by_mode`），以及 operation 名称、请求方法、相对路径、content type、必需字段、附件数量和 transport。`constraints` 不是额外请求字段，绝不把它的名称或推断模式写入 API body。缺失字段写“目录未声明”，不得猜测。
 - 若用户询问“哪个能做 X”，先给出满足 X 的兼容模型和匹配依据；不要直接提交生成请求。用户选定模型并提出生成需求后，再交由 `puretokens-image` 或 `puretokens-video` 按各自契约执行。
 - 目录为空、无法读取或模型不在当前目录时，如实说明固定 Pure Tokens API 未返回对应模型资料或返回了该错误；不切换 endpoint、不尝试静态目录，也不索取凭据或猜测配置原因。若用户预期可用某精确模型，指导其在 Pure Tokens 客户端配置中勾选包含该模型的分组，创建或选择覆盖所选分组的受管 Key，执行“验证并应用”，然后新开当前宿主会话再查询或提交。除非认证 API 明确返回模型到分组的映射，否则不得说出或猜测具体分组名称。
+
+用户明确筛选时，可用 `models --host <host-id> --request <UTF-8筛选文件>`，文件可含 `kind`、精确 `model`、`operation` 和 `parameters`，例如 `{"kind":"video","operation":"image_to_video","parameters":{"resolution":"720p"}}`。执行器只读取一次认证目录并按其声明筛选；缺少字段不视为兼容，不提交媒体。无筛选则省略 --request。查询目录不是普通生成的必需前置步骤。

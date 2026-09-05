@@ -1,7 +1,8 @@
+# puretokens-locate-v1
 [CmdletBinding()]
 param(
   [Parameter(Position = 0, Mandatory = $true)]
-  [ValidateSet("check", "init", "sync")]
+  [ValidateSet("check", "init", "sync", "locate")]
   [string]$Command,
   [Parameter(Mandatory = $false)]
   [string]$Target,
@@ -22,18 +23,18 @@ function Fail([string]$Message) { throw "Pure Tokens Skill installer: $Message" 
 function Test-ManagedSkill([string]$Directory, [string]$Name) {
   $manifest = Join-Path $Directory "skill.json"
   if (-not (Test-Path -LiteralPath (Join-Path $Directory "SKILL.md") -PathType Leaf) -or -not (Test-Path -LiteralPath $manifest -PathType Leaf)) { return $false }
-  try { return ((Get-Content -LiteralPath $manifest -Raw | ConvertFrom-Json).name -eq $Name) } catch { return $false }
+  try { return ((Get-Content -LiteralPath $manifest -Raw -Encoding UTF8 | ConvertFrom-Json).name -eq $Name) } catch { return $false }
 }
 
 function Test-LegacyNodeRuntime([string]$Directory) {
   $manifest = Join-Path $Directory "runtime.json"
   if (-not (Test-Path -LiteralPath (Join-Path $Directory "puretokens-direct-api.mjs") -PathType Leaf) -or -not (Test-Path -LiteralPath $manifest -PathType Leaf)) { return $false }
-  try { return ((Get-Content -LiteralPath $manifest -Raw | ConvertFrom-Json).name -eq "puretokens-direct-api-runtime") } catch { return $false }
+  try { return ((Get-Content -LiteralPath $manifest -Raw -Encoding UTF8 | ConvertFrom-Json).name -eq "puretokens-direct-api-runtime") } catch { return $false }
 }
 
 function Test-ManagedExecutor([string]$Directory) {
   $manifest = Join-Path $Directory "runtime.json"
-  return (Test-Path -LiteralPath (Join-Path $Directory "puretokens-api.exe") -PathType Leaf) -and (Test-Path -LiteralPath $manifest -PathType Leaf) -and ((Get-Content -LiteralPath $manifest -Raw | ConvertFrom-Json).name -eq "puretokens-api-executor")
+  return (Test-Path -LiteralPath (Join-Path $Directory "puretokens-api.exe") -PathType Leaf) -and (Test-Path -LiteralPath $manifest -PathType Leaf) -and ((Get-Content -LiteralPath $manifest -Raw -Encoding UTF8 | ConvertFrom-Json).name -eq "puretokens-api-executor")
 }
 
 function Get-ExecutorPlatform() {
@@ -48,7 +49,7 @@ function Get-ExecutorPlatform() {
 function Get-ExecutorArtifact([string]$SourceRoot) {
   $manifestPath = Join-Path $SourceRoot "runtime\executor\manifest.json"
   if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf)) { Fail "official source is missing the executor manifest" }
-  try { $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json } catch { Fail "official source executor manifest is invalid" }
+  try { $manifest = Get-Content -LiteralPath $manifestPath -Raw -Encoding UTF8 | ConvertFrom-Json } catch { Fail "official source executor manifest is invalid" }
   $platform = Get-ExecutorPlatform
   $artifact = $manifest.artifacts.PSObject.Properties[$platform].Value
   if ($null -eq $artifact -or [string]::IsNullOrWhiteSpace($artifact.path) -or [string]::IsNullOrWhiteSpace($artifact.sha256)) { Fail "official source is missing the executor artifact for $platform" }
@@ -61,7 +62,7 @@ function Get-ExecutorArtifact([string]$SourceRoot) {
 
 function Get-SourceVersion([string]$SourceRoot) {
   try {
-    $version = (Get-Content -LiteralPath (Join-Path $SourceRoot "package.json") -Raw | ConvertFrom-Json).version
+    $version = (Get-Content -LiteralPath (Join-Path $SourceRoot "package.json") -Raw -Encoding UTF8 | ConvertFrom-Json).version
     if ($version -notmatch '^\d+\.\d+\.\d+$') { Fail "official source has an invalid Skill version" }
     return $version
   } catch { Fail "official source has an invalid Skill version" }
@@ -72,6 +73,7 @@ function Test-OfficialSource([string]$SourceRoot) {
   if (-not (Test-Path -LiteralPath (Join-Path $SourceRoot "package.json") -PathType Leaf)) { Fail "official source is missing package.json" }
   $null = Get-SourceVersion $SourceRoot
   if (-not (Test-Path -LiteralPath (Join-Path $SourceRoot "runtime\puretokens-skill-install.ps1") -PathType Leaf)) { Fail "official source is missing the Windows installer" }
+  if (-not (Test-Path -LiteralPath (Join-Path $SourceRoot "runtime\puretokens-skill-fetch.ps1") -PathType Leaf)) { Fail "official source is missing the download wrapper" }
   $null = Get-ExecutorArtifact $SourceRoot
   if (-not (Test-Path -LiteralPath (Join-Path $SourceRoot "runtime\puretokens-skill-install.sh") -PathType Leaf)) { Fail "official source is missing the macOS/Linux installer" }
   foreach ($name in $currentSkills) {
@@ -90,7 +92,7 @@ function Test-InstalledTarget([string]$TargetRoot) {
 function Show-UsageGuide([string]$TargetRoot) {
   $guide = Join-Path (Join-Path $TargetRoot "puretokens-update") "references\usage-guide.md"
   if (Test-Path -LiteralPath $guide -PathType Leaf) {
-    Get-Content -LiteralPath $guide -Raw | Write-Output
+    Get-Content -LiteralPath $guide -Raw -Encoding UTF8 | Write-Output
   } else {
     Write-Output "Pure Tokens Skill usage guide is unavailable; update the Skills from the official repository."
   }
@@ -133,7 +135,11 @@ function Get-TargetForHost([string]$RequestedHost) {
     "claude-code" { if ($env:CLAUDE_CONFIG_DIR) { return (Join-Path $env:CLAUDE_CONFIG_DIR "skills") }; return (Join-Path $env:USERPROFILE ".claude\skills") }
     "codex" { return (Join-Path $env:USERPROFILE ".agents\skills") }
     "workbuddy" { if ($env:WORKBUDDY_CONFIG_DIR) { return (Join-Path $env:WORKBUDDY_CONFIG_DIR "skills") }; if ($env:CODEBUDDY_CONFIG_DIR) { return (Join-Path $env:CODEBUDDY_CONFIG_DIR "skills") }; return (Join-Path $env:USERPROFILE ".workbuddy\skills") }
-    "gemini-cli" { return (Join-Path $env:USERPROFILE ".gemini\skills") }
+    "gemini-cli" {
+      $shared = Join-Path $env:USERPROFILE ".agents\skills"
+      foreach ($skill in $currentSkills) { if (Test-Path -LiteralPath (Join-Path $shared $skill)) { return $shared } }
+      return (Join-Path $env:USERPROFILE ".gemini\skills")
+    }
     "grok-build" { return (Join-Path $env:USERPROFILE ".grok\skills") }
     "opencode" { return (Join-Path $env:USERPROFILE ".config\opencode\skills") }
     "trae" { return (Join-Path $env:USERPROFILE ".trae\skills") }
@@ -141,10 +147,24 @@ function Get-TargetForHost([string]$RequestedHost) {
   }
 }
 
+function Test-GeminiDuplicates([string]$TargetRoot) {
+  if ($HostId -ne "gemini-cli") { return }
+  $shared = [IO.Path]::GetFullPath((Join-Path $env:USERPROFILE ".agents\skills")).TrimEnd('\')
+  $isShared = [string]::Equals($TargetRoot.TrimEnd('\'), $shared, [StringComparison]::OrdinalIgnoreCase)
+  foreach ($skill in $currentSkills) {
+    if (-not $isShared -and (Test-Path -LiteralPath (Join-Path $shared $skill))) {
+      Fail "Gemini would load $skill from its higher-priority .agents/skills directory. Run sync -Host gemini-cli without a custom target; existing directories were left untouched"
+    }
+    if ($isShared -and (Test-ManagedSkill (Join-Path (Join-Path $env:USERPROFILE ".gemini\skills") $skill) $skill)) {
+      Write-Output "Managed duplicate detected: Gemini will use the updated shared $skill; its lower-priority .gemini copy was left untouched."
+    }
+  }
+}
+
 function Restore-Transaction([string]$TargetRoot, [string]$StageRoot) {
   $planFile = Join-Path $StageRoot "plan.json"
   if (-not (Test-Path -LiteralPath $planFile)) { return }
-  foreach ($entry in @(Get-Content -LiteralPath $planFile -Raw | ConvertFrom-Json)) {
+  foreach ($entry in @(Get-Content -LiteralPath $planFile -Raw -Encoding UTF8 | ConvertFrom-Json)) {
     if ($entry.name -notin ($currentSkills + @(".puretokens-executor"))) { Fail "unknown recovery entry; retained backup" }
     $destination = Join-Path $TargetRoot $entry.name
     $backup = Join-Path (Join-Path $StageRoot "backup") $entry.name
@@ -190,6 +210,7 @@ try {
   if ([string]::IsNullOrWhiteSpace($Target) -and [string]::IsNullOrWhiteSpace($HostId)) { Fail "-Host or -Target is required" }
   if ([string]::IsNullOrWhiteSpace($Target)) { $Target = Get-TargetForHost $HostId }
   if (-not [System.IO.Path]::IsPathRooted($Target)) { Fail "-Target must be an absolute Skill directory" }
+  if ($Command -eq "locate") { Write-Output $Target; exit 0 }
 
   if ($Command -eq "init") {
     $targetRoot = (Resolve-Path -LiteralPath $Target).Path
@@ -213,11 +234,19 @@ try {
 
   New-Item -ItemType Directory -Path $Target -Force | Out-Null
   $targetRoot = (Resolve-Path -LiteralPath $Target).Path
+  Test-GeminiDuplicates $targetRoot
   try { $updateLock = [System.IO.File]::Open((Join-Path $targetRoot ".puretokens-install.lock"), [System.IO.FileMode]::OpenOrCreate, [System.IO.FileAccess]::ReadWrite, [System.IO.FileShare]::None) } catch { Fail "another update is in progress or the update lock is not writable" }
   foreach ($previous in @(Get-ChildItem -LiteralPath $targetRoot -Directory -Force | Where-Object { $_.Name -like ".puretokens-skill-stage-*" })) {
     if (-not (Test-Path -LiteralPath (Join-Path $previous.FullName "transaction-v1"))) { Fail "unknown staging directory; left untouched" }
     if (-not (Test-Path -LiteralPath (Join-Path $previous.FullName "committed"))) { Restore-Transaction $targetRoot $previous.FullName }
     Remove-Item -LiteralPath $previous.FullName -Recurse -Force
+  }
+  # Recheck after obtaining the installation lock: another sync may have
+  # completed while this version's archive was still downloading.
+  if (Test-ManagedExecutor (Join-Path $targetRoot ".puretokens-executor")) {
+    $installedVersion = (Get-Content -LiteralPath (Join-Path $targetRoot ".puretokens-executor/runtime.json") -Raw -Encoding UTF8 | ConvertFrom-Json).version
+    if ($installedVersion -notmatch '^\d+\.\d+\.\d+$') { Fail "installed executor version is invalid; left untouched" }
+    if ([version]$installedVersion -gt [version]$releaseVersion) { Fail "a newer executor version is already installed; downgrade was stopped under the update lock" }
   }
   foreach ($name in $retiredSkills) {
     $destinations = @((Join-Path $targetRoot $name))
@@ -239,6 +268,9 @@ try {
   $stageExecutor = Join-Path $stageRoot ".puretokens-executor"
   New-Item -ItemType Directory -Path $stageExecutor -Force | Out-Null
   Copy-Item -LiteralPath $executorSource -Destination (Join-Path $stageExecutor "puretokens-api.exe")
+  foreach ($script in @("puretokens-skill-install.ps1", "puretokens-skill-fetch.ps1")) {
+    Copy-Item -LiteralPath (Join-Path (Join-Path $sourceRoot "runtime") $script) -Destination $stageExecutor
+  }
   [PSCustomObject]@{ schemaVersion = 1; name = "puretokens-api-executor"; version = $releaseVersion; platform = (Get-ExecutorPlatform) } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $stageExecutor "runtime.json") -Encoding utf8
 
   Remove-LegacyCodexPlugin $targetRoot

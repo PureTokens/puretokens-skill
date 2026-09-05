@@ -521,32 +521,6 @@ func TestInitDoesNotVerifyInvalidCredential(t *testing.T) {
 		t.Fatal("public identity treated as key authentication")
 	}
 }
-func TestBillingUsesBearerEndpointsAndNoInventedCurrency(t *testing.T) {
-	paths := []string{}
-	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		paths = append(paths, r.URL.Path)
-		if r.Header.Get("Authorization") == "" {
-			t.Error("no bearer")
-		}
-		if strings.HasSuffix(r.URL.Path, "subscription") {
-			io.WriteString(w, `{"hard_limit_usd":16}`)
-		} else {
-			io.WriteString(w, `{"total_usage":600}`)
-		}
-	}))
-	defer s.Close()
-	var out bytes.Buffer
-	if err := executeBalance(&out, fixtureService(s)); err != nil {
-		t.Fatal(err)
-	}
-	var got map[string]any
-	json.Unmarshal(out.Bytes(), &got)
-	result := jsonObject(got["result"])
-	if result["reported_remaining"] != float64(10) || result["unit"] != "api_display_unit_unspecified" || len(paths) != 2 {
-		t.Fatal("incorrect billing projection")
-	}
-}
-
 func TestInstalledModelDoesNotFetchCatalogBeforeSubmit(t *testing.T) {
 	calls := 0
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -583,18 +557,6 @@ func TestProfileGapFetchesOnceAndPreservesExactID(t *testing.T) {
 	err := executeTask(strings.NewReader(`{"kind":"image","operation":"generate","model":"new-model","prompt":"test","parameters":{"n":1}}`), &out, fixtureService(server))
 	if err != nil || calls != 2 {
 		t.Fatal("profile gap did not resolve once", err, calls)
-	}
-}
-func TestFailedBillingDoesNotReturnSuccessOrDoSecondRead(t *testing.T) {
-	calls := 0
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		calls++
-		io.WriteString(w, `{"error":{"message":"Unavailable"}}`)
-	}))
-	defer server.Close()
-	var out bytes.Buffer
-	if executeBalance(&out, fixtureService(server)) == nil || calls != 1 {
-		t.Fatal("logical error ignored")
 	}
 }
 func TestErrorEchoDoesNotExposeMatchingCredential(t *testing.T) {
