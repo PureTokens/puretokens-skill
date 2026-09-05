@@ -10,7 +10,7 @@ description: 用户要求检查、安装或升级本机已安装的 Pure Tokens 
 ## 初始化
 
 - 用户要求初始化、检查当前配置是否可用、或询问如何使用 Pure Tokens Skills 时，调用 Skills 根目录下与当前 Skill 同级的 `../.puretokens-executor/puretokens-api init --host <当前宿主 ID>`。执行器只请求一次固定 `GET https://api.puretokensx.com/v1`；它只能私密读取当前宿主已写入的有效连接记录中的匹配 Key，绝不展示、索取、复制、保存或报告 Key、Base URL、provider 或完整宿主配置。
-- 只在回执 `configuration_status: "verified"` 且 `api_identity_confirmed: true` 时说明当前宿主已能访问固定 Pure Tokens API；其他结果只能说明未完成验证，并给出下一步，不得猜测连接归属或声称媒体可用。
+- 只在回执 `configuration_status: "verified"` 且 `api_identity_confirmed: true` 时说明当前宿主已能访问固定 Pure Tokens API。其他结果必须如实展示执行器给出的脱敏状态、消息和下一步；仅当回执明确含有非零 `http_status` 时可展示该 HTTP 状态。不得猜测连接归属、声称媒体可用，或展示 Key、Base URL、provider、配置路径或原始响应。
 - 初始化回执包含使用示例；同时展示 `references/usage-guide.md` 中的使用须知。初始化不调用余额、模型、Images 或 Videos API，不创建付费任务，也不自动修复或修改宿主配置。
 
 ## 升级规则

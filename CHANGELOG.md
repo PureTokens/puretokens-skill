@@ -4,6 +4,10 @@
 
 # Changelog
 
+## 0.15.2 — 2026-09-05
+
+- Made `init` failures actionable without exposing connection data. The executor and both platform installers now distinguish active-connection resolution failures, missing credentials, ambiguous WorkBuddy credentials, network failures, rejected identity checks with a returned HTTP status, unreadable responses, and identity mismatches. Installation still succeeds independently of a non-billable `init` check.
+
 ## 0.15.1 — 2026-09-05
 
 - Corrected credential resolution to read the active, documented connection record that Pure Tokens Switch writes for Claude Code, Codex, WorkBuddy, Gemini CLI, Grok Build, and OpenCode. Codex now reads the active provider token in `config.toml` rather than `auth.json`; provider labels are not used. Each adapter verifies the Pure Tokens endpoint before retaining one credential only in memory for the fixed request. Trae remains manual-only because Switch deliberately does not write or inspect a managed credential record there.

@@ -4,6 +4,10 @@
 
 # 更新日志
 
+## 0.15.2 — 2026-09-05
+
+- 将 `init` 失败改为可执行的脱敏提示。执行器和 macOS/Linux、Windows 安装器现在会区分：当前连接解析失败、缺少凭据、WorkBuddy 凭据歧义、网络失败、API 拒绝身份检查及返回的 HTTP 状态、响应无法读取和 API 身份不匹配。非计费的 `init` 检查失败不会影响 Skill 已安装成功。
+
 ## 0.15.1 — 2026-09-05
 
 - 修正凭据解析：Claude Code、Codex、WorkBuddy、Gemini CLI、Grok Build 和 OpenCode 均从 Pure Tokens Switch 写入的、当前生效且有明确字段契约的连接记录中取 Key。Codex 改为读取 `config.toml` 中当前 provider 的 token，不再读取 `auth.json`；不依赖 provider 标签。每个适配器先验证记录指向 Pure Tokens，再只在内存中保留一把 Key 用于固定请求。Trae 仍是手工配置例外，因为 Switch 刻意不写入或读取其受管凭据记录。

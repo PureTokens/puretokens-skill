@@ -116,7 +116,7 @@ README 只从基础目录中带有明确图片/视频能力的模型生成，不
 
 源码同步脚本是 macOS/Linux 的 `runtime/puretokens-skill-install.sh` 和 Windows 的 `runtime/puretokens-skill-install.ps1`。它们只负责安装更新及校验复制平台执行器；用户不需要 Node、npm、Python、Go 或包管理器。
 
-每次安装或更新成功后，安装器都会自动执行 `init`：只做一次不计费的固定 `/v1` 身份检查，不展示凭据或宿主配置，然后输出当前使用须知和示例。之后如需再次检查，可让宿主 Agent“初始化 Pure Tokens Skills”或“检查当前 Pure Tokens 连接”；它应调用已安装执行器的 `init`，展示使用须知，但不修改配置。
+每次安装或更新成功后，安装器都会自动执行 `init`：只做一次不计费的固定 `/v1` 身份检查，不展示凭据或宿主配置，然后输出当前使用须知和示例。验证未完成时，会给出经过脱敏的原因，例如没有当前匹配连接、缺少凭据、API 拒绝及 HTTP 状态、网络失败或 API 身份未确认；绝不打印配置 URL、provider 或 Key。之后如需再次检查，可让宿主 Agent“初始化 Pure Tokens Skills”或“检查当前 Pure Tokens 连接”；它应调用已安装执行器的 `init`，展示使用须知，但不修改配置。
 
 ## 维护者校验
 

@@ -109,8 +109,18 @@ function Invoke-Init([string]$TargetRoot, [string]$RequestedHost) {
     }
     if ($null -ne $json -and $json.configuration_status -eq "verified") {
       Write-Output "Pure Tokens Skill init: fixed API identity verified for the current host."
+    } elseif ($null -ne $json) {
+      $state = if ([string]::IsNullOrWhiteSpace($json.configuration_status)) { "unverified" } else { $json.configuration_status }
+      $message = if ([string]::IsNullOrWhiteSpace($json.message)) { "The fixed API identity is not verified in this host session." } else { $json.message }
+      Write-Output "Pure Tokens Skill init: $message [$state]"
+      if ($null -ne $json.http_status -and [int]$json.http_status -gt 0) {
+        Write-Output "HTTP status: $($json.http_status)"
+      }
+      if (-not [string]::IsNullOrWhiteSpace($json.next_action)) {
+        Write-Output "Next: $($json.next_action)"
+      }
     } else {
-      Write-Output "Pure Tokens Skill init: fixed API identity is not verified in this host session."
+      Write-Output "Pure Tokens Skill init: configuration could not be checked in this host session."
     }
   }
   Write-Output ""

@@ -116,7 +116,7 @@ Every media result gives the exact model when returned, task ID when returned, s
 
 The source sync scripts are `runtime/puretokens-skill-install.sh` for macOS/Linux and `runtime/puretokens-skill-install.ps1` for Windows. They install, verify, and place the platform executor; users do not need Node, npm, Python, Go, or a package manager.
 
-After every successful installation or update, the installer automatically runs `init`. It performs one non-billable fixed `/v1` identity check without displaying credentials or host configuration, then prints the current usage guide and examples. To run it again later, ask the host Agent to initialize Pure Tokens Skills or check the current Pure Tokens connection; it must invoke the installed executor's `init` command and show the guide without modifying configuration.
+After every successful installation or update, the installer automatically runs `init`. It performs one non-billable fixed `/v1` identity check without displaying credentials or host configuration, then prints the current usage guide and examples. If verification does not complete, it reports a sanitized reason such as no active matching connection, missing credential, API rejection with its HTTP status, network failure, or an unconfirmed API identity; it never prints the configured URL, provider, or key. To run it again later, ask the host Agent to initialize Pure Tokens Skills or check the current Pure Tokens connection; it must invoke the installed executor's `init` command and show the guide without modifying configuration.
 
 ## Development validation
 

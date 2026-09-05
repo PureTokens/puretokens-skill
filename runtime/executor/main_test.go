@@ -224,3 +224,41 @@ func TestInitVerifiesIdentityWithoutReturningConfiguration(t *testing.T) {
 		t.Fatalf("init receipt exposed sensitive or internal connection data: %s", output.String())
 	}
 }
+
+func TestInitExplainsRejectedIdentityCheckWithoutConfigurationDisclosure(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte(`{"error":{"message":"invalid credential"}}`))
+	}))
+	defer server.Close()
+
+	output := &bytes.Buffer{}
+	err := executeInit(output, service{baseURL: server.URL, token: "secret-must-not-appear", client: server.Client()})
+	if err == nil {
+		t.Fatal("expected rejected init identity check")
+	}
+	var result initReceipt
+	if err := json.Unmarshal(output.Bytes(), &result); err != nil {
+		t.Fatal(err)
+	}
+	if result.ConfigurationStatus != "api_identity_rejected" || !result.APIRequestExecuted || result.HTTPStatus != http.StatusUnauthorized || result.Message == "" || result.NextAction == "" {
+		t.Fatalf("unexpected rejected init receipt: %#v", result)
+	}
+	if strings.Contains(output.String(), "secret-must-not-appear") || strings.Contains(output.String(), server.URL) {
+		t.Fatalf("init rejection leaked connection data: %s", output.String())
+	}
+}
+
+func TestInitExplainsCredentialResolutionFailureWithoutConfigurationDisclosure(t *testing.T) {
+	result := initCredentialFailure(credentialFailure("active_connection_not_puretokens", "The active host connection does not target the Pure Tokens API.", "Select or apply the Pure Tokens connection in the host, then run init again."))
+	if result.OK || result.ConfigurationStatus != "active_connection_not_puretokens" || result.APIRequestExecuted || result.Message == "" || result.NextAction == "" {
+		t.Fatalf("unexpected credential init receipt: %#v", result)
+	}
+	encoded, err := json.Marshal(result)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(encoded), "api.puretokensx.com") || strings.Contains(string(encoded), "test-key") {
+		t.Fatalf("credential init receipt leaked configuration: %s", encoded)
+	}
+}

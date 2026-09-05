@@ -35,7 +35,7 @@ test("repository validates its managed native executor contract", async () => {
 test("all specialist Skills are versioned together and use the expected source files", async () => {
   const packageManifest = JSON.parse(await readFile(path.join(repositoryRoot, "package.json"), "utf8"));
   const { registry, records } = await collectSkillRecords();
-  assert.equal(packageManifest.version, "0.15.1");
+  assert.equal(packageManifest.version, "0.15.2");
   assert.deepEqual(registry.skills.map((entry) => entry.name), skillNames);
   assert.equal(records.length, skillNames.length);
   for (const record of records) {
@@ -209,7 +209,7 @@ test("legacy migration archive carries the current source and verified executor"
   const source = path.join(unpacked, "puretokens-skill-main");
   const installer = path.join(source, "runtime", "puretokens-skill-install.sh");
   const { stdout } = await execFile("sh", [installer, "sync", "--target", target, "--source", source], { cwd: source });
-  assert.match(stdout, /Pure Tokens Skills 0\.15\.1 synchronized with the native API executor at/);
+  assert.match(stdout, /Pure Tokens Skills 0\.15\.2 synchronized with the native API executor at/);
   await assert.rejects(readFile(path.join(target, ".puretokens-runtime", "runtime.json"), "utf8"));
   const executor = path.join(target, ".puretokens-executor", process.platform === "win32" ? "puretokens-api.exe" : "puretokens-api");
   const { stdout: version } = await execFile(executor, ["--version"]);
@@ -263,14 +263,14 @@ test("source installer synchronizes Skills and exactly one native executor", asy
   t.after(() => rm(target, { recursive: true, force: true }));
   const installer = path.join(repositoryRoot, "runtime", "puretokens-skill-install.sh");
   const { stdout } = await execFile("sh", [installer, "sync", "--target", target, "--source", repositoryRoot], { cwd: repositoryRoot });
-  assert.match(stdout, /Pure Tokens Skills 0\.15\.1 synchronized with the native API executor at/);
+  assert.match(stdout, /Pure Tokens Skills 0\.15\.2 synchronized with the native API executor at/);
   assert.match(stdout, /Pure Tokens Skill init: host ID was not supplied, so the connection check was deferred/);
   assert.match(stdout, /Pure Tokens Skill 使用须知/);
   assert.deepEqual((await readdir(target)).filter((entry) => skillNames.includes(entry)).sort(), [...skillNames].sort());
   await assert.rejects(readFile(path.join(target, ".puretokens-runtime", "runtime.json"), "utf8"));
   const executor = path.join(target, ".puretokens-executor", process.platform === "win32" ? "puretokens-api.exe" : "puretokens-api");
   const { stdout: version } = await execFile(executor, ["--version"]);
-  assert.equal(version.trim(), "0.15.1");
+  assert.equal(version.trim(), "0.15.2");
 });
 
 test("source installer exposes an explicit init command and usage guide", async (t) => {

@@ -147,6 +147,18 @@ usage_guide() {
   printf '%s\n' "Pure Tokens Skill usage guide is unavailable; update the Skills from the official repository."
 }
 
+init_json_string() {
+  field=$1
+  document=$2
+  printf '%s' "$document" | sed -n "s/.*\"$field\":\"\([^\"]*\)\".*/\1/p" | sed -n '1p'
+}
+
+init_json_number() {
+  field=$1
+  document=$2
+  printf '%s' "$document" | sed -n "s/.*\"$field\":\([0-9][0-9]*\).*/\1/p" | sed -n '1p'
+}
+
 init_target() {
   target_root=$1
   host_id=$2
@@ -161,7 +173,19 @@ init_target() {
     elif [ "$init_status" -ne 0 ] && [ -z "$init_output" ]; then
       printf '%s\n' "Pure Tokens Skill init: configuration could not be checked in this host session."
     else
-      printf '%s\n' "Pure Tokens Skill init: fixed API identity is not verified in this host session."
+      init_state=$(init_json_string "configuration_status" "$init_output")
+      init_message=$(init_json_string "message" "$init_output")
+      init_next=$(init_json_string "next_action" "$init_output")
+      init_http_status=$(init_json_number "http_status" "$init_output")
+      [ -n "$init_state" ] || init_state="unverified"
+      [ -n "$init_message" ] || init_message="The fixed API identity is not verified in this host session."
+      printf '%s\n' "Pure Tokens Skill init: $init_message [$init_state]"
+      if [ -n "$init_http_status" ]; then
+        printf '%s\n' "HTTP status: $init_http_status"
+      fi
+      if [ -n "$init_next" ]; then
+        printf '%s\n' "Next: $init_next"
+      fi
     fi
   else
     printf '%s\n' "Pure Tokens Skill init: host ID was not supplied, so the connection check was deferred."

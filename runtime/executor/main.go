@@ -29,7 +29,7 @@ const (
 	maxVideoBytes    int64 = 512 << 20
 )
 
-var executorVersion = "0.15.1"
+var executorVersion = "0.15.2"
 
 type attachment struct {
 	Field string `json:"field"`
@@ -79,6 +79,7 @@ type initReceipt struct {
 	ConfigurationStatus  string   `json:"configuration_status"`
 	APIRequestExecuted   bool     `json:"api_request_executed"`
 	APIIdentityConfirmed bool     `json:"api_identity_confirmed"`
+	HTTPStatus           int      `json:"http_status,omitempty"`
 	Message              string   `json:"message"`
 	NextAction           string   `json:"next_action"`
 	UsageExamples        []string `json:"usage_examples"`
@@ -120,6 +121,10 @@ func run(args []string, input io.Reader, output io.Writer) error {
 
 	token, err := credentialForHost(*host)
 	if err != nil {
+		if command == "init" {
+			writeJSON(output, initCredentialFailure(err))
+			return err
+		}
 		writeReceipt(output, receipt{OK: false, FailurePhase: "validation", APIErrorCode: "credential_unavailable", ErrorMessage: "The current host did not provide a verified Pure Tokens credential for this request.", NextAction: "Verify the Pure Tokens connection in the host, then start a new session."})
 		return err
 	}
@@ -146,15 +151,35 @@ func run(args []string, input io.Reader, output io.Writer) error {
 func executeInit(output io.Writer, svc service) error {
 	result := initReceipt{Command: "init", ExecutorVersion: executorVersion, ConfigurationStatus: "unverified", UsageExamples: usageExamples()}
 	body, status, _, _, _, err := svc.request(context.Background(), http.MethodGet, "/v1", nil, "")
-	result.APIRequestExecuted = err == nil && status > 0
-	if err != nil || status < 200 || status >= 300 {
-		result.Message = "The fixed Pure Tokens API connection could not be verified in this host session."
-		result.NextAction = "Verify the Pure Tokens connection in the host, then run init again."
+	result.APIRequestExecuted = status > 0
+	result.HTTPStatus = status
+	if err != nil {
+		if status > 0 {
+			result.ConfigurationStatus = "api_response_unreadable"
+			result.Message = "The fixed API responded, but its identity response could not be read safely."
+			result.NextAction = "Check the network path to Pure Tokens, then run init again."
+		} else {
+			result.ConfigurationStatus = "api_network_unavailable"
+			result.Message = "The fixed Pure Tokens API could not be reached from this host session."
+			result.NextAction = "Check this host's network permission and connection, then run init again."
+		}
+		writeJSON(output, result)
+		return errors.New("init API request failed")
+	}
+	if status < 200 || status >= 300 {
+		result.ConfigurationStatus = "api_identity_rejected"
+		result.Message = "The fixed Pure Tokens API rejected the identity check."
+		if status == http.StatusUnauthorized || status == http.StatusForbidden {
+			result.NextAction = "Verify the active Pure Tokens connection and key in the host, then run init again."
+		} else {
+			result.NextAction = "Check the current connection and network, then run init again."
+		}
 		writeJSON(output, result)
 		return errors.New("init connection check failed")
 	}
 	var identity map[string]any
 	if json.Unmarshal(body, &identity) != nil {
+		result.ConfigurationStatus = "api_identity_unreadable"
 		result.Message = "The fixed Pure Tokens API returned an unreadable identity response."
 		result.NextAction = "Run init again in a new host session."
 		writeJSON(output, result)
@@ -170,6 +195,7 @@ func executeInit(output io.Writer, svc service) error {
 		result.Message = "The current host can reach the fixed Pure Tokens API."
 		result.NextAction = "Use puretokens-image, puretokens-video, puretokens-balance, puretokens-models, or puretokens-connection in a new host conversation."
 	} else {
+		result.ConfigurationStatus = "api_identity_unconfirmed"
 		result.Message = "The fixed Pure Tokens API did not return a confirmable identity."
 		result.NextAction = "Verify the Pure Tokens connection in the host, then run init again."
 	}
@@ -178,6 +204,18 @@ func executeInit(output io.Writer, svc service) error {
 		return errors.New("init identity unconfirmed")
 	}
 	return nil
+}
+
+func initCredentialFailure(err error) initReceipt {
+	status, message, nextAction := credentialFailureDetails(err)
+	return initReceipt{
+		Command:             "init",
+		ExecutorVersion:     executorVersion,
+		ConfigurationStatus: status,
+		Message:             message,
+		NextAction:          nextAction,
+		UsageExamples:       usageExamples(),
+	}
 }
 
 func usageExamples() []string {
@@ -212,7 +250,7 @@ func credentialForHost(host string) (string, error) {
 	case "opencode":
 		return credentialFromOpenCode()
 	default:
-		return "", fmt.Errorf("unsupported credential adapter: %s", host)
+		return "", credentialFailure("host_credential_adapter_unavailable", "This host has no supported managed connection record for API requests.", "Use a supported host with a configured Pure Tokens connection, then run init again.")
 	}
 }
 

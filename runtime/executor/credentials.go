@@ -16,6 +16,28 @@ import (
 
 const pureTokensHost = "api.puretokensx.com"
 
+type credentialResolutionError struct {
+	status     string
+	message    string
+	nextAction string
+}
+
+func (err *credentialResolutionError) Error() string {
+	return err.status
+}
+
+func credentialFailure(status, message, nextAction string) error {
+	return &credentialResolutionError{status: status, message: message, nextAction: nextAction}
+}
+
+func credentialFailureDetails(err error) (string, string, string) {
+	var resolution *credentialResolutionError
+	if errors.As(err, &resolution) {
+		return resolution.status, resolution.message, resolution.nextAction
+	}
+	return "active_connection_unavailable", "The active host connection record could not be read.", "Open the host connection settings, apply the Pure Tokens connection again, then run init again."
+}
+
 func credentialFromCodex() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -31,7 +53,7 @@ func credentialFromCodexFile(configPath string) (string, error) {
 	}
 	active := tomlValue(document, nil, "model_provider")
 	if active == "" {
-		return "", errors.New("active Codex provider is unavailable")
+		return "", credentialFailure("active_connection_unavailable", "Codex does not have an active configured connection for this check.", "Select and apply the Pure Tokens connection in Codex, then run init again.")
 	}
 	table := []string{"model_providers", active}
 	return matchingCredential(
@@ -100,7 +122,7 @@ func credentialFromWorkBuddyFile(configPath string) (string, error) {
 		items = jsonArray(jsonObject(value)["models"])
 	}
 	if len(items) == 0 {
-		return "", errors.New("WorkBuddy model records are unavailable")
+		return "", credentialFailure("active_connection_unavailable", "WorkBuddy does not have an active configured connection for this check.", "Select and apply the Pure Tokens connection in WorkBuddy, then run init again.")
 	}
 	keys := make(map[string]struct{})
 	for _, item := range items {
@@ -111,12 +133,12 @@ func credentialFromWorkBuddyFile(configPath string) (string, error) {
 		}
 	}
 	if len(keys) != 1 {
-		return "", errors.New("WorkBuddy does not have one active matching credential")
+		return "", credentialFailure("active_connection_ambiguous", "WorkBuddy has no single unambiguous Pure Tokens credential for this check.", "Keep one active Pure Tokens connection in WorkBuddy, then run init again.")
 	}
 	for key := range keys {
 		return key, nil
 	}
-	return "", errors.New("WorkBuddy credential is unavailable")
+	return "", credentialFailure("active_connection_credential_missing", "The active WorkBuddy Pure Tokens connection has no usable credential.", "Apply the Pure Tokens connection in WorkBuddy again, then run init again.")
 }
 
 func credentialFromGrokBuild() (string, error) {
@@ -134,7 +156,7 @@ func credentialFromGrokBuildFile(configPath string) (string, error) {
 	}
 	active := tomlValue(document, []string{"models"}, "default")
 	if active == "" {
-		return "", errors.New("active Grok Build model is unavailable")
+		return "", credentialFailure("active_connection_unavailable", "Grok Build does not have an active configured connection for this check.", "Select and apply the Pure Tokens connection in Grok Build, then run init again.")
 	}
 	table := []string{"model", active}
 	return matchingCredential(tomlValue(document, table, "base_url"), tomlValue(document, table, "api_key"), "/v1", "/v1/")
@@ -156,7 +178,7 @@ func credentialFromOpenCodeFile(configPath string) (string, error) {
 	model := jsonString(document["model"])
 	providerID, _, found := strings.Cut(model, "/")
 	if !found || providerID == "" {
-		return "", errors.New("active OpenCode provider is unavailable")
+		return "", credentialFailure("active_connection_unavailable", "OpenCode does not have an active configured connection for this check.", "Select and apply the Pure Tokens connection in OpenCode, then run init again.")
 	}
 	provider := jsonObject(jsonObject(document["provider"])[providerID])
 	options := jsonObject(provider["options"])
@@ -183,11 +205,11 @@ func configuredDirectory(home string, defaultDirectory string, overrideNames ...
 
 func matchingCredential(endpoint, token string, allowedPaths ...string) (string, error) {
 	if !matchesPureTokensEndpoint(endpoint, allowedPaths...) {
-		return "", errors.New("matching Pure Tokens endpoint is unavailable")
+		return "", credentialFailure("active_connection_not_puretokens", "The active host connection does not target the Pure Tokens API.", "Select or apply the Pure Tokens connection in the host, then run init again.")
 	}
 	token = strings.TrimSpace(token)
 	if token == "" {
-		return "", errors.New("matching credential is unavailable")
+		return "", credentialFailure("active_connection_credential_missing", "The active Pure Tokens connection has no usable credential.", "Apply the Pure Tokens connection in the host again, then run init again.")
 	}
 	return token, nil
 }
