@@ -16,6 +16,11 @@
       "sourceRepository": "https://github.com/PureTokens/puretokens-skill.git",
       "sourceBranch": "main",
       "validationCommand": "native_sync_derives_host_target_and_validates_fresh_official_main_checkout_before_sync"
+    },
+    "init": {
+      "commandTemplate": "native_executor init --host <current-supported-host>",
+      "checks": "one_fixed_identity_request_without_displaying_credentials_or_host_configuration",
+      "usageGuide": "references/usage-guide.md"
     }
   },
   "result": {
@@ -24,7 +29,7 @@
     "neverOverwritesUnmanagedDirectories": true,
     "removesVerifiedRetiredManagedSkills": true,
     "removesVerifiedLegacyNodeRuntime": true,
-    "doesNotInstallApiRuntime": true,
+    "installsChecksumVerifiedNativeApiExecutor": true,
     "reportsSynchronizedVersion": true,
     "removesLegacyCodexPluginWhenPresent": true,
     "requiresVerifiedLegacyCodexPluginRemovalBeforeSync": true,

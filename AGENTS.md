@@ -1,18 +1,18 @@
 # Pure Tokens Skills repository rules
 
-This repository owns the six installable Skill instructions, model selections, contracts, documentation, validation and source-only installers. It does not own, display, persist or manage user connection configuration or credentials.
+This repository owns the six installable Skill instructions, model selections, contracts, documentation, validation, platform installers, and the small one-shot native API executor. It does not own, display, persist or manage user connection configuration or credentials.
 
 ## Direct API product contract
 
 - API-facing Skills always use full fixed URLs under `https://api.puretokensx.com`; fixed requests never reuse a configured Base URL as their target.
-- The current host's terminal or native HTTPS/API capability performs the fixed request directly. It may resolve exactly one current matching credential from the active host connection in memory for that request, whether the connection was configured by Pure Tokens Switch, a third-party CC Switch, or manual host configuration.
-- Do not use provider labels to identify the connection. Do not display, log, copy, persist, ask for, compare or report credentials, Base URLs, provider labels or host configuration. Resolving one matching credential in memory for the fixed request is required execution work, not a user-facing connection inspection.
-- Do not add or require a Node runtime, npm, Python, MCP, proxy, sidecar, local media helper, separate upload service, or another authentication path for balance, model discovery, image generation, editing, video generation, or video editing.
+- The managed `puretokens-api` native executor performs every fixed request directly. It runs only for one command, exits after its receipt, and never opens a port, proxy, sidecar, background queue, or desktop UI.
+- A credential adapter may read only the exact effective connection files documented for the active host. It first verifies that the configured endpoint is Pure Tokens, then uses one matching bearer credential only in memory for the fixed request. It must never scan a home directory, probe third-party configuration, use provider labels, or fall back to arbitrary environment variables.
+- Do not display, log, copy, persist, ask for, compare or report credentials, Base URLs, provider labels or host configuration. Do not add or require Node, npm, Python, MCP, a proxy, sidecar, separate upload service, or another authentication path.
 - Computer Use, browser automation, desktop/mobile UI automation, and opening or clicking Pure Tokens Switch/Desktop are never API transports. Do not use them to submit a request, poll a task, retrieve media, or recover from an actual terminal/network failure.
 - API-facing Skills must not invoke Imagen or another image/video Skill as a fallback. Never gate the fixed request on a separate “authenticated image/video interface” discovery step: use the active connection credential and issue the fixed API request through the current host's terminal or native HTTPS/API capability. Only an actual terminal, network, credential-resolution, attachment-byte, or API failure may produce the documented failure receipt.
 - The fixed endpoints are `/v1`, `/v1/media/models`, `/api/product/desktop/account/balance`, `/v1/images/generations`, `/v1/images/edits`, `/v1/videos`, and `/v1/videos/edits`, plus declared same-task status/content paths.
-- JSON and declared multipart requests are sent through the host-native API capability. Current user attachments are sent only with their declared operation; never upload, rehost, convert them to a text prompt, or silently downgrade a media-reference request.
-- If host policy blocks network/API execution, attachment transport, or native byte delivery, stop before a billable request and return the documented safe failure receipt. Do not suggest a fallback transport.
+- JSON and declared multipart requests are sent only by the native executor. Current user attachments are sent only with their declared operation; never upload, rehost, convert them to a text prompt, or silently downgrade a media-reference request.
+- If an active host has no verified credential adapter, if policy blocks the executor, if attachment transport is unavailable, or if native byte delivery fails, stop with the documented safe receipt. Do not suggest a fallback transport.
 
 ## Skill behavior
 
@@ -24,10 +24,10 @@ This repository owns the six installable Skill instructions, model selections, c
 
 ## Installation and updates
 
-- Source-only shell/PowerShell installers synchronize the six Skills. They are installation tools only; they do not participate in API execution and must not install an API runtime.
-- An update may remove only a verified old `puretokens-direct-api-runtime` directory and verified retired official Skill directories. Never delete unknown directories.
+- Shell/PowerShell installers synchronize the six Skills and exactly one checksum-verified platform executor. They never install Node, npm, Python, a proxy, or a service.
+- An update may replace only a verified managed `.puretokens-executor`, remove a verified old `puretokens-direct-api-runtime`, and remove verified retired official Skill directories. Never delete unknown directories.
 - Preserve the exact first `text` install prompt under the required heading in both READMEs because the client download page extracts it.
 
 ## Validation
 
-Run `npm run check` and `npm run release:validate` before release. Node is permitted for repository development and validation only; it is never a user runtime dependency for media work.
+Run `npm run check`, `npm run release:validate`, and `go test ./...` from `runtime/executor` before release. Node is permitted for repository development and validation only; it is never a user runtime dependency for media work.

@@ -4,6 +4,18 @@
 
 # 更新日志
 
+## 0.15.1 — 2026-09-05
+
+- 修正凭据解析：Claude Code、Codex、WorkBuddy、Gemini CLI、Grok Build 和 OpenCode 均从 Pure Tokens Switch 写入的、当前生效且有明确字段契约的连接记录中取 Key。Codex 改为读取 `config.toml` 中当前 provider 的 token，不再读取 `auth.json`；不依赖 provider 标签。每个适配器先验证记录指向 Pure Tokens，再只在内存中保留一把 Key 用于固定请求。Trae 仍是手工配置例外，因为 Switch 刻意不写入或读取其受管凭据记录。
+
+## 0.15.0 — 2026-09-04
+
+- 新增随 Skill 安装的、经过 SHA-256 校验的单次原生 API 执行器。用户不需要安装 Node、npm、Python、Go、MCP、代理、sidecar 或后台服务即可执行媒体、余额、连接和模型请求。
+- Images 和 Videos 现在统一调用受管执行器访问固定 Pure Tokens API，支持已声明的 multipart 附件、有边界的同任务轮询和原生媒体字节交付。每次计费提交最多发送一次；结果不确定时绝不自动创建替代任务。
+- 重建平台安装器和迁移归档，使执行器与六个 Skill 一起同步。Claude Code、Codex、WorkBuddy、Gemini CLI、Grok Build 和 OpenCode 均已有已验证的凭据适配器；Trae 仍是手工配置例外，因为 Switch 不会为它写入受管凭据记录。
+- 增加 multipart 流式传输、按媒体类型的附件大小限制、响应大小检查、reconciliation 处理、同任务继续查询测试、非媒体内容拒绝测试及全平台二进制校验。
+- 新增明确的 `init` 指令。安装和更新完成后会自动执行一次安全的固定 API 身份检查，并输出带版本的使用须知，包含生图、生视频、模型、余额、参考媒体和更新示例。
+
 ## 0.14.3 — 2026-09-04
 
 - 修正直连执行契约：Image、Video、Models、Connection 和 Balance 必须私密地在内存中解析当前匹配连接的一把凭据，并通过宿主终端或原生 HTTPS 能力直接请求固定 API；不得因为没有单独的“已认证媒体接口”就在请求前拒绝。

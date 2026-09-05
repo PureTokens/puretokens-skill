@@ -25,15 +25,15 @@ Install or update the official Pure Tokens Skills from https://github.com/PureTo
 | `puretokens-models` | 查询已认证的当前模型目录和模型声明能力。 |
 | `puretokens-image` | 生图和已声明的图片编辑。 |
 | `puretokens-video` | 生视频，以及已声明的图片/视频/音频参考和视频编辑。 |
-| `puretokens-update` | 安全同步官方 Skills。 |
+| `puretokens-update` | 初始化、展示使用须知并安全同步官方 Skills。 |
 
 ## 直连 API 的工作方式
 
 媒体 Skill 始终请求 `https://api.puretokensx.com` 下的完整固定 URL：生图使用 `/v1/images/generations`，生视频使用 `/v1/videos`。不会将媒体请求发给任意用户配置的 Base URL、MCP、本地代理、sidecar 或第二个 endpoint。
 
-当前宿主使用已配置的、当前匹配 Pure Tokens 连接的凭据执行认证 HTTPS 请求。第三方 CC Switch 与用户手动配置宿主都可以使用：它们只负责把连接配置给宿主。对于固定请求，Skill 只在内存中解析一把匹配凭据，并通过宿主终端或原生 HTTPS 能力直接发出请求。Skill 不检查 provider 标签，不索取、展示、保存、记录或报告 API Key、Base URL 或宿主配置。保存的 Base URL 只用于在内存中识别匹配凭据，绝不作为请求目标。
+每次请求由随 Skill 安装的单文件原生执行器完成。它只在调用期间运行，直连固定 API 后立即退出；不会启动端口、后台服务、代理、sidecar 或桌面自动化。执行器只读取受支持宿主在其已知配置路径中写入的当前有效连接，先验证该连接指向 Pure Tokens，再仅在内存中使用一把匹配 Key 请求固定 API。Pure Tokens Switch、CC Switch 或用户按该宿主既定配置格式手工配置的连接都可用。Skill 和用户都不传递 Key 或 Base URL。不会扫描 Home、检查 provider 标签、索取、展示、保存、记录或报告 API Key、Base URL 或宿主配置。
 
-生成图片和视频不需要 Node、npm、Python、Pure Tokens Desktop、本地媒体运行器、MCP 或上传中转。不得先查找一个单独的“已认证图片/视频接口”：Skill 必须直接使用已配置连接和固定 API 路径；本地附件直接随已声明的 multipart 请求发送。只有实际终端、网络、凭据解析、附件字节或 API 失败，才可在计费前停止。
+生成图片和视频不需要 Node、npm、Python、Go、Pure Tokens Desktop、MCP 或上传中转。安装器会校验并放置当前平台的原生执行器；它负责固定请求、multipart 附件、同任务轮询和有边界的原生媒体字节交付。只有执行器、网络、已验证凭据适配器、附件绝对路径、附件字节或 API 失败，才可在计费前停止。
 
 Computer Use、浏览器自动化以及打开或点击 Pure Tokens Switch/Desktop 都不是备用执行路径。Skill 不会用它们寻找可见生成界面、获取凭据、提交媒体或交付结果，也不会调用其他生图或生视频 Skill 作为回退。
 
@@ -47,13 +47,13 @@ Computer Use、浏览器自动化以及打开或点击 Pure Tokens Switch/Deskto
 
 | 宿主 | 全局 Skill 目录 | 直连执行 |
 | --- | --- | --- |
-| Claude Code | `~/.claude/skills` | 宿主原生认证 API 请求 |
-| Codex | `~/.agents/skills` | 宿主原生认证 API 请求 |
-| WorkBuddy | `~/.workbuddy/skills` | 宿主原生认证 API 请求 |
-| Gemini CLI | `~/.gemini/skills` | 宿主原生认证 API 请求 |
-| Grok Build | `~/.grok/skills` | 宿主原生认证 API 请求 |
-| OpenCode | `~/.config/opencode/skills` | 宿主原生认证 API 请求 |
-| Trae | `~/.trae/skills` | 宿主原生认证 API 请求 |
+| Claude Code | `~/.claude/skills` | 已验证原生执行器凭据适配器 |
+| Codex | `~/.agents/skills` | 已验证原生执行器凭据适配器 |
+| WorkBuddy | `~/.workbuddy/skills` | 已验证原生执行器凭据适配器 |
+| Gemini CLI | `~/.gemini/skills` | 已验证原生执行器凭据适配器 |
+| Grok Build | `~/.grok/skills` | 已验证原生执行器凭据适配器 |
+| OpenCode | `~/.config/opencode/skills` | 已验证原生执行器凭据适配器 |
+| Trae | `~/.trae/skills` | 可安装；Switch 没有受管凭据记录，故请求会安全停止 |
 
 七个宿主以 `references/host-support.json` 为唯一契约；不会依据 provider 名判断。
 
@@ -112,9 +112,11 @@ README 只从基础目录中带有明确图片/视频能力的模型生成，不
 
 ## 更新
 
-`puretokens-update` 会取得官方仓库 `main` 的最新本地检出，并从中执行当前宿主的源码同步脚本。安装器同步六个 Skill、保护用户自己管理的同名目录、只删除已验证的旧官方 Skill，并在发现时删除已验证的旧 Node 运行器；它不会安装 API 运行器。只有带版本号的成功回执才表示更新完成。
+`puretokens-update` 会取得官方仓库 `main` 的最新本地检出，并从中执行当前宿主的源码同步脚本。安装器同步六个 Skill 和经 SHA-256 校验的当前平台原生执行器、保护用户自己管理的同名目录、只删除已验证的旧官方 Skill，并在发现时删除已验证的旧 Node 运行器。只有带版本号的成功回执才表示更新完成。
 
-源码同步脚本是 macOS/Linux 的 `runtime/puretokens-skill-install.sh` 和 Windows 的 `runtime/puretokens-skill-install.ps1`。它们只负责安装更新，不参与图片、视频、模型或余额请求，也不需要 Node、npm、Python 或包管理器。
+源码同步脚本是 macOS/Linux 的 `runtime/puretokens-skill-install.sh` 和 Windows 的 `runtime/puretokens-skill-install.ps1`。它们只负责安装更新及校验复制平台执行器；用户不需要 Node、npm、Python、Go 或包管理器。
+
+每次安装或更新成功后，安装器都会自动执行 `init`：只做一次不计费的固定 `/v1` 身份检查，不展示凭据或宿主配置，然后输出当前使用须知和示例。之后如需再次检查，可让宿主 Agent“初始化 Pure Tokens Skills”或“检查当前 Pure Tokens 连接”；它应调用已安装执行器的 `init`，展示使用须知，但不修改配置。
 
 ## 维护者校验
 

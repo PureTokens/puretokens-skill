@@ -25,15 +25,15 @@ Install or update the official Pure Tokens Skills from https://github.com/PureTo
 | `puretokens-models` | Read the authenticated current model catalog and declared capabilities. |
 | `puretokens-image` | Generate images and perform declared image edits. |
 | `puretokens-video` | Generate videos and use declared image/video/audio references or video edits. |
-| `puretokens-update` | Safely synchronize these official Skills. |
+| `puretokens-update` | Initialize, show usage guidance, and safely synchronize these official Skills. |
 
 ## How direct API generation works
 
 The media Skills always use full fixed URLs under `https://api.puretokensx.com`: Images uses `/v1/images/generations`; Videos uses `/v1/videos`. They do not send media work to an arbitrary configured Base URL, MCP server, local proxy, sidecar, or a second endpoint.
 
-The active host makes the authenticated HTTPS request with the credential already configured for its current matching Pure Tokens connection. A third-party CC Switch and a manual host configuration both work: they only supply the host connection. For a fixed request, the Skill resolves exactly one matching credential in memory and sends that request directly through the host terminal or native HTTPS capability. It never checks a provider label, asks for, displays, stores, logs, or reports an API key, Base URL, or host configuration. The configured Base URL is used only to identify the matching credential in memory; it is never used as the request target.
+Each request is performed by the single-file native executor installed with the Skills. It runs only for that command, connects to the fixed API, then exits; it does not start a port, background service, proxy, sidecar, or desktop automation. The executor reads only the active connection record at the supported host's documented configuration path, verifies that record targets Pure Tokens, and keeps one matching credential in memory for the fixed request. This works with Pure Tokens Switch, CC Switch, or a manual connection that uses that host's documented configuration shape. Neither the Skill nor the user passes a key or Base URL. It never scans home directories, checks a provider label, asks for, displays, stores, logs, or reports an API key, Base URL, or host configuration.
 
-No Node, npm, Python, Pure Tokens Desktop, local media runtime, MCP, or upload relay is required to generate media. The Skill must not first search for a separate “authenticated image/video interface”: it directly uses the configured connection and fixed API path. A local attachment is sent in the declared multipart request. Only an actual terminal, network, credential-resolution, attachment-byte, or API failure may stop a request before billing.
+No Node, npm, Python, Go, Pure Tokens Desktop, MCP, or upload relay is required to generate media. The installer verifies and places the platform-native executor, which performs fixed requests, multipart attachments, same-task polling, and bounded native-media delivery. Only an actual executor, network, verified credential-adapter, attachment-path, attachment-byte, or API failure may stop a request before billing.
 
 Computer Use, browser automation, and opening or clicking Pure Tokens Switch/Desktop are not fallback execution paths. The Skills never use them to find a visible generation interface, obtain a credential, submit media, or deliver a result; they also never invoke another image or video Skill as a fallback.
 
@@ -47,13 +47,13 @@ The priority is carried by the installed Skill metadata and the host's current c
 
 | Host | Global Skill directory | Direct execution |
 | --- | --- | --- |
-| Claude Code | `~/.claude/skills` | Host-native authenticated API request |
-| Codex | `~/.agents/skills` | Host-native authenticated API request |
-| WorkBuddy | `~/.workbuddy/skills` | Host-native authenticated API request |
-| Gemini CLI | `~/.gemini/skills` | Host-native authenticated API request |
-| Grok Build | `~/.grok/skills` | Host-native authenticated API request |
-| OpenCode | `~/.config/opencode/skills` | Host-native authenticated API request |
-| Trae | `~/.trae/skills` | Host-native authenticated API request |
+| Claude Code | `~/.claude/skills` | Verified native-executor credential adapter |
+| Codex | `~/.agents/skills` | Verified native-executor credential adapter |
+| WorkBuddy | `~/.workbuddy/skills` | Verified native-executor credential adapter |
+| Gemini CLI | `~/.gemini/skills` | Verified native-executor credential adapter |
+| Grok Build | `~/.grok/skills` | Verified native-executor credential adapter |
+| OpenCode | `~/.config/opencode/skills` | Verified native-executor credential adapter |
+| Trae | `~/.trae/skills` | Installable; no Switch-managed credential record exists, so requests stop safely |
 
 The repository contract defines the same seven hosts in `references/host-support.json`. It does not infer support from a provider-name field.
 
@@ -112,9 +112,11 @@ Every media result gives the exact model when returned, task ID when returned, s
 
 ## Updating
 
-`puretokens-update` obtains a fresh official `main` checkout and runs the source sync script for the active host. The installer synchronizes all six Skills, preserves unmanaged directories, removes only verified retired official Skill directories, and removes the verified retired Node runtime if present. It installs no API runtime. The versioned success receipt is the only confirmation that an update completed.
+`puretokens-update` obtains a fresh official `main` checkout and runs the source sync script for the active host. The installer synchronizes all six Skills and the SHA-256-verified platform-native executor, preserves unmanaged directories, removes only verified retired official Skill directories, and removes the verified retired Node runtime if present. The versioned success receipt is the only confirmation that an update completed.
 
-The source sync scripts are `runtime/puretokens-skill-install.sh` for macOS/Linux and `runtime/puretokens-skill-install.ps1` for Windows. They are installation tools, not part of media generation. They do not require Node, npm, Python, or a package manager.
+The source sync scripts are `runtime/puretokens-skill-install.sh` for macOS/Linux and `runtime/puretokens-skill-install.ps1` for Windows. They install, verify, and place the platform executor; users do not need Node, npm, Python, Go, or a package manager.
+
+After every successful installation or update, the installer automatically runs `init`. It performs one non-billable fixed `/v1` identity check without displaying credentials or host configuration, then prints the current usage guide and examples. To run it again later, ask the host Agent to initialize Pure Tokens Skills or check the current Pure Tokens connection; it must invoke the installed executor's `init` command and show the guide without modifying configuration.
 
 ## Development validation
 

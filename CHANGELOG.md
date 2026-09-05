@@ -4,6 +4,18 @@
 
 # Changelog
 
+## 0.15.1 — 2026-09-05
+
+- Corrected credential resolution to read the active, documented connection record that Pure Tokens Switch writes for Claude Code, Codex, WorkBuddy, Gemini CLI, Grok Build, and OpenCode. Codex now reads the active provider token in `config.toml` rather than `auth.json`; provider labels are not used. Each adapter verifies the Pure Tokens endpoint before retaining one credential only in memory for the fixed request. Trae remains manual-only because Switch deliberately does not write or inspect a managed credential record there.
+
+## 0.15.0 — 2026-09-04
+
+- Added a checksum-verified, one-shot native API executor shipped with the Skills. Users do not need Node, npm, Python, Go, MCP, a proxy, sidecar, or a background service for media, balance, connection, or model requests.
+- Images and Videos now invoke the managed executor for fixed Pure Tokens API requests, including declared multipart attachments, bounded same-task polling, and native media-byte delivery. Each billable submission is issued at most once and is never automatically replaced after an uncertain result.
+- Rebuilt the platform installers and migration archives to synchronize the executor alongside the six Skills. Verified credential adapters now cover Claude Code, Codex, WorkBuddy, Gemini CLI, Grok Build, and OpenCode; Trae remains manual-only because Switch does not write a managed credential record for it.
+- Added bounded multipart streaming, per-media attachment limits, response-size checks, reconciliation handling, continuation tests, non-media rejection tests, and checksum validation for all published platform binaries.
+- Added an explicit `init` command. Installation and updates run it automatically to perform one safe fixed-API identity check and print the versioned usage guide with image, video, model, balance, reference-media, and update examples.
+
 ## 0.14.3 — 2026-09-04
 
 - Corrected the direct-execution contract: Image, Video, Models, Connection, and Balance must resolve the current matching connection credential privately in memory and issue the fixed API request through the host terminal or native HTTPS capability. They may not first reject a request because a separate “authenticated media interface” is not exposed.

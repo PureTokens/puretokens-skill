@@ -4,7 +4,7 @@
   "kind": "balance",
   "scenarios": [
     { "id": "balance-account-session-unavailable", "when": "GET https://api.puretokensx.com/api/product/desktop/account/balance is not authenticated or cannot be executed", "then": "report the returned status or error and direct the user to the Pure Tokens client balance view; do not estimate or request credentials" },
-    { "id": "balance-direct-request-start", "when": "a balance read is requested and no separate specialized balance interface is exposed", "then": "resolve one matching current-host credential privately in memory and issue the fixed balance GET through the host terminal or native HTTPS capability; do not report a missing interface before trying the request" },
+    { "id": "balance-direct-request-start", "when": "a balance read is requested", "then": "invoke the installed managed native executor with the current host ID for the fixed balance GET; do not look for a separate balance interface" },
     { "id": "balance-response", "when": "the fixed Pure Tokens balance API returns a balance response", "then": "report only returned fields once; do not retry or infer omitted values" }
   ]
 }

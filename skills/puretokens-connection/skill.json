@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "name": "puretokens-connection",
-  "version": "0.14.3",
+  "version": "0.15.1",
   "entry": "SKILL.md",
   "displayName": "Pure Tokens Connection",
   "description": "Check the fixed Pure Tokens API identity declaration.",
@@ -50,10 +50,11 @@
   "rules": {
     "usesFixedPureTokensApiOrigin": true,
     "usesFullApiUrls": true,
-    "usesHostNativeAuthenticatedHttpsExecution": true,
+    "usesManagedNativeExecutor": true,
     "usesCurrentHostConfiguredCredential": true,
     "resolvesCurrentHostConnectionCredentialInMemoryForFixedRequest": true,
     "doesNotUseNodeRuntime": true,
+    "doesNotUseMcp": true,
     "doesNotUseComputerUseOrUiAutomation": true,
     "doesNotInvokeOtherMediaSkillsAsApiFallback": true,
     "neverExposesCredentialsOrHostConfiguration": true,

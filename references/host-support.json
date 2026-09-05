@@ -7,50 +7,57 @@
       "id": "claude-code",
       "delivery": "manual-source",
       "globalSkillDirectory": "~/.claude/skills",
-      "directMediaExecution": "host-native-direct-api",
-      "guidance": "Install each specialist Skill into ~/.claude/skills. The Skill uses Claude Code's existing authenticated HTTPS execution with the current matching Pure Tokens connection for fixed API requests."
+      "directMediaExecution": "managed-native-executor",
+      "credentialAdapter": "verified",
+      "guidance": "Install each specialist Skill into ~/.claude/skills. The managed executor reads only the effective Claude Code connection record and uses its matching credential privately for fixed Pure Tokens API requests."
     },
     {
       "id": "codex",
       "delivery": "manual-source",
       "globalSkillDirectory": "~/.agents/skills",
-      "directMediaExecution": "host-native-direct-api",
-      "guidance": "Install each specialist Skill into ~/.agents/skills. The Skill uses Codex's existing authenticated HTTPS execution with the current matching Pure Tokens connection for fixed API requests."
+      "directMediaExecution": "managed-native-executor",
+      "credentialAdapter": "verified",
+      "guidance": "Install each specialist Skill into ~/.agents/skills. The managed executor uses Codex's verified effective Pure Tokens connection adapter for fixed API requests."
     },
     {
       "id": "workbuddy",
       "delivery": "manual-source",
       "globalSkillDirectory": "~/.workbuddy/skills",
-      "directMediaExecution": "host-native-direct-api",
-      "guidance": "Install each specialist Skill into ~/.workbuddy/skills. The Skill uses WorkBuddy's existing authenticated HTTPS execution with the current matching Pure Tokens connection for fixed API requests."
+      "directMediaExecution": "managed-native-executor",
+      "credentialAdapter": "verified",
+      "guidance": "Install each specialist Skill into ~/.workbuddy/skills. The managed executor reads only the unambiguous matching WorkBuddy model connection credential privately for fixed Pure Tokens API requests."
     },
     {
       "id": "gemini-cli",
       "delivery": "manual-source",
       "globalSkillDirectory": "~/.gemini/skills",
-      "directMediaExecution": "host-native-direct-api",
-      "guidance": "Install each specialist Skill into ~/.gemini/skills. The Skill uses Gemini CLI's existing authenticated HTTPS execution with the current matching Pure Tokens connection for fixed API requests."
+      "directMediaExecution": "managed-native-executor",
+      "credentialAdapter": "verified",
+      "guidance": "Install each specialist Skill into ~/.gemini/skills. The managed executor reads only the effective Gemini CLI connection record and uses its matching credential privately for fixed Pure Tokens API requests."
     },
     {
       "id": "grok-build",
       "delivery": "manual-source",
       "globalSkillDirectory": "~/.grok/skills",
-      "directMediaExecution": "host-native-direct-api",
-      "guidance": "Install each specialist Skill into ~/.grok/skills. The Skill uses Grok Build's existing authenticated HTTPS execution with the current matching Pure Tokens connection for fixed API requests."
+      "directMediaExecution": "managed-native-executor",
+      "credentialAdapter": "verified",
+      "guidance": "Install each specialist Skill into ~/.grok/skills. The managed executor reads only the active Grok Build model connection credential privately for fixed Pure Tokens API requests."
     },
     {
       "id": "opencode",
       "delivery": "manual-source",
       "globalSkillDirectory": "~/.config/opencode/skills",
-      "directMediaExecution": "host-native-direct-api",
-      "guidance": "Install each specialist Skill into ~/.config/opencode/skills. The Skill uses OpenCode's existing authenticated HTTPS execution with the current matching Pure Tokens connection for fixed API requests."
+      "directMediaExecution": "managed-native-executor",
+      "credentialAdapter": "verified",
+      "guidance": "Install each specialist Skill into ~/.config/opencode/skills. The managed executor reads only the active OpenCode provider connection credential privately for fixed Pure Tokens API requests."
     },
     {
       "id": "trae",
       "delivery": "manual-source",
       "globalSkillDirectory": "~/.trae/skills",
-      "directMediaExecution": "host-native-direct-api",
-      "guidance": "Install each specialist Skill into ~/.trae/skills. The Skill uses Trae's existing authenticated HTTPS execution with the current matching Pure Tokens connection for fixed API requests."
+      "directMediaExecution": "managed-native-executor",
+      "credentialAdapter": "pending",
+      "guidance": "Install each specialist Skill into ~/.trae/skills. The managed executor is installed with the Skills; the Trae credential adapter is not yet verified, so it stops before a request."
     }
   ]
 }

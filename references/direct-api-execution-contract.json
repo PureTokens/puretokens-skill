@@ -4,24 +4,26 @@
   "apiOrigin": "https://api.puretokensx.com",
   "authentication": {
     "usesCurrentHostConfiguredCredential": true,
-    "hostNativeExecutionHosts": ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae"],
+    "executorCredentialAdapterHosts": ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode"],
     "credentialUse": "in_memory_only_for_fixed_puretokens_api_requests",
     "credentialSourceMustMatchFixedPureTokensEndpoint": true,
     "credentialSourceNeverBecomesRequestTarget": true,
     "neverDisplaysCopiesStoresOrRequestsCredentials": true,
-    "resolvesCurrentHostConnectionCredentialInMemoryForFixedRequest": true
+    "resolvesCurrentHostConnectionCredentialInMemoryForFixedRequest": true,
+    "neverScansForCredentials": true
   },
   "transport": {
     "usesFullApiUrls": true,
-    "usesHostNativeAuthenticatedHttpsExecution": true,
+    "usesManagedNativeExecutor": true,
+    "executorIsOneShot": true,
     "doesNotRequireNode": true,
     "doesNotUseMcp": true,
     "doesNotUseLocalProxyOrSidecar": true,
     "doesNotUseFallbackEndpoint": true,
     "doesNotUseComputerUseOrUiAutomation": true,
     "doesNotInvokeOtherMediaSkillsAsApiFallback": true,
-    "executionStart": "resolve_one_matching_current_host_credential_in_memory_and_issue_the_fixed_request_through_host_terminal_or_native_https_without_preflighting_for_a_special_media_interface",
-    "whenHostNativeApiExecutionUnavailable": "report_only_an_actual_terminal_network_credential_resolution_or_attachment_byte_failure_and_never_open_a_browser_desktop_ui_or_computer_use"
+    "executionStart": "invoke_the_checksum_verified_managed_native_executor_with_the_current_host_id_and_fixed_request",
+    "whenManagedNativeExecutorUnavailable": "report_only_an_actual_executor_network_credential_adapter_or_attachment_byte_failure_and_never_open_a_browser_desktop_ui_or_computer_use"
   },
   "mediaRouting": {
     "imageAndVideoRequestsPreferPureTokensSpecialists": true,
@@ -29,19 +31,19 @@
     "videoSkill": "puretokens-video",
     "priority": "when_current_host_connection_uses_puretokens_select_the_matching_puretokens_specialist_before_generic_imagegen_imagen_or_video_skills",
     "afterSpecialistSelection": "never_fall_back_to_a_generic_media_skill",
-    "connectionContext": "host_managed_skill_resolves_one_matching_current_connection_credential_privately_for_the_fixed_request",
+    "connectionContext": "managed_native_executor_resolves_one_matching_current_connection_credential_privately_for_the_fixed_request",
     "metadataLimitation": "skill_metadata_expresses_routing_priority_but_cannot_override_a_host_that_ignores_installed_skill_selection"
   },
   "installableHosts": ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae"],
-  "hostNativeExecutionHosts": ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae"],
-  "requiredHostCapabilities": ["authenticated_full_url_request", "json_task_response", "same_task_status_read", "native_media_byte_delivery"],
+  "executorCredentialAdapterHosts": ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode"],
+  "requiredExecutorCapabilities": ["fixed_full_url_request", "json_task_response", "same_task_status_read", "native_media_byte_delivery", "bounded_local_resource_use"],
   "acceptanceScenarios": [
-    { "id": "api-identity-read", "request": "GET https://api.puretokensx.com/v1", "expect": "uses the active host connection credential only in memory and returns the API identity JSON" },
-    { "id": "catalog-read", "request": "GET https://api.puretokensx.com/v1/media/models", "expect": "returns the authenticated media catalog only for explicit discovery, an installed-profile gap, or post-rejection diagnosis" },
-    { "id": "media-submit", "request": "POST the fixed Images or Videos API URL once with the selected model and declared request body", "expect": "normal core text generation submits directly without a catalog preflight and returns a JSON task response" },
-    { "id": "same-task-status", "request": "GET a submitted task's fixed full status or content URL", "expect": "continues only the supplied task_id and never submits a replacement task" },
-    { "id": "native-media-delivery", "request": "GET a completed task's fixed full content URL", "expect": "the host delivers native media bytes; URLs, HTML, SVG, task IDs, and status text are not completed delivery" },
-    { "id": "direct-request-start", "request": "a fixed API request is needed while no separate specialized media interface is exposed", "expect": "resolves one current matching credential in memory and issues the fixed request through the host terminal or native HTTPS capability; it never reports a missing interface before attempting that request" }
+    { "id": "api-identity-read", "request": "executor GET https://api.puretokensx.com/v1", "expect": "uses a verified active-host credential adapter only in memory and returns the API identity JSON" },
+    { "id": "catalog-read", "request": "executor GET https://api.puretokensx.com/v1/media/models", "expect": "returns the authenticated media catalog only for explicit discovery, an installed-profile gap, or post-rejection diagnosis" },
+    { "id": "media-submit", "request": "executor POST the fixed Images or Videos API URL once with the selected model and declared request body", "expect": "normal core text generation submits directly without a catalog preflight and returns a JSON task response" },
+    { "id": "same-task-status", "request": "executor GET a submitted task's fixed full status or content URL", "expect": "continues only the supplied task_id and never submits a replacement task" },
+    { "id": "native-media-delivery", "request": "executor GET a completed task's fixed full content URL", "expect": "the executor delivers validated native media bytes; URLs, HTML, SVG, task IDs, and status text are not completed delivery" },
+    { "id": "executor-request-start", "request": "a fixed API request is needed", "expect": "invokes the checksum-verified managed executor; it never asks the model to read credentials, assemble a curl request, or search for another interface" }
   ],
   "userMediaInput": {
     "onlyCurrentUserExplicitMedia": true,
@@ -49,12 +51,12 @@
     "publicUrlImageEditRequiresExactDeclaredJsonOperation": true,
     "requiresInstalledOrOnDemandDeclaredTransport": true,
     "skillNeverDownloadsOrRehosts": true,
-    "hostSendsDeclaredMultipartAttachmentsDirectly": true,
+    "executorSendsDeclaredMultipartAttachmentsDirectly": true,
     "nativeAttachmentRouteMustMatchDeclaredOperation": true,
     "nativeAttachmentMustNeverFallBackToJsonTextSubmission": true,
     "untransportableNativeReferenceMustNeverBeConvertedToTextPrompt": true,
     "currentRequestScopeOnly": true,
-    "fallback": "If the active host cannot send an explicitly attached file through the declared multipart representation, stop before submission, explain the declared transport, and do not invent a URL, file ID, or upload path."
+    "fallback": "If the executor cannot receive an explicitly attached file by absolute path through the declared multipart representation, stop before submission, explain the declared transport, and do not invent a URL, file ID, or upload path."
   },
   "asyncTaskHandling": {
     "reconciliationRequiredPrecedesLifecycle": true,
@@ -74,7 +76,7 @@
     "handoffNativeBytesBeforeNextRead": true,
     "doesNotPersistMediaBytesInSkillStateOrLogs": true,
     "confirmedDeliveryEndsCurrentResponse": true,
-    "fallback": "If the host cannot hand off native media bytes, report same-task delivery as unavailable. Do not substitute a URL, HTML, SVG, status text, or a re-submitted task."
+    "fallback": "If the executor cannot hand off validated native media bytes, report same-task delivery as unavailable. Do not substitute a URL, HTML, SVG, status text, or a re-submitted task."
   },
   "balance": {
     "url": "https://api.puretokensx.com/api/product/desktop/account/balance",

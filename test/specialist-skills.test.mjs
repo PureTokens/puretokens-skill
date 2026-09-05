@@ -19,17 +19,23 @@ const skillNames = [
 ];
 const apiSkillNames = skillNames.filter((name) => name !== "puretokens-update");
 const apiOrigin = "https://api.puretokensx.com";
-const directRequestStart = "resolve_one_matching_current_host_credential_in_memory_and_issue_the_fixed_request_through_host_terminal_or_native_https_without_preflighting_for_a_special_media_interface";
-const directRequestActualFailureOnly = "report_only_an_actual_terminal_network_credential_resolution_or_attachment_byte_failure_and_never_open_a_browser_desktop_ui_or_computer_use";
+const executorRequestStart = "invoke_the_checksum_verified_managed_native_executor_with_the_current_host_id_and_fixed_request";
+const executorRequestActualFailureOnly = "report_only_an_actual_executor_network_credential_adapter_or_attachment_byte_failure_and_never_open_a_browser_desktop_ui_or_computer_use";
 
-test("repository validates its host-native direct API contract", async () => {
+function currentExecutorPlatform() {
+  const platform = process.platform === "darwin" ? "darwin" : process.platform === "linux" ? "linux" : "windows";
+  const architecture = process.arch === "x64" ? "amd64" : process.arch;
+  return `${platform}-${architecture}`;
+}
+
+test("repository validates its managed native executor contract", async () => {
   assert.deepEqual(await validateRepository(), []);
 });
 
 test("all specialist Skills are versioned together and use the expected source files", async () => {
   const packageManifest = JSON.parse(await readFile(path.join(repositoryRoot, "package.json"), "utf8"));
   const { registry, records } = await collectSkillRecords();
-  assert.equal(packageManifest.version, "0.14.3");
+  assert.equal(packageManifest.version, "0.15.1");
   assert.deepEqual(registry.skills.map((entry) => entry.name), skillNames);
   assert.equal(records.length, skillNames.length);
   for (const record of records) {
@@ -38,7 +44,7 @@ test("all specialist Skills are versioned together and use the expected source f
   }
 });
 
-test("API Skills use host-native authenticated HTTPS without a shipped execution runtime", async () => {
+test("API Skills use the checksum-verified native executor without a user runtime", async () => {
   for (const name of apiSkillNames) {
     const base = path.join(repositoryRoot, "skills", name);
     const [skill, manifest, contract] = await Promise.all([
@@ -47,7 +53,7 @@ test("API Skills use host-native authenticated HTTPS without a shipped execution
       readFile(path.join(base, "references", "execution-contract.json"), "utf8").then(JSON.parse)
     ]);
     assert.match(skill, /https:\/\/api\.puretokensx\.com/);
-    assert.equal(manifest.rules.usesHostNativeAuthenticatedHttpsExecution, true);
+    assert.equal(manifest.rules.usesManagedNativeExecutor, true);
     assert.equal(manifest.rules.usesCurrentHostConfiguredCredential, true);
     assert.equal(manifest.rules.resolvesCurrentHostConnectionCredentialInMemoryForFixedRequest, true);
     assert.equal(manifest.rules.doesNotUseNodeRuntime, true);
@@ -55,7 +61,7 @@ test("API Skills use host-native authenticated HTTPS without a shipped execution
     assert.equal(manifest.rules.doesNotInvokeOtherMediaSkillsAsApiFallback, true);
     assert.equal(contract.transport.fixedApiOrigin, apiOrigin);
     assert.equal(contract.transport.usesFullApiUrls, true);
-    assert.equal(contract.transport.usesHostNativeAuthenticatedHttpsExecution, true);
+    assert.equal(contract.transport.usesManagedNativeExecutor, true);
     assert.equal(contract.transport.usesCurrentHostConfiguredCredential, true);
     assert.equal(contract.transport.credentialSourceNeverBecomesRequestTarget, true);
     assert.equal(contract.transport.neverExposesCredentialsOrHostConfiguration, true);
@@ -63,11 +69,15 @@ test("API Skills use host-native authenticated HTTPS without a shipped execution
     assert.equal(contract.transport.doesNotUseMcpOrFallbackTransport, true);
     assert.equal(contract.transport.doesNotUseComputerUseOrUiAutomation, true);
     assert.equal(contract.transport.doesNotInvokeOtherMediaSkillsAsApiFallback, true);
-    assert.equal(contract.transport.executionStart, directRequestStart);
-    assert.equal(contract.transport.whenHostNativeApiExecutionUnavailable, directRequestActualFailureOnly);
+    assert.equal(contract.transport.executionStart, executorRequestStart);
+    assert.equal(contract.transport.whenManagedNativeExecutorUnavailable, executorRequestActualFailureOnly);
     assert.match(skill, /Computer Use/);
-    assert.doesNotMatch(skill, /puretokens-direct-api\.mjs|\.puretokens-runtime|--json-base64|--multipart-base64/);
+    assert.match(skill, /\.puretokens-executor\/puretokens-api/);
+    assert.doesNotMatch(skill, /puretokens-direct-api\.mjs|\.puretokens-runtime|--json-base64|--multipart-base64|Authorization: Bearer/);
   }
+  const manifest = JSON.parse(await readFile(path.join(repositoryRoot, "runtime", "executor", "manifest.json"), "utf8"));
+  assert.equal(manifest.name, "puretokens-api-executor");
+  assert.match(manifest.artifacts[currentExecutorPlatform()].sha256, /^[a-f0-9]{64}$/);
 });
 
 test("media routing prioritizes Pure Tokens specialists before generic media Skills", async () => {
@@ -78,7 +88,7 @@ test("media routing prioritizes Pure Tokens specialists before generic media Ski
     videoSkill: "puretokens-video",
     priority: "when_current_host_connection_uses_puretokens_select_the_matching_puretokens_specialist_before_generic_imagegen_imagen_or_video_skills",
     afterSpecialistSelection: "never_fall_back_to_a_generic_media_skill",
-    connectionContext: "host_managed_skill_resolves_one_matching_current_connection_credential_privately_for_the_fixed_request",
+    connectionContext: "managed_native_executor_resolves_one_matching_current_connection_credential_privately_for_the_fixed_request",
     metadataLimitation: "skill_metadata_expresses_routing_priority_but_cannot_override_a_host_that_ignores_installed_skill_selection"
   });
   for (const [name, genericSkill] of [["puretokens-image", "imagegen"], ["puretokens-video", "通用视频"]]) {
@@ -97,19 +107,17 @@ test("media routing prioritizes Pure Tokens specialists before generic media Ski
   }
 });
 
-test("image and video never preflight for a fictional authenticated media interface", async () => {
+test("image and video start with the installed executor and never fall back", async () => {
   const image = await readFile(path.join(repositoryRoot, "skills", "puretokens-image", "SKILL.md"), "utf8");
   const video = await readFile(path.join(repositoryRoot, "skills", "puretokens-video", "SKILL.md"), "utf8");
   for (const [kind, skill] of [["image", image], ["video", video]]) {
-    assert.match(skill, /不得先判断是否存在所谓“已认证/);
-    assert.match(skill, /不得因看不到单独的/);
-    assert.match(skill, /终端或原生 HTTPS\/API 能力/);
-    assert.match(skill, /~\/.codex\/auth\.json/);
-    assert.match(skill, /Authorization: Bearer/);
-    assert.doesNotMatch(skill, /若当前会话没有暴露可执行认证 API 请求/);
+    assert.match(skill, /唯一 API 传输/);
+    assert.match(skill, /必须调用安装的原生执行器/);
+    assert.match(skill, /不得自行发 HTTP/);
+    assert.doesNotMatch(skill, /~\/.codex\/auth\.json|Authorization: Bearer/);
     const scenarios = JSON.parse(await readFile(path.join(repositoryRoot, "skills", `puretokens-${kind}`, "references", "behavior-scenarios.json"), "utf8"));
-    assert.equal(scenarios.scenarios.some((scenario) => scenario.id === `${kind}-direct-request-start`), true);
-    assert.equal(scenarios.scenarios.some((scenario) => scenario.id === `${kind}-host-native-api-executor-unavailable`), false);
+    assert.equal(scenarios.scenarios.some((scenario) => scenario.id === `${kind}-executor-request-start`), true);
+    assert.equal(scenarios.scenarios.some((scenario) => scenario.id === `${kind}-executor-validation-failure`), true);
   }
   assert.match(image, /https:\/\/api\.puretokensx\.com\/v1\/images\/edits/);
   assert.match(image, /`image` 字段/);
@@ -128,7 +136,7 @@ test("media contracts retain fixed endpoints, asynchronous same-task handling, a
   assert.equal(video.operations.submit.url, `${apiOrigin}/v1/videos`);
   assert.equal(video.operations.status.urlTemplate, `${apiOrigin}/v1/videos/{task_id}`);
   assert.equal(video.operations.content.urlTemplate, `${apiOrigin}/v1/videos/{task_id}/content`);
-  assert.equal(video.inputMediaValidation.nativeAttachmentBodyMode, "host_native_multipart_only");
+  assert.equal(video.inputMediaValidation.nativeAttachmentBodyMode, "executor_multipart_only");
   assert.equal(video.submissionFailure.hostExecutionPolicyBlockedBeforeRequestStarts, "report_validation_no_api_request_or_task_id_and_require_host_session_with_external_network_permission");
   for (const contract of [image, video]) {
     assert.equal(contract.result.sameTaskOnly, true);
@@ -167,7 +175,7 @@ test("media Skills load a compact index and only the selected model profile", as
   }
 });
 
-test("legacy migration archive contains only the current source-only installer and Skills", async (t) => {
+test("legacy migration archive carries the current source and verified executor", async (t) => {
   const archive = path.join(repositoryRoot, "dist", "puretokens-skill-install.zip");
   const packageManifest = JSON.parse(await readFile(path.join(repositoryRoot, "package.json"), "utf8"));
   const { stdout: listing } = await execFile("unzip", ["-Z1", archive], { cwd: repositoryRoot });
@@ -178,10 +186,13 @@ test("legacy migration archive contains only the current source-only installer a
     `${prefix}package.json`,
     `${prefix}runtime/puretokens-skill-install.sh`,
     `${prefix}runtime/puretokens-skill-install.ps1`,
+    `${prefix}runtime/executor/manifest.json`,
     `${prefix}skills/index.json`,
     `${prefix}skills/puretokens-image/references/model-index.json`,
     `${prefix}skills/puretokens-video/references/model-index.json`
   ]) assert.equal(entries.has(required), true, `missing ${required}`);
+  const executorManifest = JSON.parse(await readFile(path.join(repositoryRoot, "runtime", "executor", "manifest.json"), "utf8"));
+  assert.equal(entries.has(`${prefix}runtime/executor/${executorManifest.artifacts[currentExecutorPlatform()].path}`), true);
   for (const retired of [
     `${prefix}runtime/runtime.json`,
     `${prefix}runtime/puretokens-direct-api.mjs`,
@@ -198,8 +209,11 @@ test("legacy migration archive contains only the current source-only installer a
   const source = path.join(unpacked, "puretokens-skill-main");
   const installer = path.join(source, "runtime", "puretokens-skill-install.sh");
   const { stdout } = await execFile("sh", [installer, "sync", "--target", target, "--source", source], { cwd: source });
-  assert.match(stdout, /Pure Tokens Skills 0\.14\.3 synchronized at/);
+  assert.match(stdout, /Pure Tokens Skills 0\.15\.1 synchronized with the native API executor at/);
   await assert.rejects(readFile(path.join(target, ".puretokens-runtime", "runtime.json"), "utf8"));
+  const executor = path.join(target, ".puretokens-executor", process.platform === "win32" ? "puretokens-api.exe" : "puretokens-api");
+  const { stdout: version } = await execFile(executor, ["--version"]);
+  assert.equal(version.trim(), packageManifest.version);
 });
 
 test("published legacy updater bridge remains marker-only and carries current Skills", async () => {
@@ -214,6 +228,7 @@ test("published legacy updater bridge remains marker-only and carries current Sk
     `${prefix}skills/puretokens-image/SKILL.md`,
     `${prefix}skills/puretokens-video/SKILL.md`
   ]) assert.equal(entries.has(required), true, `missing ${required}`);
+  assert.equal(entries.has(`${prefix}runtime/executor/manifest.json`), true);
   const [{ stdout: runtime }, { stdout: imageManifest }, { stdout: marker }] = await Promise.all([
     execFile("unzip", ["-p", archive, `${prefix}runtime/runtime.json`], { cwd: repositoryRoot }),
     execFile("unzip", ["-p", archive, `${prefix}skills/puretokens-image/skill.json`], { cwd: repositoryRoot }),
@@ -233,23 +248,40 @@ test("the public install prompt remains extractable in both README files", async
   }
 });
 
-test("host matrix lists exactly seven host-native direct API hosts", async () => {
+test("host matrix lists seven executor hosts and the documented verified credential adapters", async () => {
   const support = JSON.parse(await readFile(path.join(repositoryRoot, "references", "host-support.json"), "utf8"));
   assert.deepEqual(support.supported.map((host) => host.id), ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae"]);
   for (const host of support.supported) {
     assert.equal(host.delivery, "manual-source");
-    assert.equal(host.directMediaExecution, "host-native-direct-api");
+    assert.equal(host.directMediaExecution, "managed-native-executor");
   }
+  assert.deepEqual(support.supported.filter((host) => host.credentialAdapter === "verified").map((host) => host.id), ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode"]);
 });
 
-test("source installer synchronizes Skills without copying an API runtime", async (t) => {
-  const target = await mkdtemp(path.join(os.tmpdir(), "puretokens-skill-host-native-"));
+test("source installer synchronizes Skills and exactly one native executor", async (t) => {
+  const target = await mkdtemp(path.join(os.tmpdir(), "puretokens-skill-executor-"));
   t.after(() => rm(target, { recursive: true, force: true }));
   const installer = path.join(repositoryRoot, "runtime", "puretokens-skill-install.sh");
   const { stdout } = await execFile("sh", [installer, "sync", "--target", target, "--source", repositoryRoot], { cwd: repositoryRoot });
-  assert.match(stdout, /Pure Tokens Skills 0\.14\.3 synchronized at/);
+  assert.match(stdout, /Pure Tokens Skills 0\.15\.1 synchronized with the native API executor at/);
+  assert.match(stdout, /Pure Tokens Skill init: host ID was not supplied, so the connection check was deferred/);
+  assert.match(stdout, /Pure Tokens Skill 使用须知/);
   assert.deepEqual((await readdir(target)).filter((entry) => skillNames.includes(entry)).sort(), [...skillNames].sort());
   await assert.rejects(readFile(path.join(target, ".puretokens-runtime", "runtime.json"), "utf8"));
+  const executor = path.join(target, ".puretokens-executor", process.platform === "win32" ? "puretokens-api.exe" : "puretokens-api");
+  const { stdout: version } = await execFile(executor, ["--version"]);
+  assert.equal(version.trim(), "0.15.1");
+});
+
+test("source installer exposes an explicit init command and usage guide", async (t) => {
+  const target = await mkdtemp(path.join(os.tmpdir(), "puretokens-skill-init-"));
+  t.after(() => rm(target, { recursive: true, force: true }));
+  const installer = path.join(repositoryRoot, "runtime", "puretokens-skill-install.sh");
+  await execFile("sh", [installer, "sync", "--target", target, "--source", repositoryRoot], { cwd: repositoryRoot });
+  const { stdout } = await execFile("sh", [installer, "init", "--target", target], { cwd: repositoryRoot });
+  assert.match(stdout, /Pure Tokens Skill init: host ID was not supplied, so the connection check was deferred/);
+  assert.match(stdout, /生成一张日落时分的山间湖泊图片/);
+  assert.match(stdout, /更新 Pure Tokens Skills/);
 });
 
 test("source installer removes only the verified retired Node runtime", async (t) => {

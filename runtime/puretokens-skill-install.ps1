@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
   [Parameter(Position = 0, Mandatory = $true)]
-  [ValidateSet("check", "sync")]
+  [ValidateSet("check", "init", "sync")]
   [string]$Command,
   [Parameter(Mandatory = $false)]
   [string]$Target,
@@ -31,6 +31,34 @@ function Test-LegacyNodeRuntime([string]$Directory) {
   try { return ((Get-Content -LiteralPath $manifest -Raw | ConvertFrom-Json).name -eq "puretokens-direct-api-runtime") } catch { return $false }
 }
 
+function Test-ManagedExecutor([string]$Directory) {
+  $manifest = Join-Path $Directory "runtime.json"
+  return (Test-Path -LiteralPath (Join-Path $Directory "puretokens-api.exe") -PathType Leaf) -and (Test-Path -LiteralPath $manifest -PathType Leaf) -and ((Get-Content -LiteralPath $manifest -Raw | ConvertFrom-Json).name -eq "puretokens-api-executor")
+}
+
+function Get-ExecutorPlatform() {
+  $architecture = [System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant()
+  switch ($architecture) {
+    "x64" { return "windows-amd64" }
+    "arm64" { return "windows-arm64" }
+    default { Fail "no Pure Tokens executor is available for this operating system and CPU" }
+  }
+}
+
+function Get-ExecutorArtifact([string]$SourceRoot) {
+  $manifestPath = Join-Path $SourceRoot "runtime\executor\manifest.json"
+  if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf)) { Fail "official source is missing the executor manifest" }
+  try { $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json } catch { Fail "official source executor manifest is invalid" }
+  $platform = Get-ExecutorPlatform
+  $artifact = $manifest.artifacts.PSObject.Properties[$platform].Value
+  if ($null -eq $artifact -or [string]::IsNullOrWhiteSpace($artifact.path) -or [string]::IsNullOrWhiteSpace($artifact.sha256)) { Fail "official source is missing the executor artifact for $platform" }
+  $binary = Join-Path (Join-Path $SourceRoot "runtime\executor") $artifact.path
+  if (-not (Test-Path -LiteralPath $binary -PathType Leaf)) { Fail "official source is missing the executor binary for $platform" }
+  $actualHash = (Get-FileHash -LiteralPath $binary -Algorithm SHA256).Hash.ToLowerInvariant()
+  if ($actualHash -ne $artifact.sha256.ToLowerInvariant()) { Fail "official source executor checksum mismatch for $platform" }
+  return $binary
+}
+
 function Get-SourceVersion([string]$SourceRoot) {
   try {
     $version = (Get-Content -LiteralPath (Join-Path $SourceRoot "package.json") -Raw | ConvertFrom-Json).version
@@ -44,10 +72,49 @@ function Test-OfficialSource([string]$SourceRoot) {
   if (-not (Test-Path -LiteralPath (Join-Path $SourceRoot "package.json") -PathType Leaf)) { Fail "official source is missing package.json" }
   $null = Get-SourceVersion $SourceRoot
   if (-not (Test-Path -LiteralPath (Join-Path $SourceRoot "runtime\puretokens-skill-install.ps1") -PathType Leaf)) { Fail "official source is missing the Windows installer" }
+  $null = Get-ExecutorArtifact $SourceRoot
   if (-not (Test-Path -LiteralPath (Join-Path $SourceRoot "runtime\puretokens-skill-install.sh") -PathType Leaf)) { Fail "official source is missing the macOS/Linux installer" }
   foreach ($name in $currentSkills) {
     if (-not (Test-ManagedSkill (Join-Path (Join-Path $SourceRoot "skills") $name) $name)) { Fail "official source has an invalid Skill: $name" }
   }
+}
+
+function Test-InstalledTarget([string]$TargetRoot) {
+  if (-not (Test-Path -LiteralPath $TargetRoot -PathType Container)) { Fail "target Skill directory does not exist: $TargetRoot" }
+  foreach ($name in $currentSkills) {
+    if (-not (Test-ManagedSkill (Join-Path $TargetRoot $name) $name)) { Fail "target is missing the managed Skill: $name" }
+  }
+  if (-not (Test-ManagedExecutor (Join-Path $TargetRoot ".puretokens-executor"))) { Fail "target is missing the managed native executor" }
+}
+
+function Show-UsageGuide([string]$TargetRoot) {
+  $guide = Join-Path (Join-Path $TargetRoot "puretokens-update") "references\usage-guide.md"
+  if (Test-Path -LiteralPath $guide -PathType Leaf) {
+    Get-Content -LiteralPath $guide -Raw | Write-Output
+  } else {
+    Write-Output "Pure Tokens Skill usage guide is unavailable; update the Skills from the official repository."
+  }
+}
+
+function Invoke-Init([string]$TargetRoot, [string]$RequestedHost) {
+  Test-InstalledTarget $TargetRoot
+  if ([string]::IsNullOrWhiteSpace($RequestedHost)) {
+    Write-Output "Pure Tokens Skill init: host ID was not supplied, so the connection check was deferred."
+  } else {
+    $executor = Join-Path (Join-Path $TargetRoot ".puretokens-executor") "puretokens-api.exe"
+    $initOutput = @(& $executor init --host $RequestedHost 2>$null)
+    $json = $null
+    if ($initOutput.Count -gt 0) {
+      try { $json = ($initOutput -join "`n") | ConvertFrom-Json } catch { $json = $null }
+    }
+    if ($null -ne $json -and $json.configuration_status -eq "verified") {
+      Write-Output "Pure Tokens Skill init: fixed API identity verified for the current host."
+    } else {
+      Write-Output "Pure Tokens Skill init: fixed API identity is not verified in this host session."
+    }
+  }
+  Write-Output ""
+  Show-UsageGuide $TargetRoot
 }
 
 function Get-TargetForHost([string]$RequestedHost) {
@@ -112,6 +179,12 @@ try {
   if (-not [string]::IsNullOrWhiteSpace($HostId)) { $Target = Get-TargetForHost $HostId }
   if (-not [System.IO.Path]::IsPathRooted($Target)) { Fail "-Target must be an absolute Skill directory" }
 
+  if ($Command -eq "init") {
+    $targetRoot = (Resolve-Path -LiteralPath $Target).Path
+    Invoke-Init $targetRoot $HostId
+    exit 0
+  }
+
   if (-not [string]::IsNullOrWhiteSpace($Source)) {
     if (-not [System.IO.Path]::IsPathRooted($Source)) { Fail "-Source must be an absolute official source directory" }
     if (-not (Test-Path -LiteralPath $Source -PathType Container)) { Fail "-Source does not exist: $Source" }
@@ -137,10 +210,17 @@ try {
     $destination = Join-Path $targetRoot $name
     if ((Test-Path -LiteralPath $destination) -and -not (Test-ManagedSkill $destination $name)) { Fail "unmanaged Skill conflicts: $destination" }
   }
+  $executorDestination = Join-Path $targetRoot ".puretokens-executor"
+  if ((Test-Path -LiteralPath $executorDestination) -and -not (Test-ManagedExecutor $executorDestination)) { Fail "unmanaged Pure Tokens executor conflicts: $executorDestination" }
 
   $stageRoot = Join-Path $targetRoot (".puretokens-skill-stage-" + [Guid]::NewGuid().ToString("N"))
   New-Item -ItemType Directory -Path (Join-Path $stageRoot "backup") -Force | Out-Null
   foreach ($name in $currentSkills) { Copy-Item -LiteralPath (Join-Path (Join-Path $sourceRoot "skills") $name) -Destination $stageRoot -Recurse }
+  $executorSource = Get-ExecutorArtifact $sourceRoot
+  $stageExecutor = Join-Path $stageRoot "executor"
+  New-Item -ItemType Directory -Path $stageExecutor -Force | Out-Null
+  Copy-Item -LiteralPath $executorSource -Destination (Join-Path $stageExecutor "puretokens-api.exe")
+  [PSCustomObject]@{ schemaVersion = 1; name = "puretokens-api-executor"; version = $releaseVersion; platform = (Get-ExecutorPlatform) } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $stageExecutor "runtime.json") -Encoding utf8
 
   Remove-LegacyCodexPlugin $targetRoot
   $replaced = @()
@@ -151,6 +231,15 @@ try {
       if (Test-Path -LiteralPath $destination) { Move-Item -LiteralPath $destination -Destination (Join-Path (Join-Path $stageRoot "backup") $name); $replaced += $name } else { $created += $name }
       Move-Item -LiteralPath (Join-Path $stageRoot $name) -Destination $destination
     }
+    $executorReplaced = $false
+    if (Test-Path -LiteralPath $executorDestination) {
+      Move-Item -LiteralPath $executorDestination -Destination (Join-Path (Join-Path $stageRoot "backup") "executor")
+      $executorReplaced = $true
+    }
+    try { Move-Item -LiteralPath $stageExecutor -Destination $executorDestination } catch {
+      if ($executorReplaced) { Move-Item -LiteralPath (Join-Path (Join-Path $stageRoot "backup") "executor") -Destination $executorDestination -ErrorAction SilentlyContinue }
+      throw
+    }
   } catch { Restore-Target $targetRoot $stageRoot $replaced $created; throw }
   foreach ($name in $retiredSkills) {
     $destinations = @((Join-Path $targetRoot $name))
@@ -159,7 +248,8 @@ try {
   }
   $legacyRuntime = Join-Path $targetRoot ".puretokens-runtime"
   if ((Test-Path -LiteralPath $legacyRuntime) -and (Test-LegacyNodeRuntime $legacyRuntime)) { Remove-Item -LiteralPath $legacyRuntime -Recurse -Force; Write-Output "Removed retired managed Node runtime from $legacyRuntime" }
-  Write-Output "Pure Tokens Skills $releaseVersion synchronized at $targetRoot"
+  Write-Output "Pure Tokens Skills $releaseVersion synchronized with the native API executor at $targetRoot"
+  Invoke-Init $targetRoot $HostId
 } finally {
   if ($null -ne $stageRoot -and (Test-Path -LiteralPath $stageRoot)) { Remove-Item -LiteralPath $stageRoot -Recurse -Force -ErrorAction SilentlyContinue }
 }
