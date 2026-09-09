@@ -16,6 +16,12 @@ The client download page reads the first `text` block below this heading. Keep t
 Install or update the official Pure Tokens Skills from https://github.com/PureTokens/puretokens-skill.
 ```
 
+### Chinese installation prompt
+
+```text
+请从官方仓库安装或更新 Pure Tokens Skills：https://github.com/PureTokens/puretokens-skill。
+```
+
 The agent downloads the official `runtime/puretokens-skill-fetch.sh` (Windows: `.ps1`) to a local file and runs install with the current host ID. Installed copies in `.puretokens-executor` provide check-update and update. Remote content is not piped into a shell.
 
 Installation boundary: after identifying the host, save the official fetch script locally and run it once. Let it pin the commit, download, verify, sync and initialize. Do not add full-script audits, PowerShell capability probes, duplicate inventory checks or doctor to ordinary installation. Respect required host approvals. On launch denial, unavailable output, timeout, download or verification failure, report the completed stage and sanitized failure, then stop. Do not create probes, shims or Python patches, modify official scripts, switch launch paths or retry automatically. Debugging requires a separate user request.
