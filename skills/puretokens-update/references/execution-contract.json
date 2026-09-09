@@ -15,7 +15,8 @@
       "commandTemplate": "native_fetch install_or_update --host <current-supported-host>",
       "sourceRepository": "https://github.com/PureTokens/puretokens-skill.git",
       "sourceBranch": "main",
-      "validationCommand": "pin_main_revision_verify_matching_platform_package_or_pinned_source_then_native_sync"
+      "validationCommand": "pin_main_revision_verify_matching_platform_package_or_pinned_source_then_native_sync",
+      "directorySelector": "download_from_the_same_pinned_commit_never_reuse_a_sibling_by_marker"
     },
     "init": {
       "commandTemplate": "native_executor init --host <current-supported-host>",

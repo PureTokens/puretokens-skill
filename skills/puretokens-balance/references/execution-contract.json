@@ -26,7 +26,8 @@
       "unitMetadataRequiresConfiguredApiKey": false,
       "maxRequests": 2,
       "deadlineSeconds": 30,
-      "responseSchema": "https://puretokensx.com/schemas/balance-snapshot.schema.json"
+      "responseSchema": "https://puretokensx.com/schemas/balance-snapshot.schema.json",
+      "bearerNormalization": "add_sk_prefix_if_missing_in_memory_for_usage_header_only"
     }
   },
   "result": {
@@ -37,8 +38,14 @@
     "unit": "USD",
     "includesSubscriptionQuota": false,
     "calculation": "each_returned_quota_divided_by_public_quota_per_unit_in_USD_never_subtract_used_from_available",
-    "fallbackWhenBalanceUnavailable": "report_actual_sanitized_failure_without_amount_and_guide_connection_settings_or_later_query",
+    "fallbackWhenBalanceUnavailable": "report_balance_specific_failure_without_amount_and_preserve_working_connection",
     "defaultPresentation": "one_line_remaining_with_wallet_or_key_allowance_label",
-    "legacyBillingFallbackAllowed": false
+    "legacyBillingFallbackAllowed": false,
+    "balanceRejectionDoesNotInvalidateMediaConnection": true,
+    "localFailureCodes": [
+      "balance_usage_unavailable",
+      "balance_usage_auth_rejected",
+      "balance_unit_metadata_unavailable"
+    ]
   }
 }

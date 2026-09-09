@@ -74,7 +74,7 @@ func taskReceipt(request taskRequest, id, status string) receipt {
 				}
 			}
 			if key == "size" || key == "image_size" || key == "aspect_ratio" || key == "resolution" || key == "strength" {
-				if _, ok := value.(string); !ok {
+				if text, ok := value.(string); !ok || !safeParameterString(key, text) {
 					continue
 				}
 			}
@@ -112,6 +112,20 @@ func taskReceipt(request taskRequest, id, status string) receipt {
 		retryAt = ""
 	}
 	return receipt{OK: true, Kind: kind, Operation: operation, OriginalOperation: original, Model: model, TaskID: id, Status: status, RequestedCount: count, Parameters: parameters, RetryNotBefore: retryAt, ReconciliationRequired: request.ReconciliationRequired}
+}
+
+// A safe field name alone does not make arbitrary request text safe to persist.
+// Keep a conservative projection even for malformed requests and imported records.
+func safeParameterString(key, text string) bool {
+	patterns := map[string]string{
+		"size":         `^(auto|[1-9][0-9]{0,4}x[1-9][0-9]{0,4})$`,
+		"image_size":   `^[1-9][0-9]?[Kk]$`,
+		"aspect_ratio": `^(auto|[1-9][0-9]{0,2}:[1-9][0-9]{0,2})$`,
+		"resolution":   `^[1-9][0-9]{0,3}[pPkK]$`,
+		"strength":     `^(LOW|MID|HIGH)$`,
+	}
+	pattern, ok := patterns[key]
+	return ok && regexp.MustCompile(pattern).MatchString(text)
 }
 func mergeFailure(current, failure receipt) receipt {
 	current.OK = false
@@ -173,6 +187,7 @@ func executeExistingTask(command string, input io.Reader, output io.Writer, svc 
 		result.OK = false
 		result.FailurePhase = "status"
 		result.LocalErrorCode = "retry_wait_required"
+		result.ErrorMessage = "The next same-task read is not due yet."
 		result.NextAction = "Wait until retry_not_before before reading this task again; do not resubmit."
 		writeReceipt(output, result)
 		return errors.New("retry wait required")

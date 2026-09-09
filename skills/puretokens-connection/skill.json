@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "name": "puretokens-connection",
-  "version": "0.17.0",
+  "version": "0.18.0",
   "entry": "SKILL.md",
   "displayName": "Pure Tokens Connection",
   "description": "Check the fixed Pure Tokens API identity declaration.",
@@ -36,6 +36,18 @@
     "trae": {
       "manualInstallationSupported": true,
       "globalSkillDirectory": "~/.trae/skills"
+    },
+    "claudeDesktop": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.claude/skills"
+    },
+    "dshDesktop": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/Library/Application Support/dsh-desktop/harness/skills"
+    },
+    "zcode": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.zcode/skills"
     }
   },
   "supportedClients": [
@@ -45,7 +57,10 @@
     "gemini-cli",
     "grok-build",
     "opencode",
-    "trae"
+    "trae",
+    "claude-desktop",
+    "dsh-desktop",
+    "zcode"
   ],
   "rules": {
     "usesFixedPureTokensApiOrigin": true,
@@ -66,5 +81,5 @@
     "doesNotUseMcpOrFallbackTransport": true,
     "identityDoesNotVerifyCredentials": true
   },
-  "sourceSha256": "445ad33b66e9d8557df07b9f2dd1cb18cd5537c54d922e2e89795a59830d2a41"
+  "sourceSha256": "ff1fc9a55893aacf0aae0f15657d16d3b0c2b29d736f4b0c07052079724a2919"
 }

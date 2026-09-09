@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "name": "puretokens-update",
-  "version": "0.17.0",
+  "version": "0.18.0",
   "entry": "SKILL.md",
   "displayName": "Pure Tokens Update",
   "description": "Install or safely upgrade local official Pure Tokens Skills.",
@@ -37,6 +37,18 @@
     "trae": {
       "manualInstallationSupported": true,
       "globalSkillDirectory": "~/.trae/skills"
+    },
+    "claudeDesktop": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.claude/skills"
+    },
+    "dshDesktop": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/Library/Application Support/dsh-desktop/harness/skills"
+    },
+    "zcode": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.zcode/skills"
     }
   },
   "supportedClients": [
@@ -46,7 +58,10 @@
     "gemini-cli",
     "grok-build",
     "opencode",
-    "trae"
+    "trae",
+    "claude-desktop",
+    "dsh-desktop",
+    "zcode"
   ],
   "rules": {
     "usesOfficialMainBranch": true,
@@ -72,5 +87,5 @@
     "supportsReadOnlyDoctor": true,
     "doesNotSubmitMediaOrReadBilling": true
   },
-  "sourceSha256": "0fcacb33888bafd35c10c77e6d2a9427abe534a3d6f5c004d258104a1f2e4d9b"
+  "sourceSha256": "473fbef46e9e9146e83735cad7591d3917994d39472ce498e5b9ab41e2675b7c"
 }

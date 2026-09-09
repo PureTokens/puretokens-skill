@@ -50,6 +50,20 @@ func validMediaFile(path, contentType string) bool {
 	if !validMediaPrefix(prefix[:n], contentType) {
 		return false
 	}
+	limit := maxImageBytes
+	if contentType == "video/mp4" || contentType == "video/webm" {
+		limit = maxVideoBytes
+	}
+	if stat.Size() > limit {
+		return false
+	}
+	if contentType == "image/gif" {
+		_, err = f.Seek(0, io.SeekStart)
+		return err == nil && validGIF(f)
+	}
+	if contentType == "video/webm" {
+		return validWebM(f, stat.Size())
+	}
 	// Cheap container termination checks avoid accepting common truncated files,
 	// without decoding a large bitmap/video into RAM.
 	if contentType == "image/png" {

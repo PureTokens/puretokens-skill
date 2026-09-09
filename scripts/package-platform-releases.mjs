@@ -15,7 +15,7 @@ const files = {};
 const publicFiles = ["README.md", "package.json", "runtime/puretokens-skill-install.sh", "runtime/puretokens-skill-install.ps1", "runtime/puretokens-skill-fetch.sh", "runtime/puretokens-skill-fetch.ps1"];
 // Include build inputs, not just copied outputs: committed binaries cannot
 // attest to uncommitted Go code, go.mod/go.sum, or a modified build recipe.
-const sourceScopes = ["README.md", "package.json", "skills", "runtime", "scripts/build-executor.mjs", "scripts/package-platform-releases.mjs"];
+const sourceScopes = ["README.md", "package.json", "skills", "runtime", "scripts/build-executor.mjs", "scripts/executor-build-proof.mjs", "scripts/build-installation-history.mjs", "scripts/package-platform-releases.mjs"];
 async function snapshot(directory, scopes) {
   const result = new Map();
   async function visit(relative) {
@@ -52,7 +52,13 @@ function matchingCommit(actual) {
   } catch { return null; }
 }
 const sourceSnapshot = await snapshot(root, sourceScopes);
-let sourceCommit = matchingCommit(sourceSnapshot);
+let buildVerified = false;
+try {
+  const { verifyExecutorBuild } = await import("./executor-build-proof.mjs");
+  await verifyExecutorBuild(root);
+  buildVerified = true;
+} catch { /* Unverified bytes can only produce draft candidates. */ }
+let sourceCommit = buildVerified ? matchingCommit(sourceSnapshot) : null;
 if (sourceSnapshot.get("runtime/executor/manifest.json") !== createHash("sha1").update(`blob ${manifestBytes.length}\0`).update(manifestBytes).digest("hex")) sourceCommit = null;
 for (const [platform, artifact] of Object.entries(manifest.artifacts)) {
   const temp = await mkdtemp(path.join(os.tmpdir(), "pt-release-"));

@@ -46,7 +46,7 @@
         },
         "globalSkillDirectory": {
           "type": "string",
-          "pattern": "^~/(?:\\.[a-z-]+/)*(?:[a-z-]+/)?skills$"
+          "pattern": "^~/(?:(?:\\.[a-z-]+/)*(?:[a-z-]+/)?|Library/Application Support/dsh-desktop/harness/)skills$"
         },
         "directMediaExecution": {
           "const": "managed-native-executor"

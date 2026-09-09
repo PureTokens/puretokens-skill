@@ -34,8 +34,13 @@ func (transport balanceFixtureTransport) RoundTrip(request *http.Request) (*http
 	}
 	switch request.URL.Path {
 	case balanceUsagePath:
-		if request.Header.Get("Authorization") != "Bearer synthetic-fixture-token" {
-			transport.t.Error("missing private bearer authentication")
+		// Mirror the real BFF admission rule. Media accepts the bare key, but
+		// the console usage route returns 401 before lookup unless it has sk-.
+		if request.Header.Get("Authorization") != "Bearer sk-synthetic-fixture-token" {
+			recorder := httptest.NewRecorder()
+			recorder.WriteHeader(http.StatusUnauthorized)
+			io.WriteString(recorder, `{"success":false,"error":{"code":"auth_required","message":"Authentication required"}}`)
+			return recorder.Result(), nil
 		}
 	case balanceUnitPath:
 		if request.Header.Get("Authorization") != "" {
@@ -47,6 +52,69 @@ func (transport balanceFixtureTransport) RoundTrip(request *http.Request) (*http
 	recorder := httptest.NewRecorder()
 	transport.handler.ServeHTTP(recorder, request)
 	return recorder.Result(), nil
+}
+
+func TestBalanceNormalizesBearerOnceWithoutChangingMediaOrConfiguredCredential(t *testing.T) {
+	for _, token := range []string{"synthetic-fixture-token", "sk-synthetic-fixture-token"} {
+		calls := 0
+		svc := balanceFixtureService(t, func(w http.ResponseWriter, r *http.Request) {
+			calls++
+			if r.URL.Path == balanceUsagePath {
+				io.WriteString(w, balanceUsageFixture)
+			} else {
+				io.WriteString(w, balanceUnitFixture)
+			}
+		})
+		svc.token = token
+		var out bytes.Buffer
+		if err := executeBalance(&out, svc); err != nil {
+			t.Fatalf("valid bare/prefixed key cannot query balance: %s", out.String())
+		}
+		if calls != 2 || svc.token != token || svc.baseURL != "https://unrelated-configured-origin.invalid" {
+			t.Fatal("balance changed the connection or performed extra requests")
+		}
+		// Later media requests still receive the configured credential unchanged.
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Header.Get("Authorization") != "Bearer "+token || r.URL.Path != "/v1/images/generations" {
+				t.Error("balance normalization leaked into media authentication")
+			}
+			io.WriteString(w, `{"id":"fixture-image","status":"pending"}`)
+		}))
+		svc.baseURL, svc.client = server.URL, server.Client()
+		_, status, _, _, _, err := svc.request(t.Context(), http.MethodPost, "/v1/images/generations", strings.NewReader(`{}`), "application/json")
+		server.Close()
+		if err != nil || status != 200 {
+			t.Fatal("media authentication changed")
+		}
+	}
+}
+
+func TestBalanceFailureRedactsOriginalAndNormalizedBearer(t *testing.T) {
+	for _, token := range []string{"synthetic-fixture-token", "sk-synthetic-fixture-token"} {
+		for _, body := range []string{
+			`{"error":{"code":"query_denied","message":"Rejected synthetic-fixture-\u0074oken and sk-synthetic-fixture-\u0074oken"}}`,
+			`{"error":{"code":"query_denied","message":"Rejected sk-synthetic-fixture-\u0074oken"}}`,
+		} {
+			// Only the bare-key fixture has two distinct in-memory forms.
+			if strings.HasPrefix(token, "sk-") && strings.Contains(body, " and ") {
+				continue
+			}
+			svc := balanceFixtureService(t, func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusUnauthorized)
+				io.WriteString(w, body)
+			})
+			svc.token = token
+			var out bytes.Buffer
+			if executeBalance(&out, svc) == nil {
+				t.Fatal("rejected credential became a successful query")
+			}
+			result := decodeReceipt(t, &out)
+			if result.APIErrorCode != "query_denied" || result.LocalErrorCode != "balance_usage_auth_rejected" ||
+				strings.Contains(out.String(), "synthetic-fixture") || strings.Contains(out.String(), "sk-") {
+				t.Fatal("normalized or configured credential leaked")
+			}
+		}
+	}
 }
 
 func balanceFixtureService(t *testing.T, handler http.HandlerFunc) service {
@@ -180,8 +248,12 @@ func TestBalanceFailuresDoNotRetryFollowRedirectsOrExposePrivateData(t *testing.
 				t.Fatalf("wrong failure receipt: calls=%d %s", calls, out.String())
 			}
 			if status == 401 || status == 403 {
-				if strings.Contains(got.NextAction, "configuration tool") != (phase == "usage") {
-					t.Fatal("public metadata rejection was confused with API-key authentication failure")
+				wantCode := "balance_usage_auth_rejected"
+				if phase == "unit" {
+					wantCode = "balance_unit_metadata_unavailable"
+				}
+				if got.LocalErrorCode != wantCode || strings.Contains(got.NextAction, "configuration tool") {
+					t.Fatal("balance failure was confused with an invalid host connection")
 				}
 			}
 			if strings.Contains(out.String(), "synthetic-fixture-token") || strings.Contains(out.String(), "untrusted") || strings.Contains(out.String(), `"remaining"`) {

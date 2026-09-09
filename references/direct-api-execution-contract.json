@@ -10,7 +10,10 @@
       "workbuddy",
       "gemini-cli",
       "grok-build",
-      "opencode"
+      "opencode",
+      "claude-desktop",
+      "dsh-desktop",
+      "zcode"
     ],
     "credentialUse": "in_memory_only_for_fixed_puretokens_api_requests",
     "credentialSourceMustMatchFixedPureTokensEndpoint": true,
@@ -48,7 +51,10 @@
     "gemini-cli",
     "grok-build",
     "opencode",
-    "trae"
+    "trae",
+    "claude-desktop",
+    "dsh-desktop",
+    "zcode"
   ],
   "executorCredentialAdapterHosts": [
     "claude-code",
@@ -56,7 +62,10 @@
     "workbuddy",
     "gemini-cli",
     "grok-build",
-    "opencode"
+    "opencode",
+    "claude-desktop",
+    "dsh-desktop",
+    "zcode"
   ],
   "requiredExecutorCapabilities": [
     "fixed_full_url_request",
@@ -144,13 +153,14 @@
     "unit": "USD",
     "includesSubscriptionQuota": false,
     "calculation": "each_returned_quota_divided_by_public_quota_per_unit_in_USD_never_subtract_used_from_available",
-    "fallback": "On an actual API, format or unit-metadata failure, report the sanitized reason without an amount or automatic retry. Guide authentication failures to the existing connection settings; otherwise offer a later query or the Pure Tokens console. Never estimate or request credentials."
+    "fallback": "On an actual API, format or unit-metadata failure, report the sanitized balance-specific reason without an amount or automatic retry. A balance 401/403 does not prove the current Key or media connection is invalid. If other API calls work, preserve the connection and suggest Pure Tokens support; otherwise offer a later query or the console. Never estimate or request credentials.",
+    "bearerNormalization": "add_sk_prefix_if_missing_in_memory_for_usage_header_only"
   },
   "optionalCommands": {
     "preflight": "Explicit request check only; never media POST, may read one catalog for a profile gap.",
     "doctor": "Explicit diagnostics: local managed install checks and existing read-only init checks; no paid task.",
     "filteredModels": "One explicit authenticated catalog GET, filtered by declared kind/model/operation/parameters.",
-    "taskRecord": "Explicit absolute user/workspace JSON with task identity and safe continuation metadata; never credentials, prompt, reference URLs or media bytes.",
+    "taskRecord": "Explicit absolute user/workspace JSON with task identity, validated safe continuation metadata, and per-index download SHA-256/byte count/media type; never credentials, prompt, reference URLs or media bytes.",
     "resume": "Reads only the recorded task; never discovers tasks or submits replacements.",
     "delivered": "Local progress acknowledgment only after actual host handoff."
   },

@@ -24,10 +24,13 @@ async function fixture(t) {
   await writeFile(path.join(source, "package.json"), JSON.stringify({ version }, null, 2));
   await cp(path.join(repositoryRoot, "skills"), path.join(source, "skills"), { recursive: true });
   for (const script of scripts) await cp(path.join(repositoryRoot, "runtime", script), path.join(source, "runtime", script));
-  const platform = `${process.platform === "darwin" ? "darwin" : "linux"}-${process.arch === "arm64" ? "arm64" : "amd64"}`;
-  const binary = Buffer.from(`#!/bin/sh\nprintf '%s\\n' '${version}'\n`);
+  // Match the shell installer, including a translated shell on Apple Silicon.
+  const architecture = (await execFile("uname", ["-m"])).stdout.trim();
+  const platform = `${process.platform === "darwin" ? "darwin" : "linux"}-${["arm64", "aarch64"].includes(architecture) ? "arm64" : "amd64"}`;
+  // Exercise inventory validation with the actual candidate executable.
+  const binary = await readFile(path.join(repositoryRoot, "runtime/executor/bin", `puretokens-api-${platform}`));
   const binaryPath = `bin/puretokens-api-${platform}`;
-  await writeFile(path.join(source, "runtime/executor", binaryPath), binary);
+  await writeFile(path.join(source, "runtime/executor", binaryPath), binary, { mode: 0o755 });
   await writeFile(path.join(source, "runtime/executor/manifest.json"), JSON.stringify({
     schemaVersion: 1, name: "puretokens-api-executor", version,
     artifacts: { [platform]: { path: binaryPath, sha256: createHash("sha256").update(binary).digest("hex") } }
@@ -101,7 +104,7 @@ test("check-update reads only pinned metadata and does not install or initialize
   assert.match(stdout, /installed=not_installed available=0.17.0/);
   await assert.rejects(readFile(path.join(f.target, ".puretokens-executor/runtime.json")));
   const requests = (await readFile(path.join(f.root, "requests"), "utf8")).trim().split("\n");
-  assert.equal(requests.length, 2);
+  assert.equal(requests.length, 3);
   assert.ok(requests[1].includes(commit));
   assert.deepEqual(await readdir(path.join(f.root, "tmp")), []);
 });
@@ -167,7 +170,7 @@ test("sync rejects an older download after a newer version wins the installation
   assert.equal((await readdir(f.target)).some(file => file.includes("stage") || file.includes("lock")), false);
 });
 
-test("release provenance requires committed package and executor build inputs", async t => {
+test("release provenance rejects committed source without a matching executable build proof", async t => {
   const f = await fixture(t);
   const builder = path.join(f.source, "scripts/package-platform-releases.mjs");
   await cp(path.join(repositoryRoot, "scripts/package-platform-releases.mjs"), builder);
@@ -181,7 +184,7 @@ test("release provenance requires committed package and executor build inputs", 
   const env = { ...f.env, GITHUB_SHA: committed.trim() };
   const manifestFile = path.join(f.source, "dist/releases/release-manifest.json");
   await execFile(process.execPath, [builder], { env });
-  assert.equal(JSON.parse(await readFile(manifestFile, "utf8")).sourceCommit, committed.trim());
+  assert.equal(JSON.parse(await readFile(manifestFile, "utf8")).sourceCommit, null);
   for (const file of ["runtime/executor/main.go", "scripts/build-executor.mjs", "skills/puretokens-image/SKILL.md"]) {
     const before = await readFile(path.join(f.source, file), "utf8");
     await writeFile(path.join(f.source, file), `${before}\nmodified fixture\n`);
@@ -192,4 +195,16 @@ test("release provenance requires committed package and executor build inputs", 
   await writeFile(path.join(f.source, "runtime/executor/untracked.go"), "package main\n");
   await execFile(process.execPath, [builder], { env });
   assert.equal(JSON.parse(await readFile(manifestFile, "utf8")).sourceCommit, null);
+});
+
+test("pinned selector handles new hosts even beside a marked old installer", async t => {
+ const f = await fixture(t);
+ const env = { ...await mockDownloads(f), ZCODE_DATA_BASE_DIR: path.join(f.root, "ZCode base") };
+ const entry = path.join(f.root,"old-entry"); await mkdir(entry);
+ await cp(path.join(f.source,"runtime/puretokens-skill-fetch.sh"),path.join(entry,"puretokens-skill-fetch.sh"));
+ await writeFile(path.join(entry,"puretokens-skill-install.sh"), '#!/bin/sh\n# puretokens-locate-v1\necho unsupported-host >&2\nexit 1\n');
+ await execFile("sh",[path.join(entry,"puretokens-skill-fetch.sh"),"install","--host","zcode"],{env});
+ assert.ok(await readFile(path.join(env.ZCODE_DATA_BASE_DIR,".zcode/skills/puretokens-image/SKILL.md")));
+ const requests=await readFile(path.join(f.root,"requests"),"utf8");
+ assert.ok(requests.includes(`/${commit}/runtime/puretokens-skill-install.sh`));
 });

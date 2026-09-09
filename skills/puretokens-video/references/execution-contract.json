@@ -109,7 +109,8 @@
     "fetchOnlyAfterTerminalSuccess": true,
     "oneInFlightContentReadPerTask": true,
     "neverPrefetchOrRefetchDeliveredContent": true,
-    "handoffBeforeNextContentRead": true
+    "handoffBeforeNextContentRead": true,
+    "existingOutputReuse": "explicit_record_matching_sha256_bytes_media_type_only_otherwise_preserve_and_choose_another_directory"
   },
   "parameterValidation": {
     "normalSubmissionUsesInstalledModelIndexAndSelectedProfile": true,
@@ -147,7 +148,8 @@
       "public_https_url"
     ],
     "skillPassesUserProvidedPublicUrlsWithoutDownloadingOrRehosting": true,
-    "multiplePublicUrlFieldsRequireNoDeclaredConflict": true
+    "multiplePublicUrlFieldsRequireNoDeclaredConflict": true,
+    "attachmentIntegrity": "verify_file_identity_size_and_digest_before_and_during_multipart_no_hidden_copy"
   },
   "polling": {
     "serverDelay": "honor_valid_positive_retry_after_before_fallback",
@@ -191,8 +193,8 @@
       "content"
     ],
     "httpStatus": "numeric_only_when_returned_otherwise_omit",
-    "apiErrorCode": "exact_explicit_public_api_error_code_otherwise_omit",
-    "errorMessage": "safe_user_facing_summary_using_only_sanitized_public_api_detail_or_a_fixed_local_explanation",
+    "apiErrorCode": "recognized_public_category_code_only_when_explicitly_returned_otherwise_omit",
+    "errorMessage": "fixed_public_category_message_or_fixed_local_explanation_never_arbitrary_server_text",
     "retryAfterSeconds": "include_when_a_valid_positive_retry_after_is_returned",
     "forbiddenDisclosure": [
       "raw_response_body",
@@ -203,7 +205,8 @@
       "request_body",
       "credentials_or_session_data",
       "user_reference_url_or_attachment_bytes"
-    ]
+    ],
+    "nextAction": "curated_category_specific_action_preserving_submission_uncertainty_and_same_task_recovery"
   },
   "unsupportedInput": [
     "undeclared_media_operation",
@@ -214,6 +217,8 @@
     "optional": true,
     "location": "explicit_absolute_user_or_workspace_artifact",
     "commands": [
+      "status",
+      "wait",
       "resume",
       "content",
       "delivered"
@@ -222,12 +227,15 @@
       "kind",
       "task_id",
       "model",
-      "operation",
+      "original_operation",
       "requested_count",
       "safe_parameters",
       "output_directory",
       "downloaded_indexes",
-      "delivered_indexes"
+      "download_proofs",
+      "delivered_indexes",
+      "retry_not_before",
+      "reconciliation_required"
     ],
     "excludes": [
       "credentials",
@@ -236,6 +244,15 @@
       "attachment_bytes"
     ],
     "resumeNeverSubmits": true,
-    "deliveryRequiresActualHostHandoff": true
+    "deliveryRequiresActualHostHandoff": true,
+    "validatesBeforeCreation": true,
+    "downloadProofFields": [
+      "sha256",
+      "bytes",
+      "media_type"
+    ],
+    "reuseRequiresMatchingProof": true,
+    "legacyRecordWithoutProof": "continue_same_task_but_download_into_another_directory_before_handoff",
+    "unknownSubmissionNeverResubmits": true
   }
 }

@@ -222,7 +222,8 @@
         "unit",
         "includesSubscriptionQuota",
         "calculation",
-        "fallback"
+        "fallback",
+        "bearerNormalization"
       ],
       "properties": {
         "url": {
@@ -267,6 +268,9 @@
         "fallback": {
           "type": "string",
           "minLength": 1
+        },
+        "bearerNormalization": {
+          "const": "add_sk_prefix_if_missing_in_memory_for_usage_header_only"
         }
       },
       "additionalProperties": false

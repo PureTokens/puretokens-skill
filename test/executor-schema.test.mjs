@@ -69,6 +69,12 @@ test("actual executor JSON and executable documentation conform to their schemas
 
 test("media receipt schemas reject lost task context and unsafe metadata", () => {
   const receipt = example("record-0-submit-receipt");
+  assert.equal(receipt.retry_not_before, "2026-09-06T00:00:20Z");
+  assert.equal(receipt.retry_after_seconds, undefined, "local delay is not an API Retry-After");
+  const initialRecord = example("record-0-submit-artifact");
+  assert.equal(initialRecord.format, "puretokens-task-v1");
+  assert.equal(initialRecord.retry_not_before, receipt.retry_not_before);
+  assert.equal(example("record-1-resume-receipt").retry_not_before, undefined);
   for (const field of ["kind", "operation", "task_id", "status"]) {
     const changed = structuredClone(receipt);
     delete changed[field];
@@ -125,6 +131,13 @@ test("raw quotas and legacy billing responses cannot masquerade as a balance pro
   }
   const envelope = example("balance");
   rejects("balance-receipt.schema.json", { ...envelope, result: { hard_limit_usd: 12.5 } });
+  const usageFailure = example("balance-usage-failure");
+  const unitFailure = example("balance-unit-failure");
+  assert.equal(usageFailure.local_error_code, "balance_usage_auth_rejected");
+  assert.equal(unitFailure.local_error_code, "balance_unit_metadata_unavailable");
+  assert.equal(usageFailure.api_error_code, "auth_required");
+  assert.equal(unitFailure.api_error_code, "auth_required");
+  assert.match(usageFailure.next_action, /keep the existing connection/);
 });
 
 test("console-origin balance exception does not change media transport or allow legacy billing", async () => {
@@ -138,7 +151,7 @@ test("console-origin balance exception does not change media transport or allow 
     { url: "https://another-provider.invalid/api/usage/token/" },
     { requiresBrowserSession: true }, { unitMetadataRequiresConfiguredApiKey: true },
     { unitMetadataUrl: "https://another-provider.invalid/status" },
-    { maxRequests: 3 }
+    { maxRequests: 3 }, { bearerNormalization: "retry_after_401_with_another_key" }
   ]) {
     const changed = structuredClone(balance);
     Object.assign(changed.operations.read, patch);
@@ -216,6 +229,10 @@ test("request schemas reject missing submission or continuation identity", () =>
     { retry_not_before: "2026-09-05T00:00:00Z" }, { reconciliation_required: false }, { index: 1 }
   ]) rejects("executor-request.schema.json", { ...submission, ...addition });
   assert.deepEqual(validators.get("executor-request.schema.json")({ kind: "image", task_id: "fixture", requested_count: 0 }), []);
+  assert.deepEqual(validators.get("executor-request.schema.json")({ kind: "image", task_id: "fixture", poll: { max_status_reads: 40, deadline_seconds: 120 } }), []);
+  rejects("executor-request.schema.json", { kind: "image", task_id: "fixture", poll: { max_status_reads: 41 } });
+  assert.deepEqual(validators.get("executor-request.schema.json")({ kind: "video", task_id: "fixture", poll: { max_status_reads: 7 } }), []);
+  rejects("executor-request.schema.json", { kind: "video", task_id: "fixture", poll: { max_status_reads: 8 } });
 });
 
 test("schema evaluator fails closed and exercises branches, references and JSON equality", () => {

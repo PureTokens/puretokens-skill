@@ -65,6 +65,33 @@
       "credentialAdapter": "pending",
       "guidance": "The Skills can be installed, but this release has no Trae credential adapter; API commands stop before a request.",
       "directorySelection": "Use the documented default unless the user explicitly supplies an absolute target."
+    },
+    {
+      "id": "claude-desktop",
+      "delivery": "native-installer",
+      "globalSkillDirectory": "~/.claude/skills",
+      "directMediaExecution": "managed-native-executor",
+      "credentialAdapter": "fixture-tested",
+      "guidance": "Claude Desktop local Code sessions load Claude Code skills. The executor reads the active Desktop 3P gateway profile, never Claude Code credentials. Cloud/Cowork sandbox access and native attachment delivery require separate real-host acceptance.",
+      "directorySelection": "CLAUDE_CONFIG_DIR/skills when explicitly configured; otherwise ~/.claude/skills. Shared with Claude Code; select --host claude-desktop for Desktop 3P authentication."
+    },
+    {
+      "id": "dsh-desktop",
+      "delivery": "native-installer",
+      "globalSkillDirectory": "~/Library/Application Support/dsh-desktop/harness/skills",
+      "directMediaExecution": "managed-native-executor",
+      "credentialAdapter": "fixture-tested",
+      "guidance": "Install into the local DSH Harness skills directory. On Windows use %APPDATA%/dsh-desktop/harness/skills. Credential fixtures cover the selected provider and its versioned refs store; real-host API and delivery acceptance remain pending.",
+      "directorySelection": "DSH_HOME/skills when explicitly supplied by the local Harness; otherwise the desktop application-data harness/skills directory. Project/custom roots may shadow it; doctor reports the documented shared Agents root."
+    },
+    {
+      "id": "zcode",
+      "delivery": "native-installer",
+      "globalSkillDirectory": "~/.zcode/skills",
+      "directMediaExecution": "managed-native-executor",
+      "credentialAdapter": "fixture-tested",
+      "guidance": "Local ZCode execution only. Resolve one unique enabled Pure Tokens connection; this does not identify the current conversation model. Real-host API and native delivery acceptance remain pending.",
+      "directorySelection": "ZCODE_DATA_BASE_DIR/.zcode/skills when explicitly configured with an absolute base directory; otherwise ~/.zcode/skills. Remote workspace synchronization does not supply the executor or connection."
     }
   ]
 }

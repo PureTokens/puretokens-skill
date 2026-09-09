@@ -13,9 +13,11 @@ const balanceUsageUrl = `${balanceApiOrigin}/api/product/console/api-keys/usage`
 const balanceUnitUrl = `${balanceApiOrigin}/api/product/console/status`;
 const balanceScopeRule = "unlimited_quota_true_account_wallet_else_key_allowance";
 const balanceCalculation = "each_returned_quota_divided_by_public_quota_per_unit_in_USD_never_subtract_used_from_available";
+const balanceBearerNormalization = "add_sk_prefix_if_missing_in_memory_for_usage_header_only";
+const balanceLocalFailureCodes = ["balance_usage_unavailable", "balance_usage_auth_rejected", "balance_unit_metadata_unavailable"];
 const directAcceptanceScenarioIds = ["api-identity-read", "catalog-read", "media-submit", "same-task-status", "native-media-delivery", "executor-request-start"];
 const directExecutorCapabilities = ["fixed_full_url_request", "json_task_response", "same_task_status_read", "native_media_byte_delivery", "bounded_local_resource_use"];
-const executorCredentialAdapterHostIds = ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode"];
+const executorCredentialAdapterHostIds = ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "claude-desktop", "dsh-desktop", "zcode"];
 const mediaRoutingPriority = "when_current_host_connection_uses_puretokens_select_the_matching_puretokens_specialist_before_generic_imagegen_imagen_or_video_skills";
 const mediaRoutingMetadataLimitation = "skill_metadata_expresses_routing_priority_but_cannot_override_a_host_that_ignores_installed_skill_selection";
 const executorRequestStart = "invoke_the_checksum_verified_managed_native_executor_with_the_current_host_id_and_fixed_request";
@@ -148,7 +150,7 @@ async function readHostSupport(errors) {
       if (!host || typeof host.guidance !== "string" || !host.guidance) {
         errors.push(`references/host-support.json: ${host?.id || "unnamed host"} needs guidance`);
       }
-      if (host?.delivery !== "native-installer" || typeof host.globalSkillDirectory !== "string" || !/^~\/(?:\.[a-z-]+\/)*(?:[a-z-]+\/)?skills$/.test(host.globalSkillDirectory) ||
+      if (host?.delivery !== "native-installer" || typeof host.globalSkillDirectory !== "string" || !/^~\/(?:(?:\.[a-z-]+\/)*(?:[a-z-]+\/)?|Library\/Application Support\/dsh-desktop\/harness\/)skills$/.test(host.globalSkillDirectory) ||
         host.directMediaExecution !== "managed-native-executor" || !["fixture-tested", "pending"].includes(host.credentialAdapter)) {
         errors.push(`references/host-support.json: ${host?.id || "unnamed host"} needs a native-installer global Skill directory`);
       }
@@ -222,14 +224,14 @@ function validateDirectApiExecutionContract(errors, contract, hostSupport) {
   const installableHostIds = hostSupport.supported.map((host) => host.id);
   if (!sameArray(contract.installableHosts, installableHostIds) || !sameArray(contract.executorCredentialAdapterHosts, executorCredentialAdapterHostIds) ||
     !sameArray(contract.requiredExecutorCapabilities, directExecutorCapabilities)) {
-    errors.push(`${label} must define the seven installable hosts, verified executor credential adapters, and required executor capabilities`);
+    errors.push(`${label} must define the ten installable hosts, verified executor credential adapters, and required executor capabilities`);
   }
   const balance = contract.balance;
   if (!balance || balance.method !== "GET" || balance.url !== balanceUsageUrl ||
     balance.unitMetadataUrl !== balanceUnitUrl || balance.unitMetadataRequiresConfiguredApiKey !== false ||
     balance.requiresBrowserSession !== false || balance.maxRequests !== 2 || balance.deadlineSeconds !== 30 ||
     balance.scopeRule !== balanceScopeRule || balance.unit !== "USD" || balance.includesSubscriptionQuota !== false ||
-    balance.calculation !== balanceCalculation ||
+    balance.calculation !== balanceCalculation || balance.bearerNormalization !== balanceBearerNormalization ||
     balance.requiresConfiguredApiKey !== true || balance.responseSchema !== "schemas/balance-snapshot.schema.json" ||
     typeof balance.fallback !== "string" || !balance.fallback) {
     errors.push(`${label} must define the fixed direct balance endpoint and fallback`);
@@ -360,14 +362,17 @@ function validateExecutionContract(errors, directory, contract) {
     validateRequest(errors, `${label} read`, operations.read, "GET", balanceUsageUrl);
     if (operations.read?.unitMetadataUrl !== balanceUnitUrl || operations.read?.unitMetadataRequiresConfiguredApiKey !== false ||
       operations.read?.requiresBrowserSession !== false || operations.read?.maxRequests !== 2 || operations.read?.deadlineSeconds !== 30 ||
-      operations.read?.requiresConfiguredApiKey !== true || operations.read?.responseSchema !== "https://puretokensx.com/schemas/balance-snapshot.schema.json") {
+      operations.read?.requiresConfiguredApiKey !== true || operations.read?.bearerNormalization !== balanceBearerNormalization ||
+      operations.read?.responseSchema !== "https://puretokensx.com/schemas/balance-snapshot.schema.json") {
       errors.push(`${label} read must require the configured API key and the balance snapshot schema`);
     }
     if (contract.result?.reportOnlyReturnedFields !== true || contract.result?.neverEstimate !== true || contract.result?.neverRetry !== true ||
       contract.result?.scopeRule !== balanceScopeRule || contract.result?.unit !== "USD" || contract.result?.includesSubscriptionQuota !== false ||
       contract.result?.calculation !== balanceCalculation || contract.result?.legacyBillingFallbackAllowed !== false ||
       contract.result?.defaultPresentation !== "one_line_remaining_with_wallet_or_key_allowance_label" ||
-      contract.result?.fallbackWhenBalanceUnavailable !== "report_actual_sanitized_failure_without_amount_and_guide_connection_settings_or_later_query") {
+      contract.result?.balanceRejectionDoesNotInvalidateMediaConnection !== true ||
+      !sameArray(contract.result?.localFailureCodes, balanceLocalFailureCodes) ||
+      contract.result?.fallbackWhenBalanceUnavailable !== "report_balance_specific_failure_without_amount_and_preserve_working_connection") {
       errors.push(`${label} must report only returned balance fields and use the direct-request fallback`);
     }
     return;
@@ -430,7 +435,7 @@ function validateExecutionContract(errors, directory, contract) {
     }
     validateTaskIdentityStateAndSubmissionFailure(errors, label, contract, true);
     validateImageRetrieval(errors, label, contract);
-    validatePolling(errors, `${label} polling`, contract.polling, { deadlineSeconds: 120, fallbackDelaysSeconds: [3, 6, 12, 24, 30], steadyDelaySeconds: 30, maxAutomaticStatusReads: 6 });
+    validatePolling(errors, `${label} polling`, contract.polling, { deadlineSeconds: 120, fallbackDelaysSeconds: [0, 3], steadyDelaySeconds: 3, maxAutomaticStatusReads: 40, initialDelaySeconds: 20, initialDelayAnchor: "receipt_of_accepted_pending_submission_only_when_no_api_retry_after", initialDelayPersistence: "existing_retry_not_before_field_in_receipt_request_and_optional_task_record", initialDelayOnContinuation: "wait_only_remaining_retry_not_before_or_read_immediately_if_absent_or_expired" });
     if (contract.result?.successRequires !== "native_image_bytes") errors.push(`${label} must require native image bytes for success`);
   } else {
     validateRequest(errors, `${label} catalog`, operations.catalog, "GET", `${directApiOrigin}/v1/media/models`);
@@ -468,8 +473,23 @@ function validateExecutionContract(errors, directory, contract) {
     }
     validatePolling(errors, `${label} polling`, contract.polling, { deadlineSeconds: 300, fallbackDelaysSeconds: [5, 10, 20, 40, 60], steadyDelaySeconds: 60, maxAutomaticStatusReads: 7 });
   }
+  validateContinuationIntegrity(errors, label, contract);
   if (contract.result?.sameTaskOnly !== true || contract.result?.neverAutoResubmit !== true || !Array.isArray(contract.unsupportedInput) || !contract.unsupportedInput.length) {
     errors.push(`${label} must stay on the same task without automatic resubmission and declare unsupported input`);
+  }
+}
+
+function validateContinuationIntegrity(errors, label, contract) {
+  const record = contract.continuationRecord;
+  if (!record || record.validatesBeforeCreation !== true || record.reuseRequiresMatchingProof !== true ||
+      record.unknownSubmissionNeverResubmits !== true ||
+      !sameArray(record.downloadProofFields, ["sha256", "bytes", "media_type"]) ||
+      !sameArray(record.commands, ["status", "wait", "resume", "content", "delivered"]) ||
+      !record.preserves?.includes("original_operation") || !record.preserves?.includes("download_proofs") ||
+      record.legacyRecordWithoutProof !== "continue_same_task_but_download_into_another_directory_before_handoff" ||
+      contract.contentRetrieval?.existingOutputReuse !== "explicit_record_matching_sha256_bytes_media_type_only_otherwise_preserve_and_choose_another_directory" ||
+      contract.inputMediaValidation?.attachmentIntegrity !== "verify_file_identity_size_and_digest_before_and_during_multipart_no_hidden_copy") {
+    errors.push(`${label} must preserve validated continuation metadata and require explicit download integrity proofs`);
   }
 }
 
@@ -481,7 +501,7 @@ function validateUpdateContract(errors, label, contract) {
     errors.push(`${label} must use the local official Skill manager without reading credentials, submitting media, or using MCP`);
   }
   const sync = contract.operations?.sync;
-  if (!sync || sync.commandTemplate !== "native_fetch install_or_update --host <current-supported-host>" ||
+  if (!sync || sync.directorySelector !== "download_from_the_same_pinned_commit_never_reuse_a_sibling_by_marker" || sync.commandTemplate !== "native_fetch install_or_update --host <current-supported-host>" ||
     sync.sourceRepository !== "https://github.com/PureTokens/puretokens-skill.git" || sync.sourceBranch !== "main" || sync.validationCommand !== "pin_main_revision_verify_matching_platform_package_or_pinned_source_then_native_sync") {
     errors.push(`${label} must define the pinned official package/source sync operation`);
   }
@@ -567,8 +587,8 @@ function validateFailureReceipt(errors, label, receipt) {
   if (!receipt || !sameArray(receipt.requiredFields, failureReceiptRequiredFields) ||
     !sameArray(receipt.allowedFailurePhases, failureReceiptPhases) ||
     receipt.httpStatus !== "numeric_only_when_returned_otherwise_omit" ||
-    receipt.apiErrorCode !== "exact_explicit_public_api_error_code_otherwise_omit" ||
-    receipt.errorMessage !== "safe_user_facing_summary_using_only_sanitized_public_api_detail_or_a_fixed_local_explanation" ||
+    receipt.apiErrorCode !== "recognized_public_category_code_only_when_explicitly_returned_otherwise_omit" ||
+    receipt.errorMessage !== "fixed_public_category_message_or_fixed_local_explanation_never_arbitrary_server_text" ||
     receipt.retryAfterSeconds !== "include_when_a_valid_positive_retry_after_is_returned" ||
     !sameArray(receipt.forbiddenDisclosure, failureReceiptForbiddenDisclosure)) {
     errors.push(`${label} must use the safe structured failure receipt without exposing internal, upstream, credential, request, or user-media data`);
@@ -580,6 +600,8 @@ function validatePolling(errors, label, polling, expected) {
     polling.afterHttp429 !== "honor_valid_positive_retry_after_then_continue_same_task_if_remaining_budget" ||
     !sameArray(polling.fallbackDelaysSeconds, expected.fallbackDelaysSeconds) || polling.steadyDelaySeconds !== expected.steadyDelaySeconds ||
     polling.automaticDeadlineSeconds !== expected.deadlineSeconds || polling.maxAutomaticStatusReads !== expected.maxAutomaticStatusReads ||
+    polling.initialDelaySeconds !== expected.initialDelaySeconds || polling.initialDelayAnchor !== expected.initialDelayAnchor ||
+    polling.initialDelayPersistence !== expected.initialDelayPersistence || polling.initialDelayOnContinuation !== expected.initialDelayOnContinuation ||
     polling.oneInFlightStatusReadPerTask !== true || polling.automaticPollingScope !== "submission_or_explicit_same_task_continuation_turn_only_no_background_timer_or_queue" ||
     polling.afterStatusReadError !== "stop_on_5xx_transport_or_timeout_and_require_explicit_same_task_continuation" ||
     polling.explicitContinuation !== "new_bounded_same_task_polling_window_only_when_explicitly_requested" ||

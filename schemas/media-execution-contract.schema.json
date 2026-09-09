@@ -170,7 +170,88 @@
       "$ref": "#/$defs/failureReceipt"
     },
     "continuationRecord": {
-      "type": "object"
+      "type": "object",
+      "required": [
+        "optional",
+        "location",
+        "commands",
+        "preserves",
+        "excludes",
+        "resumeNeverSubmits",
+        "deliveryRequiresActualHostHandoff",
+        "validatesBeforeCreation",
+        "downloadProofFields",
+        "reuseRequiresMatchingProof",
+        "legacyRecordWithoutProof",
+        "unknownSubmissionNeverResubmits"
+      ],
+      "properties": {
+        "optional": {
+          "const": true
+        },
+        "location": {
+          "const": "explicit_absolute_user_or_workspace_artifact"
+        },
+        "commands": {
+          "const": [
+            "status",
+            "wait",
+            "resume",
+            "content",
+            "delivered"
+          ]
+        },
+        "preserves": {
+          "const": [
+            "kind",
+            "task_id",
+            "model",
+            "original_operation",
+            "requested_count",
+            "safe_parameters",
+            "output_directory",
+            "downloaded_indexes",
+            "download_proofs",
+            "delivered_indexes",
+            "retry_not_before",
+            "reconciliation_required"
+          ]
+        },
+        "excludes": {
+          "const": [
+            "credentials",
+            "prompt",
+            "reference_urls",
+            "attachment_bytes"
+          ]
+        },
+        "resumeNeverSubmits": {
+          "const": true
+        },
+        "deliveryRequiresActualHostHandoff": {
+          "const": true
+        },
+        "validatesBeforeCreation": {
+          "const": true
+        },
+        "downloadProofFields": {
+          "const": [
+            "sha256",
+            "bytes",
+            "media_type"
+          ]
+        },
+        "reuseRequiresMatchingProof": {
+          "const": true
+        },
+        "legacyRecordWithoutProof": {
+          "const": "continue_same_task_but_download_into_another_directory_before_handoff"
+        },
+        "unknownSubmissionNeverResubmits": {
+          "const": true
+        }
+      },
+      "additionalProperties": false
     }
   },
   "allOf": [
@@ -430,7 +511,8 @@
                   "unitMetadataRequiresConfiguredApiKey",
                   "maxRequests",
                   "deadlineSeconds",
-                  "responseSchema"
+                  "responseSchema",
+                  "bearerNormalization"
                 ],
                 "properties": {
                   "method": {
@@ -459,6 +541,9 @@
                   },
                   "responseSchema": {
                     "const": "https://puretokensx.com/schemas/balance-snapshot.schema.json"
+                  },
+                  "bearerNormalization": {
+                    "const": "add_sk_prefix_if_missing_in_memory_for_usage_header_only"
                   }
                 }
               }
@@ -482,7 +567,9 @@
               "calculation",
               "fallbackWhenBalanceUnavailable",
               "defaultPresentation",
-              "legacyBillingFallbackAllowed"
+              "legacyBillingFallbackAllowed",
+              "balanceRejectionDoesNotInvalidateMediaConnection",
+              "localFailureCodes"
             ],
             "properties": {
               "reportOnlyReturnedFields": {
@@ -507,13 +594,23 @@
                 "const": "each_returned_quota_divided_by_public_quota_per_unit_in_USD_never_subtract_used_from_available"
               },
               "fallbackWhenBalanceUnavailable": {
-                "const": "report_actual_sanitized_failure_without_amount_and_guide_connection_settings_or_later_query"
+                "const": "report_balance_specific_failure_without_amount_and_preserve_working_connection"
               },
               "defaultPresentation": {
                 "const": "one_line_remaining_with_wallet_or_key_allowance_label"
               },
               "legacyBillingFallbackAllowed": {
                 "const": false
+              },
+              "balanceRejectionDoesNotInvalidateMediaConnection": {
+                "const": true
+              },
+              "localFailureCodes": {
+                "const": [
+                  "balance_usage_unavailable",
+                  "balance_usage_auth_rejected",
+                  "balance_unit_metadata_unavailable"
+                ]
               }
             },
             "additionalProperties": false
@@ -853,6 +950,9 @@
         },
         "deadlineSeconds": {
           "const": 30
+        },
+        "bearerNormalization": {
+          "const": "add_sk_prefix_if_missing_in_memory_for_usage_header_only"
         }
       },
       "oneOf": [
@@ -880,7 +980,8 @@
         "commandTemplate",
         "sourceRepository",
         "sourceBranch",
-        "validationCommand"
+        "validationCommand",
+        "directorySelector"
       ],
       "properties": {
         "commandTemplate": {
@@ -894,6 +995,9 @@
         },
         "validationCommand": {
           "const": "pin_main_revision_verify_matching_platform_package_or_pinned_source_then_native_sync"
+        },
+        "directorySelector": {
+          "const": "download_from_the_same_pinned_commit_never_reuse_a_sibling_by_marker"
         }
       },
       "additionalProperties": false
@@ -907,7 +1011,8 @@
         "apiErrorCode",
         "errorMessage",
         "retryAfterSeconds",
-        "forbiddenDisclosure"
+        "forbiddenDisclosure",
+        "nextAction"
       ],
       "properties": {
         "requiredFields": {
@@ -929,10 +1034,10 @@
           "const": "numeric_only_when_returned_otherwise_omit"
         },
         "apiErrorCode": {
-          "const": "exact_explicit_public_api_error_code_otherwise_omit"
+          "const": "recognized_public_category_code_only_when_explicitly_returned_otherwise_omit"
         },
         "errorMessage": {
-          "const": "safe_user_facing_summary_using_only_sanitized_public_api_detail_or_a_fixed_local_explanation"
+          "const": "fixed_public_category_message_or_fixed_local_explanation_never_arbitrary_server_text"
         },
         "retryAfterSeconds": {
           "const": "include_when_a_valid_positive_retry_after_is_returned"
@@ -948,6 +1053,9 @@
             "credentials_or_session_data",
             "user_reference_url_or_attachment_bytes"
           ]
+        },
+        "nextAction": {
+          "const": "curated_category_specific_action_preserving_submission_uncertainty_and_same_task_recovery"
         }
       },
       "additionalProperties": false

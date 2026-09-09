@@ -56,8 +56,13 @@ The priority is carried by the installed Skill metadata and the host's current c
 | Grok Build | `~/.grok/skills` | Credential fixtures tested; host end-to-end acceptance pending |
 | OpenCode | `~/.config/opencode/skills` | Credential fixtures tested; host end-to-end acceptance pending |
 | Trae | `~/.trae/skills` | Installable; no Switch-managed credential record exists, so requests stop safely |
+| Claude Desktop | `~/.claude/skills` (shared with Claude Code) | Local Code sessions; Desktop credential fixtures tested, end-to-end acceptance pending |
+| DSH Desktop | macOS: `~/Library/Application Support/dsh-desktop/harness/skills`; Windows: `%APPDATA%\dsh-desktop\harness\skills` | Credential fixtures tested; host end-to-end acceptance pending |
+| ZCode | `~/.zcode/skills` | Local connection adapter; real API and attachment delivery acceptance pending |
 
-`references/host-support.json` defines these seven hosts. The table shows defaults; Claude/WorkBuddy honor explicit configuration-directory overrides. Gemini updates an existing higher-priority `.agents/skills` installation and reports managed duplicates. Provider labels never determine support.
+`references/host-support.json` defines these ten hosts. The table shows defaults; Claude/WorkBuddy honor explicit configuration-directory overrides, and DSH honors the local Harness's explicit `DSH_HOME`. Gemini updates an existing higher-priority `.agents/skills` installation and reports managed duplicates. Provider labels never determine support.
+
+For Claude Desktop, use a local Code session and host ID `claude-desktop`; its active Desktop 3P connection is separate from Claude Code authentication. Cloud, SSH, WSL and Cowork isolated environments are not the local desktop; unavailable connection records or executors stop execution. DSH uses `dsh-desktop`; project/custom Skill roots may override user roots, so verify the loaded location. See the [desktop host guide](skills/puretokens-update/references/desktop-hosts.md).
 
 ## Images and videos
 
@@ -112,11 +117,26 @@ README is generated only from base-catalog models with explicit image/video capa
 
 Machine receipts retain available model, task ID, original operation, state, safe parameters and progress. User-facing replies show only the useful status, actual attachment or actionable failure. Failures include a safe phase, public API code only when explicitly returned, HTTP status when returned, a sanitized message, and an action the user can take. The Skills never expose raw response bodies, request headers/bodies, internal URLs, credentials, or user media.
 
+Error text comes from controlled categories; only recognized public codes
+actually returned by the API are retained. Unknown codes and arbitrary server
+error text are omitted. GIF validation checks complete frame data; WebM checks
+container boundaries, video tracks and blocks. Damaged output is not reused.
+Container checks do not replace opening/playing the actual host attachment.
+Explicit resume of a reconciliation record reads the same task once, then uses
+the newly confirmed status.
+
 ## Updating
 
 `puretokens-update` resolves official main to an exact commit and version. Its native fetch wrapper checks versions without installation, or installs matching checksum-verified platform assets. When those assets are unavailable, it retrieves the same pinned official source archive and invokes native sync. The installer synchronizes all six Skills and the SHA-256-verified platform-native executor, preserves unmanaged directories, removes only verified retired official Skill directories, and removes the verified retired Node runtime if present. The versioned success receipt is the only confirmation that an update completed.
 
 The source sync scripts are `runtime/puretokens-skill-install.sh` for macOS/Linux and `runtime/puretokens-skill-install.ps1` for Windows. They install, verify, and place the platform executor; users do not need Node, npm, Python, Go, or a package manager.
+
+Each managed directory has a `.puretokens-managed.json` inventory of files and
+checksums. Updates and interrupted recovery stop on added, changed or missing
+files and symlinks, preserving existing contents. An older unmarked directory
+must match an exact historical inventory embedded in the candidate executor or
+the current official source; a matching name or self-reported version/hash is
+insufficient. Inventories detect accidental edits, not malicious local tampering.
 
 After every successful installation or update, the installer automatically runs `init`. It performs a non-billable fixed `/v1` identity check followed by one authenticated `/v1/media/models` request without displaying credentials or host configuration, then prints the current usage guide and examples. If verification does not complete, it reports a sanitized reason such as no active matching connection, missing credential, API rejection with its HTTP status, network failure, or an unconfirmed API identity; it never prints the configured URL, provider, or key. To run it again later, ask the host Agent to initialize Pure Tokens Skills or check the current Pure Tokens connection; it must invoke the installed executor's `init` command and show the guide without modifying configuration.
 
@@ -135,8 +155,20 @@ The 0.17 command flow is submit → immediate task ID → bounded wait/status �
 
 Balance uses the same API-key route as the official CC Switch integration: `GET https://console.puretokensx.com/api/product/console/api-keys/usage`, followed by one public `/api/product/console/status` read for the USD conversion ratio. No browser login is required. An unlimited Key returns account wallet balance; a limited Key returns its own remaining allowance. The default reply is one concise amount with its scope, without subscription quotas. Legacy billing placeholders are never used as money. Queries stop after at most two GETs within 30 seconds; failures show an actionable reason without inventing an amount.
 
+The executor adds a missing `sk-` prefix in memory for this balance request, as CC Switch does during import. It leaves user configuration and media authentication unchanged. If balance returns 401/403 while other calls work, the Skill reports a balance-specific rejection and preserves the working connection.
+
 `references/host-acceptance.json` distinguishes tested credential fixtures from real host acceptance. Local automated checks do not prove Windows/macOS host attachment delivery.
+
+Follow `references/host-acceptance-guide.md` for the full host acceptance cases.
+`npm run acceptance:validate` checks host/OS versions, executor hashes, evidence
+files and outcomes. Checks without actual evidence remain pending.
 
 Explicit request checks use `preflight` without submitting media. `doctor` combines local installation diagnostics with read-only connection checks; help-only questions read the installed usage guide without network access. Neither is a routine generation preflight. Optional task records in a user/workspace location support same-task resume and delivered-index tracking; they contain no credentials, prompt, reference URLs or media bytes.
 
 Exact media quotations, server idempotency guarantees and lookup of unknown submissions require server capabilities not implemented here. Local validation and task records do not provide them.
+
+ZCode: `--host zcode`; an absolute `ZCODE_DATA_BASE_DIR` selects `<base>/.zcode/skills`. One uniquely enabled Pure Tokens connection is required. This does not identify the conversation model; remote workspace Skill sync does not supply the executor or connection.
+
+Maintainer build verification uses the exact toolchain in `runtime/executor/build-config.json`. `npm run executor:build` records source/build input identities and six artifacts; `npm run validate` checks them. `npm run release:validate` also rebuilds all six platforms into temporary directories and compares bytes. End users need neither Go nor Node.
+
+Verified output reuse requires an explicit task record with matching file SHA-256, byte count and media type. Legacy records can resume the same task, but files without proofs must be preserved and fetched again into another output directory. Native image/video handoff remains a separate real-host acceptance item.

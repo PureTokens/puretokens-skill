@@ -144,7 +144,8 @@
     "untransportableNativeReferenceMustNeverBeConvertedToTextPrompt": true,
     "whenNativeReferenceTransportUnavailable": "stop_before_post_when_no_declared_image_edit_multipart_operation_or_no_native_byte_delivery_and_require_public_https_url_or_explicit_new_text_only_request",
     "requestScope": "current_user_request_only_no_unrelated_skill_history_workspace_search_or_quality_review",
-    "whenTransportUnavailable": "do_not_submit_and_explain_declared_transport"
+    "whenTransportUnavailable": "do_not_submit_and_explain_declared_transport",
+    "attachmentIntegrity": "verify_file_identity_size_and_digest_before_and_during_multipart_no_hidden_copy"
   },
   "contentRetrieval": {
     "indexBase": 0,
@@ -156,22 +157,24 @@
     "sequentialByIndex": true,
     "oneInFlightContentReadPerTask": true,
     "neverPrefetchOrRefetchDeliveredContent": true,
-    "handoffBeforeNextContentRead": true
+    "handoffBeforeNextContentRead": true,
+    "existingOutputReuse": "explicit_record_matching_sha256_bytes_media_type_only_otherwise_preserve_and_choose_another_directory"
   },
   "polling": {
     "serverDelay": "honor_valid_positive_retry_after_before_fallback",
     "serverDelayMustFitRemainingAutomaticDeadline": true,
     "afterHttp429": "honor_valid_positive_retry_after_then_continue_same_task_if_remaining_budget",
+    "initialDelaySeconds": 20,
+    "initialDelayAnchor": "receipt_of_accepted_pending_submission_only_when_no_api_retry_after",
+    "initialDelayPersistence": "existing_retry_not_before_field_in_receipt_request_and_optional_task_record",
+    "initialDelayOnContinuation": "wait_only_remaining_retry_not_before_or_read_immediately_if_absent_or_expired",
     "fallbackDelaysSeconds": [
-      3,
-      6,
-      12,
-      24,
-      30
+      0,
+      3
     ],
-    "steadyDelaySeconds": 30,
+    "steadyDelaySeconds": 3,
     "automaticDeadlineSeconds": 120,
-    "maxAutomaticStatusReads": 6,
+    "maxAutomaticStatusReads": 40,
     "oneInFlightStatusReadPerTask": true,
     "automaticPollingScope": "submission_or_explicit_same_task_continuation_turn_only_no_background_timer_or_queue",
     "afterStatusReadError": "stop_on_5xx_transport_or_timeout_and_require_explicit_same_task_continuation",
@@ -200,8 +203,8 @@
       "content"
     ],
     "httpStatus": "numeric_only_when_returned_otherwise_omit",
-    "apiErrorCode": "exact_explicit_public_api_error_code_otherwise_omit",
-    "errorMessage": "safe_user_facing_summary_using_only_sanitized_public_api_detail_or_a_fixed_local_explanation",
+    "apiErrorCode": "recognized_public_category_code_only_when_explicitly_returned_otherwise_omit",
+    "errorMessage": "fixed_public_category_message_or_fixed_local_explanation_never_arbitrary_server_text",
     "retryAfterSeconds": "include_when_a_valid_positive_retry_after_is_returned",
     "forbiddenDisclosure": [
       "raw_response_body",
@@ -212,7 +215,8 @@
       "request_body",
       "credentials_or_session_data",
       "user_reference_url_or_attachment_bytes"
-    ]
+    ],
+    "nextAction": "curated_category_specific_action_preserving_submission_uncertainty_and_same_task_recovery"
   },
   "unsupportedInput": [
     "mask",
@@ -223,6 +227,8 @@
     "optional": true,
     "location": "explicit_absolute_user_or_workspace_artifact",
     "commands": [
+      "status",
+      "wait",
       "resume",
       "content",
       "delivered"
@@ -231,12 +237,15 @@
       "kind",
       "task_id",
       "model",
-      "operation",
+      "original_operation",
       "requested_count",
       "safe_parameters",
       "output_directory",
       "downloaded_indexes",
-      "delivered_indexes"
+      "download_proofs",
+      "delivered_indexes",
+      "retry_not_before",
+      "reconciliation_required"
     ],
     "excludes": [
       "credentials",
@@ -245,6 +254,15 @@
       "attachment_bytes"
     ],
     "resumeNeverSubmits": true,
-    "deliveryRequiresActualHostHandoff": true
+    "deliveryRequiresActualHostHandoff": true,
+    "validatesBeforeCreation": true,
+    "downloadProofFields": [
+      "sha256",
+      "bytes",
+      "media_type"
+    ],
+    "reuseRequiresMatchingProof": true,
+    "legacyRecordWithoutProof": "continue_same_task_but_download_into_another_directory_before_handoff",
+    "unknownSubmissionNeverResubmits": true
   }
 }

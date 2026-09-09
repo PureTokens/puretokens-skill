@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
-import { repositoryRoot } from "./skill-registry.mjs";
+import { repositoryRoot, readSkillRegistry } from "./skill-registry.mjs";
 
 export async function getSkillSourceFiles(skillName) {
   const files = [];
@@ -32,7 +32,8 @@ export async function getSkillProvenance(skillName) {
 }
 
 export async function getManagedSkillProvenances() {
-  return Promise.all(managedSkillNames.map(getSkillProvenance));
+  const registry = await readSkillRegistry();
+  return Promise.all(registry.skills.map(({ name }) => getSkillProvenance(name)));
 }
 
 async function collectFiles(root, relativePath, files) {

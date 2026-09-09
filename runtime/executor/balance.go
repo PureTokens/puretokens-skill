@@ -6,6 +6,7 @@ import (
 	"io"
 	"math"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -25,7 +26,16 @@ func executeBalance(output io.Writer, svc service) error {
 	svc.baseURL = balanceOrigin
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	body, status, retry, code, message, err := svc.request(ctx, http.MethodGet, balanceUsagePath, nil, "")
+	// CC Switch's official import also adds sk- if absent. The media API
+	// accepts bare keys, while the console usage route requires this prefix.
+	// Normalize this header before the first read, never rewrite host config,
+	// strip key suffixes, try another credential, or retry after a rejection.
+	bearer := svc.token
+	if bearer != "" && !strings.HasPrefix(bearer, "sk-") {
+		bearer = "sk-" + bearer
+	}
+	defer clearString(&bearer)
+	body, status, retry, code, message, err := svc.requestWithBearer(ctx, http.MethodGet, balanceUsagePath, nil, "", bearer)
 	object, decodeErr := readAPIObject(body)
 	if err != nil || status < 200 || status >= 300 || decodeErr != nil || object["code"] != true {
 		return balanceFailure(output, status, retry, code, message, true)
@@ -84,9 +94,22 @@ func balanceFailure(output io.Writer, status, retry int, code, message string, a
 		message = "The current balance could not be confirmed."
 	}
 	next := "Check the Pure Tokens console balance or try again later; no amount was confirmed."
-	if authenticatedRead && (status == http.StatusUnauthorized || status == http.StatusForbidden) {
-		next = "Check that the active Pure Tokens connection is enabled and its API key is valid in your configuration tool."
+	localCode := "balance_usage_unavailable"
+	if authenticatedRead {
+		if action := apiErrorAction(code, status); action != "" {
+			next = action + " No balance amount was confirmed; do not repeat the query automatically."
+		}
 	}
-	writeReceipt(output, apiFailure("submission", status, retry, code, message, next))
+	if !authenticatedRead {
+		localCode = "balance_unit_metadata_unavailable"
+		next = "Balance display metadata is unavailable. Try again later or check the Pure Tokens console; this does not establish whether the API key is valid."
+	}
+	if authenticatedRead && (status == http.StatusUnauthorized || status == http.StatusForbidden) {
+		localCode = "balance_usage_auth_rejected"
+		next = "The balance endpoint rejected this query. If images or other API calls work, keep the existing connection and report this balance-specific failure to Pure Tokens support."
+	}
+	result := apiFailure("submission", status, retry, code, message, next)
+	result.LocalErrorCode = localCode
+	writeReceipt(output, result)
 	return errors.New("balance unavailable")
 }

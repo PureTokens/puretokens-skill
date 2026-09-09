@@ -15,17 +15,18 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref }}
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
       - uses: actions/setup-go@v5
         with:
-          go-version-file: runtime/executor/go.mod
+          go-version: '1.26.0'
           cache-dependency-path: runtime/executor/go.sum
       - run: npm run check
       - run: npm run release:validate
-      # Package the committed artifacts. Rebuilding here can change bytes with
-      # the runner's Go compiler and invalidate the selected commit provenance.
+      # release:validate rebuilt all six artifacts with the pinned compiler and
+      # compared bytes. Package the verified committed artifacts.
       - name: Package the checked-out revision
         run: GITHUB_SHA="$(git rev-parse HEAD)" npm run release:package
       - name: Require committed distribution and build inputs

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -144,13 +145,20 @@ func TestContractExamples(t *testing.T) {
 			command string
 			index   int
 		}{{"submit", 0}, {"resume", 0}, {"content", 0}, {"delivered", 0}, {"content", 1}, {"delivered", 1}}
+		svc := fixtureService(server)
+		now := time.Date(2026, 9, 6, 0, 0, 0, 0, time.UTC)
+		svc.now = func() time.Time { return now }
+		svc.wait = func(_ context.Context, delay time.Duration) bool {
+			now = now.Add(delay)
+			return true
+		}
 		for index, step := range steps {
 			var output bytes.Buffer
 			dir := ""
 			if step.command == "content" {
 				dir = outputDir
 			}
-			if err := executeRecordedTask(step.command, recordPath, request, step.index, dir, &output, fixtureService(server)); err != nil {
+			if err := executeRecordedTask(step.command, recordPath, request, step.index, dir, &output, svc); err != nil {
 				t.Fatalf("%s: %v", step.command, err)
 			}
 			name := fmt.Sprintf("record-%d-%s", index, step.command)
@@ -285,6 +293,24 @@ func TestContractExamples(t *testing.T) {
 		}
 	})
 
+	t.Run("balance-specific failure diagnostics", func(t *testing.T) {
+		for _, phase := range []string{"usage", "unit"} {
+			svc := balanceFixtureService(t, func(w http.ResponseWriter, r *http.Request) {
+				if phase == "unit" && r.URL.Path == balanceUsagePath {
+					io.WriteString(w, balanceUsageFixture)
+					return
+				}
+				w.WriteHeader(http.StatusUnauthorized)
+				io.WriteString(w, `{"success":false,"error":{"code":"auth_required","message":"Authentication required"}}`)
+			})
+			var output bytes.Buffer
+			if executeBalance(&output, svc) == nil {
+				t.Fatal("balance rejection accepted")
+			}
+			capture("balance-"+phase+"-failure", "executor-receipt.schema.json", output.Bytes())
+		}
+	})
+
 	t.Run("documented model filter", func(t *testing.T) {
 		document, err := os.ReadFile("../../skills/puretokens-models/SKILL.md")
 		if err != nil {
@@ -351,6 +377,23 @@ func TestContractExamples(t *testing.T) {
 		}
 		capture("doctor-no-credential", "doctor-receipt.schema.json", output.Bytes())
 		captureValue("init-no-credential", "init-receipt.schema.json", initCredentialFailure(errors.New("synthetic-private-error")))
+	})
+
+	t.Run("complete-local-failure-fields", func(t *testing.T) {
+		var output bytes.Buffer
+		request := taskRequest{Kind: "image", Operation: "continue", TaskID: "existing-task", RetryNotBefore: time.Now().Add(time.Hour).UTC().Format(time.RFC3339)}
+		data, _ := json.Marshal(request)
+		if err := executeExistingTask("status", bytes.NewReader(data), &output, service{}); err == nil {
+			t.Fatal("early status read accepted")
+		}
+		capture("status-not-due", "executor-receipt.schema.json", output.Bytes())
+		output.Reset()
+		writer := recordReceiptWriter{output: &output, path: filepath.Join(t.TempDir(), "absent.json"), record: taskRecord{Format: taskRecordFormat, Kind: "image"}}
+		writer.writeReceipt(receipt{OK: true, Kind: "image", Operation: "generate", TaskID: "existing-task", Status: "pending", SubmissionOutcome: "accepted"})
+		if writer.err == nil {
+			t.Fatal("missing record write succeeded")
+		}
+		capture("accepted-record-write-failure", "executor-receipt.schema.json", output.Bytes())
 	})
 
 	if outputPath := os.Getenv("PURETOKENS_SCHEMA_EXAMPLES_OUT"); outputPath != "" {

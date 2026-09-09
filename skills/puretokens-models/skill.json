@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "name": "puretokens-models",
-  "version": "0.17.0",
+  "version": "0.18.0",
   "entry": "SKILL.md",
   "displayName": "Pure Tokens Models",
   "description": "Inspect fixed-Pure-Tokens authenticated media models, declared parameters, and media operations.",
@@ -36,6 +36,18 @@
     "trae": {
       "manualInstallationSupported": true,
       "globalSkillDirectory": "~/.trae/skills"
+    },
+    "claudeDesktop": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.claude/skills"
+    },
+    "dshDesktop": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/Library/Application Support/dsh-desktop/harness/skills"
+    },
+    "zcode": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.zcode/skills"
     }
   },
   "supportedClients": [
@@ -45,7 +57,10 @@
     "gemini-cli",
     "grok-build",
     "opencode",
-    "trae"
+    "trae",
+    "claude-desktop",
+    "dsh-desktop",
+    "zcode"
   ],
   "rules": {
     "usesFixedPureTokensApiOrigin": true,
@@ -66,5 +81,5 @@
     "doesNotUseMcpOrFallbackTransport": true,
     "supportsExplicitCatalogFilter": true
   },
-  "sourceSha256": "016b203239b04ee79340b660275aa8e90a0bb20935cabf0ede0f0e0f91541b19"
+  "sourceSha256": "4e53e5b22731331f8d5e138f6a822081cf1e9c65d3bbcf70483e65b1ebec6507"
 }

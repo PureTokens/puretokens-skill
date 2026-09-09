@@ -50,6 +50,31 @@ func doctorFixtureInstallation(t *testing.T, root, version string) {
 
 func doctorNoEnvironment(string) string { return "" }
 
+func TestDesktopDoctorUsesOnlyDeclaredSkillRoots(t *testing.T) {
+	home := t.TempDir()
+	harness := filepath.Join(home, "Harness with spaces")
+	shared := filepath.Join(home, "Shared agents")
+	env := func(key string) string {
+		return map[string]string{"DSH_HOME": harness, "DSH_AGENTS_HOME": shared}[key]
+	}
+	root := filepath.Join(harness, "skills")
+	doctorFixtureInstallation(t, root, executorVersion)
+	doctorFixtureInstallation(t, filepath.Join(shared, "skills"), "0.1.0")
+	result := collectDoctorAt(root, "dsh-desktop", home, env)
+	if result.Host != "dsh-desktop" || len(result.Local.Installations) != 2 || len(result.Local.DuplicateSkills) != 6 {
+		t.Fatal("DSH duplicate user/shared skills not reported")
+	}
+	claudeRoot := filepath.Join(home, ".claude", "skills")
+	doctorFixtureInstallation(t, claudeRoot, executorVersion)
+	claude := collectDoctorAt(claudeRoot, "claude-desktop", home, doctorNoEnvironment)
+	if !claude.OK || len(claude.Local.Installations) != 1 || claude.Local.AttachmentDeliveryStatus != "unverified" {
+		t.Fatal("Desktop local skill discovery or acceptance boundary incorrect")
+	}
+	if locations := doctorHostLocations("dsh-desktop", home, func(string) string { return "relative" }); len(locations) != 0 {
+		t.Fatal("doctor accepted a relative Harness root")
+	}
+}
+
 func TestDoctorLocalReportsOnlyVersionConsistency(t *testing.T) {
 	home := t.TempDir()
 	root := filepath.Join(home, ".agents", "skills")

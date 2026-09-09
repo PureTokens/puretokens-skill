@@ -56,8 +56,13 @@ Computer Use、浏览器自动化以及打开或点击 Pure Tokens Switch/Deskto
 | Grok Build | `~/.grok/skills` | 凭据格式通过夹具测试；客户端端到端待验收 |
 | OpenCode | `~/.config/opencode/skills` | 凭据格式通过夹具测试；客户端端到端待验收 |
 | Trae | `~/.trae/skills` | 可安装；Switch 没有受管凭据记录，故请求会安全停止 |
+| Claude Desktop | `~/.claude/skills`（与 Claude Code 共享） | 本地 Code 会话；Desktop 凭据夹具通过，端到端待验收 |
+| DSH Desktop | macOS：`~/Library/Application Support/dsh-desktop/harness/skills`；Windows：`%APPDATA%\dsh-desktop\harness\skills` | 凭据格式通过夹具测试；客户端端到端待验收 |
+| ZCode | `~/.zcode/skills` | 本地连接适配；真实 API 和附件交付待验收 |
 
-七个宿主以 `references/host-support.json` 为唯一契约。表中为默认目录；Claude／WorkBuddy 支持明确配置目录覆盖。Gemini 如已有较高优先级的 `.agents/skills` 安装，会更新该目录并报告重复副本。不会依据 provider 名判断。
+十个宿主以 `references/host-support.json` 为唯一契约。表中为默认目录；Claude／WorkBuddy 支持明确配置目录覆盖，DSH 支持本地 Harness 明确设置的 `DSH_HOME`。Gemini 如已有较高优先级的 `.agents/skills` 安装，会更新该目录并报告重复副本。不会依据 provider 名判断。
+
+Claude Desktop 请选择本地 Code 会话并使用宿主 ID `claude-desktop`；它读取 Desktop 当前第三方连接，不借用 Claude Code 的凭据。云端、SSH、WSL 或 Cowork 隔离环境不等于本机环境，无法访问本机连接或执行器时会停止。DSH 使用 `dsh-desktop`；项目或自定义 Skill 目录可能覆盖用户目录，应核对实际加载位置。安装示例及边界见 [桌面宿主说明](skills/puretokens-update/references/desktop-hosts.md)。
 
 ## 图片、视频与异步任务
 
@@ -112,11 +117,15 @@ README 只从基础目录中带有明确图片/视频能力的模型生成，不
 
 执行器机器回执保留已知模型、任务 ID、原 operation、状态、安全参数和进度。用户只看到必要的状态、实际附件或可操作失败。失败会给出安全的失败阶段、API 明确返回时的公开错误码、API 明确返回时的 HTTP 状态、经清理的提示和下一步操作。Skill 不会暴露原始响应、请求头/体、内部 URL、凭据或用户媒体。
 
+错误提示按受控分类生成，只保留服务端确实返回的已知公开分类码；未知码和任意原始错误文字不进入回执。GIF 会检查完整帧数据，WebM 会检查容器边界、视频轨道和块结构；损坏输出不复用。结构校验不代替实际附件打开或视频播放验收。对账中的记录在用户明确 `resume` 时只查询同一任务一次，确认新状态后再继续。
+
 ## 更新
 
 `puretokens-update` 的原生 fetch 脚本先把官方 main 固定到精确提交和版本。检查更新只报告版本；安装／更新优先下载匹配提交的校验平台包，没有匹配包时获取同一提交的官方源码归档，再执行原生 sync。安装器同步六个 Skill 和经 SHA-256 校验的当前平台原生执行器、保护用户自己管理的同名目录、只删除已验证的旧官方 Skill，并在发现时删除已验证的旧 Node 运行器。只有带版本号的成功回执才表示更新完成。
 
 源码同步脚本是 macOS/Linux 的 `runtime/puretokens-skill-install.sh` 和 Windows 的 `runtime/puretokens-skill-install.ps1`。它们只负责安装更新及校验复制平台执行器；用户不需要 Node、npm、Python、Go 或包管理器。
+
+每个受管目录保存 `.puretokens-managed.json` 文件清单和校验值。更新和中断恢复遇到新增、修改、缺失文件或符号链接时停止覆盖并保留现有内容。旧安装必须与执行器内置的历史文件清单或当前官方源完全匹配才能迁移；同名、版本号或自报哈希不构成归属证明。该记录用于发现意外改动，不是抵抗本机篡改的签名。
 
 每次安装或更新成功后，安装器都会自动执行 `init`：先做不计费的固定 `/v1` 身份检查，再用一次 `/v1/media/models` 请求验证当前凭据认证，不展示凭据或宿主配置，然后输出当前使用须知和示例。验证未完成时，会给出经过脱敏的原因，例如没有当前匹配连接、缺少凭据、API 拒绝及 HTTP 状态、网络失败或 API 身份未确认；绝不打印配置 URL、provider 或 Key。之后如需再次检查，可让宿主 Agent“初始化 Pure Tokens Skills”或“检查当前 Pure Tokens 连接”；它应调用已安装执行器的 `init`，展示使用须知，但不修改配置。
 
@@ -133,8 +142,18 @@ npm run release:validate
 
 余额与官方 CC Switch 使用同一个 API Key 查询接口：`GET https://console.puretokensx.com/api/product/console/api-keys/usage`，随后仅再读取一次公开 `/api/product/console/status` 获取 USD 换算比例，无需浏览器登录。不限额 Key 返回账户钱包余额，限额 Key 返回该 Key 的剩余额度；默认用一行金额说明查询范围，不含订阅套餐额度。不会把旧计费接口的占位值当余额。每次最多两次 GET、总计 30 秒，失败给出可操作的原因，不编造金额。
 
+执行器与 CC Switch 导入时一样，仅为余额请求在内存中补齐缺失的 `sk-` 前缀，不修改用户配置或生图／视频认证。余额返回 401／403 而其他调用正常时，会说明是余额查询被拒绝，并引导保留可用连接。
+
 `references/host-acceptance.json` 分开记录凭据格式测试与真实客户端验收。本地自动化测试通过，不能替代每个客户端在 Windows／macOS 上的附件交付验收。
+
+完整验收步骤见 `references/host-acceptance-guide.md`。`npm run acceptance:validate` 核对宿主与系统版本、执行器哈希、证据文件及结果；缺少实际证据的项目保持待验收，不会因工程检查通过自动变为成功。
 
 用户明确要求检查参数时，用 `preflight` 校验而不提交媒体；`doctor` 检查本地安装并执行只读连接检查。仅问用法则直接读安装的指南，不访问网络。这些都不是普通生成的前置步骤。可选任务记录保存在用户／工作区明确位置，用于同任务续接与交付索引跟踪，不含凭据、prompt、参考 URL 或媒体字节。
 
 精确媒体报价、服务端幂等保证和未知提交的任务查找尚未实现；本地校验与任务记录不能代替这些服务端能力。
+
+ZCode: `--host zcode`; an absolute `ZCODE_DATA_BASE_DIR` selects `<base>/.zcode/skills`. One uniquely enabled Pure Tokens connection is required. This does not identify the conversation model; remote workspace Skill sync does not supply the executor or connection.
+
+构建验证：`npm run executor:build` 使用 `runtime/executor/build-config.json` 指定的 Go 工具链，生成源码／构建输入摘要和六份二进制证明。`npm run validate` 核对摘要、嵌入身份和产物；`npm run executor:verify` 在临时目录重建六个平台并逐字节比较，`npm run release:validate` 包含此门禁。用户安装无需 Go 或 Node。真实宿主验收另行记录，Linux 产物存在不等于所有客户端支持 Linux。
+
+文件复用要求显式任务记录中的 SHA-256、字节数和媒体类型均匹配。旧记录可继续查询原任务；缺少摘要或文件被改写时保留文件，换输出目录取回同一任务。ZCode 路由需要明确宿主上下文或用户指定，不能从连接存在推断当前会话选择。

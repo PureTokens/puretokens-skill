@@ -231,7 +231,7 @@
     {
       "id": "image-task-poll-delay",
       "when": "the same task is in a supported pending state",
-      "then": "honor a valid positive Retry-After delay when returned; otherwise wait 3, 6, 12, 24, then 30 seconds, with at most six same-task status reads during a submission or explicit same-task continuation turn"
+      "then": "for a newly accepted pending image without API Retry-After, submit emits retry_not_before 20 seconds after the accepted response. Carry that exact timestamp across tool handoff/records; wait only its remaining delay, then query every 3 seconds. An absent or expired timestamp permits an immediate first read. API Retry-After takes precedence; never restart the initial delay on continuation. Stop at 40 same-task reads or the 120-second window including network and wait time"
     },
     {
       "id": "image-task-poll-rate-limited",
@@ -245,7 +245,7 @@
     },
     {
       "id": "image-task-polling-deadline",
-      "when": "120 seconds have elapsed since a task submission response and the task is still in a supported pending state",
+      "when": "the 120-second wait window or 40-read limit is exhausted, or the next wait cannot fit, and the same task is still in a supported pending state",
       "then": "report the current state, stop automatic polling, and require an explicit user request to continue the same task; do not resubmit"
     },
     {
@@ -297,6 +297,46 @@
       "id": "image-optional-task-record",
       "when": "an explicit user/workspace task record is useful for later continuation",
       "then": "pass its absolute path with submit --record. Keep only task identity, original operation, safe parameters and progress; no credentials, prompt or reference media. Resume only the recorded task and mark an index delivered only after actual host handoff."
+    },
+    {
+      "id": "image-explicit-reconciliation-resume",
+      "when": "the user explicitly resumes a record with reconciliation_required true",
+      "then": "resume performs exactly one same-task status GET; keep the flag on failure or continued reconciliation, clear it only from the actual response, and use the returned status before further waiting or content retrieval; never POST"
+    },
+    {
+      "id": "image-untrusted-error-text",
+      "when": "the server returns an error containing request text, internal paths or an unknown code",
+      "then": "only use fixed executor category text, returned HTTP status and local next_action; omit unknown codes and arbitrary server error text, never guess the omitted reason"
+    },
+    {
+      "id": "image-corrupted-native-output",
+      "when": "downloaded or existing output has an invalid or truncated media container",
+      "then": "do not mark download or delivery successful, do not reuse or overwrite the corrupt file, retain the task and index and follow the safe same-task retrieval action"
+    },
+    {
+      "id": "unproven-existing-output",
+      "when": "content finds an existing valid media file without a matching explicit record download proof",
+      "then": "preserve the file; select another output directory and retrieve only this same task index; never claim reuse or submit a replacement"
+    },
+    {
+      "id": "invalid-parameter-record",
+      "when": "a proposed recorded submission contains invalid free text in a structured parameter",
+      "then": "reject before creating the task record or sending POST; do not persist the free text"
+    },
+    {
+      "id": "zcode-routing-context",
+      "when": "ZCode has an enabled Pure Tokens connection but current conversation selection is not established",
+      "then": "do not infer routing from connection presence; require explicit host context or the user request naming Pure Tokens"
+    },
+    {
+      "id": "image-website-guidance-boundary",
+      "when": "the current conversation model can respond and receives an independent API result or an explicit user question",
+      "then": "Only provide relevant user navigation: recognized insufficient quota/balance goes to https://console.puretokensx.com/wallet; explicit unanswerable spending-history questions go to https://console.puretokensx.com/usage-logs. A failure of the conversation model itself cannot be handled by this Skill. Do not add API-key management or channel-status redirects, browser reads or new API calls."
+    },
+    {
+      "id": "image-spending-history-question",
+      "when": "the user explicitly asks for historical charges, spending details or an individual generation cost that available results cannot confirm",
+      "then": "Offer https://console.puretokensx.com/usage-logs for the user to inspect by time and model. Do not call balance to derive a charge, infer billing from missing records or task status, guarantee refunds, recover unknown task IDs or automatically append the link to every failure."
     }
   ]
 }

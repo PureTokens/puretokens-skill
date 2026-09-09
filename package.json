@@ -1,6 +1,6 @@
 {
   "name": "puretokens-skill",
-  "version": "0.17.0",
+  "version": "0.18.0",
   "description": "Installable Pure Tokens skills and skill management tooling.",
   "private": true,
   "type": "module",
@@ -23,8 +23,9 @@
   ],
   "scripts": {
     "list": "node bin/puretokens-skill.js list",
-    "validate": "node scripts/validate-skills.mjs && node scripts/sync-skill-model-profiles.mjs --check && node scripts/sync-readme-media-catalog.mjs --check",
-    "release:validate": "npm run validate && node scripts/check-media-catalog-freshness.mjs --max-age-days 7",
+    "validate": "node scripts/validate-skills.mjs && node scripts/sync-skill-model-profiles.mjs --check && node scripts/sync-readme-media-catalog.mjs --check && npm run acceptance:validate && node scripts/executor-build-proof.mjs",
+    "acceptance:validate": "node scripts/validate-host-acceptance.mjs",
+    "release:validate": "npm run validate && node scripts/check-media-catalog-freshness.mjs --max-age-days 7 && npm run executor:verify",
     "docs:sync-media-models": "node scripts/sync-skill-model-profiles.mjs --write && node scripts/sync-readme-media-catalog.mjs --write",
     "dist:build-legacy-migration-archive": "sh scripts/build-legacy-migration-archive.sh",
     "docs:sync-media-models-from-base-catalog": "node scripts/sync-media-model-catalog-from-service.mjs --write && npm run docs:sync-media-models",
@@ -33,7 +34,8 @@
     "check": "npm run validate && npm run executor:test && npm test",
     "executor:build": "node scripts/build-executor.mjs",
     "executor:test": "cd runtime/executor && go test ./... && go vet ./...",
-    "release:package": "node scripts/package-platform-releases.mjs"
+    "release:package": "node scripts/package-platform-releases.mjs",
+    "executor:verify": "node scripts/executor-build-proof.mjs --rebuild"
   },
   "engines": {
     "node": ">=20"

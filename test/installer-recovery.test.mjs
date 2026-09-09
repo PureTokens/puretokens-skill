@@ -34,17 +34,60 @@ test("legacy CLI sync installs the native executor", async t => {
  const { stdout } = await execFile(executor, ["--version"]);
  assert.equal(stdout.trim(), JSON.parse(await readFile(path.join(repositoryRoot, "package.json"), "utf8")).version);
 });
+test("desktop hosts locate and install into isolated local skill roots", async t => {
+ const f = await fixture(t);
+ for (const [host, key] of [["claude-desktop", "CLAUDE_CONFIG_DIR"], ["dsh-desktop", "DSH_HOME"]]) {
+  const directory = path.join(f.root, `${host} with spaces`);
+  const env = { ...f.env, [key]: directory };
+  const { stdout: located } = await execFile("sh", [installer, "locate", "--host", host], { env });
+  assert.equal(located.trim(), path.join(directory, "skills"));
+  await execFile("sh", [installer, "sync", "--host", host], { env });
+  for (const name of names) {
+   const manifest = JSON.parse(await readFile(path.join(directory, "skills", name, "skill.json"), "utf8"));
+   assert.ok(manifest.supportedClients.includes(host));
+  }
+  assert.equal((await readdir(path.join(directory, "skills"))).filter(x => x === ".puretokens-executor").length, 1);
+  await assert.rejects(execFile("sh", [installer, "locate", "--host", host], { env: { ...env, [key]: "relative" } }));
+ }
+ // Default paths are platform-owned; no synthetic connection is opened.
+ const env = { ...f.env, CLAUDE_CONFIG_DIR: "", DSH_HOME: "" };
+ const { stdout } = await execFile("sh", [installer, "locate", "--host", "claude-desktop"], { env });
+ assert.equal(stdout.trim(), path.join(env.HOME, ".claude", "skills"));
+ if (process.platform === "darwin") {
+  const { stdout } = await execFile("sh", [installer, "locate", "--host", "dsh-desktop"], { env });
+  assert.equal(stdout.trim(), path.join(env.HOME, "Library/Application Support/dsh-desktop/harness/skills"));
+ } else {
+  await assert.rejects(execFile("sh", [installer, "locate", "--host", "dsh-desktop"], { env }), /local macOS or Windows/);
+ }
+});
+test("ZCode honors the data base and installs all managed components", async t => {
+ const f = await fixture(t);
+ const base = path.join(f.root, "zcode data with spaces");
+ const env = { ...f.env, ZCODE_DATA_BASE_DIR: base };
+ const target = path.join(base, ".zcode", "skills");
+ const { stdout } = await execFile("sh", [installer, "locate", "--host", "zcode"], { env });
+ assert.equal(stdout.trim(), target);
+ await execFile("sh", [installer, "sync", "--host", "zcode"], { env });
+ for (const name of names) assert.ok(JSON.parse(await readFile(path.join(target, name, "skill.json"), "utf8")).supportedClients.includes("zcode"));
+ const executor = path.join(target, ".puretokens-executor", "puretokens-api");
+ await execFile(executor, ["--version"]);
+ await execFile("sh", [installer, "sync", "--host", "zcode"], { env });
+ await assert.rejects(execFile("sh", [installer, "locate", "--host", "zcode"], { env: { ...env, ZCODE_DATA_BASE_DIR: "relative" } }));
+ const result = await execFile("sh", [installer, "locate", "--host", "zcode"], { env: { ...env, ZCODE_DATA_BASE_DIR: "" } });
+ assert.equal(result.stdout.trim(), path.join(env.HOME, ".zcode", "skills"));
+});
 test("a failed update restores every existing Skill and releases its lock", async t => {
  const f = await fixture(t); await install(f);
+ const originals = new Map();
  for (const name of names) {
   const file = path.join(f.target, name, "SKILL.md");
-  await writeFile(file, `${await readFile(file, "utf8")}\nOLD_REVISION_FIXTURE\n`);
+  originals.set(name, await readFile(file, "utf8"));
  }
  const tools = path.join(f.root, "tools"); await mkdir(tools);
  const wrapper = path.join(tools, "mv");
  await writeFile(wrapper, '#!/bin/sh\ncase "$2" in */backup/puretokens-connection) exit 73 ;; esac\nexec /bin/mv "$@"\n'); await chmod(wrapper, 0o700);
  await assert.rejects(install(f, { ...f.env, PATH: `${tools}${path.delimiter}${f.env.PATH}` }));
- for (const name of names) assert.match(await readFile(path.join(f.target, name, "SKILL.md"), "utf8"), /OLD_REVISION_FIXTURE/);
+ for (const name of names) assert.equal(await readFile(path.join(f.target, name, "SKILL.md"), "utf8"), originals.get(name));
  assert.equal((await readdir(f.target)).some(x => x.includes("stage") || x.includes("lock")), false);
  await install(f);
 });

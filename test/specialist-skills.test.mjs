@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { execFile as execFileCallback } from "node:child_process";
+import { execFile as execFileCallback, execFileSync } from "node:child_process";
 import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -29,7 +29,8 @@ function assertSynchronized(stdout) {
 
 function currentExecutorPlatform() {
   const platform = process.platform === "darwin" ? "darwin" : process.platform === "linux" ? "linux" : "windows";
-  const architecture = process.arch === "x64" ? "amd64" : process.arch;
+  const shellArch = process.platform === "win32" ? process.arch : execFileSync("uname", ["-m"], { encoding: "utf8" }).trim();
+  const architecture = ["x64", "x86_64"].includes(shellArch) ? "amd64" : ["arm64", "aarch64"].includes(shellArch) ? "arm64" : shellArch;
   return `${platform}-${architecture}`;
 }
 
@@ -258,14 +259,14 @@ test("the public install prompt remains extractable in both README files", async
   }
 });
 
-test("host matrix lists seven executor hosts and the documented verified credential adapters", async () => {
+test("host matrix lists ten executor hosts and the documented verified credential adapters", async () => {
   const support = JSON.parse(await readFile(path.join(repositoryRoot, "references", "host-support.json"), "utf8"));
-  assert.deepEqual(support.supported.map((host) => host.id), ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae"]);
+  assert.deepEqual(support.supported.map((host) => host.id), ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae", "claude-desktop", "dsh-desktop", "zcode"]);
   for (const host of support.supported) {
     assert.equal(host.delivery, "native-installer");
     assert.equal(host.directMediaExecution, "managed-native-executor");
   }
-  assert.deepEqual(support.supported.filter((host) => host.credentialAdapter === "fixture-tested").map((host) => host.id), ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode"]);
+  assert.deepEqual(support.supported.filter((host) => host.credentialAdapter === "fixture-tested").map((host) => host.id), ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "claude-desktop", "dsh-desktop", "zcode"]);
 });
 
 test("source installer synchronizes Skills and exactly one native executor", async (t) => {
@@ -299,8 +300,9 @@ test("source installer removes only the verified retired Node runtime", async (t
   t.after(() => rm(target, { recursive: true, force: true }));
   const verified = path.join(target, ".puretokens-runtime");
   await mkdir(verified);
-  await writeFile(path.join(verified, "runtime.json"), JSON.stringify({ name: "puretokens-direct-api-runtime" }));
-  await writeFile(path.join(verified, "puretokens-direct-api.mjs"), "retired runtime\n");
+  for (const file of ["runtime.json", "puretokens-direct-api.mjs"]) {
+    await writeFile(path.join(verified, file), await readFile(path.join(repositoryRoot, "scripts/legacy-bootstrap", file)));
+  }
   const installer = path.join(repositoryRoot, "runtime", "puretokens-skill-install.sh");
   const { stdout } = await execFile("sh", [installer, "sync", "--target", target, "--source", repositoryRoot], { cwd: repositoryRoot });
   assert.match(stdout, /Removed retired managed Node runtime/);

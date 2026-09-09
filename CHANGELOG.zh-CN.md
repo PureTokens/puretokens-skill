@@ -4,6 +4,39 @@
 
 # 更新日志
 
+## 0.18.0 — 2026-09-07
+
+- 官网引导限定为模型仍可回复时的三类需求：额度／余额不足、主动查询消费明细、额度范围差异；仅入口与范围说明不发起 API 请求，不新增 Key 管理或渠道状态跳转。
+
+- 额度与余额不足统一引导用户前往官网钱包充值页面；额度不足仍提醒检查 Key 限额。
+
+- 六个 Skill 与执行器补齐额度、认证、权限、限流、参数、服务和交付错误的下一步引导；保留原任务与未知提交边界，保护余额／公开身份检查特例，不再把模型缺失直接归因于 Key 分组。
+
+- 对齐续接、下载完整性和固定提交目录选择契约；明确有／无记录流程、旧文件冲突及宿主路由，统一失败回执必填字段并补防漂移检查。
+
+- Harden attachment streaming against changed/truncated input; verify recorded download digests before reuse and delivery.
+- Validate model parameters before persisting task records and restrict safe string projections.
+- Always use the pinned installer for host directory selection, including new hosts beside old installers.
+- Bind executors to source/build inputs and require reproducible six-platform release verification; add native artifact smoke tests.
+- Add Linux host acceptance slots and distinguish summary counts from detailed evidence.
+
+- Add ZCode local host installation, update, unique enabled connection adapter and diagnostics; real-host acceptance remains pending.
+
+- 六个 Skill、原生安装更新和诊断新增 Claude Desktop、DSH Desktop。Claude Desktop 使用当前选中的第三方网关配置；DSH 使用所选 Harness 模型和版本化凭据引用，不回退到其他宿主或环境变量 Key。
+- 原生执行器内置有边界的 YAML 解析，新增凭据回归和 macOS／Windows 安装路径夹具，用户无需额外安装运行环境。
+- 明确本地执行限制、共享目录与覆盖优先级；两个客户端真实 API 和附件交付仍待验收。本候选包含下列尚未发布的 0.17.1 修复。
+
+## 0.17.1 — 2026-09-06
+
+- 图片任务接受回执后先等待 20 秒，再每隔 3 秒查询，最多 40 次、每个等待窗口 120 秒。复用现有 retry_not_before 字段，工具交接和续接只等待剩余时间，旧记录无需迁移。API Retry-After 优先，不把本地等待说成服务端返回值；视频轮询与单次提交规则不变。
+- 首次查询余额前按现有 CC Switch 规则补齐缺失的 `sk-` 前缀，修复裸 Key 能生图但被余额入口拒绝的问题；仅在请求内存中处理，不修改配置、截断后缀或改变其他 API 认证。
+- 余额错误回执同时隐藏原始与补齐后的凭据，区分余额认证拒绝与公开换算信息失败；不再把余额单独返回 401／403 认定为可用的生图连接或 Key 无效。
+- 补充裸 Key／带前缀 Key、不重试、不影响生图认证及 JSON 转义凭据回显测试，重建六个平台执行器与迁移包。
+- 更新前核对完整受管文件清单及旧版迁移清单；不再仅凭同名覆盖目录，发现新增／修改文件或符号链接时停止。中断恢复遇到改动保留原目录和备份。
+- 增加有边界的 GIF 帧数据和 WebM 容器／轨道／块检查，拒绝仅文件头或截断输出，坏文件不进入保存和复用成功流程。
+- 错误文字改用受控公开分类，仅保留 API 实际返回的已知公开码；用户明确续接对账记录时只查询一次同任务状态。
+- 修复受管来源信息辅助函数，补充回归、模糊测试及 Windows 文件保护夹具；真实宿主验收增加独立证据校验，不能用本地测试冒充通过。
+
 ## 0.17.0 — 2026-09-05
 
 - 修复余额查询：使用现有 CC Switch API Key 用量接口和公开 USD 换算信息，简洁显示实际钱包余额或当前 Key 额度，不包含订阅额度。拒绝把旧“不限额”占位值或缺失换算信息当作金额，不需要浏览器登录，也不增加媒体生成前置查询。

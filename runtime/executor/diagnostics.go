@@ -66,7 +66,7 @@ func doctorHostLocations(host, home string, getenv func(string) string) []doctor
 	}
 	location := ""
 	switch host {
-	case "claude-code":
+	case "claude-code", "claude-desktop":
 		location = getenv("CLAUDE_CONFIG_DIR")
 		if location == "" {
 			location = filepath.Join(home, ".claude")
@@ -88,8 +88,35 @@ func doctorHostLocations(host, home string, getenv func(string) string) []doctor
 		}
 	case "grok-build":
 		location = filepath.Join(home, ".grok")
+	case "dsh-desktop":
+		location = getenv("DSH_HOME")
+		if location == "" {
+			root, err := desktopDataRoot(runtime.GOOS, home, getenv("APPDATA"), "dsh-desktop")
+			if err != nil {
+				return nil
+			}
+			location = filepath.Join(root, "harness")
+		}
+		if !filepath.IsAbs(location) {
+			return nil
+		}
+		shared := getenv("DSH_AGENTS_HOME")
+		if shared == "" {
+			shared = filepath.Join(home, ".agents")
+		}
+		result := []doctorLocation{{"host_skills", filepath.Join(location, "skills")}}
+		if filepath.IsAbs(shared) {
+			result = append(result, doctorLocation{"shared_agents_skills", filepath.Join(shared, "skills")})
+		}
+		return result
 	case "opencode":
 		location = filepath.Join(home, ".config", "opencode")
+	case "zcode":
+		var err error
+		location, err = zcodeRoot(home, getenv("ZCODE_DATA_BASE_DIR"))
+		if err != nil {
+			return nil
+		}
 	case "trae":
 		location = filepath.Join(home, ".trae")
 	default:
@@ -122,7 +149,7 @@ func collectDoctorAt(loadedRoot, host, home string, getenv func(string) string) 
 		NextAction: "Review the local findings; run the connection checks and verify attachment handoff in the current host.",
 	}
 	switch host {
-	case "claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae":
+	case "claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae", "claude-desktop", "dsh-desktop", "zcode":
 	default:
 		result.Host = "unsupported"
 		result.NextAction = "Choose a supported current host before running diagnostics."

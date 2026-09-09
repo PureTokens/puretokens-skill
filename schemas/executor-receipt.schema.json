@@ -103,7 +103,8 @@
     },
     "retry_not_before": {
       "type": "string",
-      "format": "date-time"
+      "format": "date-time",
+      "description": "Earliest next same-task read, from the initial image delay or API Retry-After. Preserve across tool handoff and continuation."
     },
     "record_path": {
       "type": "string",
@@ -196,19 +197,9 @@
       },
       "then": {
         "required": [
+          "failure_phase",
+          "error_message",
           "next_action"
-        ],
-        "anyOf": [
-          {
-            "required": [
-              "failure_phase"
-            ]
-          },
-          {
-            "required": [
-              "local_error_code"
-            ]
-          }
         ]
       }
     },

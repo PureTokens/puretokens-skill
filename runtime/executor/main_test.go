@@ -49,7 +49,7 @@ func TestServiceDoesNotRetrySubmission(t *testing.T) {
 
 func TestPublicAPIErrorRemovesURLs(t *testing.T) {
 	code, message := publicAPIError([]byte(`{"error":{"code":"invalid_request","message":"see https://internal.example"}}`))
-	if code != "invalid_request" || message != "" {
+	if code != "invalid_request" || message != "The API rejected the request parameters or input." {
 		t.Fatalf("unexpected public error: %q %q", code, message)
 	}
 }

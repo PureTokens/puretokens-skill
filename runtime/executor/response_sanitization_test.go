@@ -33,7 +33,7 @@ func TestSanitizeResponseJSONDecodesEscapedCredentials(t *testing.T) {
 		t.Fatal("decoded response strings or keys were not redacted")
 	}
 	code, message := publicAPIError(sanitized)
-	if code != "content_policy_violation" || message != "Content policy rejected [redacted credential]. Revise the prompt." {
+	if code != "content_policy_violation" || message != "The API rejected the content under its content policy. Revise the request." {
 		t.Fatal("redaction discarded the public moderation reason")
 	}
 }
@@ -103,7 +103,7 @@ func TestResponseSanitizationProtectsAPIErrorReceipt(t *testing.T) {
 		t.Fatal("API rejection did not return failure")
 	}
 	result := decodeReceipt(t, &output)
-	if result.ErrorMessage != "Content policy rejected [redacted credential]. Revise the prompt." || result.APIErrorCode != "content_policy_violation" {
+	if result.ErrorMessage != "The API rejected the content under its content policy. Revise the request." || result.APIErrorCode != "content_policy_violation" {
 		t.Fatal("API error receipt exposed a credential or lost the moderation reason")
 	}
 }
@@ -132,7 +132,7 @@ func TestResponseSanitizationProtectsDownloadErrors(t *testing.T) {
 	}))
 	defer server.Close()
 	_, _, _, _, message, err := fixtureService(server).download(context.Background(), "/v1/images/task/content", "image", t.TempDir())
-	if err == nil || message != "Rejected [redacted credential]" {
-		t.Fatal("download error did not sanitize the decoded credential")
+	if err == nil || message != "" {
+		t.Fatal("unrecognized server error text was forwarded")
 	}
 }

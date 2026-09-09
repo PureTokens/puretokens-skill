@@ -56,7 +56,7 @@
     {
       "id": "update-managed-executor-and-legacy-node-runtime",
       "when": "the target is synchronized",
-      "then": "install exactly one checksum-verified platform native executor in .puretokens-executor. If the target also contains .puretokens-runtime, remove it only when both old official files are present and runtime.json identifies puretokens-direct-api-runtime; otherwise leave it untouched."
+      "then": "Install exactly one checksum-verified platform executor. Remove a legacy runtime only when its entire directory matches a reviewed historical inventory, including file bytes and directory entries. Added, changed, missing or unknown entries block removal; never rely only on filenames or a self-reported runtime name."
     },
     {
       "id": "update-codex-legacy-plugin",
@@ -92,6 +92,16 @@
       "id": "update-doctor",
       "when": "the user explicitly requests installation or connection diagnostics",
       "then": "Invoke the installed native doctor once with the current host. Report known-directory version/duplicate findings and separate public identity, credential checks, checksum status and unverified host attachment delivery. Do not scan unrelated paths or auto-fix."
+    },
+    {
+      "id": "update-ownership-conflict",
+      "when": "a same-name directory lacks verified ownership or has added, modified, missing or symlinked entries",
+      "then": "stop replacement and preserve the directory; do not delete files, regenerate ownership markers, or claim synchronization; interrupted recovery retains the backup on the same conflict"
+    },
+    {
+      "id": "old-marked-selector-new-host",
+      "when": "a sibling installer carries the old locate marker but does not support the requested host",
+      "then": "download and use the directory selector from the same pinned source commit; never reuse the sibling based only on its marker"
     }
   ]
 }

@@ -20,9 +20,11 @@ Windows: powershell.exe -NoProfile -ExecutionPolicy Bypass -File <fetch脚本绝
 
 Windows 的 install／update 使用相同参数形式替换子命令。ExecutionPolicy 只作用于该进程，不修改系统策略；宿主明确阻止执行时停止，不绕过审批。
 
-宿主 ID 为 claude-code、codex、workbuddy、gemini-cli、grok-build、opencode、trae；识别不了先询问。自定义路径可同时传 --target／-Target 绝对目录，保留 host 供 init 使用。fetch 会解析官方 main 的精确提交和版本；check-update 只报告版本差异，不修改安装或执行 init。安装／更新优先选择版本及提交匹配、SHA-256 校验通过的平台包；没有匹配已发布包时，取得相同提交的官方源码归档，再执行其中的 sync。下载或校验失败不重复安装、不改用镜像。已有明确官方检出也可运行它的 `runtime/puretokens-skill-install.sh/.ps1 sync`。
+宿主 ID 为 claude-code、codex、workbuddy、gemini-cli、grok-build、opencode、trae、claude-desktop、dsh-desktop、zcode；识别不了先询问。自定义路径可同时传 --target／-Target 绝对目录，保留 host 供 init 使用。fetch 会解析官方 main 的精确提交和版本，并取得同一提交的目录选择器，不复用旧版同目录选择器；check-update 只报告版本差异，不修改安装或执行 init。安装／更新优先选择版本及提交匹配、SHA-256 校验通过的平台包；没有匹配已发布包时，取得相同提交的官方源码归档，再执行其中的 sync。下载或校验失败不重复安装、不改用镜像。已有明确官方检出也可运行它的 `runtime/puretokens-skill-install.sh/.ps1 sync`。
 
 只由 sync 写入六个 Skill 和一个当前平台原生执行器及下载／同步脚本。它保护非受管目录；更新锁阻止并发，中断的受管事务在下次显式 sync 时恢复。Gemini 如已有较高优先级的共享 `.agents/skills`，更新其有效目录并报告重复的低优先级副本，不擅自删除。只删除确认受管的旧官方 Skill／Node runtime；未知文件和用户配置保持不动。
+
+受管识别核对 `.puretokens-managed.json` 的完整文件清单和校验值；没有记录的旧安装只能与随候选执行器提供的历史清单或当前官方源文件完全匹配后迁移，不能仅凭同名或目录中的自报版本判定归属。存在新增文件、本地修改、缺失文件或符号链接时停止覆盖；向用户说明需保留并处理该冲突，不自动删除、重建清单或声称更新完成。中断恢复遇到改动同样保留原目录和备份。
 
 Codex 只用官方 plugin 接口检查旧 puretokens-media；确实发现后才移除并复核。检查不可用要说明但不阻挡正常安装；已发现却无法移除时停止。移除后完全重启 Codex，再新开对话。
 
@@ -35,3 +37,9 @@ Codex 只用官方 plugin 接口检查旧 puretokens-media；确实发现后才�
 只有 init 的 configuration_status 为 verified 且 api_identity_confirmed、credential_verified 均为 true，才说身份与凭据认证通过。doctor 不能证明安装二进制校验、任意会话配置覆盖或宿主附件交付成功；按返回字段说明已检查项目与未验证项，不承诺模型权限、余额或媒体可用性。
 
 Skill 和安装脚本不读取、显示或修改认证文件。只有原生执行器按当前宿主明确记录在内存中读取匹配凭据；不使用其他认证、MCP、代理或 Computer Use。
+
+Claude Desktop 使用 `claude-desktop`，仅在能访问本机执行器和 Desktop 当前连接的本地会话执行；不能用 Claude Code 的连接代替。DSH Desktop 使用 `dsh-desktop`，采用当前本地 Harness 的连接。云端或隔离会话不能访问宿主记录时按实际失败停止，不复制凭据进入沙箱。宿主安装和交付说明按需读 `references/desktop-hosts.md`。
+
+ZCode 本地执行使用宿主 ID `zcode`。只使用唯一启用且端点匹配的 Pure Tokens 连接；不能据此声称识别当前聊天模型。目录、远程工作区及交付限制按需读 `references/desktop-hosts.md`。
+
+失败时区分版本检查、下载／校验、文件同步和 init 阶段，说明哪些步骤已确认完成及下一步。网络失败可建议稍后重新检查；校验失败停止使用该包并反馈官方维护方；写入受限可建议检查目标目录权限，不提权或删除未知目录。sync 已成功但 init 失败时明确“文件已同步，连接验证未完成”，按 init 脱敏建议处理，不重复安装。未知中断先核对已安装状态，不自动重跑。

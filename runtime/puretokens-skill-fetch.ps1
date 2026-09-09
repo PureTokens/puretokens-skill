@@ -6,7 +6,7 @@ param(
   [ValidateSet("check-update", "install", "update")]
   [string]$Command,
   [Alias("Host")]
-  [ValidateSet("claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae")]
+  [ValidateSet("claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae", "claude-desktop", "dsh-desktop", "zcode")]
   [string]$HostId,
   [string]$Target
 )
@@ -38,11 +38,8 @@ try {
   if ((Get-OfficialFile "https://raw.githubusercontent.com/PureTokens/puretokens-skill/$sourceCommit/package.json" $packageFile) -ne 200) { Fail "the pinned official version could not be read" }
   $availableVersion = (Read-Json $packageFile).version
   if ($availableVersion -notmatch '^\d+\.\d+\.\d+$') { Fail "the official version is invalid" }
-  $locationInstaller = Join-Path $PSScriptRoot "puretokens-skill-install.ps1"
-  if (-not (Test-Path -LiteralPath $locationInstaller -PathType Leaf) -or -not (Select-String -LiteralPath $locationInstaller -SimpleMatch -Pattern "# puretokens-locate-v1" -Quiet)) {
-    $locationInstaller = Join-Path $downloadRoot "puretokens-skill-install.ps1"
-    if ((Get-OfficialFile "https://raw.githubusercontent.com/PureTokens/puretokens-skill/$sourceCommit/runtime/puretokens-skill-install.ps1" $locationInstaller) -ne 200) { Fail "the pinned directory selector is unavailable" }
-  }
+  $locationInstaller = Join-Path $downloadRoot "puretokens-skill-install.ps1"
+  if ((Get-OfficialFile "https://raw.githubusercontent.com/PureTokens/puretokens-skill/$sourceCommit/runtime/puretokens-skill-install.ps1" $locationInstaller) -ne 200) { Fail "the pinned directory selector is unavailable" }
   $Target = & $locationInstaller locate @locationOptions
   $installedVersion = "not_installed"
   $installedFile = Join-Path $Target ".puretokens-executor/runtime.json"

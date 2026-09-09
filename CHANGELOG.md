@@ -4,6 +4,39 @@
 
 # Changelog
 
+## 0.18.0 — 2026-09-07
+
+- Limit website guidance to responsive conversations: wallet recharge after explicit quota/balance errors, usage records for user-requested spending details, and wallet information for allowance-scope questions; guidance-only questions issue no API requests.
+
+- Quota and balance failures now direct users to the official Wallet & Recharge page; quota guidance also retains the API-key allowance distinction.
+
+- Add curated error-specific next actions across all Skills and executor receipts, preserving same-task recovery, uncertain submissions and balance/public-identity exceptions; avoid diagnosing missing models as key-group errors.
+
+- Align continuation, download-integrity and pinned-selector contracts with runtime behavior; clarify recorded/unrecorded flows, legacy file conflicts and host routing; enforce complete failure receipts.
+
+- Harden attachment streaming against changed/truncated input; verify recorded download digests before reuse and delivery.
+- Validate model parameters before persisting task records and restrict safe string projections.
+- Always use the pinned installer for host directory selection, including new hosts beside old installers.
+- Bind executors to source/build inputs and require reproducible six-platform release verification; add native artifact smoke tests.
+- Add Linux host acceptance slots and distinguish summary counts from detailed evidence.
+
+- Add ZCode local host installation, update, unique enabled connection adapter and diagnostics; real-host acceptance remains pending.
+
+- Add Claude Desktop and DSH Desktop to all six Skills, native installation/update selection and diagnostics. Claude Desktop uses its selected 3P gateway profile; DSH uses its selected Harness provider and versioned credential reference, with no cross-host or environment-key fallback.
+- Add bounded YAML parsing to the compiled executor, desktop credential regressions and macOS/Windows installation-path fixtures. No new user runtime is required.
+- Document local execution boundaries, shared/overriding Skill directories and pending real-host API/attachment acceptance for both clients. Include the previously unreleased 0.17.1 fixes below.
+
+## 0.17.1 — 2026-09-06
+
+- Schedule the first pending-image status read 20 seconds after the accepted response, then query every 3 seconds, bounded by 40 reads and a 120-second wait window. Reuse the existing retry_not_before field so tool handoff/continuation waits only the remaining time; older records need no migration. API Retry-After takes precedence and local delays are not reported as API headers. Video polling and single-submission behavior are unchanged.
+- Normalize the balance bearer with the existing CC Switch `sk-` prefix rule before its first request. Bare keys accepted by media no longer fail the console usage route's prefix check; configured credentials, suffixes and other API authentication stay unchanged.
+- Redact both original and normalized credentials from balance errors. Distinguish usage rejection from public conversion-metadata failure, and stop treating a balance-only 401/403 as proof that a working media connection or Key is invalid.
+- Add regressions for bare and prefixed keys, no retry, unchanged media authentication, and escaped credential echoes. Rebuild all six platform executors and migration archives.
+- Protect updates with full managed-file inventories and exact historical migration inventories. Same-name directories, added/modified files and symlinks no longer qualify for blind replacement; interrupted recovery retains changed directories and backups.
+- Reject header-only/truncated GIF and WebM output before saving or reuse, with bounded GIF frame decoding and WebM container/track/block checks.
+- Replace arbitrary server error text with controlled public categories; retain only recognized codes actually returned by the API. Explicit resume of a reconciliation record performs one same-task status read.
+- Fix the managed provenance helper, add regression/fuzz cases and Windows ownership fixtures, and validate real-host acceptance evidence separately from isolated tests.
+
 ## 0.17.0 — 2026-09-05
 
 - Fix balance queries to use the existing CC Switch API-key usage route and public USD conversion metadata. Report actual wallet balance or Key allowance concisely, exclude subscription quotas, and reject legacy unlimited placeholders or missing units without inventing money. No browser login or media preflight is added.

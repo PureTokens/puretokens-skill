@@ -105,10 +105,12 @@ func finishKnownTask(output io.Writer, result receipt) error {
 	if result.ReconciliationRequired {
 		result.OK = false
 		result.FailurePhase = "status"
+		result.ErrorMessage = "The task requires server-side reconciliation before further automatic work."
 		result.NextAction = "This task needs reconciliation. Keep its ID and explicitly check status later; do not submit a replacement."
 	} else if terminalFailure(result.Status) {
 		result.OK = false
 		result.FailurePhase = "status"
+		result.ErrorMessage = "The recorded task has ended unsuccessfully; this record does not identify a more specific cause."
 		result.NextAction = "This task has ended unsuccessfully. Review its error; do not automatically submit a replacement."
 	} else {
 		result.NextAction = "This task is complete. Retrieve only missing content indexes and attach downloaded files."

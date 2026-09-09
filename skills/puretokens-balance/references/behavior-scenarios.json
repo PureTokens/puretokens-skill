@@ -26,7 +26,7 @@
     {
       "id": "balance-subscription-scope",
       "when": "the user asks for combined balance, subscription funds or a mismatch with the account overview",
-      "then": "explain that this API reports wallet or Key allowance without subscription quota; direct combined-balance questions to the Pure Tokens console, do not add or invent amounts"
+      "then": "Explain that this API reports wallet or Key allowance without subscription quota; offer https://console.puretokensx.com/wallet for wallet and plan information. Do not add or invent amounts, suggest recharge merely because scopes differ, or issue a balance query for a scope-only question."
     },
     {
       "id": "balance-legacy-placeholder",
@@ -36,7 +36,7 @@
     {
       "id": "balance-bearer-read-unavailable",
       "when": "the usage request fails authentication, returns an HTTP or logical error, or lacks declared balance fields",
-      "then": "stop after the one request with no amount; show the actual sanitized reason, guide 401/403 to active connection and Key settings; other failures to a later query or the console; no automatic retry or credential request"
+      "then": "stop after the one request with no amount; report the balance endpoint rejection with its HTTP status and safe API code without declaring the current Key or media connection invalid; if other calls work, preserve the connection and suggest Pure Tokens support; no automatic retry or credential request"
     },
     {
       "id": "balance-unit-unavailable",
@@ -47,6 +47,31 @@
       "id": "balance-not-a-quote",
       "when": "the user asks if balance covers a generation",
       "then": "do not infer a price or guarantee payment; compare only an actual quote with matching currency and scope, and let the submission API decide; no balance preflight per media task"
+    },
+    {
+      "id": "balance-bare-key-prefix",
+      "when": "the effective host credential is a bare key accepted by media",
+      "then": "before the first balance usage GET, add sk- once in memory as the official CC Switch import does; preserve existing sk-, suffixes and the configured credential; do not rewrite host files or change other API authentication"
+    },
+    {
+      "id": "balance-normalized-credential-redaction",
+      "when": "the balance response echoes an original or normalized credential, including JSON escapes",
+      "then": "redact both credential forms before creating a receipt; preserve only safe public error codes and messages"
+    },
+    {
+      "id": "balance-rejection-with-working-media",
+      "when": "balance returns 401 or 403 while images, videos or other API calls work",
+      "then": "explain only that balance querying was rejected, preserve the working connection and do not instruct the user to replace the Key or reinstall; retain the safe balance_usage_auth_rejected diagnostic code for support"
+    },
+    {
+      "id": "balance-website-guidance-boundary",
+      "when": "the current conversation model can respond and receives an independent API result or an explicit user question",
+      "then": "Only provide relevant user navigation: recognized insufficient quota/balance goes to https://console.puretokensx.com/wallet; explicit unanswerable spending-history questions go to https://console.puretokensx.com/usage-logs. A failure of the conversation model itself cannot be handled by this Skill. Do not add API-key management or channel-status redirects, browser reads or new API calls."
+    },
+    {
+      "id": "balance-spending-history-question",
+      "when": "the user explicitly asks for historical charges, spending details or an individual generation cost that available results cannot confirm",
+      "then": "Offer https://console.puretokensx.com/usage-logs for the user to inspect by time and model. Do not call balance to derive a charge, infer billing from missing records or task status, guarantee refunds, recover unknown task IDs or automatically append the link to every failure."
     }
   ]
 }

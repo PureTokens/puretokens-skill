@@ -47,12 +47,9 @@ download "https://raw.githubusercontent.com/PureTokens/puretokens-skill/$source_
 [ "$download_status" = 200 ] || fail "the pinned official version could not be read"
 available_version=$(json_string "$download_root/package.json" version)
 version_valid "$available_version" || fail "the official version is invalid"
-location_installer="$bootstrap_root/puretokens-skill-install.sh"
-if [ ! -f "$location_installer" ] || ! grep -Fqx '# puretokens-locate-v1' "$location_installer"; then
-  location_installer="$download_root/puretokens-skill-install.sh"
-  download "https://raw.githubusercontent.com/PureTokens/puretokens-skill/$source_commit/runtime/puretokens-skill-install.sh" "$location_installer"
-  [ "$download_status" = 200 ] || fail "the pinned directory selector is unavailable"
-fi
+location_installer="$download_root/puretokens-skill-install.sh"
+download "https://raw.githubusercontent.com/PureTokens/puretokens-skill/$source_commit/runtime/puretokens-skill-install.sh" "$location_installer"
+[ "$download_status" = 200 ] || fail "the pinned directory selector is unavailable"
 set -- locate
 [ -z "$host" ] || set -- "$@" --host "$host"
 [ -z "$target" ] || set -- "$@" --target "$target"

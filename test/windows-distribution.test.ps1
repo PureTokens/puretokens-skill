@@ -72,7 +72,7 @@ try {
     $global:fixtureRequests = New-Object 'System.Collections.Generic.List[string]'
     $target = Join-Path $root "target-$mode"
     & $fetch check-update -Target $target
-    if ($global:fixtureRequests.Count -ne 2 -or (Test-Path -LiteralPath $target)) { throw "check-update changed local installation or fetched more than metadata" }
+    if ($global:fixtureRequests.Count -ne 3 -or (Test-Path -LiteralPath $target)) { throw "check-update changed local installation or fetched more than metadata" }
     $global:fixtureRequests.Clear()
     & $fetch install -Target $target
     if (-not (Test-Path -LiteralPath (Join-Path $target ".puretokens-executor/puretokens-api.exe"))) { throw "download did not install the platform executor" }
@@ -83,10 +83,14 @@ try {
   $bootstrap = Join-Path $root "legacy-bootstrap"
   New-Item -ItemType Directory -Path $bootstrap | Out-Null
   Copy-Item -LiteralPath $fetch -Destination $bootstrap
-  "exit 79" | Set-Content -LiteralPath (Join-Path $bootstrap "puretokens-skill-install.ps1") -Encoding ASCII
+  "# puretokens-locate-v1`nthrow 'old selector used'" | Set-Content -LiteralPath (Join-Path $bootstrap "puretokens-skill-install.ps1") -Encoding ASCII
   $global:fixtureRequests.Clear()
   & (Join-Path $bootstrap "puretokens-skill-fetch.ps1") check-update -Target (Join-Path $root "legacy-target")
   if (@($global:fixtureRequests | Where-Object { $_ -like "*/runtime/puretokens-skill-install.ps1" }).Count -ne 1) { throw "legacy sibling selector was not replaced by the pinned selector" }
+
+  $global:fixtureRequests.Clear()
+  & (Join-Path $bootstrap "puretokens-skill-fetch.ps1") install -HostId zcode -Target (Join-Path $root "new-host-target")
+  if (-not (Test-Path -LiteralPath (Join-Path $root "new-host-target/puretokens-image/SKILL.md"))) { throw "marked old selector blocked ZCode" }
 
   $newer = Join-Path $root "newer-source"
   Copy-Item -LiteralPath $source -Destination $newer -Recurse

@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "toolchain": "go1.26.0",
+  "platforms": ["darwin-amd64", "darwin-arm64", "linux-amd64", "linux-arm64", "windows-amd64", "windows-arm64"],
+  "flags": ["-trimpath", "-buildvcs=false"],
+  "linkerFlags": "-s -w -buildid="
+}

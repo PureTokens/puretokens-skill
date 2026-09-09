@@ -30,7 +30,7 @@ func fixturePNG(t *testing.T) []byte {
 }
 func fixtureService(server *httptest.Server) service {
 	root, _ := filepath.Abs("../../skills")
-	return service{baseURL: server.URL, client: server.Client(), profilesRoot: root, token: "synthetic-fixture-token"}
+	return service{baseURL: server.URL, client: server.Client(), profilesRoot: root, token: "synthetic-fixture-token", downloadProofs: make(map[string]downloadProof)}
 }
 func profileService() service {
 	root, _ := filepath.Abs("../../skills")

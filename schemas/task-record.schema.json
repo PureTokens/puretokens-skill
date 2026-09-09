@@ -44,13 +44,16 @@
           "maximum": 6
         },
         "size": {
-          "type": "string"
+          "type": "string",
+          "pattern": "^(auto|[1-9][0-9]{0,4}x[1-9][0-9]{0,4})$"
         },
         "image_size": {
-          "type": "string"
+          "type": "string",
+          "pattern": "^[1-9][0-9]?[Kk]$"
         },
         "aspect_ratio": {
-          "type": "string"
+          "type": "string",
+          "pattern": "^(auto|[1-9][0-9]{0,2}:[1-9][0-9]{0,2})$"
         },
         "width": {
           "type": "number"
@@ -62,13 +65,15 @@
           "type": "number"
         },
         "resolution": {
-          "type": "string"
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,3}[pPkK]$"
         },
         "generate_audio": {
           "type": "boolean"
         },
         "strength": {
-          "type": "string"
+          "type": "string",
+          "pattern": "^(LOW|MID|HIGH)$"
         }
       },
       "additionalProperties": false
@@ -104,7 +109,8 @@
     },
     "retry_not_before": {
       "type": "string",
-      "format": "date-time"
+      "format": "date-time",
+      "description": "Existing optional next-read lower bound; retains initial image or API waiting time without restarting it on resume."
     },
     "output_dir": {
       "type": "string",
@@ -128,6 +134,43 @@
         "minimum": 0,
         "maximum": 5
       }
+    },
+    "download_proofs": {
+      "type": "object",
+      "patternProperties": {
+        "^[0-5]$": {
+          "type": "object",
+          "required": [
+            "sha256",
+            "bytes",
+            "media_type"
+          ],
+          "properties": {
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "bytes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 536870912
+            },
+            "media_type": {
+              "enum": [
+                "image/png",
+                "image/jpeg",
+                "image/webp",
+                "image/gif",
+                "image/avif",
+                "video/mp4",
+                "video/webm"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
     }
   },
   "additionalProperties": false

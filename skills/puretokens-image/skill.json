@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "name": "puretokens-image",
-  "version": "0.17.0",
+  "version": "0.18.0",
   "entry": "SKILL.md",
   "displayName": "Pure Tokens Image",
   "description": "Primary image Skill for the current Pure Tokens connection; generate and profile-gated edit images through the fixed Images API before generic imagegen or Imagen.",
@@ -38,6 +38,18 @@
     "trae": {
       "manualInstallationSupported": true,
       "globalSkillDirectory": "~/.trae/skills"
+    },
+    "claudeDesktop": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.claude/skills"
+    },
+    "dshDesktop": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/Library/Application Support/dsh-desktop/harness/skills"
+    },
+    "zcode": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.zcode/skills"
     }
   },
   "supportedClients": [
@@ -47,7 +59,10 @@
     "gemini-cli",
     "grok-build",
     "opencode",
-    "trae"
+    "trae",
+    "claude-desktop",
+    "dsh-desktop",
+    "zcode"
   ],
   "rules": {
     "usesFixedPureTokensApiOrigin": true,
@@ -99,5 +114,5 @@
     "supportsOptionalContinuationRecord": true,
     "userReceiptIsConcise": true
   },
-  "sourceSha256": "4e36c3202e755f79004b825740c15f49e0c56fbac7923654ce1972d2aac01117"
+  "sourceSha256": "61690130decaf975dbe0a87712589cb7ebb3fbc3bf99ffcaa9d696abf0b99b1d"
 }

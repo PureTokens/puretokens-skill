@@ -33,11 +33,17 @@ const (
 	maxVideoBytes    int64 = 512 << 20
 )
 
-var executorVersion = "0.17.0"
+var executorVersion = "0.18.0"
+var executorSourceSHA256 = "unbuilt"
+
+const imageInitialPollDelay = 20 * time.Second
 
 type attachment struct {
-	Field string `json:"field"`
-	Path  string `json:"path"`
+	Field             string `json:"field"`
+	Path              string `json:"path"`
+	snapshot          os.FileInfo
+	snapshotDigest    [sha256.Size]byte
+	hasSnapshotDigest bool
 }
 
 type taskRequest struct {
@@ -110,6 +116,7 @@ type initReceipt struct {
 
 type service struct {
 	profilesRoot string
+	host         string
 
 	baseURL         string
 	client          *http.Client
@@ -117,6 +124,7 @@ type service struct {
 	downloadTimeout time.Duration
 	now             func() time.Time
 	wait            func(context.Context, time.Duration) bool
+	downloadProofs  map[string]downloadProof
 }
 
 func main() {
@@ -129,9 +137,16 @@ func main() {
 }
 
 func run(args []string, input io.Reader, output io.Writer) error {
+	if len(args) == 1 && args[0] == "--build-info" {
+		writeJSON(output, map[string]string{"version": executorVersion, "source_sha256": executorSourceSHA256})
+		return nil
+	}
 	if len(args) == 1 && args[0] == "--version" {
 		_, err := fmt.Fprintln(output, executorVersion)
 		return err
+	}
+	if len(args) > 0 && (args[0] == "install-inventory" || args[0] == "install-verify") {
+		return runInstallationGuard(args, output)
 	}
 	if len(args) < 1 {
 		writeReceipt(output, validationFailure("Choose one of: init, connection, balance, models, submit, status, wait, content."))
@@ -188,7 +203,7 @@ func run(args []string, input io.Reader, output io.Writer) error {
 			request.Operation = "continue"
 		}
 	}
-	svc := service{baseURL: apiOrigin, client: &http.Client{Timeout: 90 * time.Second, CheckRedirect: rejectRedirect}, profilesRoot: installedSkillsRoot()}
+	svc := service{baseURL: apiOrigin, client: &http.Client{Timeout: 90 * time.Second, CheckRedirect: rejectRedirect}, profilesRoot: installedSkillsRoot(), host: *host}
 	if command == "delivered" {
 		return executeRecordedTask(command, *recordFile, request, *index, *outputDir, output, svc)
 	}
@@ -249,7 +264,7 @@ func run(args []string, input io.Reader, output io.Writer) error {
 
 func executeInit(output io.Writer, svc service) error {
 	result := initReceipt{Command: "init", ExecutorVersion: executorVersion, ConfigurationStatus: "unverified", UsageExamples: usageExamples()}
-	body, status, _, _, _, err := svc.request(context.Background(), http.MethodGet, "/v1", nil, "")
+	body, status, _, code, _, err := svc.request(context.Background(), http.MethodGet, "/v1", nil, "")
 	result.APIRequestExecuted = true
 	result.HTTPStatus = status
 	if err != nil {
@@ -268,10 +283,9 @@ func executeInit(output io.Writer, svc service) error {
 	if status < 200 || status >= 300 {
 		result.ConfigurationStatus = "api_identity_rejected"
 		result.Message = "The fixed Pure Tokens API rejected the identity check."
-		if status == http.StatusUnauthorized || status == http.StatusForbidden {
-			result.NextAction = "Verify the active Pure Tokens connection and key in the host, then run init again."
-		} else {
-			result.NextAction = "Check the current connection and network, then run init again."
+		result.NextAction = "The public identity check did not confirm the API. Try this read-only check later or contact Pure Tokens support; do not infer that the credential is invalid."
+		if action := apiErrorAction(code, status); action != "" && status != 401 && status != 403 {
+			result.NextAction = action + " Run init again only when requested."
 		}
 		writeJSON(output, result)
 		return errors.New("init connection check failed")
@@ -289,14 +303,17 @@ func executeInit(output io.Writer, svc service) error {
 	basePath, _ := identity["base_url"].(string)
 	if statusValue == "ok" && name == "Pure Tokens API" && basePath == "/v1" {
 		result.APIIdentityConfirmed = true
-		authBody, authStatus, _, _, _, authErr := svc.request(context.Background(), http.MethodGet, "/v1/media/models", nil, "")
+		authBody, authStatus, _, authCode, _, authErr := svc.request(context.Background(), http.MethodGet, "/v1/media/models", nil, "")
 		authObject, authDecodeErr := readAPIObject(authBody)
 		_, catalogOK := authObject["data"].([]any)
 		if authErr != nil || authStatus != http.StatusOK || authDecodeErr != nil || !catalogOK {
 			result.ConfigurationStatus = "credential_unverified"
 			result.HTTPStatus = authStatus
 			result.Message = "The public API is reachable, but credential authentication was not confirmed."
-			result.NextAction = "Check the selected Pure Tokens connection and its key permissions in the host, then run init again."
+			result.NextAction = "The catalog check could not confirm authentication. Try this read-only check later; an unreadable or unavailable catalog does not prove the credential is invalid."
+			if action := apiErrorAction(authCode, authStatus); action != "" {
+				result.NextAction = action + " Run init again only when requested."
+			}
 			writeJSON(output, result)
 			return errors.New("credential authentication unconfirmed")
 		}
@@ -304,11 +321,14 @@ func executeInit(output io.Writer, svc service) error {
 		result.CredentialVerified = true
 		result.ConfigurationStatus = "verified"
 		result.Message = "The current host can reach the fixed Pure Tokens API."
+		if svc.host == "zcode" {
+			result.Message = "The enabled ZCode Pure Tokens connection can reach the fixed API. This does not identify the model or connection selected for the current chat."
+		}
 		result.NextAction = "Use puretokens-image, puretokens-video, puretokens-balance, puretokens-models, or puretokens-connection in a new host conversation."
 	} else {
 		result.ConfigurationStatus = "api_identity_unconfirmed"
 		result.Message = "The fixed Pure Tokens API did not return a confirmable identity."
-		result.NextAction = "Verify the Pure Tokens connection in the host, then run init again."
+		result.NextAction = "The public identity response was not confirmable. Try the read-only check later or contact Pure Tokens support; do not infer a credential or balance problem."
 	}
 	writeJSON(output, result)
 	if !result.OK {
@@ -352,6 +372,12 @@ func credentialForHost(host string) (string, error) {
 		return credentialFromCodex()
 	case "claude-code":
 		return credentialFromClaudeCode()
+	case "claude-desktop":
+		return credentialFromClaudeDesktop()
+	case "dsh-desktop":
+		return credentialFromDSHDesktop()
+	case "zcode":
+		return credentialFromZCode()
 	case "gemini-cli":
 		return credentialFromGeminiCLI()
 	case "workbuddy":
@@ -382,7 +408,14 @@ func readBoundedFile(path string, limit int64) ([]byte, error) {
 func executeReadOnly(output io.Writer, svc service, path string, command string) error {
 	body, status, retryAfter, apiCode, apiMessage, err := svc.request(context.Background(), http.MethodGet, path, nil, "")
 	if err != nil || status < 200 || status >= 300 {
-		writeReceipt(output, apiFailure("submission", status, retryAfter, apiCode, apiMessage, "The read-only API request did not complete. Verify the current Pure Tokens connection, then try again."))
+		result := apiFailure("submission", status, retryAfter, apiCode, apiMessage, "The read-only API request did not complete. Check network access or offer a later query; do not infer a credential problem.")
+		if command == "connection" {
+			// Public identity errors cannot diagnose the user's credential.
+			result.NextAction = "The public identity check did not confirm the API. Offer a later read-only check or contact Pure Tokens support; this check does not verify credentials, balance or model permission."
+			writeJSON(output, result)
+		} else {
+			writeReceipt(output, result)
+		}
 		return errors.New("read-only request failed")
 	}
 	payload, decodeErr := readAPIObject(body)
@@ -432,6 +465,12 @@ func executeTask(input io.Reader, output io.Writer, svc service) error {
 		writeReceipt(output, validationFailure(err.Error()))
 		return err
 	}
+	return executePreparedTask(output, svc, request)
+}
+
+// The record path and ordinary submit path share this single POST entrance.
+// All profile validation must finish before creating a submission record.
+func executePreparedTask(output io.Writer, svc service, request taskRequest) error {
 	path, contentType, body, err := taskRequestBody(request)
 	if err != nil {
 		writeReceipt(output, validationFailure("The current attachment could not be prepared; no API request was sent."))
@@ -460,8 +499,9 @@ func executeTask(input io.Reader, output io.Writer, svc service) error {
 		writeReceipt(output, withRetry(result, retryAfter, svc.clock()))
 		return errors.New("task id missing")
 	}
+	acceptedAt := svc.clock()
 	result := taskReceipt(request, taskID, state)
-	result = withRetry(result, retryAfter, svc.clock())
+	result = withRetry(result, retryAfter, acceptedAt)
 	result.SubmissionOutcome = "accepted"
 	result.ReconciliationRequired = reconciliationRequired
 	if reconciliationRequired {
@@ -496,7 +536,13 @@ func executeTask(input io.Reader, output io.Writer, svc service) error {
 	if terminalSuccess(state) {
 		result.NextAction = "Download the completed task with content, one index at a time."
 	} else {
-		result.NextAction = "Keep this task ID. Use wait or status for this same task; never submit it again."
+		if request.Kind == "image" && result.RetryNotBefore == "" {
+			// Persist the initial wait once, anchored to the accepted response.
+			// Existing receipts/records already carry this timestamp across
+			// commands. Do not label our local delay as a server Retry-After.
+			result.RetryNotBefore = acceptedAt.Add(imageInitialPollDelay).UTC().Format(time.RFC3339Nano)
+		}
+		result.NextAction = "Keep this task ID and retry_not_before. Use wait or status for this same task; never submit it again."
 	}
 	writeReceipt(output, result)
 	return nil
@@ -554,7 +600,7 @@ func validateTaskRequest(request taskRequest) error {
 
 	limit := attachmentLimit(request.Kind)
 	var total int64
-	for _, attachment := range request.Attachments {
+	for i, attachment := range request.Attachments {
 		if attachment.Field == "" || !filepath.IsAbs(attachment.Path) {
 			return errors.New("attachment must have a field and absolute path")
 		}
@@ -565,6 +611,19 @@ func validateTaskRequest(request taskRequest) error {
 		total += info.Size()
 		if total > limit {
 			return errors.New("attachments exceed the request size limit")
+		}
+		request.Attachments[i].snapshot = info
+	}
+	if len(request.Attachments) > 0 {
+		files, err := openAttachments(request)
+		if err != nil {
+			return err
+		}
+		defer closeAttachments(files)
+		for i, file := range files {
+			request.Attachments[i].snapshot = file.info
+			request.Attachments[i].snapshotDigest = file.digest
+			request.Attachments[i].hasSnapshotDigest = true
 		}
 	}
 	return nil
@@ -594,8 +653,6 @@ func taskRequestBody(request taskRequest) (string, string, io.Reader, error) {
 		return path, "application/json", bytes.NewReader(encoded), err
 	}
 
-	reader, writerPipe := io.Pipe()
-	writer := multipart.NewWriter(writerPipe)
 	fields := map[string]string{"model": request.Model, "prompt": request.Prompt}
 	if request.Kind == "image" {
 		fields["async"] = "true"
@@ -614,33 +671,29 @@ func taskRequestBody(request taskRequest) (string, string, io.Reader, error) {
 			fields[key] = string(encoded)
 		}
 	}
+	files, err := openAttachments(request)
+	if err != nil {
+		return "", "", nil, err
+	}
+	reader, writerPipe := io.Pipe()
+	writer := multipart.NewWriter(writerPipe)
 	contentType := writer.FormDataContentType()
 	go func() {
 		defer writerPipe.Close()
+		defer closeAttachments(files)
 		for key, value := range fields {
 			if err := writer.WriteField(key, value); err != nil {
 				_ = writerPipe.CloseWithError(err)
 				return
 			}
 		}
-		limit := attachmentLimit(request.Kind)
-		for _, attachment := range request.Attachments {
-			file, err := os.Open(attachment.Path)
-			if err != nil {
-				_ = writerPipe.CloseWithError(err)
-				return
-			}
+		for i, attachment := range request.Attachments {
 			part, err := writer.CreateFormFile(attachment.Field, filepath.Base(attachment.Path))
 			if err == nil {
-				_, err = io.Copy(part, io.LimitReader(file, limit+1))
+				err = files[i].copyTo(part)
 			}
-			closeErr := file.Close()
 			if err != nil {
 				_ = writerPipe.CloseWithError(err)
-				return
-			}
-			if closeErr != nil {
-				_ = writerPipe.CloseWithError(closeErr)
 				return
 			}
 		}
@@ -748,7 +801,9 @@ type pollPolicy struct {
 }
 
 func pollingPolicy(kind string, override *pollRequest) pollPolicy {
-	policy := pollPolicy{maxReads: 6, deadline: 120, delays: []int{3, 6, 12, 24, 30}}
+	// Fresh images carry their initial delay in retry_not_before. A continued
+	// image with no remaining delay can be checked immediately, then every 3s.
+	policy := pollPolicy{maxReads: 40, deadline: 120, delays: []int{0, 3}}
 	if kind == "video" {
 		policy = pollPolicy{maxReads: 7, deadline: 300, delays: []int{5, 10, 20, 40, 60, 60}}
 	}
@@ -843,12 +898,22 @@ func (svc service) request(ctx context.Context, method, path string, body io.Rea
 }
 
 func (svc service) requestWithAuthentication(ctx context.Context, method, path string, body io.Reader, contentType string, authenticated bool) ([]byte, int, int, string, string, error) {
+	bearer := ""
+	if authenticated {
+		bearer = svc.token
+	}
+	return svc.requestWithBearer(ctx, method, path, body, contentType, bearer)
+}
+
+// Keep the configured credential available for response redaction even when a
+// specific endpoint needs a normalized bearer or sends no authentication.
+func (svc service) requestWithBearer(ctx context.Context, method, path string, body io.Reader, contentType, bearer string) ([]byte, int, int, string, string, error) {
 	req, err := http.NewRequestWithContext(ctx, method, svc.baseURL+path, body)
 	if err != nil {
 		return nil, 0, 0, "", "", err
 	}
-	if authenticated && svc.token != "" {
-		req.Header.Set("Authorization", "Bearer "+svc.token)
+	if bearer != "" {
+		req.Header.Set("Authorization", "Bearer "+bearer)
 	}
 	req.Header.Set("Accept", "application/json")
 	if contentType != "" {
@@ -862,6 +927,9 @@ func (svc service) requestWithAuthentication(ctx context.Context, method, path s
 	bodyBytes, readErr := io.ReadAll(io.LimitReader(response.Body, maxResponseBytes+1))
 	if readErr != nil || len(bodyBytes) > maxResponseBytes {
 		return nil, response.StatusCode, retryAfter(response), "", "", errors.New("response unreadable")
+	}
+	if bearer != "" && bearer != svc.token {
+		bodyBytes = sanitizeResponseJSON(bodyBytes, bearer)
 	}
 	bodyBytes = sanitizeResponseJSON(bodyBytes, svc.token)
 	if bodyBytes == nil && response.StatusCode >= 200 && response.StatusCode < 300 {
@@ -879,10 +947,12 @@ func (svc service) download(ctx context.Context, path, kind, outputDir string) (
 	for _, format := range []string{"image/png", "image/jpeg", "image/webp", "image/gif", "image/avif", "video/mp4", "video/webm"} {
 		candidate := filepath.Join(outputDir, outputID+"."+extensionFor(format, kind))
 		if info, err := os.Lstat(candidate); err == nil {
-			if info.Mode().IsRegular() && strings.HasPrefix(format, kind+"/") && validMediaFile(candidate, format) {
+			proof, known := svc.downloadProofs[candidate]
+			if info.Mode().IsRegular() && known && proof.MediaType == format &&
+				validDownloadProof(proof, kind) && matchesDownloadProof(candidate, proof) {
 				return candidate, 200, 0, "", "", nil
 			}
-			return "", 0, 0, "", "", errors.New("existing output is not a validated task result; choose another output directory")
+			return "", 0, 0, "", "", errors.New("existing output has no matching download proof; preserve it and choose another output directory")
 		}
 	}
 
@@ -940,11 +1010,21 @@ func (svc service) download(ctx context.Context, path, kind, outputDir string) (
 		_ = os.Remove(name)
 		return "", response.StatusCode, retryAfter(response), "", "", errors.New("media delivery exceeded limit")
 	}
+	proof, err := fingerprintDownload(name, contentType)
+	if err != nil {
+		return "", response.StatusCode, retryAfter(response), "", "", err
+	}
 	destination := filepath.Join(directory, outputID+"."+extension)
 	if err := os.Link(name, destination); err != nil {
 		if os.IsExist(err) || copyDownloadExclusive(name, destination) != nil {
 			return "", response.StatusCode, 0, "", "", errors.New("cannot finalize media file without overwriting existing output")
 		}
+	}
+	if !matchesDownloadProof(destination, proof) {
+		return "", response.StatusCode, 0, "", "", errors.New("download changed during finalization")
+	}
+	if svc.downloadProofs != nil {
+		svc.downloadProofs[destination] = proof
 	}
 	return destination, response.StatusCode, retryAfter(response), "", "", nil
 }
@@ -991,11 +1071,11 @@ func publicAPIError(body []byte) (string, string) {
 	if errorValue, ok := document["error"].(map[string]any); ok {
 		code, _ := errorValue["code"].(string)
 		message, _ := errorValue["message"].(string)
-		return safePublicCode(code), safePublicString(message)
+		return publicErrorCategory(code, message)
 	}
 	code, _ := document["code"].(string)
 	message, _ := document["message"].(string)
-	return safePublicCode(code), safePublicString(message)
+	return publicErrorCategory(code, message)
 }
 
 var publicCodePattern = regexp.MustCompile(`^[a-zA-Z0-9_.-]{1,100}$`)
@@ -1032,6 +1112,7 @@ func validationFailure(message string) receipt {
 }
 
 func writeReceipt(output io.Writer, result receipt) {
+	result = guideFailure(result)
 	if writer, ok := output.(*recordReceiptWriter); ok {
 		writer.writeReceipt(result)
 		return

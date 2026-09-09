@@ -1,8 +1,10 @@
 {
   "schemaVersion": 1,
-  "version": "0.17.0",
-  "checkedAt": "2026-09-05",
+  "version": "0.18.0",
+  "checkedAt": "2026-09-08",
   "method": "isolated fixtures and local HTTP servers; no real credentials or paid tasks",
+  "guide": "references/host-acceptance-guide.md",
+  "evidence": [],
   "hosts": [
     {
       "host": "claude-code",
@@ -14,6 +16,12 @@
         "nativeAttachmentDelivery": "pending"
       },
       "windows": {
+        "installation": "pending",
+        "authenticatedAPI": "pending",
+        "sameTaskResume": "pending",
+        "nativeAttachmentDelivery": "pending"
+      },
+      "linux": {
         "installation": "pending",
         "authenticatedAPI": "pending",
         "sameTaskResume": "pending",
@@ -34,6 +42,12 @@
         "authenticatedAPI": "pending",
         "sameTaskResume": "pending",
         "nativeAttachmentDelivery": "pending"
+      },
+      "linux": {
+        "installation": "pending",
+        "authenticatedAPI": "pending",
+        "sameTaskResume": "pending",
+        "nativeAttachmentDelivery": "pending"
       }
     },
     {
@@ -50,6 +64,13 @@
         "authenticatedAPI": "pending",
         "sameTaskResume": "pending",
         "nativeAttachmentDelivery": "pending"
+      },
+      "linux": {
+        "installation": "unavailable",
+        "authenticatedAPI": "unavailable",
+        "sameTaskResume": "unavailable",
+        "nativeAttachmentDelivery": "unavailable",
+        "reason": "No verified local Linux client acceptance target for this release; native Linux executor availability does not establish client support."
       }
     },
     {
@@ -62,6 +83,12 @@
         "nativeAttachmentDelivery": "pending"
       },
       "windows": {
+        "installation": "pending",
+        "authenticatedAPI": "pending",
+        "sameTaskResume": "pending",
+        "nativeAttachmentDelivery": "pending"
+      },
+      "linux": {
         "installation": "pending",
         "authenticatedAPI": "pending",
         "sameTaskResume": "pending",
@@ -82,6 +109,12 @@
         "authenticatedAPI": "pending",
         "sameTaskResume": "pending",
         "nativeAttachmentDelivery": "pending"
+      },
+      "linux": {
+        "installation": "pending",
+        "authenticatedAPI": "pending",
+        "sameTaskResume": "pending",
+        "nativeAttachmentDelivery": "pending"
       }
     },
     {
@@ -94,6 +127,12 @@
         "nativeAttachmentDelivery": "pending"
       },
       "windows": {
+        "installation": "pending",
+        "authenticatedAPI": "pending",
+        "sameTaskResume": "pending",
+        "nativeAttachmentDelivery": "pending"
+      },
+      "linux": {
         "installation": "pending",
         "authenticatedAPI": "pending",
         "sameTaskResume": "pending",
@@ -114,6 +153,82 @@
         "authenticatedAPI": "pending",
         "sameTaskResume": "pending",
         "nativeAttachmentDelivery": "pending"
+      },
+      "linux": {
+        "installation": "unavailable",
+        "authenticatedAPI": "unavailable",
+        "sameTaskResume": "unavailable",
+        "nativeAttachmentDelivery": "unavailable",
+        "reason": "No verified local Linux client acceptance target for this release; native Linux executor availability does not establish client support."
+      }
+    },
+    {
+      "host": "claude-desktop",
+      "credentialFixtures": "passed",
+      "macOS": {
+        "installation": "pending",
+        "authenticatedAPI": "pending",
+        "sameTaskResume": "pending",
+        "nativeAttachmentDelivery": "pending"
+      },
+      "windows": {
+        "installation": "pending",
+        "authenticatedAPI": "pending",
+        "sameTaskResume": "pending",
+        "nativeAttachmentDelivery": "pending"
+      },
+      "linux": {
+        "installation": "unavailable",
+        "authenticatedAPI": "unavailable",
+        "sameTaskResume": "unavailable",
+        "nativeAttachmentDelivery": "unavailable",
+        "reason": "No verified local Linux client acceptance target for this release; native Linux executor availability does not establish client support."
+      }
+    },
+    {
+      "host": "dsh-desktop",
+      "credentialFixtures": "passed",
+      "macOS": {
+        "installation": "pending",
+        "authenticatedAPI": "pending",
+        "sameTaskResume": "pending",
+        "nativeAttachmentDelivery": "pending"
+      },
+      "windows": {
+        "installation": "pending",
+        "authenticatedAPI": "pending",
+        "sameTaskResume": "pending",
+        "nativeAttachmentDelivery": "pending"
+      },
+      "linux": {
+        "installation": "unavailable",
+        "authenticatedAPI": "unavailable",
+        "sameTaskResume": "unavailable",
+        "nativeAttachmentDelivery": "unavailable",
+        "reason": "No verified local Linux client acceptance target for this release; native Linux executor availability does not establish client support."
+      }
+    },
+    {
+      "host": "zcode",
+      "credentialFixtures": "passed",
+      "macOS": {
+        "installation": "pending",
+        "authenticatedAPI": "pending",
+        "sameTaskResume": "pending",
+        "nativeAttachmentDelivery": "pending"
+      },
+      "windows": {
+        "installation": "pending",
+        "authenticatedAPI": "pending",
+        "sameTaskResume": "pending",
+        "nativeAttachmentDelivery": "pending"
+      },
+      "linux": {
+        "installation": "unavailable",
+        "authenticatedAPI": "unavailable",
+        "sameTaskResume": "unavailable",
+        "nativeAttachmentDelivery": "unavailable",
+        "reason": "No verified local Linux client acceptance target for this release; native Linux executor availability does not establish client support."
       }
     }
   ]

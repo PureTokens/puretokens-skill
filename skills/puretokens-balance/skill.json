@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "name": "puretokens-balance",
-  "version": "0.17.0",
+  "version": "0.18.0",
   "entry": "SKILL.md",
   "displayName": "Pure Tokens Balance",
   "description": "Read a balance through the fixed Pure Tokens API.",
@@ -36,6 +36,18 @@
     "trae": {
       "manualInstallationSupported": true,
       "globalSkillDirectory": "~/.trae/skills"
+    },
+    "claudeDesktop": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.claude/skills"
+    },
+    "dshDesktop": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/Library/Application Support/dsh-desktop/harness/skills"
+    },
+    "zcode": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.zcode/skills"
     }
   },
   "supportedClients": [
@@ -45,7 +57,10 @@
     "gemini-cli",
     "grok-build",
     "opencode",
-    "trae"
+    "trae",
+    "claude-desktop",
+    "dsh-desktop",
+    "zcode"
   ],
   "rules": {
     "usesFixedPureTokensApiOrigin": true,
@@ -62,5 +77,5 @@
     "balanceRequiresExistingAccountSession": false,
     "doesNotUseMcpOrFallbackTransport": true
   },
-  "sourceSha256": "65ba079393ba2f34ae90d88e94fb0c50167e8254b7943a05bdb6de244bc5e262"
+  "sourceSha256": "0ec6dc833466546d2b791b44ea7d3b9597c6f6d90a52e7cadd62ccb2b23dd325"
 }

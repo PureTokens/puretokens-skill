@@ -79,9 +79,9 @@ func TestPollingRetryOverrideConsumedOnce(t *testing.T) {
 		return true
 	}
 	var out bytes.Buffer
-	request := taskRequest{Kind: "image", TaskID: "paid-task"}
+	request := taskRequest{Kind: "image", TaskID: "paid-task", Poll: &pollRequest{MaxStatusReads: 6}}
 	pollAndDeliver(&out, svc, request, taskReceipt(request, request.TaskID, "pending"))
-	want := []time.Duration{3 * time.Second, 6 * time.Second, 12 * time.Second, 24 * time.Second, time.Second, 30 * time.Second}
+	want := []time.Duration{0, 3 * time.Second, 3 * time.Second, 3 * time.Second, time.Second, 3 * time.Second}
 	if reads != 6 || !reflect.DeepEqual(delays, want) {
 		t.Fatalf("reads %d delays %v", reads, delays)
 	}
@@ -119,7 +119,7 @@ func TestLongRetryRetainedAcrossCommands(t *testing.T) {
 	request.RetryNotBefore = ""
 	pollAndDeliver(&out, svc, request, taskReceipt(request, request.TaskID, "pending"))
 	result := decodeReceipt(t, &out)
-	if calls != 2 || result.HTTPStatus != 429 || result.RetryAfterSecs != 3600 || result.RetryNotBefore == "" || result.APIErrorCode != "" || result.ErrorMessage != "Please wait" {
+	if calls != 2 || result.HTTPStatus != 429 || result.RetryAfterSecs != 3600 || result.RetryNotBefore == "" || result.APIErrorCode != "" || result.ErrorMessage != "The Pure Tokens API request did not complete." {
 		t.Fatalf("long retry lost: %+v", result)
 	}
 }

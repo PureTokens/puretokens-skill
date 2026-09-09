@@ -74,7 +74,7 @@
         "max_status_reads": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 7
+          "maximum": 40
         },
         "deadline_seconds": {
           "type": "integer",
@@ -110,7 +110,8 @@
     },
     "retry_not_before": {
       "type": "string",
-      "format": "date-time"
+      "format": "date-time",
+      "description": "Copy the exact next-read lower bound from the receipt or record; may reflect the initial image delay or API Retry-After."
     },
     "reconciliation_required": {
       "type": "boolean"
@@ -145,6 +146,29 @@
     }
   ],
   "allOf": [
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "video"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "poll": {
+            "properties": {
+              "max_status_reads": {
+                "maximum": 7
+              }
+            }
+          }
+        }
+      }
+    },
     {
       "if": {
         "required": [

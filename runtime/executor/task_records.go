@@ -18,27 +18,29 @@ const taskRecordFormat = "puretokens-task-v1"
 // An explicit user artifact, never a hidden task database. Keep only the
 // metadata needed to continue or deliver an existing task.
 type taskRecord struct {
-	Format                 string         `json:"format"`
-	Kind                   string         `json:"kind"`
-	TaskID                 string         `json:"task_id,omitempty"`
-	Model                  string         `json:"model,omitempty"`
-	OriginalOperation      string         `json:"original_operation,omitempty"`
-	RequestedCount         int            `json:"requested_count,omitempty"`
-	Parameters             map[string]any `json:"parameters,omitempty"`
-	Status                 string         `json:"status,omitempty"`
-	SubmissionOutcome      string         `json:"submission_outcome,omitempty"`
-	ReconciliationRequired bool           `json:"reconciliation_required,omitempty"`
-	RetryNotBefore         string         `json:"retry_not_before,omitempty"`
-	OutputDir              string         `json:"output_dir,omitempty"`
-	Downloaded             map[int]string `json:"downloaded,omitempty"`
-	Delivered              []int          `json:"delivered,omitempty"`
+	Format                 string                `json:"format"`
+	Kind                   string                `json:"kind"`
+	TaskID                 string                `json:"task_id,omitempty"`
+	Model                  string                `json:"model,omitempty"`
+	OriginalOperation      string                `json:"original_operation,omitempty"`
+	RequestedCount         int                   `json:"requested_count,omitempty"`
+	Parameters             map[string]any        `json:"parameters,omitempty"`
+	Status                 string                `json:"status,omitempty"`
+	SubmissionOutcome      string                `json:"submission_outcome,omitempty"`
+	ReconciliationRequired bool                  `json:"reconciliation_required,omitempty"`
+	RetryNotBefore         string                `json:"retry_not_before,omitempty"`
+	OutputDir              string                `json:"output_dir,omitempty"`
+	Downloaded             map[int]string        `json:"downloaded,omitempty"`
+	DownloadProofs         map[int]downloadProof `json:"download_proofs,omitempty"`
+	Delivered              []int                 `json:"delivered,omitempty"`
 }
 
 type recordReceiptWriter struct {
-	output io.Writer
-	path   string
-	record taskRecord
-	err    error
+	output         io.Writer
+	path           string
+	record         taskRecord
+	err            error
+	downloadProofs map[string]downloadProof
 }
 
 func (writer *recordReceiptWriter) Write(data []byte) (int, error) {
@@ -76,9 +78,27 @@ func (writer *recordReceiptWriter) writeReceipt(result receipt) {
 	if record.Downloaded == nil {
 		record.Downloaded = make(map[int]string)
 	}
+	if record.DownloadProofs == nil {
+		record.DownloadProofs = make(map[int]downloadProof)
+	}
 	for index, path := range result.DownloadedPaths {
 		if index < len(result.DownloadedIndexes) {
-			record.Downloaded[result.DownloadedIndexes[index]] = path
+			i := result.DownloadedIndexes[index]
+			if proof, ok := writer.downloadProofs[path]; ok && matchesDownloadProof(path, proof) {
+				record.Downloaded[i] = path
+				record.DownloadProofs[i] = proof
+			} else {
+				writer.err = errors.New("download integrity changed")
+				result.OK = false
+				result.FailurePhase = "content"
+				result.LocalErrorCode = "download_integrity_unverified"
+				result.ErrorMessage = "The downloaded file changed before its integrity could be recorded."
+				result.NextAction = "Preserve the file and retrieve this same task into another output directory."
+				result.DownloadedPaths = nil
+				result.DownloadedIndexes = nil
+				result.DeliveryStatus = ""
+				break
+			}
 		}
 	}
 	result.RecordPath = writer.path
@@ -96,7 +116,8 @@ func (writer *recordReceiptWriter) writeReceipt(result receipt) {
 			}
 			path := record.Downloaded[index]
 			format := recordedDownloadFormat(record.Kind, record.TaskID, index, path)
-			if !delivered && format != "" && validMediaFile(path, format) {
+			proof, known := record.DownloadProofs[index]
+			if !delivered && format != "" && known && proof.MediaType == format && matchesDownloadProof(path, proof) {
 				result.DownloadedIndexes = append(result.DownloadedIndexes, index)
 			}
 		}
@@ -112,12 +133,21 @@ func (writer *recordReceiptWriter) writeReceipt(result receipt) {
 		writer.err = err
 		result.OK = false
 		result.LocalErrorCode = "task_record_write_failed"
+		if result.FailurePhase == "" {
+			result.FailurePhase = "status"
+			if result.Operation == "generate" || result.Operation == "edit" {
+				result.FailurePhase = "submission"
+			}
+			if len(result.DownloadedPaths) > 0 || result.DeliveryStatus != "" {
+				result.FailurePhase = "content"
+			}
+		}
 		result.ErrorMessage = "The task receipt could not be saved to its explicit record."
 		result.NextAction = "Keep this receipt and task ID. Repair the record location before continuing; do not repeat the submission."
 	} else {
 		writer.record = record
 	}
-	writeJSON(writer.output, result)
+	writeJSON(writer.output, guideFailure(result))
 }
 
 func (record taskRecord) request() taskRequest {
@@ -177,6 +207,13 @@ func loadTaskRecord(path string) (taskRecord, error) {
 	for index, path := range record.Downloaded {
 		if index < 0 || index >= max(1, record.RequestedCount) || recordedDownloadFormat(record.Kind, record.TaskID, index, path) == "" {
 			return record, errors.New("record has invalid download metadata")
+		}
+	}
+	for index, proof := range record.DownloadProofs {
+		path, ok := record.Downloaded[index]
+		if !ok || !validDownloadProof(proof, record.Kind) ||
+			recordedDownloadFormat(record.Kind, record.TaskID, index, path) != proof.MediaType {
+			return record, errors.New("record has invalid download proof")
 		}
 	}
 	seen := map[int]bool{}
@@ -276,6 +313,10 @@ func executeRecordedTask(command, path string, request taskRequest, index int, o
 			writeReceipt(output, validationFailure("Correct the media request before creating its task record."))
 			return err
 		}
+		if err := prepareProfileRequest(&request, svc); err != nil {
+			writeReceipt(output, validationFailure(err.Error()))
+			return err
+		}
 		record = recordFromRequest(request)
 		record.SubmissionOutcome = "unknown"
 		if err := saveTaskRecord(path, record, true); err != nil {
@@ -302,11 +343,20 @@ func executeRecordedTask(command, path string, request taskRequest, index int, o
 			return errors.New("task record has no id")
 		}
 	}
-	writer := &recordReceiptWriter{output: output, path: path, record: record}
+	svc.downloadProofs = make(map[string]downloadProof)
+	for i, proof := range record.DownloadProofs {
+		svc.downloadProofs[record.Downloaded[i]] = proof
+	}
+	writer := &recordReceiptWriter{output: output, path: path, record: record, downloadProofs: svc.downloadProofs}
 	if command == "delivered" {
 		if _, ok := record.Downloaded[index]; !ok || index < 0 {
 			writeReceipt(output, mergeFailure(taskReceipt(request, request.TaskID, record.Status), validationFailure("Only a downloaded index can be marked delivered, after the host confirms attachment handoff.")))
 			return errors.New("index not downloaded")
+		}
+		proof, known := record.DownloadProofs[index]
+		if !known || !matchesDownloadProof(record.Downloaded[index], proof) {
+			writeReceipt(output, mergeFailure(taskReceipt(request, request.TaskID, record.Status), validationFailure("The downloaded file has no matching integrity proof. Preserve it and retrieve this same task into another output directory before delivery.")))
+			return errors.New("delivery integrity unverified")
 		}
 		found := false
 		for _, done := range record.Delivered {
@@ -329,10 +379,15 @@ func executeRecordedTask(command, path string, request taskRequest, index int, o
 	}
 	data, _ := json.Marshal(request)
 	if command == "submit" || command == "task" {
-		err = executeTask(bytes.NewReader(data), writer, svc)
+		err = executePreparedTask(writer, svc, request)
 	} else {
 		if command == "resume" {
 			command = "wait"
+			if record.ReconciliationRequired {
+				// Explicit continuation refreshes reconciliation once. Ordinary
+				// polling still stops as soon as the API requires reconciliation.
+				command = "status"
+			}
 		}
 		err = executeExistingTask(command, bytes.NewReader(data), writer, svc)
 	}

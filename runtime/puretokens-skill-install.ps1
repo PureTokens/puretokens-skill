@@ -7,7 +7,7 @@ param(
   [Parameter(Mandatory = $false)]
   [string]$Target,
   [Parameter(Mandatory = $false)]
-  [ValidateSet("claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae")]
+  [ValidateSet("claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae", "claude-desktop", "dsh-desktop", "zcode")]
   [Alias("Host")]
   [string]$HostId,
   [Parameter(Mandatory = $false)]
@@ -19,6 +19,10 @@ $currentSkills = @("puretokens-balance", "puretokens-connection", "puretokens-mo
 $retiredSkills = @("puretokens_media", "puretokens_balance", "puretokens_connection", "puretokens_models", "puretokens_image", "puretokens_video", "puretokens_update", "puretokens_get_balance", "puretokens_get_model_price", "puretokens_workbuddy_router")
 
 function Fail([string]$Message) { throw "Pure Tokens Skill installer: $Message" }
+
+function Test-InstallationEntry([string]$Path) {
+  return $null -ne (Get-Item -LiteralPath $Path -Force -ErrorAction SilentlyContinue)
+}
 
 function Test-ManagedSkill([string]$Directory, [string]$Name) {
   $manifest = Join-Path $Directory "skill.json"
@@ -35,6 +39,13 @@ function Test-LegacyNodeRuntime([string]$Directory) {
 function Test-ManagedExecutor([string]$Directory) {
   $manifest = Join-Path $Directory "runtime.json"
   return (Test-Path -LiteralPath (Join-Path $Directory "puretokens-api.exe") -PathType Leaf) -and (Test-Path -LiteralPath $manifest -PathType Leaf) -and ((Get-Content -LiteralPath $manifest -Raw -Encoding UTF8 | ConvertFrom-Json).name -eq "puretokens-api-executor")
+}
+
+function Assert-OwnedInstallation([string]$Directory, [string]$Name, [string]$SourceDirectory = "") {
+  $options = @("install-verify", "--directory", $Directory, "--name", $Name)
+  if ($SourceDirectory) { $options += @("--source-directory", $SourceDirectory) }
+  & $script:ownershipGuard @options
+  if ($LASTEXITCODE -ne 0) { Fail "installation ownership or file changes require review: $Name; existing files were preserved" }
 }
 
 function Get-ExecutorPlatform() {
@@ -133,6 +144,19 @@ function Get-TargetForHost([string]$RequestedHost) {
   if ([string]::IsNullOrWhiteSpace($env:USERPROFILE)) { Fail "cannot resolve a host Skill directory because USERPROFILE is unavailable" }
   switch ($RequestedHost) {
     "claude-code" { if ($env:CLAUDE_CONFIG_DIR) { return (Join-Path $env:CLAUDE_CONFIG_DIR "skills") }; return (Join-Path $env:USERPROFILE ".claude\skills") }
+    "claude-desktop" { if ($env:CLAUDE_CONFIG_DIR) { return (Join-Path $env:CLAUDE_CONFIG_DIR "skills") }; return (Join-Path $env:USERPROFILE ".claude\skills") }
+    "zcode" {
+      if ($env:ZCODE_DATA_BASE_DIR) {
+        if (-not [System.IO.Path]::IsPathRooted($env:ZCODE_DATA_BASE_DIR)) { Fail "ZCode data directory must be absolute" }
+        return (Join-Path $env:ZCODE_DATA_BASE_DIR ".zcode\skills")
+      }
+      return (Join-Path $env:USERPROFILE ".zcode\skills")
+    }
+    "dsh-desktop" {
+      if ($env:DSH_HOME) { return (Join-Path $env:DSH_HOME "skills") }
+      if (-not $env:APPDATA -or -not [System.IO.Path]::IsPathRooted($env:APPDATA)) { throw "DSH Desktop application directory is unavailable" }
+      return (Join-Path $env:APPDATA "dsh-desktop\harness\skills")
+    }
     "codex" { return (Join-Path $env:USERPROFILE ".agents\skills") }
     "workbuddy" { if ($env:WORKBUDDY_CONFIG_DIR) { return (Join-Path $env:WORKBUDDY_CONFIG_DIR "skills") }; if ($env:CODEBUDDY_CONFIG_DIR) { return (Join-Path $env:CODEBUDDY_CONFIG_DIR "skills") }; return (Join-Path $env:USERPROFILE ".workbuddy\skills") }
     "gemini-cli" {
@@ -169,10 +193,16 @@ function Restore-Transaction([string]$TargetRoot, [string]$StageRoot) {
     $destination = Join-Path $TargetRoot $entry.name
     $backup = Join-Path (Join-Path $StageRoot "backup") $entry.name
     if ($entry.action -eq "replace" -and (Test-Path -LiteralPath $backup)) {
-      if (Test-Path -LiteralPath $destination) { Remove-Item -LiteralPath $destination -Recurse -Force }
+      if (Test-InstallationEntry $destination) {
+        Assert-OwnedInstallation $destination $entry.name (Join-Path (Join-Path $sourceRoot "skills") $entry.name)
+        Remove-Item -LiteralPath $destination -Recurse -Force
+      }
       Move-Item -LiteralPath $backup -Destination $destination
     } elseif ($entry.action -eq "create" -and -not (Test-Path -LiteralPath (Join-Path $StageRoot $entry.name))) {
-      if (Test-Path -LiteralPath $destination) { Remove-Item -LiteralPath $destination -Recurse -Force }
+      if (Test-InstallationEntry $destination) {
+        Assert-OwnedInstallation $destination $entry.name (Join-Path (Join-Path $sourceRoot "skills") $entry.name)
+        Remove-Item -LiteralPath $destination -Recurse -Force
+      }
     }
   }
 }
@@ -235,6 +265,7 @@ try {
   New-Item -ItemType Directory -Path $Target -Force | Out-Null
   $targetRoot = (Resolve-Path -LiteralPath $Target).Path
   Test-GeminiDuplicates $targetRoot
+  $script:ownershipGuard = Get-ExecutorArtifact $sourceRoot
   try { $updateLock = [System.IO.File]::Open((Join-Path $targetRoot ".puretokens-install.lock"), [System.IO.FileMode]::OpenOrCreate, [System.IO.FileAccess]::ReadWrite, [System.IO.FileShare]::None) } catch { Fail "another update is in progress or the update lock is not writable" }
   foreach ($previous in @(Get-ChildItem -LiteralPath $targetRoot -Directory -Force | Where-Object { $_.Name -like ".puretokens-skill-stage-*" })) {
     if (-not (Test-Path -LiteralPath (Join-Path $previous.FullName "transaction-v1"))) { Fail "unknown staging directory; left untouched" }
@@ -251,14 +282,14 @@ try {
   foreach ($name in $retiredSkills) {
     $destinations = @((Join-Path $targetRoot $name))
     $destinations += @(Get-ChildItem -LiteralPath $targetRoot -Force | Where-Object { $_.Name -like ("." + $name + ".retired-*") } | ForEach-Object { $_.FullName })
-    foreach ($destination in $destinations) { if ((Test-Path -LiteralPath $destination) -and -not (Test-ManagedSkill $destination $name)) { Fail "unmanaged retired Skill conflicts: $destination" } }
+    foreach ($destination in $destinations) { if (Test-InstallationEntry $destination) { Assert-OwnedInstallation $destination $name } }
   }
   foreach ($name in $currentSkills) {
     $destination = Join-Path $targetRoot $name
-    if ((Test-Path -LiteralPath $destination) -and -not (Test-ManagedSkill $destination $name)) { Fail "unmanaged Skill conflicts: $destination" }
+    if (Test-InstallationEntry $destination) { Assert-OwnedInstallation $destination $name (Join-Path (Join-Path $sourceRoot "skills") $name) }
   }
   $executorDestination = Join-Path $targetRoot ".puretokens-executor"
-  if ((Test-Path -LiteralPath $executorDestination) -and -not (Test-ManagedExecutor $executorDestination)) { Fail "unmanaged Pure Tokens executor conflicts: $executorDestination" }
+  if (Test-InstallationEntry $executorDestination) { Assert-OwnedInstallation $executorDestination ".puretokens-executor" }
 
   $stageRoot = Join-Path $targetRoot (".puretokens-skill-stage-" + [Guid]::NewGuid().ToString("N"))
   New-Item -ItemType Directory -Path (Join-Path $stageRoot "backup") -Force | Out-Null
@@ -272,27 +303,42 @@ try {
     Copy-Item -LiteralPath (Join-Path (Join-Path $sourceRoot "runtime") $script) -Destination $stageExecutor
   }
   [PSCustomObject]@{ schemaVersion = 1; name = "puretokens-api-executor"; version = $releaseVersion; platform = (Get-ExecutorPlatform) } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $stageExecutor "runtime.json") -Encoding utf8
+  foreach ($name in ($currentSkills + @(".puretokens-executor"))) {
+    $directory = Join-Path $stageRoot $name
+    $inventory = & $script:ownershipGuard install-inventory --directory $directory --name $name
+    if ($LASTEXITCODE -ne 0) { Fail "could not record managed files for $name" }
+    $inventory | Set-Content -LiteralPath (Join-Path $directory ".puretokens-managed.json") -Encoding UTF8
+  }
 
   Remove-LegacyCodexPlugin $targetRoot
   $plan = @()
   foreach ($name in ($currentSkills + @(".puretokens-executor"))) {
-    $action = if (Test-Path -LiteralPath (Join-Path $targetRoot $name)) { "replace" } else { "create" }
+    $action = if (Test-InstallationEntry (Join-Path $targetRoot $name)) { "replace" } else { "create" }
     $plan += [PSCustomObject]@{ name = $name; action = $action }
   }
   $plan | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $stageRoot "plan.json") -Encoding utf8
   foreach ($entry in $plan) {
     $destination = Join-Path $targetRoot $entry.name
-    if ($entry.action -eq "replace") { Move-Item -LiteralPath $destination -Destination (Join-Path (Join-Path $stageRoot "backup") $entry.name) }
+    if ($entry.action -eq "replace") {
+      Assert-OwnedInstallation $destination $entry.name (Join-Path (Join-Path $sourceRoot "skills") $entry.name)
+      Move-Item -LiteralPath $destination -Destination (Join-Path (Join-Path $stageRoot "backup") $entry.name)
+    } elseif (Test-InstallationEntry $destination) { Fail "a destination appeared during installation; existing files were preserved" }
     Move-Item -LiteralPath (Join-Path $stageRoot $entry.name) -Destination $destination
   }
   New-Item -ItemType File -Path (Join-Path $stageRoot "committed") | Out-Null
   foreach ($name in $retiredSkills) {
     $destinations = @((Join-Path $targetRoot $name))
     $destinations += @(Get-ChildItem -LiteralPath $targetRoot -Force | Where-Object { $_.Name -like ("." + $name + ".retired-*") } | ForEach-Object { $_.FullName })
-    foreach ($destination in $destinations) { if (Test-Path -LiteralPath $destination) { Remove-Item -LiteralPath $destination -Recurse -Force; Write-Output "Removed retired managed $name from $destination" } }
+    foreach ($destination in $destinations) { if (Test-Path -LiteralPath $destination) { Assert-OwnedInstallation $destination $name; Remove-Item -LiteralPath $destination -Recurse -Force; Write-Output "Removed retired managed $name from $destination" } }
   }
   $legacyRuntime = Join-Path $targetRoot ".puretokens-runtime"
-  if ((Test-Path -LiteralPath $legacyRuntime) -and (Test-LegacyNodeRuntime $legacyRuntime)) { Remove-Item -LiteralPath $legacyRuntime -Recurse -Force; Write-Output "Removed retired managed Node runtime from $legacyRuntime" }
+  if ((Test-Path -LiteralPath $legacyRuntime) -and (Test-LegacyNodeRuntime $legacyRuntime)) {
+    & $script:ownershipGuard install-verify --directory $legacyRuntime --name ".puretokens-runtime" | Out-Null
+    if ($LASTEXITCODE -eq 0) {
+      Remove-Item -LiteralPath $legacyRuntime -Recurse -Force
+      Write-Output "Removed retired managed Node runtime from $legacyRuntime"
+    } else { Write-Output "Unverified or modified legacy runtime preserved; review it separately." }
+  }
   Write-Output "Pure Tokens Skills $releaseVersion synchronized with the native API executor at $targetRoot"
   Remove-Item -LiteralPath $stageRoot -Recurse -Force
   $stageRoot = $null

@@ -26,6 +26,8 @@ description: 查询当前 Pure Tokens 连接实际可用的图片和视频模型
 - 按用户的筛选条件展示；未筛选时先按图片和视频 capability 分组。
 - 每个模型仅展示实际返回的：精确 ID、capability、可选参数名称、`required` 标记、类型、默认值、`enum` 值、数值范围、非请求字段的条件限制（例如 `resolution_by_mode`），以及 operation 名称、请求方法、相对路径、content type、必需字段、附件数量和 transport。`constraints` 不是额外请求字段，绝不把它的名称或推断模式写入 API body。缺失字段写“目录未声明”，不得猜测。
 - 若用户询问“哪个能做 X”，先给出满足 X 的兼容模型和匹配依据；不要直接提交生成请求。用户选定模型并提出生成需求后，再交由 `puretokens-image` 或 `puretokens-video` 按各自契约执行。
-- 目录为空、无法读取或模型不在当前目录时，如实说明固定 Pure Tokens API 未返回对应模型资料或返回了该错误；不切换 endpoint、不尝试静态目录，也不索取凭据或猜测配置原因。若用户预期可用某精确模型，指导其在 Pure Tokens 客户端配置中勾选包含该模型的分组，创建或选择覆盖所选分组的受管 Key，执行“验证并应用”，然后新开当前宿主会话再查询或提交。除非认证 API 明确返回模型到分组的映射，否则不得说出或猜测具体分组名称。
+- 目录为空或精确模型缺失，只说明当前目录没有返回对应资料，不能断言 Key 分组错误。可展示实际返回的模型；用户预期有权限时，建议在自身设置中核对该模型权限或联系 Pure Tokens 支持。只有确认需要调整权限时才由用户选择分组、验证并应用；没有认证 API 明确返回模型到分组的映射，不得猜分组名称。网络／服务失败建议稍后再查询；认证、权限、限流按回执 `next_action` 分别解释。不切换 endpoint、不以静态目录冒充实时结果、不自动重试或提交媒体。
 
 用户明确筛选时，可用 `models --host <host-id> --request <UTF-8筛选文件>`，文件可含 `kind`、精确 `model`、`operation` 和 `parameters`，例如 `{"kind":"video","operation":"image_to_video","parameters":{"resolution":"720p"}}`。执行器只读取一次认证目录并按其声明筛选；缺少字段不视为兼容，不提交媒体。无筛选则省略 --request。查询目录不是普通生成的必需前置步骤。
+
+ZCode 本地执行使用宿主 ID `zcode`。只使用唯一启用且端点匹配的 Pure Tokens 连接；不能据此声称识别当前聊天模型。目录、远程工作区及交付限制按需读 `references/desktop-hosts.md`。

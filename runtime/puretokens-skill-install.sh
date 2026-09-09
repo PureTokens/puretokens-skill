@@ -7,7 +7,7 @@ current_skills="puretokens-balance puretokens-connection puretokens-models puret
 retired_skills="puretokens_media puretokens_balance puretokens_connection puretokens_models puretokens_image puretokens_video puretokens_update puretokens_get_balance puretokens_get_model_price puretokens_workbuddy_router"
 
 usage() {
-  printf '%s\n' "Usage: puretokens-skill-install.sh <check|init|sync|locate> (--host <claude-code|codex|workbuddy|gemini-cli|grok-build|opencode|trae> | --target <absolute-skill-directory>) [--source <absolute-official-source-directory>]"
+  printf '%s\n' "Usage: puretokens-skill-install.sh <check|init|sync|locate> (--host <claude-code|codex|workbuddy|gemini-cli|grok-build|opencode|trae|claude-desktop|dsh-desktop|zcode> | --target <absolute-skill-directory>) [--source <absolute-official-source-directory>]"
 }
 
 fail() {
@@ -80,7 +80,17 @@ target_for_host() {
   host=$1
   [ -n "${HOME:-}" ] || fail "cannot resolve a host Skill directory because HOME is unavailable"
   case "$host" in
-    claude-code) printf '%s\n' "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills" ;;
+    claude-code|claude-desktop) printf '%s\n' "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills" ;;
+    zcode) printf '%s\n' "${ZCODE_DATA_BASE_DIR:-$HOME}/.zcode/skills" ;;
+    dsh-desktop)
+      if [ -n "${DSH_HOME:-}" ]; then
+        printf '%s\n' "$DSH_HOME/skills"
+      elif [ "$(uname -s)" = Darwin ]; then
+        printf '%s\n' "$HOME/Library/Application Support/dsh-desktop/harness/skills"
+      else
+        fail "DSH Desktop requires its local macOS or Windows environment"
+      fi
+      ;;
     codex) printf '%s\n' "$HOME/.agents/skills" ;;
     workbuddy) printf '%s\n' "${WORKBUDDY_CONFIG_DIR:-${CODEBUDDY_CONFIG_DIR:-$HOME/.workbuddy}}/skills" ;;
     gemini-cli)
@@ -228,10 +238,16 @@ restore_transaction() (
     case "$entry" in puretokens-balance|puretokens-connection|puretokens-models|puretokens-image|puretokens-video|puretokens-update|.puretokens-executor) ;; *) return 1 ;; esac
     case "$entry" in */*|*..*) return 1 ;; esac
     if [ "$action" = replace ] && [ -e "$recovery_stage/backup/$entry" ]; then
-      [ ! -e "$recovery_root/$entry" ] || rm -rf -- "$recovery_root/$entry" || return 1
+      if [ -e "$recovery_root/$entry" ] || [ -L "$recovery_root/$entry" ]; then
+        "$ownership_guard" install-verify --directory "$recovery_root/$entry" --name "$entry" --source-directory "$source_root/skills/$entry" || return 1
+        rm -rf -- "$recovery_root/$entry" || return 1
+      fi
       mv "$recovery_stage/backup/$entry" "$recovery_root/$entry" || return 1
     elif [ "$action" = create ] && [ ! -e "$recovery_stage/$entry" ]; then
-      [ ! -e "$recovery_root/$entry" ] || rm -rf -- "$recovery_root/$entry" || return 1
+      if [ -e "$recovery_root/$entry" ] || [ -L "$recovery_root/$entry" ]; then
+        "$ownership_guard" install-verify --directory "$recovery_root/$entry" --name "$entry" --source-directory "$source_root/skills/$entry" || return 1
+        rm -rf -- "$recovery_root/$entry" || return 1
+      fi
     fi
   done < "$recovery_stage/plan"
 )
@@ -345,7 +361,13 @@ sync_target() {
   [ -d "$target_root" ] || mkdir -p "$target_root"
   target_root=$(cd "$target_root" && pwd -P)
   check_gemini_duplicates
+  ownership_guard=$(executor_artifact "$source_root")
   acquire_update_lock
+  verify_owned() {
+    set -- install-verify --directory "$1" --name "$2" --source-directory "${3:-$source_root/skills/$2}"
+    "$ownership_guard" "$@" ||
+      fail "installation ownership or file changes require review: $5; existing files were preserved"
+  }
   # Downloads happen outside this lock. Re-read the installed version after
   # acquiring it so an older download cannot overwrite a newer completed sync.
   installed_manifest="$target_root/.puretokens-executor/runtime.json"
@@ -359,15 +381,15 @@ sync_target() {
 
   for name in $retired_skills; do
     for destination in "$target_root/$name" "$target_root/.$name.retired-"*; do
-      [ ! -e "$destination" ] || managed_skill "$destination" "$name" || fail "unmanaged retired Skill conflicts: $destination"
+      if [ -e "$destination" ] || [ -L "$destination" ]; then verify_owned "$destination" "$name"; fi
     done
   done
   for name in $current_skills; do
     destination="$target_root/$name"
-    [ ! -e "$destination" ] || managed_skill "$destination" "$name" || fail "unmanaged Skill conflicts: $destination"
+    if [ -e "$destination" ] || [ -L "$destination" ]; then verify_owned "$destination" "$name" "$source_root/skills/$name"; fi
   done
   executor_destination="$target_root/.puretokens-executor"
-  [ ! -e "$executor_destination" ] || managed_executor "$executor_destination" || fail "unmanaged Pure Tokens executor conflicts: $executor_destination"
+  if [ -e "$executor_destination" ] || [ -L "$executor_destination" ]; then verify_owned "$executor_destination" .puretokens-executor; fi
 
   stage_root=$(mktemp -d "$target_root/.puretokens-skill-stage.XXXXXX") || fail "could not create a private update staging directory"
   touch "$stage_root/transaction-v1"
@@ -379,6 +401,10 @@ sync_target() {
   cp "$source_root/runtime/puretokens-skill-install.sh" "$source_root/runtime/puretokens-skill-fetch.sh" "$stage_root/.puretokens-executor/"
   chmod 700 "$stage_root/.puretokens-executor/puretokens-api"
   printf '{\n  "schemaVersion": 1,\n  "name": "puretokens-api-executor",\n  "version": "%s",\n  "platform": "%s"\n}\n' "$release_version" "$(executor_platform)" > "$stage_root/.puretokens-executor/runtime.json"
+  for entry in $current_skills .puretokens-executor; do
+    "$ownership_guard" install-inventory --directory "$stage_root/$entry" --name "$entry" > "$stage_root/$entry/.puretokens-managed.json" ||
+      fail "could not record managed files for $entry"
+  done
 
   migrate_legacy_codex_plugin "$target_root"
 
@@ -388,21 +414,31 @@ sync_target() {
     printf '%s %s\n' "$action" "$entry" >> "$stage_root/plan"
   done
   while read -r action entry; do
-    if [ "$action" = replace ]; then mv "$target_root/$entry" "$stage_root/backup/$entry"; fi
+    if [ "$action" = replace ]; then
+      verify_owned "$target_root/$entry" "$entry" "$source_root/skills/$entry"
+      mv "$target_root/$entry" "$stage_root/backup/$entry"
+    elif [ -e "$target_root/$entry" ] || [ -L "$target_root/$entry" ]; then
+      fail "a destination appeared during installation; existing files were preserved"
+    fi
     mv "$stage_root/$entry" "$target_root/$entry"
   done < "$stage_root/plan"
   touch "$stage_root/committed"
   for name in $retired_skills; do
     for destination in "$target_root/$name" "$target_root/.$name.retired-"*; do
       [ ! -e "$destination" ] && continue
+      verify_owned "$destination" "$name"
       rm -rf -- "$destination" || fail "could not remove retired Skill: $name"
       printf '%s\n' "Removed retired managed $name from $destination"
     done
   done
   legacy_runtime="$target_root/.puretokens-runtime"
   if [ -e "$legacy_runtime" ] && legacy_node_runtime "$legacy_runtime"; then
-    rm -rf -- "$legacy_runtime" || fail "could not remove retired Node runtime"
-    printf '%s\n' "Removed retired managed Node runtime from $legacy_runtime"
+    if "$ownership_guard" install-verify --directory "$legacy_runtime" --name .puretokens-runtime >/dev/null; then
+      rm -rf -- "$legacy_runtime" || fail "could not remove retired Node runtime"
+      printf '%s\n' "Removed retired managed Node runtime from $legacy_runtime"
+    else
+      printf '%s\n' "Unverified or modified legacy runtime preserved; review it separately."
+    fi
   fi
   printf '%s\n' "Pure Tokens Skills $release_version synchronized with the native API executor at $target_root"
   rm -rf -- "$stage_root"
@@ -428,7 +464,7 @@ while [ "$#" -gt 0 ]; do
 done
 
 [ -n "$target" ] || [ -n "$host" ] || fail "--host or --target is required"
-case "$host" in ''|claude-code|codex|workbuddy|gemini-cli|grok-build|opencode|trae) ;; *) fail "unsupported host" ;; esac
+case "$host" in ''|claude-code|codex|workbuddy|gemini-cli|grok-build|opencode|trae|claude-desktop|dsh-desktop|zcode) ;; *) fail "unsupported host" ;; esac
 [ -n "$target" ] || target=$(target_for_host "$host")
 [ "${target#/}" != "$target" ] || fail "--target must be an absolute Skill directory"
 [ -z "$source" ] || [ "${source#/}" != "$source" ] || fail "--source must be an absolute official source directory"
