@@ -20,6 +20,45 @@ $retiredSkills = @("puretokens_media", "puretokens_balance", "puretokens_connect
 
 function Fail([string]$Message) { throw "Pure Tokens Skill installer: $Message" }
 
+# Only the verified native executor uses this launcher. No shell, window,
+# elevation, credential argument or fallback launch is involved.
+function Invoke-NativeExecutor([string]$Executable, [string[]]$ArgumentList) {
+  $quoted = foreach ($argument in $ArgumentList) {
+    if ($argument.Contains('"') -or $argument.Contains("`n") -or $argument.Contains("`r")) { Fail "invalid native executor argument" }
+    # Windows command-line quoting: trailing backslashes must be doubled.
+    '"' + [regex]::Replace($argument, '(\\+)$', '$1$1') + '"'
+  }
+  $start = New-Object System.Diagnostics.ProcessStartInfo
+  $start.FileName = $Executable
+  $start.Arguments = $quoted -join ' '
+  $start.UseShellExecute = $false
+  $start.CreateNoWindow = $true
+  $start.RedirectStandardOutput = $true
+  $start.RedirectStandardError = $true
+  $start.RedirectStandardInput = $true
+  $start.StandardOutputEncoding = New-Object System.Text.UTF8Encoding($false)
+  $start.StandardErrorEncoding = New-Object System.Text.UTF8Encoding($false)
+  $process = New-Object System.Diagnostics.Process
+  $process.StartInfo = $start
+  try {
+    if (-not $process.Start()) { Fail "native executor could not start" }
+    $process.StandardInput.Close()
+    # Drain both pipes concurrently; errors cannot block behind a full pipe.
+    $stdout = $process.StandardOutput.ReadToEndAsync()
+    $stderr = $process.StandardError.ReadToEndAsync()
+    $timeoutMs = if ($ArgumentList[0] -eq "init") { 195000 } else { 30000 }
+    if (-not $process.WaitForExit($timeoutMs)) {
+      try { $process.Kill(); $null = $process.WaitForExit(5000) } catch { }
+      Fail "native executor timed out; stop this installation attempt and report the stage; do not retry or modify the installer"
+    }
+    if (-not [System.Threading.Tasks.Task]::WaitAll([System.Threading.Tasks.Task[]]@($stdout, $stderr), 5000)) { Fail "native executor output was not available; stop without a fallback launcher" }
+    $text = $stdout.GetAwaiter().GetResult()
+    $null = $stderr.GetAwaiter().GetResult()
+    return [PSCustomObject]@{ ExitCode = $process.ExitCode; Output = $text }
+  } catch { Fail "native executor launch, timeout or output capture failed; stop this attempt and report the stage; do not probe, patch or retry through another launcher" }
+  finally { $process.Dispose() }
+}
+
 # Cleanup is best effort only after a transaction is committed or restored.
 # Never bypass a host deletion guard or retry a denied deletion in finally.
 function Remove-CompletedStage([string]$Path) {
@@ -51,8 +90,8 @@ function Test-ManagedExecutor([string]$Directory) {
 function Assert-OwnedInstallation([string]$Directory, [string]$Name, [string]$SourceDirectory = "") {
   $options = @("install-verify", "--directory", $Directory, "--name", $Name)
   if ($SourceDirectory) { $options += @("--source-directory", $SourceDirectory) }
-  & $script:ownershipGuard @options
-  if ($LASTEXITCODE -ne 0) { Fail "installation ownership or file changes require review: $Name; existing files were preserved" }
+  $result = Invoke-NativeExecutor $script:ownershipGuard $options
+  if ($result.ExitCode -ne 0) { Fail "installation ownership or file changes require review: $Name; existing files were preserved" }
 }
 
 function Get-ExecutorPlatform() {
@@ -122,7 +161,8 @@ function Invoke-Init([string]$TargetRoot, [string]$RequestedHost) {
     Write-Output "Pure Tokens Skill init: host ID was not supplied, so the connection check was deferred."
   } else {
     $executor = Join-Path (Join-Path $TargetRoot ".puretokens-executor") "puretokens-api.exe"
-    $initOutput = @(& $executor init --host $RequestedHost 2>$null)
+    $result = Invoke-NativeExecutor $executor @("init", "--host", $RequestedHost)
+    $initOutput = @($result.Output)
     $json = $null
     if ($initOutput.Count -gt 0) {
       try { $json = ($initOutput -join "`n") | ConvertFrom-Json } catch { $json = $null }
@@ -312,8 +352,9 @@ try {
   [PSCustomObject]@{ schemaVersion = 1; name = "puretokens-api-executor"; version = $releaseVersion; platform = (Get-ExecutorPlatform) } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $stageExecutor "runtime.json") -Encoding utf8
   foreach ($name in ($currentSkills + @(".puretokens-executor"))) {
     $directory = Join-Path $stageRoot $name
-    $inventory = & $script:ownershipGuard install-inventory --directory $directory --name $name
-    if ($LASTEXITCODE -ne 0) { Fail "could not record managed files for $name" }
+    $result = Invoke-NativeExecutor $script:ownershipGuard @("install-inventory", "--directory", $directory, "--name", $name)
+    $inventory = $result.Output
+    if ($result.ExitCode -ne 0) { Fail "could not record managed files for $name" }
     $inventory | Set-Content -LiteralPath (Join-Path $directory ".puretokens-managed.json") -Encoding UTF8
   }
 
@@ -336,8 +377,8 @@ try {
   foreach ($name in ($currentSkills + @(".puretokens-executor"))) {
     $installed = Join-Path $targetRoot $name
     if (-not (Test-Path -LiteralPath (Join-Path $installed ".puretokens-managed.json") -PathType Leaf)) { Fail "managed inventory missing; installation is incomplete" }
-    & $script:ownershipGuard install-verify --directory $installed --name $name | Out-Null
-    if ($LASTEXITCODE -ne 0) { Fail "installed managed files could not be verified" }
+    $result = Invoke-NativeExecutor $script:ownershipGuard @("install-verify", "--directory", $installed, "--name", $name)
+    if ($result.ExitCode -ne 0) { Fail "installed managed files could not be verified" }
   }
   New-Item -ItemType File -Path (Join-Path $stageRoot "committed") | Out-Null
   foreach ($name in $retiredSkills) {
@@ -347,8 +388,8 @@ try {
   }
   $legacyRuntime = Join-Path $targetRoot ".puretokens-runtime"
   if ((Test-Path -LiteralPath $legacyRuntime) -and (Test-LegacyNodeRuntime $legacyRuntime)) {
-    & $script:ownershipGuard install-verify --directory $legacyRuntime --name ".puretokens-runtime" | Out-Null
-    if ($LASTEXITCODE -eq 0) {
+    $result = Invoke-NativeExecutor $script:ownershipGuard @("install-verify", "--directory", $legacyRuntime, "--name", ".puretokens-runtime")
+    if ($result.ExitCode -eq 0) {
       Remove-Item -LiteralPath $legacyRuntime -Recurse -Force
       Write-Output "Removed retired managed Node runtime from $legacyRuntime"
     } else { Write-Output "Unverified or modified legacy runtime preserved; review it separately." }

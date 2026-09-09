@@ -94,5 +94,8 @@ try {
   if ($HostId) { $syncOptions.HostId = $HostId }
   & (Join-Path $sourceRoot "runtime/puretokens-skill-install.ps1") sync @syncOptions
 } finally {
-  if (Test-Path -LiteralPath $downloadRoot) { Remove-Item -LiteralPath $downloadRoot -Recurse -Force }
+  if (Test-Path -LiteralPath $downloadRoot) {
+    try { Remove-Item -LiteralPath $downloadRoot -Recurse -Force -ErrorAction Stop }
+    catch { Write-Output "cleanup_status: pending; download temporary files were retained. Preserve the preceding install result; do not bypass host cleanup restrictions." }
+  }
 }

@@ -68,6 +68,27 @@ function Remove-Item {
     $released.Dispose()
     & $command.Source -NoProfile -ExecutionPolicy Bypass -File $installer sync -Target $guardTarget
     if ($LASTEXITCODE -ne 0 -or @(Get-ChildItem $guardTarget -Directory -Force -Filter '.puretokens-skill-stage-*').Count -ne 0) { throw "$engine could not recover retained completed stage" }
+    $launchProbe = Join-Path $root "launcher-$engine.ps1"
+    @'
+param($Installer, $Target)
+$ErrorActionPreference = 'Stop'
+$tokens = $null; $parseErrors = $null
+$ast = [System.Management.Automation.Language.Parser]::ParseFile($Installer, [ref]$tokens, [ref]$parseErrors)
+if ($parseErrors.Count) { throw 'installer parse failed' }
+$function = $ast.Find({ param($node) $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'Invoke-NativeExecutor' }, $true)
+Invoke-Expression $function.Extent.Text
+function Fail([string]$Message) { throw $Message }
+$binary = Join-Path $Target '.puretokens-executor/puretokens-api.exe'
+$ok = Invoke-NativeExecutor $binary @('--version')
+if ($ok.ExitCode -ne 0 -or $ok.Output.Trim() -notmatch '^\d+\.\d+\.\d+$') { throw 'launcher lost stdout or exit code' }
+$bad = Invoke-NativeExecutor $binary @('unsupported-command')
+if ($bad.ExitCode -eq 0) { throw 'launcher swallowed failure' }
+$folder = (Join-Path $Target 'puretokens-image') + [IO.Path]::DirectorySeparatorChar
+$inventory = Invoke-NativeExecutor $binary @('install-inventory', '--directory', $folder, '--name', 'puretokens-image')
+if ($inventory.ExitCode -ne 0 -or ($inventory.Output | ConvertFrom-Json).name -ne 'puretokens-image') { throw 'launcher corrupted quoted path' }
+'@ | Set-Content -LiteralPath $launchProbe -Encoding UTF8
+    & $command.Source -NoProfile -ExecutionPolicy Bypass -File $launchProbe -Installer $installer -Target $engineTarget
+    if ($LASTEXITCODE -ne 0) { throw "$engine native launcher regression" }
     $capture = Join-Path $root "capture-$engine.ps1"
     $receipt = Join-Path $root "receipt-$engine.txt"
     @'

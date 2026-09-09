@@ -102,6 +102,11 @@
       "id": "old-marked-selector-new-host",
       "when": "a sibling installer carries the old locate marker but does not support the requested host",
       "then": "download and use the directory selector from the same pinned source commit; never reuse the sibling based only on its marker"
+    },
+    {
+      "id": "install-host-launch-failure",
+      "when": "official installation cannot launch the executor, capture output or finish within its timeout",
+      "then": "Stop and report completed stages and the sanitized failure. Do not create probes, shims, Python patches, modify official scripts, switch launch mechanisms, run doctor repeatedly or resubmit installation automatically. Required host approvals remain required."
     }
   ]
 }
