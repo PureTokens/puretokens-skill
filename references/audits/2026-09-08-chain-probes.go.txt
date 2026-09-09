@@ -1,0 +1,91 @@
+// Historical pre-fix probes from 2026-09-08, retained as audit evidence.
+// These assert old defects and are not current regression tests or executable acceptance instructions.
+package main
+
+import (
+	"context"
+	"crypto/sha256"
+	"fmt"
+	"io"
+	"mime"
+	"mime/multipart"
+	"os"
+	"path/filepath"
+	"testing"
+)
+
+func TestAuditChangedAttachmentIsSilentlyTruncated(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "reference.png")
+	os.WriteFile(path, []byte("original"), 0600)
+	req := taskRequest{Kind: "image", Operation: "edit", Model: "gpt-image-2", Prompt: "fixture", Attachments: []attachment{{Field: "image", Path: path}}}
+	if err := validateTaskRequest(req); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Truncate(path, attachmentLimit("image")+100); err != nil {
+		t.Fatal(err)
+	}
+	_, ct, body, err := taskRequestBody(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer body.(io.Closer).Close()
+	_, params, _ := mime.ParseMediaType(ct)
+	reader := multipart.NewReader(body, params["boundary"])
+	var copied int64
+	for {
+		part, e := reader.NextPart()
+		if e == io.EOF {
+			break
+		}
+		if e != nil {
+			t.Fatal(e)
+		}
+		n, e := io.Copy(io.Discard, part)
+		if e != nil {
+			t.Fatal(e)
+		}
+		if part.FileName() != "" {
+			copied = n
+		}
+	}
+	if copied != attachmentLimit("image")+1 {
+		t.Fatalf("unexpected size %d", copied)
+	}
+	t.Log("CONFIRMED: changed attachment truncated at limit+1 and multipart completed without error")
+}
+func TestAuditUnrelatedMediaReusedWithoutProvenance(t *testing.T) {
+	root := t.TempDir()
+	route := contentPath("image", "audit-task", 0)
+	file := filepath.Join(root, fmt.Sprintf("puretokens-%x.png", sha256.Sum256([]byte(route))))
+	if err := os.WriteFile(file, fixturePNG(t), 0600); err != nil {
+		t.Fatal(err)
+	}
+	got, _, _, _, _, err := (service{baseURL: "invalid"}).download(context.Background(), route, "image", root)
+	if err != nil || got != file {
+		t.Fatal("probe did not reuse unrelated image")
+	}
+	t.Log("CONFIRMED: unrelated pre-existing valid PNG accepted without network or provenance")
+}
+func TestAuditRecordStoresInvalidFreeTextParameter(t *testing.T) {
+	r := recordFromRequest(taskRequest{Kind: "image", Operation: "generate", Model: "gpt-image-2", Prompt: "fixture", Parameters: map[string]any{"size": "private draft about project alpha"}})
+	if r.Parameters["size"] != "private draft about project alpha" {
+		t.Fatal("probe changed")
+	}
+	t.Log("CONFIRMED: unvalidated free text retained before model validation")
+}
+func TestAuditRejectedRequestPersistsFreeText(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "task.json")
+	req := taskRequest{Kind: "image", Operation: "generate", Model: "gpt-image-2", Prompt: "fixture", Parameters: map[string]any{"size": "private draft about project alpha"}}
+	err := executeRecordedTask("submit", path, req, 0, "", io.Discard, service{profilesRoot: filepath.Join("..", "..", "skills")})
+	if err == nil {
+		t.Fatal("invalid size should fail")
+	}
+	r, e := loadTaskRecord(path)
+	if e != nil {
+		t.Fatal(e)
+	}
+	if r.Parameters["size"] != "private draft about project alpha" || r.SubmissionOutcome != "not_submitted" {
+		t.Fatal("probe did not reproduce persisted rejected input")
+	}
+	t.Log("CONFIRMED: rejected request leaves free-form size text in persistent record")
+}
