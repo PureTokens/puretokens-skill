@@ -41,6 +41,33 @@ try {
     # and PowerShell 7. Bypass applies to this child process only.
     & $command.Source -NoProfile -ExecutionPolicy Bypass -File $installer sync -Target $engineTarget
     if ($LASTEXITCODE -ne 0) { throw "$engine advertised installer entry failed" }
+    # Simulate a host deletion guard without bypassing it: successful sync and
+    # init must remain observable, the stage is retained, and the lock released.
+    $guardRunner = Join-Path $root "guard-$engine.ps1"
+    @'
+param($Installer, $Target)
+$ErrorActionPreference = 'Stop'
+function Remove-Item {
+  [CmdletBinding(SupportsShouldProcess=$true)]
+  param([string]$LiteralPath, [switch]$Recurse, [switch]$Force)
+  if ($LiteralPath -like '*.puretokens-skill-stage-*') { throw 'synthetic host cleanup denied' }
+  Microsoft.PowerShell.Management\Remove-Item @PSBoundParameters
+}
+& $Installer sync -Target $Target
+'@ | Set-Content -LiteralPath $guardRunner -Encoding ASCII
+    $guardTarget = Join-Path $root "guard-target-$engine"
+    $guardOutput = @(& $command.Source -NoProfile -ExecutionPolicy Bypass -File $guardRunner -Installer $installer -Target $guardTarget)
+    if ($LASTEXITCODE -ne 0) { throw "$engine cleanup denial failed the completed sync" }
+    $guardText = $guardOutput -join "`n"
+    if ($guardText -notmatch 'synchronized with the native API executor' -or $guardText -notmatch 'cleanup_status: pending' -or $guardText -notmatch 'connection check was deferred') { throw "$engine lost sync, cleanup or init status" }
+    foreach ($name in @('puretokens-balance','puretokens-connection','puretokens-models','puretokens-image','puretokens-video','puretokens-update','.puretokens-executor')) {
+      if (-not (Test-Path (Join-Path (Join-Path $guardTarget $name) '.puretokens-managed.json'))) { throw "$engine missing installed inventory" }
+    }
+    if (@(Get-ChildItem $guardTarget -Directory -Force -Filter '.puretokens-skill-stage-*').Count -ne 1) { throw "$engine did not retain denied cleanup stage" }
+    $released = [IO.File]::Open((Join-Path $guardTarget '.puretokens-install.lock'), 'OpenOrCreate', 'ReadWrite', 'None')
+    $released.Dispose()
+    & $command.Source -NoProfile -ExecutionPolicy Bypass -File $installer sync -Target $guardTarget
+    if ($LASTEXITCODE -ne 0 -or @(Get-ChildItem $guardTarget -Directory -Force -Filter '.puretokens-skill-stage-*').Count -ne 0) { throw "$engine could not recover retained completed stage" }
     $capture = Join-Path $root "capture-$engine.ps1"
     $receipt = Join-Path $root "receipt-$engine.txt"
     @'

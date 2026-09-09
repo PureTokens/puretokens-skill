@@ -5,27 +5,27 @@
   "artifacts": {
     "darwin-amd64": {
       "path": "bin/puretokens-api-darwin-amd64",
-      "sha256": "ed130577a05af24162d53d5ffe89c2e6371f1b742afede673f9061ed95783244"
+      "sha256": "d71534282a5173b77d18e63faf4d002901dd6acaa846dbb5e77d36470a9786df"
     },
     "darwin-arm64": {
       "path": "bin/puretokens-api-darwin-arm64",
-      "sha256": "da6a6a3d69066a48d1324cbf185876f0aca9728b8d91064777e3cdfde6cee610"
+      "sha256": "5471aa159d6f34e48a49bb29aedf833020286e160c74fb74b99f80d3ffbeae1c"
     },
     "linux-amd64": {
       "path": "bin/puretokens-api-linux-amd64",
-      "sha256": "75c76938f16582c042a454b710e123657f5ec3cccbe0e78dba1917901d1ca8a8"
+      "sha256": "1b2b150bcd31a09ae461ef3606cc824af8d259316f48e0173cf17adccb5dbb66"
     },
     "linux-arm64": {
       "path": "bin/puretokens-api-linux-arm64",
-      "sha256": "3f3e487efe8a6a5d37d8c713ab4a5458ceebbbf0b29ed7ac53812810e4bdfba9"
+      "sha256": "8812db61d5267c1e4888cadc969a9bd9ba98e9484234d1df1e27776b2b835f38"
     },
     "windows-amd64": {
       "path": "bin/puretokens-api-windows-amd64.exe",
-      "sha256": "462595c035096ac8804d3517c6875b735d0f1800ae12f73f074b20519ec8fbcd"
+      "sha256": "e9b8393864d8b1e7cc07a93d2989a2dfca335e607a3c26c0fd9f9402da9730c7"
     },
     "windows-arm64": {
       "path": "bin/puretokens-api-windows-arm64.exe",
-      "sha256": "6ae7a7d4434b4eeabf925d214616b932b5465a7b204b5ccc0025bc721bc8f7e9"
+      "sha256": "a565499d0fa571d97e44c99e482feb7a064a8390de56af21281d078b9b4d2643"
     }
   }
 }

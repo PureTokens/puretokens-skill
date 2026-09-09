@@ -43,3 +43,7 @@ Claude Desktop 使用 `claude-desktop`，仅在能访问本机执行器和 Deskt
 ZCode 本地执行使用宿主 ID `zcode`。只使用唯一启用且端点匹配的 Pure Tokens 连接；不能据此声称识别当前聊天模型。目录、远程工作区及交付限制按需读 `references/desktop-hosts.md`。
 
 失败时区分版本检查、下载／校验、文件同步和 init 阶段，说明哪些步骤已确认完成及下一步。网络失败可建议稍后重新检查；校验失败停止使用该包并反馈官方维护方；写入受限可建议检查目标目录权限，不提权或删除未知目录。sync 已成功但 init 失败时明确“文件已同步，连接验证未完成”，按 init 脱敏建议处理，不重复安装。未知中断先核对已安装状态，不自动重跑。
+
+WorkBuddy 适配器无法匹配连接时，不据此断言当前聊天未使用 Pure Tokens；若用户确认已配置并成功使用 Pure Tokens，保留可用连接，按具体诊断检查适配；不能把自带模型聊天正常当作 Pure Tokens 配置有效的证据。排查仅提供客户端版本及脱敏诊断码，不读取或索取配置原文。Windows 的 `cleanup_status: pending` 表示已完成事务的暂存清理被拒绝，不等于文件同步失败；按独立 init 结果说明连接状态，不绕过删除守卫。锁文件存在不等于被占用；缺少管理清单不能归因于清理失败，也不能称为无害。
+
+`init` 验证已保存的 Pure Tokens 连接，与当前聊天模型无关，不要求切换聊天模型。WorkBuddy 使用 `workbuddy_record_missing`、`workbuddy_record_unreadable`、`workbuddy_record_format_unsupported`、`workbuddy_connection_not_found`、`workbuddy_credential_missing`、`workbuddy_connection_ambiguous` 区分本地原因；这些状态不代表安装失败，也不证明用户从未配置过。只反馈脱敏状态，不读取配置原文。

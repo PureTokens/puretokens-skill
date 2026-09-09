@@ -579,7 +579,7 @@ func TestBOMConfigAndWorkBuddyMissingCredentialClassified(t *testing.T) {
 	path := writeFixture(t, "models.json", "\ufeff"+`[{"url":"https://api.puretokensx.com/v1/chat/completions","apiKey":""}]`)
 	_, err := credentialFromWorkBuddyFile(path)
 	status, _, _ := credentialFailureDetails(err)
-	if status != "active_connection_credential_missing" {
+	if status != "workbuddy_credential_missing" {
 		t.Fatal("missing credential reported ambiguous", status)
 	}
 }

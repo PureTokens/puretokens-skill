@@ -24,3 +24,7 @@ description: 用户询问 Skill 将调用的 Pure Tokens API 是否可确认、A
 ZCode 本地执行使用宿主 ID `zcode`。只使用唯一启用且端点匹配的 Pure Tokens 连接；不能据此声称识别当前聊天模型。目录、远程工作区及交付限制按需读 `references/desktop-hosts.md`。
 
 失败结论后可补充下一步：网络／服务异常可由用户稍后重查或联系 Pure Tokens 支持；标识不符可反馈身份检查结果。公开身份检查的 401／403 不验证凭据，不能据此要求更换 Key。执行器无法运行则说明检查尚未执行，并按回执处理本地可访问性。
+
+WorkBuddy 适配器无法匹配连接时，不据此断言当前聊天未使用 Pure Tokens；若用户确认已配置并成功使用 Pure Tokens，保留可用连接，按具体诊断检查适配；不能把自带模型聊天正常当作 Pure Tokens 配置有效的证据。排查仅提供客户端版本及脱敏诊断码，不读取或索取配置原文。Windows 的 `cleanup_status: pending` 表示已完成事务的暂存清理被拒绝，不等于文件同步失败；按独立 init 结果说明连接状态，不绕过删除守卫。锁文件存在不等于被占用；缺少管理清单不能归因于清理失败，也不能称为无害。
+
+`init` 验证已保存的 Pure Tokens 连接，与当前聊天模型无关，不要求切换聊天模型。WorkBuddy 使用 `workbuddy_record_missing`、`workbuddy_record_unreadable`、`workbuddy_record_format_unsupported`、`workbuddy_connection_not_found`、`workbuddy_credential_missing`、`workbuddy_connection_ambiguous` 区分本地原因；这些状态不代表安装失败，也不证明用户从未配置过。只反馈脱敏状态，不读取配置原文。

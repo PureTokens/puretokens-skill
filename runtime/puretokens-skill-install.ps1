@@ -20,6 +20,13 @@ $retiredSkills = @("puretokens_media", "puretokens_balance", "puretokens_connect
 
 function Fail([string]$Message) { throw "Pure Tokens Skill installer: $Message" }
 
+# Cleanup is best effort only after a transaction is committed or restored.
+# Never bypass a host deletion guard or retry a denied deletion in finally.
+function Remove-CompletedStage([string]$Path) {
+  try { Remove-Item -LiteralPath $Path -Recurse -Force -ErrorAction Stop }
+  catch { Write-Output "cleanup_status: pending; completed transaction files were retained. Host cleanup permission is required; do not delete unknown directories or reinstall solely for this warning." }
+}
+
 function Test-InstallationEntry([string]$Path) {
   return $null -ne (Get-Item -LiteralPath $Path -Force -ErrorAction SilentlyContinue)
 }
@@ -270,7 +277,7 @@ try {
   foreach ($previous in @(Get-ChildItem -LiteralPath $targetRoot -Directory -Force | Where-Object { $_.Name -like ".puretokens-skill-stage-*" })) {
     if (-not (Test-Path -LiteralPath (Join-Path $previous.FullName "transaction-v1"))) { Fail "unknown staging directory; left untouched" }
     if (-not (Test-Path -LiteralPath (Join-Path $previous.FullName "committed"))) { Restore-Transaction $targetRoot $previous.FullName }
-    Remove-Item -LiteralPath $previous.FullName -Recurse -Force
+    Remove-CompletedStage $previous.FullName
   }
   # Recheck after obtaining the installation lock: another sync may have
   # completed while this version's archive was still downloading.
@@ -325,6 +332,13 @@ try {
     } elseif (Test-InstallationEntry $destination) { Fail "a destination appeared during installation; existing files were preserved" }
     Move-Item -LiteralPath (Join-Path $stageRoot $entry.name) -Destination $destination
   }
+  # Require the inventory itself, even if install-verify could adopt an exact source copy.
+  foreach ($name in ($currentSkills + @(".puretokens-executor"))) {
+    $installed = Join-Path $targetRoot $name
+    if (-not (Test-Path -LiteralPath (Join-Path $installed ".puretokens-managed.json") -PathType Leaf)) { Fail "managed inventory missing; installation is incomplete" }
+    & $script:ownershipGuard install-verify --directory $installed --name $name | Out-Null
+    if ($LASTEXITCODE -ne 0) { Fail "installed managed files could not be verified" }
+  }
   New-Item -ItemType File -Path (Join-Path $stageRoot "committed") | Out-Null
   foreach ($name in $retiredSkills) {
     $destinations = @((Join-Path $targetRoot $name))
@@ -340,7 +354,7 @@ try {
     } else { Write-Output "Unverified or modified legacy runtime preserved; review it separately." }
   }
   Write-Output "Pure Tokens Skills $releaseVersion synchronized with the native API executor at $targetRoot"
-  Remove-Item -LiteralPath $stageRoot -Recurse -Force
+  Remove-CompletedStage $stageRoot
   $stageRoot = $null
   $updateLock.Dispose(); $updateLock = $null
   Invoke-Init $targetRoot $HostId
@@ -348,7 +362,7 @@ try {
   try {
     if ($null -ne $stageRoot -and (Test-Path -LiteralPath $stageRoot)) {
       if (-not (Test-Path -LiteralPath (Join-Path $stageRoot "committed"))) { Restore-Transaction $targetRoot $stageRoot }
-      Remove-Item -LiteralPath $stageRoot -Recurse -Force
+      Remove-CompletedStage $stageRoot
     }
   } finally { if ($null -ne $updateLock) { $updateLock.Dispose() } }
 }

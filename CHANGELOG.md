@@ -6,6 +6,8 @@
 
 ## 0.18.0 — 2026-09-07
 
+- Preserve completed Windows installs when host cleanup is denied, verify installed inventories before success, and avoid blaming working WorkBuddy connections for adapter mismatches.
+
 - Limit website guidance to responsive conversations: wallet recharge after explicit quota/balance errors, usage records for user-requested spending details, and wallet information for allowance-scope questions; guidance-only questions issue no API requests.
 
 - Quota and balance failures now direct users to the official Wallet & Recharge page; quota guidance also retains the API-key allowance distinction.

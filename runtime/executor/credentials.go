@@ -140,14 +140,21 @@ func credentialFromWorkBuddy() (string, error) {
 func credentialFromWorkBuddyFile(configPath string) (string, error) {
 	value, err := readJSONValue(configPath)
 	if err != nil {
-		return "", err
+		status := "workbuddy_record_unreadable"
+		if os.IsNotExist(err) {
+			status = "workbuddy_record_missing"
+		}
+		return "", credentialFailure(status, "The supported WorkBuddy connection record could not be read; no API request was sent.", "Installation and connection readiness are separate. If Pure Tokens was already configured, report the WorkBuddy version and this diagnostic code without sharing configuration contents. The current chat model need not be changed.")
 	}
-	items := jsonArray(value)
-	if items == nil {
-		items = jsonArray(jsonObject(value)["models"])
+	items, supported := value.([]any)
+	if !supported {
+		items, supported = jsonObject(value)["models"].([]any)
+	}
+	if !supported {
+		return "", credentialFailure("workbuddy_record_format_unsupported", "The WorkBuddy connection record format is not supported.", "Keep existing connections. Report the WorkBuddy version and this safe diagnostic code; do not share configuration contents or switch chat models.")
 	}
 	if len(items) == 0 {
-		return "", credentialFailure("active_connection_unavailable", "WorkBuddy does not have an active configured connection for this check.", "Select and apply the Pure Tokens connection in WorkBuddy, then run init again.")
+		return "", credentialFailure("workbuddy_connection_not_found", "No connection entries were found in the supported WorkBuddy record.", "If Pure Tokens was already configured, report adapter compatibility with the WorkBuddy version. Otherwise configure it when API features are needed. Installation does not require changing the chat model.")
 	}
 	keys := make(map[string]struct{})
 	matchedEndpoint := false
@@ -163,17 +170,17 @@ func credentialFromWorkBuddyFile(configPath string) (string, error) {
 	}
 	if len(keys) == 0 {
 		if matchedEndpoint {
-			return "", credentialFailure("active_connection_credential_missing", "The configured Pure Tokens record has no usable credential.", "Apply the Pure Tokens connection in WorkBuddy again, then run init.")
+			return "", credentialFailure("workbuddy_credential_missing", "The configured Pure Tokens record has no usable credential.", "Apply the Pure Tokens connection in WorkBuddy again, then run init.")
 		}
-		return "", credentialFailure("active_connection_not_puretokens", "No supported Pure Tokens connection record was found.", "Apply the Pure Tokens connection in WorkBuddy, then run init.")
+		return "", credentialFailure("workbuddy_connection_not_found", "The WorkBuddy adapter could not confirm a matching Pure Tokens connection in its supported record format.", "If this conversation already works through Pure Tokens, keep the working connection and report an adapter compatibility issue with the WorkBuddy version and this safe diagnostic code. Do not share credentials or configuration contents. Otherwise check the selected connection in WorkBuddy.")
 	}
 	if len(keys) != 1 {
-		return "", credentialFailure("active_connection_ambiguous", "WorkBuddy has no single unambiguous Pure Tokens credential for this check.", "Keep one active Pure Tokens connection in WorkBuddy, then run init again.")
+		return "", credentialFailure("workbuddy_connection_ambiguous", "WorkBuddy has no single unambiguous Pure Tokens credential for this check.", "Multiple saved Pure Tokens credentials match; the adapter cannot select one safely. Keep existing connections and report the ambiguity without sharing credentials. Switching the chat model does not resolve this selection.")
 	}
 	for key := range keys {
 		return key, nil
 	}
-	return "", credentialFailure("active_connection_credential_missing", "The active WorkBuddy Pure Tokens connection has no usable credential.", "Apply the Pure Tokens connection in WorkBuddy again, then run init again.")
+	return "", credentialFailure("workbuddy_credential_missing", "The active WorkBuddy Pure Tokens connection has no usable credential.", "Apply the Pure Tokens connection in WorkBuddy again, then run init again.")
 }
 
 func credentialFromGrokBuild() (string, error) {
