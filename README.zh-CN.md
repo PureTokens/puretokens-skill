@@ -67,8 +67,10 @@ Computer Use、浏览器自动化以及打开或点击 Pure Tokens Switch/Deskto
 | Claude Desktop | `~/.claude/skills`（与 Claude Code 共享） | 本地 Code 会话；Desktop 凭据夹具通过，端到端待验收 |
 | DSH Desktop | macOS：`~/Library/Application Support/dsh-desktop/harness/skills`；Windows：`%APPDATA%\dsh-desktop\harness\skills` | 凭据格式通过夹具测试；客户端端到端待验收 |
 | ZCode | `~/.zcode/skills` | 本地连接适配；真实 API 和附件交付待验收 |
+| Kimi Code | `~/.kimi-code/skills` | 凭据夹具覆盖；真实 API 与附件交付待验收 |
+| Qoder | `~/.qoder/skills` | IDE／CLI 本地执行；真实 API 与附件交付待验收 |
 
-十个宿主以 `references/host-support.json` 为唯一契约。表中为默认目录；Claude／WorkBuddy 支持明确配置目录覆盖，DSH 支持本地 Harness 明确设置的 `DSH_HOME`。Gemini 如已有较高优先级的 `.agents/skills` 安装，会更新该目录并报告重复副本。不会依据 provider 名判断。
+十二个宿主以 `references/host-support.json` 为唯一契约。表中为默认目录；Claude／WorkBuddy 支持明确配置目录覆盖，DSH 支持本地 Harness 明确设置的 `DSH_HOME`。Gemini 如已有较高优先级的 `.agents/skills` 安装，会更新该目录并报告重复副本。不会依据 provider 名判断。
 
 Claude Desktop 请选择本地 Code 会话并使用宿主 ID `claude-desktop`；它读取 Desktop 当前第三方连接，不借用 Claude Code 的凭据。云端、SSH、WSL 或 Cowork 隔离环境不等于本机环境，无法访问本机连接或执行器时会停止。DSH 使用 `dsh-desktop`；项目或自定义 Skill 目录可能覆盖用户目录，应核对实际加载位置。安装示例及边界见 [桌面宿主说明](skills/puretokens-update/references/desktop-hosts.md)。
 
@@ -164,7 +166,7 @@ npm run release:validate
 
 精确媒体报价、服务端幂等保证和未知提交的任务查找尚未实现；本地校验与任务记录不能代替这些服务端能力。
 
-ZCode: `--host zcode`; an absolute `ZCODE_DATA_BASE_DIR` selects `<base>/.zcode/skills`. One uniquely enabled Pure Tokens connection is required. This does not identify the conversation model; remote workspace Skill sync does not supply the executor or connection.
+ZCode 使用 `--host zcode`；绝对路径 `ZCODE_DATA_BASE_DIR` 指定 `<base>/.zcode/skills`。需要唯一启用且匹配的连接，但这不证明当前会话模型选择。仅同步远程工作区的 Skill 不会同时提供执行器或连接。
 
 构建验证：`npm run executor:build` 使用 `runtime/executor/build-config.json` 指定的 Go 工具链，生成源码／构建输入摘要和六份二进制证明。`npm run validate` 核对摘要、嵌入身份和产物；`npm run executor:verify` 在临时目录重建六个平台并逐字节比较，`npm run release:validate` 包含此门禁。用户安装无需 Go 或 Node。真实宿主验收另行记录，Linux 产物存在不等于所有客户端支持 Linux。
 

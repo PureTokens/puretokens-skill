@@ -30,4 +30,6 @@ description: 查询当前 Pure Tokens 连接实际可用的图片和视频模型
 
 用户明确筛选时，可用 `models --host <host-id> --request <UTF-8筛选文件>`，文件可含 `kind`、精确 `model`、`operation` 和 `parameters`，例如 `{"kind":"video","operation":"image_to_video","parameters":{"resolution":"720p"}}`。执行器只读取一次认证目录并按其声明筛选；缺少字段不视为兼容，不提交媒体。无筛选则省略 --request。查询目录不是普通生成的必需前置步骤。
 
-ZCode 本地执行使用宿主 ID `zcode`。只使用唯一启用且端点匹配的 Pure Tokens 连接；不能据此声称识别当前聊天模型。目录、远程工作区及交付限制按需读 `references/desktop-hosts.md`。
+当前会话若使用未反映在宿主已声明有效文件中的配置覆盖，停止并说明无法确认有效连接；不读取其他配置或借用默认连接。
+
+宿主目录、会话选择限制或特定客户端故障才按需读 `references/desktop-hosts.md`；普通请求不增加诊断前置步骤。

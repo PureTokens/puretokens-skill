@@ -7,7 +7,7 @@ current_skills="puretokens-balance puretokens-connection puretokens-models puret
 retired_skills="puretokens_media puretokens_balance puretokens_connection puretokens_models puretokens_image puretokens_video puretokens_update puretokens_get_balance puretokens_get_model_price puretokens_workbuddy_router"
 
 usage() {
-  printf '%s\n' "Usage: puretokens-skill-install.sh <check|init|sync|locate> (--host <claude-code|codex|workbuddy|gemini-cli|grok-build|opencode|trae|claude-desktop|dsh-desktop|zcode> | --target <absolute-skill-directory>) [--source <absolute-official-source-directory>]"
+  printf '%s\n' "Usage: puretokens-skill-install.sh <check|init|sync|locate> (--host <claude-code|codex|workbuddy|gemini-cli|grok-build|opencode|trae|claude-desktop|dsh-desktop|zcode|kimi-code|qoder> | --target <absolute-skill-directory>) [--source <absolute-official-source-directory>]"
 }
 
 fail() {
@@ -81,6 +81,16 @@ target_for_host() {
   [ -n "${HOME:-}" ] || fail "cannot resolve a host Skill directory because HOME is unavailable"
   case "$host" in
     claude-code|claude-desktop) printf '%s\n' "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills" ;;
+    kimi-code) printf '%s\n' "${KIMI_CODE_HOME:-$HOME/.kimi-code}/skills" ;;
+    qoder)
+      if [ -n "${QODER_CONFIG_DIR:-}" ]; then
+        printf '%s\n' "$QODER_CONFIG_DIR/skills"
+      else
+        qoder_name=${QODER_CONFIG_DIR_NAME:-.qoder}
+        case "$qoder_name" in .|..|*/*|*\\*) fail "invalid Qoder directory name" ;; esac
+        printf '%s\n' "${QODER_CLI_HOME:-$HOME}/$qoder_name/skills"
+      fi
+      ;;
     zcode) printf '%s\n' "${ZCODE_DATA_BASE_DIR:-$HOME}/.zcode/skills" ;;
     dsh-desktop)
       if [ -n "${DSH_HOME:-}" ]; then
@@ -464,7 +474,7 @@ while [ "$#" -gt 0 ]; do
 done
 
 [ -n "$target" ] || [ -n "$host" ] || fail "--host or --target is required"
-case "$host" in ''|claude-code|codex|workbuddy|gemini-cli|grok-build|opencode|trae|claude-desktop|dsh-desktop|zcode) ;; *) fail "unsupported host" ;; esac
+case "$host" in ''|claude-code|codex|workbuddy|gemini-cli|grok-build|opencode|trae|claude-desktop|dsh-desktop|zcode|kimi-code|qoder) ;; *) fail "unsupported host" ;; esac
 [ -n "$target" ] || target=$(target_for_host "$host")
 [ "${target#/}" != "$target" ] || fail "--target must be an absolute Skill directory"
 [ -z "$source" ] || [ "${source#/}" != "$source" ] || fail "--source must be an absolute official source directory"

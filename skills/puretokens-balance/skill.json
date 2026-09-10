@@ -48,6 +48,14 @@
     "zcode": {
       "manualInstallationSupported": true,
       "globalSkillDirectory": "~/.zcode/skills"
+    },
+    "kimiCode": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.kimi-code/skills"
+    },
+    "qoder": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.qoder/skills"
     }
   },
   "supportedClients": [
@@ -60,7 +68,9 @@
     "trae",
     "claude-desktop",
     "dsh-desktop",
-    "zcode"
+    "zcode",
+    "kimi-code",
+    "qoder"
   ],
   "rules": {
     "usesFixedPureTokensApiOrigin": true,
@@ -77,5 +87,5 @@
     "balanceRequiresExistingAccountSession": false,
     "doesNotUseMcpOrFallbackTransport": true
   },
-  "sourceSha256": "0ec6dc833466546d2b791b44ea7d3b9597c6f6d90a52e7cadd62ccb2b23dd325"
+  "sourceSha256": "a20465f3f038bde216d74f72634da968ac304ec624e6441d66eda495a236e749"
 }

@@ -92,6 +92,24 @@
       "credentialAdapter": "fixture-tested",
       "guidance": "Local ZCode execution only. Resolve one unique enabled Pure Tokens connection; this does not identify the current conversation model. Real-host API and native delivery acceptance remain pending.",
       "directorySelection": "ZCODE_DATA_BASE_DIR/.zcode/skills when explicitly configured with an absolute base directory; otherwise ~/.zcode/skills. Remote workspace synchronization does not supply the executor or connection."
+    },
+    {
+      "id": "kimi-code",
+      "delivery": "native-installer",
+      "globalSkillDirectory": "~/.kimi-code/skills",
+      "directMediaExecution": "managed-native-executor",
+      "credentialAdapter": "fixture-tested",
+      "guidance": "Native executor credential-format fixtures; actual host API and attachment delivery acceptance remains pending.",
+      "directorySelection": "KIMI_CODE_HOME/skills or default."
+    },
+    {
+      "id": "qoder",
+      "delivery": "native-installer",
+      "globalSkillDirectory": "~/.qoder/skills",
+      "directMediaExecution": "managed-native-executor",
+      "credentialAdapter": "fixture-tested",
+      "guidance": "Native executor credential-format fixtures; actual host API and attachment delivery acceptance remains pending.",
+      "directorySelection": "QODER_CONFIG_DIR/skills; otherwise QODER_CLI_HOME or home plus QODER_CONFIG_DIR_NAME (default .qoder), then skills."
     }
   ]
 }

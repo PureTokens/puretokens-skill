@@ -9,7 +9,7 @@ description: 当前宿主使用 Pure Tokens 连接时，任何生成或编辑视
 
 当前宿主上下文选择 Pure Tokens 或用户明确指定时，必须调用安装的原生执行器；它是唯一 API 传输，固定请求 `https://api.puretokensx.com`。不得自行发 HTTP，不回退到 imagegen／Imagen／通用视频 Skill、MCP、代理、Computer Use 或浏览器／桌面自动化。仅执行器在内存中使用当前宿主匹配连接；Skill 不读配置、不传或展示凭据。不需要用户安装 Node、Python、Go 或 Desktop。
 
-从本 SKILL.md 绝对目录解析 `../.puretokens-executor/puretokens-api`，Windows 使用 `puretokens-api.exe`；不依赖 PATH 或工作目录。当前宿主 ID 为 codex、claude-code、workbuddy、gemini-cli、grok-build、opencode、trae、claude-desktop、dsh-desktop 或 zcode，不借用其他宿主连接。远程／沙箱不能访问执行器、连接或附件时报告实际限制，不复制凭据或换传输。
+从本 SKILL.md 绝对目录解析 `../.puretokens-executor/puretokens-api`，Windows 使用 `puretokens-api.exe`；不依赖 PATH 或工作目录。当前宿主 ID 为 codex、claude-code、workbuddy、gemini-cli、grok-build、opencode、trae、claude-desktop、dsh-desktop、zcode、kimi-code 或 qoder，不借用其他宿主连接。远程／沙箱不能访问执行器、连接或附件时报告实际限制，不复制凭据或换传输。
 
 ## 选择与提交
 
@@ -36,4 +36,6 @@ description: 当前宿主使用 Pure Tokens 连接时，任何生成或编辑视
 
 失败只说明实际阶段、是否已有任务和下一步，使用执行器的脱敏 next_action；不展示整份 JSON、原始错误、内部 URL 或配置。失败、额度／费用问题才读 `references/failure-guide.md`；复杂异常按 id 查 `references/behavior-scenarios.json`。正式字段见 `references/execution-contract.json`，展示规则见 `references/task-receipt.json`，均非普通生成前置。
 
-只有用户明确检查参数时用 preflight，它不创建任务、不报价、不证明权限。特定 Desktop／ZCode 安装或交付问题才读 `references/desktop-hosts.md`；本地夹具和 init 成功均不等于实机附件验收。ZCode 连接存在不证明当前聊天选择；不据配置存在擅自路由。
+只有用户明确检查参数时用 preflight，它不创建任务、不报价、不证明权限。特定宿主安装或交付问题才读 `references/desktop-hosts.md`；本地夹具和 init 成功均不等于实机附件验收。ZCode／Qoder 连接存在不证明当前聊天选择；不据配置存在擅自路由。
+
+当前会话若使用未反映在宿主已声明有效文件中的配置覆盖，停止并说明无法确认有效连接；不读取其他配置或借用默认连接。

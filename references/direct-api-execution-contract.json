@@ -13,7 +13,9 @@
       "opencode",
       "claude-desktop",
       "dsh-desktop",
-      "zcode"
+      "zcode",
+      "kimi-code",
+      "qoder"
     ],
     "credentialUse": "in_memory_only_for_fixed_puretokens_api_requests",
     "credentialSourceMustMatchFixedPureTokensEndpoint": true,
@@ -54,7 +56,9 @@
     "trae",
     "claude-desktop",
     "dsh-desktop",
-    "zcode"
+    "zcode",
+    "kimi-code",
+    "qoder"
   ],
   "executorCredentialAdapterHosts": [
     "claude-code",
@@ -65,7 +69,9 @@
     "opencode",
     "claude-desktop",
     "dsh-desktop",
-    "zcode"
+    "zcode",
+    "kimi-code",
+    "qoder"
   ],
   "requiredExecutorCapabilities": [
     "fixed_full_url_request",

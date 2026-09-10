@@ -7,7 +7,7 @@ param(
   [Parameter(Mandatory = $false)]
   [string]$Target,
   [Parameter(Mandatory = $false)]
-  [ValidateSet("claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae", "claude-desktop", "dsh-desktop", "zcode")]
+  [ValidateSet("claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae", "claude-desktop", "dsh-desktop", "zcode", "kimi-code", "qoder")]
   [Alias("Host")]
   [string]$HostId,
   [Parameter(Mandatory = $false)]
@@ -192,6 +192,19 @@ function Get-TargetForHost([string]$RequestedHost) {
   switch ($RequestedHost) {
     "claude-code" { if ($env:CLAUDE_CONFIG_DIR) { return (Join-Path $env:CLAUDE_CONFIG_DIR "skills") }; return (Join-Path $env:USERPROFILE ".claude\skills") }
     "claude-desktop" { if ($env:CLAUDE_CONFIG_DIR) { return (Join-Path $env:CLAUDE_CONFIG_DIR "skills") }; return (Join-Path $env:USERPROFILE ".claude\skills") }
+    "kimi-code" {
+      if ($env:KIMI_CODE_HOME) { return (Join-Path $env:KIMI_CODE_HOME "skills") }
+      return (Join-Path $env:USERPROFILE ".kimi-code\skills")
+    }
+    "qoder" {
+      if ($env:QODER_CONFIG_DIR) { return (Join-Path $env:QODER_CONFIG_DIR "skills") }
+      $qoderName = ".qoder"
+      if ($env:QODER_CONFIG_DIR_NAME) { $qoderName = $env:QODER_CONFIG_DIR_NAME }
+      if ($qoderName -eq "." -or $qoderName -eq ".." -or $qoderName.Contains("/") -or $qoderName.Contains("\")) { Fail "invalid Qoder directory name" }
+      $qoderBase = $env:USERPROFILE
+      if ($env:QODER_CLI_HOME) { $qoderBase = $env:QODER_CLI_HOME }
+      return (Join-Path (Join-Path $qoderBase $qoderName) "skills")
+    }
     "zcode" {
       if ($env:ZCODE_DATA_BASE_DIR) {
         if (-not [System.IO.Path]::IsPathRooted($env:ZCODE_DATA_BASE_DIR)) { Fail "ZCode data directory must be absolute" }

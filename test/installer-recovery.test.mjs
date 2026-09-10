@@ -230,3 +230,22 @@ test("Gemini selects an existing shared Skill and detects its lower-priority dup
  f.target = legacy;
  await assert.rejects(install(f, f.env, ["--host", "gemini-cli"]), /higher-priority/);
 });
+
+test("new hosts install and update in their declared isolated roots", async t => {
+ const f = await fixture(t);
+ for (const [host, variable] of [["kimi-code", "KIMI_CODE_HOME"], ["qoder", "QODER_CONFIG_DIR"]]) {
+  const root = path.join(f.root, `${host} with spaces`);
+  const env = {...f.env, [variable]: root};
+  const target = path.join(root, "skills");
+  const located = await execFile("sh", [installer, "locate", "--host", host], {env});
+  assert.equal(located.stdout.trim(), target);
+  for (let i=0;i<2;i++) await execFile("sh", [installer, "sync", "--host", host], {env});
+  assert.ok(await readFile(path.join(target, "puretokens-image", "SKILL.md")));
+  assert.ok(await readFile(path.join(target, ".puretokens-executor", "puretokens-api")));
+  await assert.rejects(execFile("sh", [installer, "sync", "--host", host], {env:{...env,[variable]:"relative"}}));
+ }
+ const env={...f.env,QODER_CONFIG_DIR:"",QODER_CLI_HOME:path.join(f.root,"qoder parent"),QODER_CONFIG_DIR_NAME:"custom"};
+ const result=await execFile("sh",[installer,"locate","--host","qoder"],{env});
+ assert.equal(result.stdout.trim(),path.join(env.QODER_CLI_HOME,"custom","skills"));
+ await assert.rejects(execFile("sh",[installer,"locate","--host","qoder"],{env:{...env,QODER_CONFIG_DIR_NAME:"../bad"}}));
+});

@@ -6,7 +6,7 @@ param(
   [ValidateSet("check-update", "install", "update")]
   [string]$Command,
   [Alias("Host")]
-  [ValidateSet("claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae", "claude-desktop", "dsh-desktop", "zcode")]
+  [ValidateSet("claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae", "claude-desktop", "dsh-desktop", "zcode", "kimi-code", "qoder")]
   [string]$HostId,
   [string]$Target
 )

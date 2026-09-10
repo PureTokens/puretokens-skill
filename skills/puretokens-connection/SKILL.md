@@ -21,10 +21,8 @@ description: 用户询问 Skill 将调用的 Pure Tokens API 是否可确认、A
 - 该检查验证的是固定 API 端点的既有公开声明，不是密码学防伪证明；未确认不等于证明用户的其他连接属于某个服务。不得根据模型列表、模型名称、请求是否成功、Base URL 字符串或 provider 标签改写这一结论。
 - 用户问当前真实 Base URL、API Key 或宿主 provider 时，明确说明：只有原生执行器可为固定请求在内存中使用文档列出的匹配连接凭据，但不展示、比较或报告这些配置；引导用户在 CC Switch、Pure Tokens Desktop 或宿主自身的连接设置中查看。
 
-ZCode 本地执行使用宿主 ID `zcode`。只使用唯一启用且端点匹配的 Pure Tokens 连接；不能据此声称识别当前聊天模型。目录、远程工作区及交付限制按需读 `references/desktop-hosts.md`。
-
 失败结论后可补充下一步：网络／服务异常可由用户稍后重查或联系 Pure Tokens 支持；标识不符可反馈身份检查结果。公开身份检查的 401／403 不验证凭据，不能据此要求更换 Key。执行器无法运行则说明检查尚未执行，并按回执处理本地可访问性。
 
-WorkBuddy 适配器无法匹配连接时，不据此断言当前聊天未使用 Pure Tokens；若用户确认已配置并成功使用 Pure Tokens，保留可用连接，按具体诊断检查适配；不能把自带模型聊天正常当作 Pure Tokens 配置有效的证据。排查仅提供客户端版本及脱敏诊断码，不读取或索取配置原文。Windows 的 `cleanup_status: pending` 表示已完成事务的暂存清理被拒绝，不等于文件同步失败；按独立 init 结果说明连接状态，不绕过删除守卫。锁文件存在不等于被占用；缺少管理清单不能归因于清理失败，也不能称为无害。
+当前会话若使用未反映在宿主已声明有效文件中的配置覆盖，停止并说明无法确认有效连接；不读取其他配置或借用默认连接。
 
-`init` 验证已保存的 Pure Tokens 连接，与当前聊天模型无关，不要求切换聊天模型。WorkBuddy 使用 `workbuddy_record_missing`、`workbuddy_record_unreadable`、`workbuddy_record_format_unsupported`、`workbuddy_connection_not_found`、`workbuddy_credential_missing`、`workbuddy_connection_ambiguous` 区分本地原因；这些状态不代表安装失败，也不证明用户从未配置过。只反馈脱敏状态，不读取配置原文。
+宿主目录、会话选择限制或特定客户端故障才按需读 `references/desktop-hosts.md`；普通请求不增加诊断前置步骤。

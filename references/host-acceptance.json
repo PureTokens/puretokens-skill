@@ -230,6 +230,52 @@
         "nativeAttachmentDelivery": "unavailable",
         "reason": "No verified local Linux client acceptance target for this release; native Linux executor availability does not establish client support."
       }
+    },
+    {
+      "host": "kimi-code",
+      "credentialFixtures": "passed",
+      "macOS": {
+        "installation": "pending",
+        "authenticatedAPI": "pending",
+        "sameTaskResume": "pending",
+        "nativeAttachmentDelivery": "pending"
+      },
+      "windows": {
+        "installation": "pending",
+        "authenticatedAPI": "pending",
+        "sameTaskResume": "pending",
+        "nativeAttachmentDelivery": "pending"
+      },
+      "linux": {
+        "installation": "unavailable",
+        "authenticatedAPI": "unavailable",
+        "sameTaskResume": "unavailable",
+        "nativeAttachmentDelivery": "unavailable",
+        "reason": "No verified local Linux client acceptance target for this release; native Linux executor availability does not establish client support."
+      }
+    },
+    {
+      "host": "qoder",
+      "credentialFixtures": "passed",
+      "macOS": {
+        "installation": "pending",
+        "authenticatedAPI": "pending",
+        "sameTaskResume": "pending",
+        "nativeAttachmentDelivery": "pending"
+      },
+      "windows": {
+        "installation": "pending",
+        "authenticatedAPI": "pending",
+        "sameTaskResume": "pending",
+        "nativeAttachmentDelivery": "pending"
+      },
+      "linux": {
+        "installation": "unavailable",
+        "authenticatedAPI": "unavailable",
+        "sameTaskResume": "unavailable",
+        "nativeAttachmentDelivery": "unavailable",
+        "reason": "No verified local Linux client acceptance target for this release; native Linux executor availability does not establish client support."
+      }
     }
   ]
 }

@@ -4,7 +4,7 @@ $root = Join-Path ([IO.Path]::GetTempPath()) ('pt-installer-test-' + [Guid]::New
 $target = Join-Path $root 'skills'
 $installer = Join-Path $repository 'runtime/puretokens-skill-install.ps1'
 $savedEnvironment = @{}
-foreach ($name in @('USERPROFILE', 'HOME', 'CODEX_HOME', 'APPDATA', 'DSH_HOME', 'CLAUDE_CONFIG_DIR', 'ZCODE_DATA_BASE_DIR')) { $savedEnvironment[$name] = [Environment]::GetEnvironmentVariable($name, 'Process') }
+foreach ($name in @('USERPROFILE', 'HOME', 'CODEX_HOME', 'APPDATA', 'DSH_HOME', 'CLAUDE_CONFIG_DIR', 'ZCODE_DATA_BASE_DIR', 'KIMI_CODE_HOME', 'QODER_CONFIG_DIR', 'QODER_CLI_HOME', 'QODER_CONFIG_DIR_NAME')) { $savedEnvironment[$name] = [Environment]::GetEnvironmentVariable($name, 'Process') }
 try {
   New-Item -ItemType Directory $root | Out-Null
   $env:USERPROFILE = Join-Path $root 'home'
@@ -13,6 +13,21 @@ try {
   New-Item -ItemType Directory $env:USERPROFILE | Out-Null
   foreach ($engine in @('powershell.exe', 'pwsh')) {
     $command = Get-Command $engine -ErrorAction Stop
+    foreach ($newHost in @('kimi-code', 'qoder')) {
+      $variable = if ($newHost -eq 'kimi-code') { 'KIMI_CODE_HOME' } else { 'QODER_CONFIG_DIR' }
+      $hostRoot = Join-Path $root "$newHost $engine spaces"
+      [Environment]::SetEnvironmentVariable($variable, $hostRoot, 'Process')
+      $location = & $command.Source -NoProfile -ExecutionPolicy Bypass -File $installer locate -HostId $newHost
+      if ($LASTEXITCODE -ne 0 -or $location -ne (Join-Path $hostRoot 'skills')) { throw "$engine new host directory mismatch" }
+      for ($attempt=0; $attempt -lt 2; $attempt++) {
+        & $command.Source -NoProfile -ExecutionPolicy Bypass -File $installer sync -HostId $newHost
+        if ($LASTEXITCODE -ne 0) { throw "$engine new host install/update failed" }
+      }
+      [Environment]::SetEnvironmentVariable($variable, 'relative', 'Process')
+      & $command.Source -NoProfile -ExecutionPolicy Bypass -File $installer locate -HostId $newHost *> $null
+      if ($LASTEXITCODE -eq 0) { throw "$engine accepted relative new host directory" }
+      [Environment]::SetEnvironmentVariable($variable, '', 'Process')
+    }
     $env:APPDATA = Join-Path $root "Roaming with spaces"
     $env:DSH_HOME = ""
     $env:CLAUDE_CONFIG_DIR = ""

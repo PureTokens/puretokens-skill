@@ -111,6 +111,15 @@ func doctorHostLocations(host, home string, getenv func(string) string) []doctor
 		return result
 	case "opencode":
 		location = filepath.Join(home, ".config", "opencode")
+	case "kimi-code", "qoder":
+		var err error
+		location, err = kimiQoderRoot(host, home, getenv)
+		if err != nil {
+			return nil
+		}
+		if host == "kimi-code" {
+			return []doctorLocation{{"host_skills", filepath.Join(location, "skills")}, {"shared_agents_skills", filepath.Join(home, ".agents", "skills")}}
+		}
 	case "zcode":
 		var err error
 		location, err = zcodeRoot(home, getenv("ZCODE_DATA_BASE_DIR"))
@@ -149,7 +158,7 @@ func collectDoctorAt(loadedRoot, host, home string, getenv func(string) string) 
 		NextAction: "Review the local findings; run the connection checks and verify attachment handoff in the current host.",
 	}
 	switch host {
-	case "claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae", "claude-desktop", "dsh-desktop", "zcode":
+	case "claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae", "claude-desktop", "dsh-desktop", "zcode", "kimi-code", "qoder":
 	default:
 		result.Host = "unsupported"
 		result.NextAction = "Choose a supported current host before running diagnostics."

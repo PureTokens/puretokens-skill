@@ -67,8 +67,10 @@ The priority is carried by the installed Skill metadata and the host's current c
 | Claude Desktop | `~/.claude/skills` (shared with Claude Code) | Local Code sessions; Desktop credential fixtures tested, end-to-end acceptance pending |
 | DSH Desktop | macOS: `~/Library/Application Support/dsh-desktop/harness/skills`; Windows: `%APPDATA%\dsh-desktop\harness\skills` | Credential fixtures tested; host end-to-end acceptance pending |
 | ZCode | `~/.zcode/skills` | Local connection adapter; real API and attachment delivery acceptance pending |
+| Kimi Code | `~/.kimi-code/skills` | Credential fixtures covered; real API and attachment delivery pending |
+| Qoder | `~/.qoder/skills` | Local IDE/CLI execution; real API and attachment delivery pending |
 
-`references/host-support.json` defines these ten hosts. The table shows defaults; Claude/WorkBuddy honor explicit configuration-directory overrides, and DSH honors the local Harness's explicit `DSH_HOME`. Gemini updates an existing higher-priority `.agents/skills` installation and reports managed duplicates. Provider labels never determine support.
+`references/host-support.json` defines these twelve hosts. The table shows defaults; Claude/WorkBuddy honor explicit configuration-directory overrides, and DSH honors the local Harness's explicit `DSH_HOME`. Gemini updates an existing higher-priority `.agents/skills` installation and reports managed duplicates. Provider labels never determine support.
 
 For Claude Desktop, use a local Code session and host ID `claude-desktop`; its active Desktop 3P connection is separate from Claude Code authentication. Cloud, SSH, WSL and Cowork isolated environments are not the local desktop; unavailable connection records or executors stop execution. DSH uses `dsh-desktop`; project/custom Skill roots may override user roots, so verify the loaded location. See the [desktop host guide](skills/puretokens-update/references/desktop-hosts.md).
 

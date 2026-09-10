@@ -1,131 +1,33 @@
-# Pure Tokens Skills 开发交接
+# Pure Tokens Skills 当前开发状态
 
-更新日期：2026-09-10。本文是此项目唯一的开发交接状态；后续按关键变化覆盖更新，不追加逐轮对话。长期产品约束以根目录 `AGENTS.md` 和实际执行契约为准，本文不改变它们。
+更新日期：2026-09-10。此文件只维护当前任务与未解决事项；历史实现、发布记录及审查证据见 Git、CHANGELOG 和 references/audits，不将历史状态作为当前事实。
 
-## 当前状态校正（2026-09-09）
+## 目标与授权
 
-- 产品版本为 0.18.0。产品代码、安装脚本及归档已推送 main：3b60371 为累计更新，5d7b22b 为 WorkBuddy 诊断与清理收尾，d1aefbb 为 Windows 原生启动及安装流程收敛。
-- 用户明确要求将当前全部修改提交，包含本文件和两份历史审查材料；不再将它们排除在版本管理之外。
-- 下方带日期的开发过程保留为历史证据。其中“未提交／未推送”、旧 HEAD、候选状态及当时验收数量不代表当前状态；以本节和实际 Git 状态为准。
-- 最近一次产品提交前 npm run check（Go、go vet、59 项 Node）、npm run release:validate 和 git diff --check 通过。Windows 专项及远程 WorkBuddy 实机效果仍未确认。
-- 待办：远程 WorkBuddy 连接无匹配的真实原因；新版官方入口的安装耗时、输出和额外窗口验收。不得用本地夹具替代实机结果。
+用户要求补齐 Kimi Code、Qoder，并全面检查六个 Skill 的残留文档、契约与流程，实施清理优化。只修改本仓库；相邻 Switch 可只读核实，不修改或部署。用户已授权提交推送本轮修改；未授权真实客户端配置/安装或付费任务。
 
-## 目标与来源
+基线为 main 的 a7ea449（媒体链路与模型能力更新，已推送）。当前产品版本0.18.0；本轮修改仍在工作区，必须保留新增文件。宿主默认安装支持12项，11个凭据适配器；Trae仍无已验证适配器。
 
-用户要求由当前会话接手 Pure Tokens Skill 开发与升级，并在删除旧会话后仍能继续维护。旧会话名称为「skill 开发」，ID 为 `01a0201f-42d8-71e3-b313-363ed7ab1b00`，工作历史覆盖 2026-08-21 至 2026-09-06（北京时间）。已梳理其用户请求时间线、关键纠正、近期交付和当前源码；本记录只保存有效决定、证据位置及未完成事项，不保存完整对话。
+## 有效决定与实现
 
-旧会话最初位于相邻 Switch 仓库，真正的 Skill 工作目录为 `/Users/renlimin/code/puretokens-skill`。旧会话引用更早会话 `01a01f0e-85a6-7d01-98f2-a6fc216d10a4`，本次没有独立重读该更早会话；当前约束和待办已由后续历史及本仓库核对。
+- 六个独立Skill入口与单次原生执行器不变；固定API请求、精确连接读取、无凭据持久化或传输回退。安装不增加用户运行时依赖。
+- 默认或精确模型只读选中profile；索引仅选择/别名解析时读，实时目录按需。普通生成不运行init、doctor、余额或preflight。
+- 异步submit只发一次并立即回执；同任务status/wait/content独立。图片默认5秒首次查询、3秒间隔、40次/120秒窗口；视频7次/300秒窗口。最多两个自动前台窗口，预算跨续接保存。错误、对账和无法容纳的重试停止自动续等。
+- 下载时计算摘要；记录中的文件证明匹配后可本地恢复交付，实际附件handoff成功后才标记delivered。逐索引下载交付，不后台预取或重提。
+- Kimi Code按默认模型关联连接解析；Qoder按真实端点选择唯一连接，不按名称识别、不比较多个凭据。安装、doctor和凭据适配共享相同目录优先级；Kimi doctor还检查已声明共享Skill目录。
+- 新宿主依据：Switch 0ccc470两客户端适配器、已安装Kimi Code程序静态skillRoots/data-home代码与Qoder官方文档，详见credential-adapters.md。旧Python Kimi CLI不是新Kimi Code的路径依据。未读取真实连接。
+- 本轮清理：宿主排查段移至按需desktop-hosts，纠正init不依赖配置选择的过度概括；校验器从host-support推导适配器清单；共享严格JSON解析器去除ZCode专属命名；未知宿主路径解析明确拒绝；清除本文件旧候选/旧计时等冲突叙述。历史迁移资产保留，不能当垃圾删除。
 
-## 当前基线与授权范围
+## 验证与剩余事项
 
-- 当前分支 `main`；本地 HEAD `1cc3082`，提交标题 `fix: correct balance and harden skill workflows`，对应 0.17.0。
-- 旧会话 2026-09-05 最后一次推送记录确认上述提交已到远端 main。这是历史证据，本次未重新查询远端发布或部署状态。
-- 工作区现在是 **0.18.0 本地候选**（包含此前未发布的 0.17.1 修复及两个新增客户端），含大量已修改文件及尚未跟踪的新源码、测试、验收文档。它们属于旧会话交付，必须保留；不能当作临时文件清除。版本号、二进制及迁移包已更新，但这些变化尚未提交。
-- 用户 2026-09-05 明确要求“你只能改 skill，需要改别的项目要告知我”。可读取相关项目来核实接口；不能把 Skill 修复擅自扩大成 Web／Switch 修改和部署。
-- 用户多次说明截图来自另一台远程 Mac 或 Windows 测试机，不能据此改本机真实宿主安装或连接。开发默认使用隔离夹具、本地 HTTP 服务；真实宿主安装、认证和付费媒体验收按指定环境及授权执行。
-- 此次交接不包含提交、推送、发布、真实安装更新或删除旧会话操作。旧推送指令已在对应版本完成，不视为对当前候选的发布指令。
+新宿主阶段npm run check通过（Go、go vet、60项Node），六平台独立重建校验通过；Windows脚本覆盖已增加，未Windows实机运行。清理阶段也已通过npm run check（Go、go vet、60项Node）、executor:verify与git diff --check；六平台执行器、两份迁移归档及六份草稿平台包已重建。release:validate再次在同一模型目录新鲜度门禁停止。
 
-## 有效产品决定
+- release:validate此前在模型目录采集超过7天处停止；快照2026-09-03，不伪造刷新。权威目录更新后同步并重跑门禁，不覆盖已确认的补充模型资料。
+- 真实宿主API、原生附件交付及端到端耗时仍待指定环境验收；host-acceptance.json是唯一验收结果。夹具、静态源码和安装成功不能代替实机。
+- 远程WorkBuddy诊断及Windows安装体验的实机结果仍未确认。
+- 精确报价、服务端幂等和未知任务找回未实现；不从任务记录或本地校验推导保证。
+- 发布前重建六平台执行器、两份迁移归档与平台候选；脏工作区候选sourceCommit=null不是正式发布资源。提交时包含新源码/测试/说明。
 
-1. 保持六个独立入口：`puretokens-image`、`puretokens-video`、`puretokens-balance`、`puretokens-models`、`puretokens-connection`、`puretokens-update`。旧聚合 media/router 不是新功能入口。
-2. 用户只配置好 Pure Tokens 连接并安装 Skill，就应能使用已支持的媒体能力；可以通过第三方 CC Switch 或手工配置，不要求 Pure Tokens Desktop、MCP、Node/npm/Python/Go、浏览器自动化、代理或常驻服务。
-3. 最终实现采用随安装包分发的单次原生 Go 执行器。执行器只读取当前宿主已声明的有效连接记录，在内存中使用匹配凭据；不能扫描用户目录、索取或输出凭据。早期“绝不读任何凭据”已被用户后续明确许可的精确适配器方案替代。
-4. 产品只请求固定 Pure Tokens API；余额使用既有 console 用量和公开换算接口。个人全局生图规则只是历史参考，不能复制其中的其他服务地址或认证路径到产品。
-5. 普通生成只读小型模型索引和选中 profile，不自动查余额、init、doctor、preflight 或实时目录。明确发现模型、请求字段／operation 缺口、拒绝诊断才按需查询目录。
-6. 模型列表来自受控基础目录，不能从供应商名称、渠道路由或聊天模型列表推测数量和能力。参数、数量、参考图、编辑、音频等按具体 profile 声明；物理尺寸不能直接作为 API size。当前图片默认 `gpt-image-2`，视频默认 `grok-imagine-video-1.5-preview`。
-7. 异步提交一次，立即回传任务 ID；status/wait/content 始终使用原任务。未知提交、超时、下载失败不能自动重提。下载不是交付；多图按零起点逐份下载、实际交付后再取下一份。
-8. 本地附件按声明 multipart 随该操作提交；公开参考 URL 仅走声明的 JSON 字段。早期独立上传／转存设想已废弃，不能恢复成新前置步骤。
-9. 用户提示简短、可操作，不能输出整份内部响应或把本地诊断码伪装成 API 返回码。余额失败不能推断所有媒体认证失效，金额缺失不能填零或猜测。
-10. 安装升级保护完整受管文件清单，不覆盖同名未知目录或用户新增、修改内容。README 中指定标题下第一个 `text` 安装提示块由客户端下载页提取，修改时必须保留提取契约；提示应便于用户直接复制。
+## 维护入口
 
-## 当前任务：指令链路精简与交付稳定性（2026-09-10）
-
-用户已授权按本轮审查建议修正。只改 Skill 仓库，保留此前未提交模型同步；用户随后已授权提交并推送本轮全部修改；未指定真实付费任务或其他宿主安装。
-
-- 已精简 image/video 主指令，默认／精确 ID 直接读 profile；异常移至按需 failure-guide。视频、多图、跨会话建议显式工作区记录，无记录短单图保留。
-- 新增 next_step、wait_outcome 和饱和 wait_windows_completed（0..2），正常等待结束为 ok=true；一次额外前台续等，之后询问。实际错误、对账、无法容纳的 retry 时间停止自动续等。记录和 request 均保留预算，不重置、不新建任务。
-- 无效下载媒体与超限使用分别的错误分类。新回归先复现旧行为，再验证正常两窗口、记录保留预算、真实错误、坏媒体和同任务交付恢复。
-- 图片首次默认查询从20秒提前至5秒，保持3秒间隔、40次/120秒单窗口；视频保持7次/300秒每窗口。下载时计算摘要，减少额外文件读取。2026-09-10 本机单次隔离下载管线测量：100MiB 0.430秒、512MiB 2.427秒，仅为本地结构夹具，不能证明远程或宿主交付耗时。五条前向轨迹已检查，修正窗口起点、恢复对账例外及未知输出清理说明。真实宿主验收仍 pending，验收指南增加四段耗时与请求数记录要求。
-- 前一轮模型修改保留：Image 2.5 两款最多6张编辑、三款 Nano Banana 4:5/5:4、Seedance 首尾帧及 quality 安全记录；原 gpt-image-2 模型资料和路由不变。
-- 已完成：npm run check（Go测试、go vet、59项Node测试）通过；六平台执行器、两份迁移归档、六份草稿平台包重建，executor:verify 独立重建验证通过，git diff --check通过。平台包 sourceCommit=null；本轮修改按用户授权提交推送，未发布平台资源或安装到真实宿主。
-- 发布门禁未通过：release:validate 在模型目录新鲜度检查停止，2026-09-03T04:00:37.535Z 采集超过7天；公开目录仍旧18模型，不能伪造刷新或覆盖已确认的补充模型资料。待权威目录更新后重新同步并运行发布门禁。真实端到端耗时和附件交付仍待指定宿主验收。
-
-## 已完成：全链路修复已完成，实机验收受连接条件阻塞（2026-09-08）
-
-用户已明确要求按审查建议实施。已完成六项代码/门禁修复，保留 0.18.0 候选全部既有工作；未提交／推送／发布。
-
-- 附件句柄、大小、时间及摘要校验，发送中完整性校验；同大小/同时间的变化也拒绝，保持 unknown 提交语义。
-- 显式记录绑定下载 SHA-256、字节数、媒体类型；复用及 delivered 均核对。旧记录可续查原任务，无证明文件换目录下载，保留旧文件。
-- 固定提交目录选择器不再复用旧 marker；Shell/PowerShell 增加旧入口配新宿主的隔离回归。
-- 模型参数验证先于记录持久化；保守字符串投影禁止非法自由文本。
-- 固定 Go 1.26.0 构建配置，源码/依赖/构建输入摘要、内嵌身份、六平台产物证明；release:validate 实际重建逐字节比较。当前平台实际二进制 build-info/offline preflight 进入 Go 测试。
-- Linux 进入验收结构；五个 Linux 客户端目标 pending，其他尚未验证目标 unavailable 并说明原因。100 个汇总检查 pending，9 类详细用例逐宿主另计；不能声称真实可用。
-- 验证完成：npm run check 通过（Go、go vet、57 项 Node）；npm run release:validate 通过，包括六平台可复现构建比较；git diff --check 通过。六种执行器、两份迁移归档、六份平台候选已重建。Windows PowerShell 新增用例未在本机运行，CI 入口已保留。
-- 实际当前 Codex init 在网络前安全停止：active_connection_not_puretokens，api_request_executed=false；未创建付费任务。未读取/展示连接详情或借用其他客户端；真实媒体/附件验收保持 pending。本机现有 image/video Skill 元数据为 0.13.19，未发现新原生执行器安装，未修改实际安装。
-- 下一个必要条件：用户在当前宿主选择可用的 Pure Tokens 连接后继续；先用原生执行器复核，再按已有授权完成明确的真实宿主安装、图片/编辑/续接/附件及视频验收，不走替代传输。当前候选未发布，sourceCommit=null。
-- 修复前复现与问题对应关系：references/audits/2026-09-08-chain-review.md。回归断言正确行为的测试已经加入，不运行旧的“断言缺陷存在”探针。
-
-## 已完成：ZCode 适配（2026-09-08）
-
-用户要求落实 Switch 新增 ZCode 的 Skill 支持，保留当前 0.18.0 候选已有工作。
-
-- 已接入六个 Skill、Shell／PowerShell 安装更新入口、凭据分派、init／doctor、宿主矩阵与验收记录。共十个安装宿主，九个凭据适配器。
-- 依据 Switch ZCode adapter 和本机 ZCode 应用程序代码，连接来自 `.zcode/v2/config.json`；明确绝对 `ZCODE_DATA_BASE_DIR` 是 `.zcode` 的父目录。安装／doctor 使用同一目录规则；不读取真实连接或旧版存储。
-- 只选择唯一启用且实际端点匹配的连接，要求支持的内联 bearer 格式；重复 JSON 键、多匹配、缺失凭据、引用凭据和畸形记录安全停止。会话模型由 ZCode 运行时提供；旧 root model 字段不能证明当前会话选择，已废弃该选择方案，init 明确只验证 API 能力。
-- Go 夹具覆盖有效连接、选择歧义、重复键、错误端点、禁用、凭据缺失及引用、过深结构、宿主分派、路径覆盖、doctor 和禁止旧存储回退。Node 隔离测试覆盖六 Skill 安装、重复更新、空格目录和相对目录拒绝。Windows 入口用例已加入脚本，未在 Windows 实机运行。
-- 回归中发现 Apple Silicon Node 与转译 Shell 架构不一致导致测试包缺失产物；下载夹具现与 Shell 安装器使用相同架构选择。宿主断言更新为十个。
-- 六种执行器、两份迁移归档和六份平台候选已重建；`npm run check` 全部通过（Go 测试、go vet、53 项 Node 测试）；`npm run release:validate` 和 `git diff --check` 通过。80 项真实宿主检查仍 pending；远程工作区同步不能代替执行器和连接，原生附件交付未验收。
-- 当前未提交、推送、发布或更新真实客户端。平台候选 sourceCommit=null，不能作为正式发布资源。
-
-## 已完成：新增桌面客户端（2026-09-07）
-
-用户要求支持 Switch 新增的两个客户端。已核对 Switch 注册表，新增的是 **Claude Desktop**（claude-desktop）和 **DSH Desktop**（dsh-desktop）。本次只修改 Skill 仓库，沿用既有跨仓库和真实宿主操作边界。
-
-- 六个 Skill 的宿主清单、安装更新选择、凭据分派和诊断均已纳入两个客户端，版本统一为 0.18.0；保留全部 0.17.1 候选修复。
-- Claude Desktop：读取本机 Desktop 3P 模式和当前 appliedId 指向的 UUID 配置，验证 gateway/static/bearer 及固定 Pure Tokens 端点；不扫描其他配置或借用 Claude Code 凭据。Skill 安装到本地 Code 会话的 ~/.claude/skills，与 Claude Code 共享，支持显式 CLAUDE_CONFIG_DIR。云端、SSH、WSL、Cowork 隔离会话不等于本机，无法访问本机执行器／连接即停止。
-- DSH：从当前本地 Harness 的 settings.yaml 选择默认 provider/model，再按 apiKeyEnv 读取同目录 .credentials.yaml version 1 的一个 refs 条目；先验证端点，不回退到进程环境变量 Key。仅支持明确 DSH_HOME 或平台默认应用目录。YAML 解析编译进执行器，拒绝重复键、别名、合并键、多文档及过深结构。
-- DSH 默认安装位置：macOS 应用数据下 dsh-desktop/harness/skills，Windows APPDATA 下对应目录；显式 DSH_HOME 可覆盖。doctor 检查本地和共享 Agents 的已声明 Skill 根，不扫描任意工程目录。
-- 证据：Switch 的 crates/client-adapters/claude-desktop/src/lib.rs、dsh-desktop/src/lib.rs；官方源码／文档证据和精确字段记录在 references/credential-adapters.md。安装后的按需说明为各 Skill 的 references/desktop-hosts.md。
-- 验证：npm run check 全部通过，含 Go 测试、go vet、52 项 Node 测试；两个新宿主使用合成记录和隔离安装，未读取真实连接或提交付费任务。六个平台执行器、两份迁移归档和六份草稿平台包已重建。Windows PowerShell 5.1／7 新增路径测试已入脚本，但本机未执行 Windows 真机。真实宿主检查共 72 项，全部仍 pending。
-- 候选未提交／推送／发布／安装到真实宿主。平台包 sourceCommit 为 null（工作区未提交），不能被当作正式固定提交资源。下一步为指定宿主真实验收及用户要求的候选交付。
-
-## 当前候选已实现
-
-具体变更见 `CHANGELOG.zh-CN.md` 的 0.17.1 和工作区 diff。
-
-| 项目 | 当前实现与证据 |
-| --- | --- |
-| 图片轮询 | `runtime/executor/main.go`、`polling_test.go`：新 pending 图片接受回执后 20 秒首次查询，此后每 3 秒；每窗口最多 40 次／120 秒。复用 `retry_not_before` 绝对时间，交接耗时扣除、续接不重置。实际 API Retry-After 优先，本地等待不伪装成 API header。视频保持最多 7 次／300 秒及原退避节奏。 |
-| 余额格式 | `balance.go`、`balance_test.go`：仅余额请求内存补齐缺失的前缀，保留媒体认证原样；同时脱敏两种形式，区分余额认证拒绝与公开单位信息失败。历史上已做合成凭据的 Web 余额处理器联测，不能等同于远程用户验收。 |
-| 升级归属保护 | `installation_guard.go`、两套原生安装器、`installation-history.json`：校验完整目录及文件哈希；新增、改动、缺失、符号链接会阻止覆盖和危险恢复。 |
-| 历史迁移 | 从仓库历史生成、去重的目录快照用于识别没有归属标记的原版旧安装；旧会话记录 256 份通过测试。这不是 256 个发布版本，也不来自用户文件扫描。 |
-| 媒体验证 | `media_containers.go`、`media_validation.go`、`reliability_test.go`：加强 GIF/WebM 结构及截断检查，坏文件不得保存为成功或复用。容器验证不等于真实视频播放验收。 |
-| 错误公开化 | `public_errors.go`：受控分类提示，仅保留实际返回且识别为公开分类的错误码，不透传任意服务端文字。 |
-| 对账续接 | `task_records.go`：用户明确 resume 对账记录时查询原任务一次，按响应刷新标记，不创建替代任务。 |
-| 验收与维护 | 修复来源信息工具函数；加入真实宿主证据校验、Windows 文件保护回归及 fuzz targets。六个平台执行器和旧版迁移归档已在旧会话重建。 |
-
-0.17.0 已包括可选任务记录、同任务恢复和实际交付标记、显式 preflight、按需 doctor、模型筛选、下载期限、更新检查、固定提交下载和平台资源选择。不要因这些功能出现在历史建议中再次实现。
-
-## 尚未解决与下一步
-
-1. **当前候选交付**：0.18.0 仍在本地。后续提交时必须包括必要的未跟踪实现、夹具与安装归属历史；先核对完整 diff 和产物一致性。发布平台资源是单独动作，脏工作区生成的包可能 `sourceCommit: null`，不能宣称已固定到发布提交。
-2. **端到端耗时**：用户实测反馈上游生成约 40 秒、拿图需要 4–5 分钟。只修复了轮询；没有证据证明整体延迟已解决。下一轮应记录用户发起、POST 发出、任务接受、发现完成、下载完成、附件可见等时间，区分模型调度、服务端、网络与宿主交付开销。20 秒初始等待是待实测验证的参数，不是最优结论。
-3. **宿主验收**：`references/host-acceptance.json` 现有 100 项汇总检查 pending，详细实机结果 0 条。先确定实际测试宿主、系统、安装版本及执行器哈希，再按 `host-acceptance-guide.md` 验证余额、图片、上传图编辑、生成图再编辑、多图、视频、跨会话续接和原生附件交付。本机过去被发现装有 0.13.19 是旧会话观察，本次未检查，不能当作当前事实。
-4. **后续性能建议未实现**：阶段计时、按宿主提供已验证的简短交付步骤、减少确定性步骤之间的模型调度。旧会话曾建议合并等待与下载，但未实现；当前契约仍要求独立命令，不能把建议当作已批准的契约变更。60–90 秒只是当时提出的目标，不是承诺。
-5. **Web 编辑 400**：旧会话 2026-09-06 核实 Web 生产 `7793cb81` 使用生成路径校验编辑参考图，develop 修复为 `f26f819e`，本地旧逻辑可复现拒绝。这是历史状态；后续必须重新核对部署，不能现在断言生产仍未修。相关文件位于相邻 Web 仓库的 `patches/puretokenplus-new-api/patches/139-image-edit-route-aware-staging.patch`。Skill 余额补丁不能解决此服务端问题。
-6. **服务端依赖**：精确报价／支付前费用保证、服务端幂等、无任务 ID 的未知提交找回尚未实现。不得从本地校验或任务记录推导这些保证。
-7. **宿主能力限制**：九个凭据适配器有 fixture 覆盖；Trae 仍无已验证适配器，安装成功不等于能调用 API。宿主忽略 Skill 优先级时，仓库声明本身不能强制改变工具选择。
-
-## 维护入口与相称验证
-
-- `AGENTS.md`：产品和安全边界；`CONTRIBUTING.md`：工程、构建、发布顺序。
-- `skills/`：实际安装指令、逐模型 profile、执行示例及场景；`schemas/`：请求／回执契约。
-- `runtime/executor/`：原生执行器、生命周期、适配器、媒体校验与测试。
-- `runtime/puretokens-skill-fetch.sh`、`runtime/puretokens-skill-fetch.ps1`：原生获取；同目录 `puretokens-skill-install.sh`、`puretokens-skill-install.ps1`：原生同步。
-- `references/media-model-catalog.json`：当前受控快照为 2026-09-03，8 个图片、10 个视频模型；这是安装快照，不是当前线上授权清单。由基础目录同步脚本更新，再生成 Skill profile 和 README。发布新鲜度上限 7 天。
-- `runtime/executor/manifest.json`：平台产物及校验；`scripts/build-installation-history.mjs`：从受审查的仓库历史构建迁移清单。
-- `dist/puretokens-skill-install*.zip` 及 `scripts/legacy-bootstrap/`：有意保留的旧更新器迁移桥，不能当作废弃垃圾删除。
-
-源码改变后执行 `npm run executor:build`，必要时重建迁移归档和平台包；同时更新相关指令、契约、schema、版本、来源哈希和双语 changelog。工程门槛是 `npm run check`；发布再跑 `npm run release:validate`。平台包发布需匹配提交及校验值。Windows 的 PowerShell 5.1 与 7 分别验证；本机夹具不替代 Windows 真机。
-
-2026-09-07 初次交接重新执行 `npm run check` 完整通过：契约与生成资料一致性、宿主证据一致性、Go 测试、go vet、51 项 Node 测试全部通过，0 失败。`npm run release:validate` 和 `git diff --check` 也通过。56 项真实宿主检查仍 pending；本次未运行 Windows 真机验收或额外 fuzz campaign。未发起付费任务、未读取真实连接凭据、未改真实宿主安装、未修改相邻项目。
+AGENTS.md与CONTRIBUTING.md定义长期约束；skills/为安装指令及profile，schemas/为字段契约，runtime/executor/为行为实现，references/host-support.json为宿主声明，references/host-acceptance.json为实机证据。工程门禁npm run check；发布门禁npm run release:validate；executor:verify独立重建比较六平台产物。

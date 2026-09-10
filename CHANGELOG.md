@@ -6,6 +6,10 @@
 
 ## 0.18.0 — 2026-09-07
 
+- Consolidate host-specific troubleshooting into on-demand guidance, reconcile stale maintainer state, derive adapter contract checks from the host matrix, and reject unknown hosts before path resolution. Share strict configuration JSON parsing across adapters.
+
+- Add Kimi Code and Qoder local host installation, fixed-API credential adapters, diagnostics and isolated coverage; real-host API and attachment acceptance remains pending.
+
 - Query newly accepted images after a default 5 seconds while retaining the 120-second window; compute download digests during transfer. Completed records can verify local files for attachment redelivery, while reconciliation still queries the original task separately.
 
 - Shorten media entry instructions with on-demand failure guidance and direct exact-model profiles. Treat normal wait-window exhaustion as successful pending with one bounded foreground continuation, preserve the budget in records, and return machine next-step hints. Classify invalid/oversized media accurately.

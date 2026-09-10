@@ -17,7 +17,6 @@ const balanceBearerNormalization = "add_sk_prefix_if_missing_in_memory_for_usage
 const balanceLocalFailureCodes = ["balance_usage_unavailable", "balance_usage_auth_rejected", "balance_unit_metadata_unavailable"];
 const directAcceptanceScenarioIds = ["api-identity-read", "catalog-read", "media-submit", "same-task-status", "native-media-delivery", "executor-request-start"];
 const directExecutorCapabilities = ["fixed_full_url_request", "json_task_response", "same_task_status_read", "native_media_byte_delivery", "bounded_local_resource_use"];
-const executorCredentialAdapterHostIds = ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "claude-desktop", "dsh-desktop", "zcode"];
 const mediaRoutingPriority = "when_current_host_connection_uses_puretokens_select_the_matching_puretokens_specialist_before_generic_imagegen_imagen_or_video_skills";
 const mediaRoutingMetadataLimitation = "skill_metadata_expresses_routing_priority_but_cannot_override_a_host_that_ignores_installed_skill_selection";
 const executorRequestStart = "invoke_the_checksum_verified_managed_native_executor_with_the_current_host_id_and_fixed_request";
@@ -187,6 +186,7 @@ async function validateCatalogFreshnessPolicy(errors) {
 }
 
 function validateDirectApiExecutionContract(errors, contract, hostSupport) {
+  const executorCredentialAdapterHostIds = hostSupport.supported.filter(host => host.credentialAdapter === "fixture-tested").map(host => host.id);
   const label = "references/direct-api-execution-contract.json";
   if (!contract || typeof contract !== "object") return;
   if (contract.$schema !== "https://puretokensx.com/schemas/direct-api-execution-contract.schema.json" || contract.schemaVersion !== 1) {
@@ -224,7 +224,7 @@ function validateDirectApiExecutionContract(errors, contract, hostSupport) {
   const installableHostIds = hostSupport.supported.map((host) => host.id);
   if (!sameArray(contract.installableHosts, installableHostIds) || !sameArray(contract.executorCredentialAdapterHosts, executorCredentialAdapterHostIds) ||
     !sameArray(contract.requiredExecutorCapabilities, directExecutorCapabilities)) {
-    errors.push(`${label} must define the ten installable hosts, verified executor credential adapters, and required executor capabilities`);
+    errors.push(`${label} must define the declared installable hosts, verified executor credential adapters, and required executor capabilities`);
   }
   const balance = contract.balance;
   if (!balance || balance.method !== "GET" || balance.url !== balanceUsageUrl ||

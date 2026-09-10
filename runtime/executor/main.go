@@ -154,7 +154,7 @@ func run(args []string, input io.Reader, output io.Writer) error {
 		return runInstallationGuard(args, output)
 	}
 	if len(args) < 1 {
-		writeReceipt(output, validationFailure("Choose one of: init, connection, balance, models, submit, status, wait, content."))
+		writeReceipt(output, validationFailure("Choose init, doctor, connection, balance, models, preflight, submit, status, wait, content, resume or delivered."))
 		return errors.New("missing command")
 	}
 
@@ -332,6 +332,9 @@ func executeInit(output io.Writer, svc service) error {
 		result.CredentialVerified = true
 		result.ConfigurationStatus = "verified"
 		result.Message = "The current host can reach the fixed Pure Tokens API."
+		if svc.host == "qoder" {
+			result.Message = "The configured Pure Tokens connection can reach the fixed API. This does not identify the connection selected for the current chat."
+		}
 		if svc.host == "zcode" {
 			result.Message = "The enabled ZCode Pure Tokens connection can reach the fixed API. This does not identify the model or connection selected for the current chat."
 		}
@@ -387,6 +390,8 @@ func credentialForHost(host string) (string, error) {
 		return credentialFromClaudeDesktop()
 	case "dsh-desktop":
 		return credentialFromDSHDesktop()
+	case "kimi-code", "qoder":
+		return credentialFromNewHost(host)
 	case "zcode":
 		return credentialFromZCode()
 	case "gemini-cli":
