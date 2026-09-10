@@ -27,13 +27,6 @@ async function waitForFile(file) {
  }
  assert.fail(`Timed out waiting for fixture marker ${path.basename(file)}`);
 }
-test("legacy CLI sync installs the native executor", async t => {
- const f = await fixture(t);
- await execFile(process.execPath, ["bin/puretokens-skill.js", "sync", "--target", f.target], { cwd: repositoryRoot, env: f.env });
- const executor = path.join(f.target, ".puretokens-executor/puretokens-api");
- const { stdout } = await execFile(executor, ["--version"]);
- assert.equal(stdout.trim(), JSON.parse(await readFile(path.join(repositoryRoot, "package.json"), "utf8")).version);
-});
 test("desktop hosts locate and install into isolated local skill roots", async t => {
  const f = await fixture(t);
  for (const [host, key] of [["claude-desktop", "CLAUDE_CONFIG_DIR"], ["dsh-desktop", "DSH_HOME"]]) {
@@ -204,14 +197,6 @@ test("a killed stale-lock takeover remains recoverable by the next sync", async 
  assert.equal((await readdir(f.target)).some(name => name.includes("stage") || name.includes("lock")), false);
  assert.match(await readFile(path.join(f.target, "puretokens-image/SKILL.md"), "utf8"), /submit/);
 });
-test("Codex plugin inspection failure does not block a clean installation", async t => {
- const f = await fixture(t);f.target=path.join(f.env.HOME,".agents/skills");
- const tools=path.join(f.root,"tools");await mkdir(tools);
- const command=path.join(tools,"codex");await writeFile(command,"#!/bin/sh\nexit 127\n");await chmod(command,0o700);
- const {stdout}=await install(f,{...f.env,PATH:`${tools}${path.delimiter}${f.env.PATH}`},["--host","codex"]);
- assert.match(stdout,/synchronized with the native API executor/);
- assert.match(stdout,/plugin inspection unavailable/);
-});
 test("Gemini selects an existing shared Skill and detects its lower-priority duplicate", async t => {
  const f = await fixture(t);
  const shared = path.join(f.env.HOME, ".agents/skills");
@@ -248,4 +233,24 @@ test("new hosts install and update in their declared isolated roots", async t =>
  const result=await execFile("sh",[installer,"locate","--host","qoder"],{env});
  assert.equal(result.stdout.trim(),path.join(env.QODER_CLI_HOME,"custom","skills"));
  await assert.rejects(execFile("sh",[installer,"locate","--host","qoder"],{env:{...env,QODER_CONFIG_DIR_NAME:"../bad"}}));
+});
+
+test("installation never invokes Codex plugins and still runs host init", async t => {
+ const f=await fixture(t);
+ const mockBin=path.join(f.root,"mock-bin");await mkdir(mockBin);
+ const marker=path.join(f.root,"codex-called");
+ await writeFile(path.join(mockBin,"codex"),'#!/bin/sh\nprintf called >> "$PLUGIN_MARKER"\nprintf \'{"installed":[]}\\n\'\n');
+ await chmod(path.join(mockBin,"codex"),0o755);
+ const env={...f.env,PATH:mockBin+path.delimiter+f.env.PATH,PLUGIN_MARKER:marker,QODER_CONFIG_DIR:path.join(f.root,"missing-qoder")};
+ const shared=path.join(f.home??f.env.HOME,".agents","skills");
+ const {stdout}=await execFile("sh",[installer,"sync","--host","qoder","--target",shared],{env});
+ await assert.rejects(readFile(marker),{code:"ENOENT"});
+ assert.match(stdout,/Pure Tokens Skill init:/);
+ assert.doesNotMatch(stdout,/connection check was deferred/);
+ assert.match(stdout,/Installation host: qoder/);
+ assert.match(stdout,/Start a new qoder conversation/);
+ await execFile("sh",[installer,"sync","--host","codex","--target",shared],{env});
+ await assert.rejects(readFile(marker),{code:"ENOENT"});
+ await execFile(path.join(mockBin,"codex"),[],{env});
+ assert.equal(await readFile(marker,"utf8"),"called");
 });

@@ -308,7 +308,7 @@ func executeRecordedTask(command, path string, request taskRequest, index int, o
 	}
 	defer unlock()
 	var record taskRecord
-	if command == "submit" || command == "task" {
+	if command == "submit" {
 		if request.Operation == "continue" {
 			writeReceipt(output, validationFailure("Use resume with the existing record instead of submit."))
 			return errors.New("record submission cannot continue")
@@ -386,7 +386,7 @@ func executeRecordedTask(command, path string, request taskRequest, index int, o
 		return writer.err
 	}
 	data, _ := json.Marshal(request)
-	if command == "submit" || command == "task" {
+	if command == "submit" {
 		err = executePreparedTask(writer, svc, request)
 	} else {
 		if command == "resume" {

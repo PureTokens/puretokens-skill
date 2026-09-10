@@ -6,6 +6,14 @@
 
 ## 0.18.0 — 2026-09-07
 
+- Refresh the official media catalog to 23 models, adding grok-imagine, grok-imagine-1 and grok-video-1.5; retain separately sourced, previously approved Nano Banana ratios and Seedance frame operations.
+
+- Remove obsolete Node installation/uninstall commands, legacy migration ZIPs, retired Skill/runtime cleanup and embedded historical installation snapshots. Keep one native installation route and current managed-update integrity checks.
+
+- Remove Codex legacy plugin inspection and migration from all installations; synchronize Skills, run the selected host init and report its result.
+
+- Fix shared-directory installs invoking Codex plugin migration for other hosts. Installation receipts identify the selected host and retain init outcomes; Qoder guidance uses the native host-specific installer instead of legacy payload copying.
+
 - Consolidate host-specific troubleshooting into on-demand guidance, reconcile stale maintainer state, derive adapter contract checks from the host matrix, and reject unknown hosts before path resolution. Share strict configuration JSON parsing across adapters.
 
 - Add Kimi Code and Qoder local host installation, fixed-API credential adapters, diagnostics and isolated coverage; real-host API and attachment acceptance remains pending.

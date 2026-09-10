@@ -42,15 +42,10 @@
     "installsMissingOfficialSkills": true,
     "upgradesOnlyManagedMatchingSkills": true,
     "neverOverwritesUnmanagedDirectories": true,
-    "removesVerifiedRetiredManagedSkills": true,
-    "removesVerifiedLegacyNodeRuntime": true,
     "installsChecksumVerifiedNativeApiExecutor": true,
     "reportsSynchronizedVersion": true,
-    "removesLegacyCodexPluginWhenPresent": true,
-    "requiresVerifiedRemovalWhenLegacyCodexPluginDetected": true,
     "doesNotClaimSuccessWithoutVersionReceipt": true,
     "neverModifiesOfficialCheckout": true,
-    "requiresFullCodexRestartAfterLegacyPluginRemoval": true,
     "requiresNewHostConversationAfterSuccess": true,
     "helpOnlyDoesNotInvokeInit": true
   }

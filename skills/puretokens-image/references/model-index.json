@@ -2,8 +2,8 @@
   "$schema": "https://puretokensx.com/schemas/model-index.schema.json",
   "schemaVersion": 1,
   "capability": "image",
-  "catalogUpdatedAt": "2026-09-03",
-  "catalogCapturedAt": "2026-09-03T04:00:37.535Z",
+  "catalogUpdatedAt": "2026-09-10",
+  "catalogCapturedAt": "2026-09-10T16:55:34.848Z",
   "defaultModel": "gpt-image-2",
   "models": [
     {
@@ -12,6 +12,26 @@
         "image2"
       ],
       "profile": "profiles/gpt-image-2.json"
+    },
+    {
+      "id": "gpt-image-2.5-flare",
+      "aliases": [],
+      "profile": "profiles/gpt-image-2.5-flare.json"
+    },
+    {
+      "id": "gpt-image-2.5-sunburst",
+      "aliases": [],
+      "profile": "profiles/gpt-image-2.5-sunburst.json"
+    },
+    {
+      "id": "grok-imagine",
+      "aliases": [],
+      "profile": "profiles/grok-imagine.json"
+    },
+    {
+      "id": "grok-imagine-1",
+      "aliases": [],
+      "profile": "profiles/grok-imagine-1.json"
     },
     {
       "id": "grok-imagine-image",
@@ -55,16 +75,6 @@
       "id": "seedream-5.0-pro",
       "aliases": [],
       "profile": "profiles/seedream-5.0-pro.json"
-    },
-    {
-      "id": "gpt-image-2.5-flare",
-      "aliases": [],
-      "profile": "profiles/gpt-image-2.5-flare.json"
-    },
-    {
-      "id": "gpt-image-2.5-sunburst",
-      "aliases": [],
-      "profile": "profiles/gpt-image-2.5-sunburst.json"
     }
   ]
 }

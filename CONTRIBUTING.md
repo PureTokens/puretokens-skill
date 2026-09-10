@@ -14,16 +14,13 @@ npm run check
 
 This gate must cover repository contracts, generated-document drift, executor behavior and actual request/receipt schema conformance. Test with isolated fixtures and local HTTP servers; never use real credentials or paid media requests as routine validation. Before release, additionally run `npm run release:validate` for catalog freshness and reproducible six-platform binary verification. Fixture success does not complete real-host API, continuation or attachment-delivery acceptance; record those separately in `references/host-acceptance.json`.
 
-After changing executor source, dependencies, build inputs or package metadata, use the toolchain in `runtime/executor/build-config.json` and run `npm run executor:build` to regenerate all six artifacts and their checksums before packaging. `npm run release:package` prepares one-platform archives and a manifest pinned to the source commit. Rebuild the purposeful legacy migration archives with `npm run dist:build-legacy-migration-archive` when their installed contents change.
+After changing executor source, dependencies, build inputs or package metadata, use the toolchain in `runtime/executor/build-config.json` and run `npm run executor:build` to regenerate all six artifacts and their checksums before packaging. `npm run release:package` prepares one-platform archives and a manifest pinned to the source commit.
 
 Before running the release-preparation workflow, rebuild and commit the executor artifacts, checksums and matching source inputs in the selected revision. That workflow tests and validates the revision, then packages its checksum-verified committed artifacts; it rebuilds all six platforms into temporary directories with the exact toolchain in `runtime/executor/build-config.json` and compares bytes before packaging the committed artifacts. Local packaging from modified or untracked source inputs produces draft candidates with `sourceCommit: null`, which cannot be promoted as pinned release assets.
 
 Installation ownership uses complete per-directory inventories, including empty
 directories. Added/modified/missing entries and symlinks block replacement and
-recovery. Stock historical installations without markers are accepted only by
-exact inventories embedded in the candidate executor. Maintain that history with
-`node scripts/build-installation-history.mjs` from the reviewed full repository
-history before building a release; never run it against user directories.
+recovery. An unmarked directory may be adopted only when its full contents match the current official source. No historical snapshots or retired-installation migration are maintained.
 Inventory markers detect accidental edits, not malicious local tampering.
 
 `npm run acceptance:validate` checks the real-host record and release hashes;
@@ -45,7 +42,7 @@ Align package, Skill index, all six manifests, executor version/manifest and hos
 
 ## Distribution
 
-This repository does not publish an npm package. Native fetch resolves official main to a commit, selects matching checksum-verified platform assets or the pinned source archive, then invokes native sync. GitHub Actions checks changes and prepares reviewable release candidates; publishing assets is a separate explicit action. Never delete unknown Skill directories, replace unrelated configuration or remove the historical migration bridge merely because it is old.
+This repository does not publish an npm package. Native fetch resolves official main to a commit, selects matching checksum-verified platform assets or the pinned source archive, then invokes native sync. GitHub Actions checks changes and prepares reviewable release candidates; publishing assets is a separate explicit action. Never delete unknown Skill directories or replace unrelated configuration. Retired migration archives and Node installation commands are not maintained.
 
 Exact media quotes, server idempotency and discovery of unknown submissions are server-side dependencies not implemented here. Do not claim these guarantees from validation, local records or catalog data. Keep keys, cookies and user media out of source, fixtures and release artifacts.
 

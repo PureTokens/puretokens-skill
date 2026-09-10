@@ -89,7 +89,7 @@ The selected installed profile governs ordinary requests. An explicit authentica
 <!-- media-model-catalog:start -->
 ## Media model catalog
 
-Synchronized with the base model catalog: 2026-09-03T04:00:37.535Z.
+Synchronized with the base model catalog: 2026-09-10T16:55:34.848Z.
 
 This list is an installed selection aid from the base catalog, not a per-request authorization check. Ordinary generation uses only the selected installed profile without a live-catalog preflight; explicit discovery, a requested profile gap or rejection diagnosis may read the authenticated catalog once. The media API decides access.
 
@@ -100,6 +100,10 @@ README is generated only from base-catalog models with explicit image/video capa
 | Model ID | Provider | You can also say | Good for | Example |
 | --- | --- | --- | --- | --- |
 | `gpt-image-2` | OpenAI | `image2` | Image generation | `Use gpt-image-2 to generate an image.` |
+| `gpt-image-2.5-flare` | OpenAI | Exact ID only | Text-to-image and reference image editing (up to 6 images), with selectable quality | `Use gpt-image-2.5-flare to generate an image.` |
+| `gpt-image-2.5-sunburst` | OpenAI | Exact ID only | Text-to-image and reference image editing (up to 6 images), with selectable quality | `Use gpt-image-2.5-sunburst to generate an image.` |
+| `grok-imagine` | xAI | Exact ID only | Image generation | `Use grok-imagine to generate an image.` |
+| `grok-imagine-1` | xAI | Exact ID only | Image generation | `Use grok-imagine-1 to generate an image.` |
 | `grok-imagine-image` | xAI | `grok image` | Image generation | `Use grok-imagine-image to generate an image.` |
 | `grok-imagine-image-2.0` | xAI | `grok image 2.0` | Image generation | `Use grok-imagine-image-2.0 to generate an image.` |
 | `grok-imagine-image-quality` | xAI | Exact ID only | Image generation | `Use grok-imagine-image-quality to generate an image.` |
@@ -107,8 +111,6 @@ README is generated only from base-catalog models with explicit image/video capa
 | `nano-banana-2-lite` | Google | Exact ID only | Image generation | `Use nano-banana-2-lite to generate an image.` |
 | `nano-banana-pro` | Google | `nano banana pro` | Image generation | `Use nano-banana-pro to generate an image.` |
 | `seedream-5.0-pro` | ByteDance | Exact ID only | Image generation | `Use seedream-5.0-pro to generate an image.` |
-| `gpt-image-2.5-flare` | OpenAI | Exact ID only | Text-to-image and reference image editing (up to 6 images), with selectable quality | `Use gpt-image-2.5-flare to generate an image.` |
-| `gpt-image-2.5-sunburst` | OpenAI | Exact ID only | Text-to-image and reference image editing (up to 6 images), with selectable quality | `Use gpt-image-2.5-sunburst to generate an image.` |
 
 ### Video models
 
@@ -117,6 +119,7 @@ README is generated only from base-catalog models with explicit image/video capa
 | `grok-imagine-video` | xAI | `grok video` | Video generation | `Use grok-imagine-video to generate a video.` |
 | `grok-imagine-video-1.5` | xAI | Exact ID only | Video generation | `Use grok-imagine-video-1.5 to generate a short video.` |
 | `grok-imagine-video-1.5-preview` | xAI | `grok 1.5 video` | Video generation | `Use grok-imagine-video-1.5-preview to generate a video.` |
+| `grok-video-1.5` | xAI | Exact ID only | Video generation | `Use grok-video-1.5 to generate a short video.` |
 | `minimax-h3` | MiniMax | `minimax h3` | Video generation | `Use minimax-h3 to generate a video.` |
 | `seedance-2.0` | ByteDance | Exact ID only | Video generation | `Use seedance-2.0 to generate a video.` |
 | `seedance-2.0-fast` | ByteDance | Exact ID only | Video generation | `Use seedance-2.0-fast to generate a video.` |
@@ -141,15 +144,14 @@ the newly confirmed status.
 
 ## Updating
 
-`puretokens-update` resolves official main to an exact commit and version. Its native fetch wrapper checks versions without installation, or installs matching checksum-verified platform assets. When those assets are unavailable, it retrieves the same pinned official source archive and invokes native sync. The installer synchronizes all six Skills and the SHA-256-verified platform-native executor, preserves unmanaged directories, removes only verified retired official Skill directories, and removes the verified retired Node runtime if present. The versioned success receipt is the only confirmation that an update completed.
+`puretokens-update` resolves official main to an exact commit and version. Its native fetch wrapper checks versions without installation, or installs matching checksum-verified platform assets. When those assets are unavailable, it retrieves the same pinned official source archive and invokes native sync. The installer synchronizes all six Skills and the SHA-256-verified platform-native executor, and preserves all unrelated or unmanaged directories. The versioned success receipt is the only confirmation that an update completed.
 
 The source sync scripts are `runtime/puretokens-skill-install.sh` for macOS/Linux and `runtime/puretokens-skill-install.ps1` for Windows. They install, verify, and place the platform executor; users do not need Node, npm, Python, Go, or a package manager.
 
 Each managed directory has a `.puretokens-managed.json` inventory of files and
 checksums. Updates and interrupted recovery stop on added, changed or missing
-files and symlinks, preserving existing contents. An older unmarked directory
-must match an exact historical inventory embedded in the candidate executor or
-the current official source; a matching name or self-reported version/hash is
+files and symlinks, preserving existing contents. An unmarked directory
+must match the current official source exactly; a matching name or self-reported version/hash is
 insufficient. Inventories detect accidental edits, not malicious local tampering.
 
 After every successful installation or update, the installer automatically runs `init`. It performs a non-billable fixed `/v1` identity check followed by one authenticated `/v1/media/models` request without displaying credentials or host configuration, then prints the current usage guide and examples. If verification does not complete, it reports a sanitized reason such as no active matching connection, missing credential, API rejection with its HTTP status, network failure, or an unconfirmed API identity; it never prints the configured URL, provider, or key. To run it again later, ask the host Agent to initialize Pure Tokens Skills or check the current Pure Tokens connection; it must invoke the installed executor's `init` command and show the guide without modifying configuration.

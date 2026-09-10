@@ -82,11 +82,8 @@
     "doesNotRequireNodeOrNpm": true,
     "installsMissingOfficialSkills": true,
     "neverOverwritesUnmanagedDirectories": true,
-    "removesVerifiedRetiredSkills": true,
-    "removesVerifiedLegacyNodeRuntime": true,
     "installsChecksumVerifiedNativeApiExecutor": true,
     "reportsSynchronizedVersion": true,
-    "removesLegacyCodexPluginWhenPresent": true,
     "requiresPreflightValidation": true,
     "doesNotReadCredentialsOrHostConfiguration": true,
     "doesNotUseMcpOrFallbackTransport": true,
@@ -97,5 +94,5 @@
     "supportsReadOnlyDoctor": true,
     "doesNotSubmitMediaOrReadBilling": true
   },
-  "sourceSha256": "763963766ff5806e7b946a88cd13eef12bf6c3147953161b0de864888a49d8f8"
+  "sourceSha256": "d3f9c124cd98dc4a08d9986680e124ec7998df5ab028a05b6cc84a3deece12c0"
 }

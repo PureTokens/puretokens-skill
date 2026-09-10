@@ -2,8 +2,8 @@
   "$schema": "https://puretokensx.com/schemas/model-profile.schema.json",
   "schemaVersion": 1,
   "capability": "video",
-  "catalogUpdatedAt": "2026-09-03",
-  "catalogCapturedAt": "2026-09-03T04:00:37.535Z",
+  "catalogUpdatedAt": "2026-09-10",
+  "catalogCapturedAt": "2026-09-10T16:55:34.848Z",
   "id": "grok-imagine-video-1.5",
   "parameterSchema": {
     "properties": {

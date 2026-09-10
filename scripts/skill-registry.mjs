@@ -513,14 +513,13 @@ function validateUpdateContract(errors, label, contract) {
   }
   const result = contract.result;
   if (!result || result.installsMissingOfficialSkills !== true || result.upgradesOnlyManagedMatchingSkills !== true ||
-    result.neverOverwritesUnmanagedDirectories !== true || result.removesVerifiedRetiredManagedSkills !== true ||
-    result.removesVerifiedLegacyNodeRuntime !== true || result.installsChecksumVerifiedNativeApiExecutor !== true ||
+    result.neverOverwritesUnmanagedDirectories !== true ||
+    result.installsChecksumVerifiedNativeApiExecutor !== true ||
     result.reportsSynchronizedVersion !== true ||
-    result.removesLegacyCodexPluginWhenPresent !== true || result.requiresVerifiedRemovalWhenLegacyCodexPluginDetected !== true ||
     result.doesNotClaimSuccessWithoutVersionReceipt !== true ||
     result.neverModifiesOfficialCheckout !== true ||
-    result.requiresFullCodexRestartAfterLegacyPluginRemoval !== true || result.requiresNewHostConversationAfterSuccess !== true) {
-    errors.push(`${label} must preserve the official checkout, install only the checksum-verified native executor, remove only the verified legacy Node runtime and exact legacy Codex plugin, preserve unmanaged directories, report the synchronized version, and require a full Codex restart after legacy-plugin removal`);
+    result.requiresNewHostConversationAfterSuccess !== true) {
+    errors.push(`${label} must preserve the official checkout, install only the checksum-verified native executor, preserve unmanaged directories, report the synchronized version, and require a new host conversation`);
   }
 }
 

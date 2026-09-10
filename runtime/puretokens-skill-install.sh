@@ -4,7 +4,6 @@
 set -eu
 
 current_skills="puretokens-balance puretokens-connection puretokens-models puretokens-image puretokens-video puretokens-update"
-retired_skills="puretokens_media puretokens_balance puretokens_connection puretokens_models puretokens_image puretokens_video puretokens_update puretokens_get_balance puretokens_get_model_price puretokens_workbuddy_router"
 
 usage() {
   printf '%s\n' "Usage: puretokens-skill-install.sh <check|init|sync|locate> (--host <claude-code|codex|workbuddy|gemini-cli|grok-build|opencode|trae|claude-desktop|dsh-desktop|zcode|kimi-code|qoder> | --target <absolute-skill-directory>) [--source <absolute-official-source-directory>]"
@@ -20,12 +19,6 @@ managed_skill() {
   name=$2
   [ -f "$directory/SKILL.md" ] && [ -f "$directory/skill.json" ] &&
     grep -Fq "\"name\": \"$name\"" "$directory/skill.json"
-}
-
-legacy_node_runtime() {
-  directory=$1
-  [ -f "$directory/runtime.json" ] && [ -f "$directory/puretokens-direct-api.mjs" ] &&
-    grep -Eq '"name"[[:space:]]*:[[:space:]]*"puretokens-direct-api-runtime"' "$directory/runtime.json"
 }
 
 managed_executor() {
@@ -134,31 +127,6 @@ check_gemini_duplicates() {
   done
 }
 
-migrate_legacy_codex_plugin() {
-  target_root=$1
-  [ -n "${HOME:-}" ] || return 0
-  home_root=$(cd "$HOME" && pwd -P) || return 0
-  [ "$target_root" = "$home_root/.agents/skills" ] || return 0
-  if ! command -v codex >/dev/null 2>&1; then
-    printf '%s\n' "Legacy Codex plugin check unavailable. If an old Puretokens Media plugin appears, remove that plugin in Codex Plugins and restart Codex."
-    return 0
-  fi
-  plugin_list=$(codex plugin list --json 2>/dev/null) || { printf '%s\n' "Legacy Codex plugin inspection unavailable; check Codex Plugins only if old Media instructions remain."; return 0; }
-  if ! printf '%s' "$plugin_list" | grep -Eq '"name"[[:space:]]*:[[:space:]]*"puretokens-media"'; then
-    return 0
-  fi
-  plugin_selectors=$(printf '%s' "$plugin_list" | tr '{},' '\n' | sed -n 's/.*"pluginId"[[:space:]]*:[[:space:]]*"\(puretokens-media@[^"]*\)".*/\1/p' | sort -u)
-  [ -n "$plugin_selectors" ] || plugin_selectors="puretokens-media"
-  for plugin_selector in $plugin_selectors; do
-    codex plugin remove "$plugin_selector" --json >/dev/null 2>&1 || fail "could not remove legacy Codex plugin $plugin_selector; remove it in Codex Plugins, then run this installer again"
-  done
-  plugin_list=$(codex plugin list --json 2>/dev/null) || fail "could not verify removal of legacy Codex plugin puretokens-media"
-  if printf '%s' "$plugin_list" | grep -Eq '"name"[[:space:]]*:[[:space:]]*"puretokens-media"'; then
-    fail "legacy Codex plugin puretokens-media is still installed; remove it in Codex Plugins, then run this installer again"
-  fi
-  printf '%s\n' "Removed and verified legacy Codex plugin puretokens-media. Fully restart Codex before testing the new Skills."
-}
-
 validate_source() {
   source_root=$1
   [ -f "$source_root/README.md" ] || fail "official source is missing README.md"
@@ -210,6 +178,7 @@ init_target() {
   host_id=$2
   validate_target "$target_root"
   if [ -n "$host_id" ]; then
+    printf '%s\n' "Installation host: $host_id"
     executor="$target_root/.puretokens-executor/puretokens-api"
     init_output=
     init_status=0
@@ -238,6 +207,7 @@ init_target() {
   fi
   printf '%s\n' ""
   usage_guide "$target_root"
+  [ -z "$host_id" ] || printf '%s\n' "Next: Start a new $host_id conversation after reviewing the init result."
 }
 
 restore_transaction() (
@@ -389,11 +359,6 @@ sync_target() {
     fi
   fi
 
-  for name in $retired_skills; do
-    for destination in "$target_root/$name" "$target_root/.$name.retired-"*; do
-      if [ -e "$destination" ] || [ -L "$destination" ]; then verify_owned "$destination" "$name"; fi
-    done
-  done
   for name in $current_skills; do
     destination="$target_root/$name"
     if [ -e "$destination" ] || [ -L "$destination" ]; then verify_owned "$destination" "$name" "$source_root/skills/$name"; fi
@@ -416,7 +381,6 @@ sync_target() {
       fail "could not record managed files for $entry"
   done
 
-  migrate_legacy_codex_plugin "$target_root"
 
   : > "$stage_root/plan"
   for entry in $current_skills .puretokens-executor; do
@@ -433,23 +397,6 @@ sync_target() {
     mv "$stage_root/$entry" "$target_root/$entry"
   done < "$stage_root/plan"
   touch "$stage_root/committed"
-  for name in $retired_skills; do
-    for destination in "$target_root/$name" "$target_root/.$name.retired-"*; do
-      [ ! -e "$destination" ] && continue
-      verify_owned "$destination" "$name"
-      rm -rf -- "$destination" || fail "could not remove retired Skill: $name"
-      printf '%s\n' "Removed retired managed $name from $destination"
-    done
-  done
-  legacy_runtime="$target_root/.puretokens-runtime"
-  if [ -e "$legacy_runtime" ] && legacy_node_runtime "$legacy_runtime"; then
-    if "$ownership_guard" install-verify --directory "$legacy_runtime" --name .puretokens-runtime >/dev/null; then
-      rm -rf -- "$legacy_runtime" || fail "could not remove retired Node runtime"
-      printf '%s\n' "Removed retired managed Node runtime from $legacy_runtime"
-    else
-      printf '%s\n' "Unverified or modified legacy runtime preserved; review it separately."
-    fi
-  fi
   printf '%s\n' "Pure Tokens Skills $release_version synchronized with the native API executor at $target_root"
   rm -rf -- "$stage_root"
   stage_root=

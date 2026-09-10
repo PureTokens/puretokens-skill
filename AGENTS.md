@@ -26,7 +26,7 @@ This repository owns the six installable Skill instructions, model selections, c
 ## Installation and updates
 
 - The native fetch wrapper pins official main to one commit, uses matching checksum-verified platform assets or that pinned source archive, and delegates writes to Shell/PowerShell sync. Installers synchronize the six Skills and exactly one checksum-verified platform executor plus their managed fetch/sync scripts. They never install Node, npm, Python, a proxy, or a service.
-- An update may replace only a verified managed `.puretokens-executor`, remove a verified old `puretokens-direct-api-runtime`, and remove verified retired official Skill directories. Never delete unknown directories.
+- Updates synchronize only the six current Skills and verified managed `.puretokens-executor`. Do not inspect or migrate retired plugins, Node runtimes or retired Skill names. Never delete unknown directories.
 - Preserve the exact first `text` install prompt under the required heading in both READMEs because the client download page extracts it.
 
 ## Validation

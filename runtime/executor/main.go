@@ -170,12 +170,12 @@ func run(args []string, input io.Reader, output io.Writer) error {
 		writeReceipt(output, validationFailure("Identify the current host and use supported command options before starting the request."))
 		return errors.New("invalid command")
 	}
-	isTask := command == "submit" || command == "task" || command == "status" || command == "wait" || command == "content" || command == "resume" || command == "delivered" || command == "preflight"
+	isTask := command == "submit" || command == "status" || command == "wait" || command == "content" || command == "resume" || command == "delivered" || command == "preflight"
 	if !isTask && command != "init" && command != "doctor" && command != "connection" && command != "balance" && command != "models" {
 		writeReceipt(output, validationFailure("Choose init, doctor, connection, balance, models, preflight, submit, status, wait, content, resume or delivered."))
 		return errors.New("unknown command")
 	}
-	if (*recordFile != "" && (!isTask || command == "preflight")) || ((*index != 0 || *outputDir != "") && (*recordFile == "" || (command != "content" && command != "delivered"))) || ((command == "resume" || command == "delivered") && *recordFile == "") || (*recordFile != "" && *requestFile != "" && command != "submit" && command != "task") || (!isTask && command != "models" && *requestFile != "") {
+	if (*recordFile != "" && (!isTask || command == "preflight")) || ((*index != 0 || *outputDir != "") && (*recordFile == "" || (command != "content" && command != "delivered"))) || ((command == "resume" || command == "delivered") && *recordFile == "") || (*recordFile != "" && *requestFile != "" && command != "submit") || (!isTask && command != "models" && *requestFile != "") {
 		writeReceipt(output, validationFailure("Use --request for media JSON, --record for same-task recovery, and --index/--output-dir only for recorded content. Never submit into an existing record."))
 		return errors.New("incompatible command options")
 	}
@@ -189,7 +189,7 @@ func run(args []string, input io.Reader, output io.Writer) error {
 	}
 	var request taskRequest
 	if isTask {
-		if *recordFile != "" && command != "submit" && command != "task" {
+		if *recordFile != "" && command != "submit" {
 			record, err := loadTaskRecord(*recordFile)
 			if err != nil {
 				writeReceipt(output, validationFailure("The task record could not be read. Recover the original receipt; do not submit again."))
@@ -263,7 +263,7 @@ func run(args []string, input io.Reader, output io.Writer) error {
 		return executeModelQuery(output, svc, input)
 	case "preflight":
 		return executePreflight(output, svc, request)
-	case "task", "submit":
+	case "submit":
 		return executeTask(input, output, svc)
 	case "status", "wait", "content":
 		return executeExistingTask(command, input, output, svc)

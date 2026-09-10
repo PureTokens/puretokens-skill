@@ -186,70 +186,6 @@ test("media Skills load a compact index and only the selected model profile", as
   }
 });
 
-test("legacy migration archive carries the current source and verified executor", async (t) => {
-  const archive = path.join(repositoryRoot, "dist", "puretokens-skill-install.zip");
-  const packageManifest = JSON.parse(await readFile(path.join(repositoryRoot, "package.json"), "utf8"));
-  const { stdout: listing } = await execFile("unzip", ["-Z1", archive], { cwd: repositoryRoot });
-  const entries = new Set(listing.trim().split("\n"));
-  const prefix = "puretokens-skill-main/";
-  for (const required of [
-    `${prefix}README.md`,
-    `${prefix}package.json`,
-    `${prefix}runtime/puretokens-skill-install.sh`,
-    `${prefix}runtime/puretokens-skill-install.ps1`,
-    `${prefix}runtime/executor/manifest.json`,
-    `${prefix}skills/index.json`,
-    `${prefix}skills/puretokens-image/references/model-index.json`,
-    `${prefix}skills/puretokens-video/references/model-index.json`
-  ]) assert.equal(entries.has(required), true, `missing ${required}`);
-  const executorManifest = JSON.parse(await readFile(path.join(repositoryRoot, "runtime", "executor", "manifest.json"), "utf8"));
-  assert.equal(entries.has(`${prefix}runtime/executor/${executorManifest.artifacts[currentExecutorPlatform()].path}`), true);
-  for (const retired of [
-    `${prefix}runtime/runtime.json`,
-    `${prefix}runtime/puretokens-direct-api.mjs`,
-    `${prefix}skills/puretokens-image/references/model-selection.json`,
-    `${prefix}skills/puretokens-video/references/model-selection.json`
-  ]) assert.equal(entries.has(retired), false, `retired archive entry ${retired}`);
-  const { stdout: index } = await execFile("unzip", ["-p", archive, `${prefix}skills/index.json`], { cwd: repositoryRoot });
-  assert.equal(JSON.parse(index).skills.every((skill) => skill.version === packageManifest.version), true);
-
-  const unpacked = await mkdtemp(path.join(os.tmpdir(), "puretokens-skill-legacy-archive-"));
-  const target = path.join(unpacked, "target");
-  t.after(() => rm(unpacked, { recursive: true, force: true }));
-  await execFile("unzip", ["-q", archive, "-d", unpacked], { cwd: repositoryRoot });
-  const source = path.join(unpacked, "puretokens-skill-main");
-  const installer = path.join(source, "runtime", "puretokens-skill-install.sh");
-  const { stdout } = await execFile("sh", [installer, "sync", "--target", target, "--source", source], { cwd: source });
-  assertSynchronized(stdout);
-  await assert.rejects(readFile(path.join(target, ".puretokens-runtime", "runtime.json"), "utf8"));
-  const executor = path.join(target, ".puretokens-executor", process.platform === "win32" ? "puretokens-api.exe" : "puretokens-api");
-  const { stdout: version } = await execFile(executor, ["--version"]);
-  assert.equal(version.trim(), packageManifest.version);
-});
-
-test("published legacy updater bridge remains marker-only and carries current Skills", async () => {
-  const archive = path.join(repositoryRoot, "dist", "puretokens-skill-install-payload.zip");
-  const packageManifest = JSON.parse(await readFile(path.join(repositoryRoot, "package.json"), "utf8"));
-  const prefix = "puretokens-skill-main/";
-  const { stdout: listing } = await execFile("unzip", ["-Z1", archive], { cwd: repositoryRoot });
-  const entries = new Set(listing.trim().split("\n"));
-  for (const required of [
-    `${prefix}runtime/runtime.json`,
-    `${prefix}runtime/puretokens-direct-api.mjs`,
-    `${prefix}skills/puretokens-image/SKILL.md`,
-    `${prefix}skills/puretokens-video/SKILL.md`
-  ]) assert.equal(entries.has(required), true, `missing ${required}`);
-  assert.equal(entries.has(`${prefix}runtime/executor/manifest.json`), true);
-  const [{ stdout: runtime }, { stdout: imageManifest }, { stdout: marker }] = await Promise.all([
-    execFile("unzip", ["-p", archive, `${prefix}runtime/runtime.json`], { cwd: repositoryRoot }),
-    execFile("unzip", ["-p", archive, `${prefix}skills/puretokens-image/skill.json`], { cwd: repositoryRoot }),
-    execFile("unzip", ["-p", archive, `${prefix}runtime/puretokens-direct-api.mjs`], { cwd: repositoryRoot })
-  ]);
-  assert.equal(JSON.parse(runtime).legacyBootstrapOnly, true);
-  assert.equal(JSON.parse(imageManifest).version, packageManifest.version);
-  assert.doesNotMatch(marker, /api\.puretokensx\.com|fetch\(|Authorization/);
-});
-
 test("the public install prompt remains extractable in both README files", async () => {
   const expected = "Install or update the official Pure Tokens Skills from https://github.com/PureTokens/puretokens-skill.";
   for (const file of ["README.md", "README.zh-CN.md"]) {
@@ -293,26 +229,6 @@ test("source installer exposes an explicit init command and usage guide", async 
   assert.match(stdout, /Pure Tokens Skill init: host ID was not supplied, so the connection check was deferred/);
   assert.match(stdout, /生成一张日落时分的山间湖泊图片/);
   assert.match(stdout, /更新 Pure Tokens Skills/);
-});
-
-test("source installer removes only the verified retired Node runtime", async (t) => {
-  const target = await mkdtemp(path.join(os.tmpdir(), "puretokens-skill-legacy-runtime-"));
-  t.after(() => rm(target, { recursive: true, force: true }));
-  const verified = path.join(target, ".puretokens-runtime");
-  await mkdir(verified);
-  for (const file of ["runtime.json", "puretokens-direct-api.mjs"]) {
-    await writeFile(path.join(verified, file), await readFile(path.join(repositoryRoot, "scripts/legacy-bootstrap", file)));
-  }
-  const installer = path.join(repositoryRoot, "runtime", "puretokens-skill-install.sh");
-  const { stdout } = await execFile("sh", [installer, "sync", "--target", target, "--source", repositoryRoot], { cwd: repositoryRoot });
-  assert.match(stdout, /Removed retired managed Node runtime/);
-  await assert.rejects(readFile(path.join(verified, "runtime.json"), "utf8"));
-
-  const unknown = path.join(target, ".puretokens-runtime");
-  await mkdir(unknown);
-  await writeFile(path.join(unknown, "runtime.json"), JSON.stringify({ name: "someone-elses-runtime" }));
-  await execFile("sh", [installer, "sync", "--target", target, "--source", repositoryRoot], { cwd: repositoryRoot });
-  assert.equal(JSON.parse(await readFile(path.join(unknown, "runtime.json"), "utf8")).name, "someone-elses-runtime");
 });
 
 test("catalog freshness gate remains present for releases", async () => {

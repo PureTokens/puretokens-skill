@@ -38,17 +38,6 @@ test("upgrade preserves unmanaged same-name Skill and added or modified files", 
   await f.install();
   assert.equal((await readdir(f.target)).some(name => name.includes("stage")), false);
 });
-test("stock 0.17.0 installations migrate without trusting names or self-reported hashes", async t => {
-  const f = await fixture(t);
-  const old = path.join(f.root, "old-source");
-  await mkdir(old);
-  const archive = path.join(f.root, "old.tar");
-  await execFile("git", ["archive", "--output", archive, "1cc3082", "skills", "runtime", "package.json", "README.md"], { cwd: repositoryRoot });
-  await execFile("tar", ["-xf", archive, "-C", old]);
-  await execFile("sh", [path.join(old, "runtime/puretokens-skill-install.sh"), "sync", "--target", f.target, "--source", old]);
-  await f.install();
-  assert.equal(JSON.parse(await readFile(path.join(f.target, "puretokens-image/.puretokens-managed.json"), "utf8")).format, "puretokens-managed-files-v1");
-});
 test("interrupted update recovery preserves user changes and retains its backup", async t => {
   const f = await fixture(t);
   await f.install();
@@ -72,73 +61,16 @@ test("all managed provenance entries derive from the registry", async () => {
   }
 });
 
-test("every historical migration inventory accepts its exact repository bytes", async t => {
-  const f = await fixture(t);
-  const history = JSON.parse(await readFile(path.join(repositoryRoot, "runtime/executor/installation-history.json"), "utf8"));
-  const platform = `${process.platform === "darwin" ? "darwin" : "linux"}-${process.arch === "arm64" ? "arm64" : "amd64"}`;
-  const guard = path.join(repositoryRoot, "runtime/executor/bin", `puretokens-api-${platform}`);
-  const trees = new Map(), blobs = new Map();
-  const git = async args => (await execFile("git", args, { cwd: repositoryRoot, encoding: "buffer", maxBuffer: 64 << 20 })).stdout;
-  async function tree(revision) {
-    if (!trees.has(revision)) {
-      const output = await git(["ls-tree", "-rz", revision, "--", "skills", "runtime", "scripts/legacy-bootstrap"]);
-      trees.set(revision, new Map(output.toString().split("\0").filter(Boolean).map(line => {
-        const [, hash, file] = line.match(/^\d+ blob ([a-f0-9]+)\t(.+)$/);
-        return [file, hash];
-      })));
-    }
-    return trees.get(revision);
-  }
-  async function read(revision, file) {
-    const hash = (await tree(revision)).get(file);
-    assert.ok(hash, `missing historical ${file}`);
-    if (!blobs.has(hash)) blobs.set(hash, await git(["cat-file", "blob", hash]));
-    return blobs.get(hash);
-  }
-  const hashJSON = bytes => {
-    const sort = value => Array.isArray(value) ? value.map(sort) : value && typeof value === "object"
-      ? Object.fromEntries(Object.keys(value).sort().map(key => [key, sort(value[key])])) : value;
-    return createHash("sha256").update(JSON.stringify(sort(JSON.parse(bytes.toString().replace(/^\uFEFF/, ""))))).digest("hex");
-  };
-  let index = 0;
-  for (const snapshot of history.snapshots) {
-    const directory = path.join(f.root, `historical-${index++}`);
-    await mkdir(directory);
-    if (snapshot.name === ".puretokens-executor") {
-      const manifest = JSON.parse(await read(snapshot.revision, "runtime/executor/manifest.json"));
-      const binary = snapshot.files["puretokens-api"] ?? snapshot.files["puretokens-api.exe"];
-      const [historicalPlatform, artifact] = Object.entries(manifest.artifacts).find(([, entry]) => entry.sha256 === binary);
-      const windows = historicalPlatform.startsWith("windows-");
-      await writeFile(path.join(directory, windows ? "puretokens-api.exe" : "puretokens-api"), await read(snapshot.revision, `runtime/executor/${artifact.path}`));
-      await writeFile(path.join(directory, "runtime.json"), JSON.stringify({ schemaVersion: 1, name: "puretokens-api-executor", version: manifest.version, platform: historicalPlatform }));
-      for (const file of Object.keys(snapshot.files).filter(file => file.endsWith(".sh") || file.endsWith(".ps1"))) {
-        await writeFile(path.join(directory, file), await read(snapshot.revision, `runtime/${file}`));
-      }
-    } else if (snapshot.name === ".puretokens-runtime") {
-      let prefix;
-      for (const candidate of ["runtime", "scripts/legacy-bootstrap"]) {
-        if (!(await tree(snapshot.revision)).has(`${candidate}/runtime.json`)) continue;
-        if (hashJSON(await read(snapshot.revision, `${candidate}/runtime.json`)) === snapshot.files["runtime.json"]) {
-          prefix = candidate;
-          break;
-        }
-      }
-      assert.ok(prefix, "legacy runtime source not found");
-      for (const file of Object.keys(snapshot.files)) await writeFile(path.join(directory, file), await read(snapshot.revision, `${prefix}/${file}`));
-    } else {
-      for (const file of Object.keys(snapshot.files)) {
-        const destination = path.join(directory, file);
-        if (file.endsWith("/")) await mkdir(destination, { recursive: true });
-        else {
-          await mkdir(path.dirname(destination), { recursive: true });
-          await writeFile(destination, await read(snapshot.revision, `skills/${snapshot.name}/${file}`));
-        }
-      }
-    }
-    await execFile(guard, ["install-verify", "--directory", directory, "--name", snapshot.name]);
-    // Every retired version must also refuse to delete added user data.
-    await writeFile(path.join(directory, "user-owned.txt"), "preserve");
-    await assert.rejects(execFile(guard, ["install-verify", "--directory", directory, "--name", snapshot.name]));
-    await rm(directory, { recursive: true });
-  }
+
+test("native installation ignores retired directories and preserves their bytes", async t => {
+ const f=await fixture(t);
+ for(const name of ["puretokens_image","puretokens_workbuddy_router",".puretokens-runtime"]){
+  await mkdir(path.join(f.target,name),{recursive:true});
+  await writeFile(path.join(f.target,name,"personal.txt"),"untouched");
+ }
+ await f.install();
+ for(const name of ["puretokens_image","puretokens_workbuddy_router",".puretokens-runtime"]){
+  assert.equal(await readFile(path.join(f.target,name,"personal.txt"),"utf8"),"untouched");
+ }
+ await f.install();
 });

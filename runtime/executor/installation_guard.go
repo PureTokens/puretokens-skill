@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"crypto/sha256"
-	_ "embed"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -18,9 +17,6 @@ import (
 
 const inventoryFile = ".puretokens-managed.json"
 const inventoryFormat = "puretokens-managed-files-v1"
-
-//go:embed installation-history.json
-var installationHistory []byte
 
 type installationInventory struct {
 	Format string            `json:"format"`
@@ -59,9 +55,7 @@ func runInstallationGuard(args []string, output io.Writer) error {
 
 func validInstallationName(name string) bool {
 	switch name {
-	case ".puretokens-executor", ".puretokens-runtime",
-		"puretokens-balance", "puretokens-connection", "puretokens-image", "puretokens-video", "puretokens-models", "puretokens-update",
-		"puretokens_media", "puretokens_balance", "puretokens_connection", "puretokens_models", "puretokens_image", "puretokens_video", "puretokens_update", "puretokens_get_balance", "puretokens_get_model_price", "puretokens_workbuddy_router":
+	case ".puretokens-executor", "puretokens-balance", "puretokens-connection", "puretokens-image", "puretokens-video", "puretokens-models", "puretokens-update":
 		return true
 	}
 	return false
@@ -150,20 +144,6 @@ func verifyInstallation(directory string, actual installationInventory, source s
 	if source != "" {
 		expected, err := installationTree(source, actual.Name)
 		if err == nil && reflect.DeepEqual(expected.Files, actual.Files) {
-			return nil
-		}
-	}
-	var history struct {
-		Snapshots []struct {
-			Name  string            `json:"name"`
-			Files map[string]string `json:"files"`
-		} `json:"snapshots"`
-	}
-	if json.Unmarshal(installationHistory, &history) != nil {
-		return errors.New("migration inventory unavailable")
-	}
-	for _, snapshot := range history.Snapshots {
-		if snapshot.Name == actual.Name && reflect.DeepEqual(snapshot.Files, actual.Files) {
 			return nil
 		}
 	}

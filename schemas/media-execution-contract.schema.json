@@ -666,15 +666,10 @@
               "installsMissingOfficialSkills",
               "upgradesOnlyManagedMatchingSkills",
               "neverOverwritesUnmanagedDirectories",
-              "removesVerifiedRetiredManagedSkills",
-              "removesVerifiedLegacyNodeRuntime",
               "installsChecksumVerifiedNativeApiExecutor",
               "reportsSynchronizedVersion",
-              "removesLegacyCodexPluginWhenPresent",
-              "requiresVerifiedRemovalWhenLegacyCodexPluginDetected",
               "doesNotClaimSuccessWithoutVersionReceipt",
               "neverModifiesOfficialCheckout",
-              "requiresFullCodexRestartAfterLegacyPluginRemoval",
               "requiresNewHostConversationAfterSuccess"
             ],
             "properties": {
@@ -687,31 +682,16 @@
               "neverOverwritesUnmanagedDirectories": {
                 "const": true
               },
-              "removesVerifiedRetiredManagedSkills": {
-                "const": true
-              },
-              "removesVerifiedLegacyNodeRuntime": {
-                "const": true
-              },
               "installsChecksumVerifiedNativeApiExecutor": {
                 "const": true
               },
               "reportsSynchronizedVersion": {
                 "const": true
               },
-              "removesLegacyCodexPluginWhenPresent": {
-                "const": true
-              },
-              "requiresVerifiedRemovalWhenLegacyCodexPluginDetected": {
-                "const": true
-              },
               "doesNotClaimSuccessWithoutVersionReceipt": {
                 "const": true
               },
               "neverModifiesOfficialCheckout": {
-                "const": true
-              },
-              "requiresFullCodexRestartAfterLegacyPluginRemoval": {
                 "const": true
               },
               "requiresNewHostConversationAfterSuccess": {

@@ -25,3 +25,18 @@ test("shared desktop guidance cannot drift between installed Skills", async () =
  for(const doc of docs)assert.equal(doc,docs[0]);
  assert.match(docs[0],/connection presence alone is not a routing signal/);
 });
+
+test("retired user install routes stay absent from the current distribution", async () => {
+ const manifest=await read("package.json");
+ assert.equal(manifest.bin,undefined);
+ assert.equal(manifest.scripts["dist:build-legacy-migration-archive"],undefined);
+ for(const file of ["bin/puretokens-skill.js","dist/puretokens-skill-install.zip","dist/puretokens-skill-install-payload.zip","runtime/executor/installation-history.json"]){
+  await assert.rejects(readFile(new URL(`../${file}`,import.meta.url)),{code:"ENOENT"});
+ }
+ const shell=await readFile(new URL("../runtime/puretokens-skill-install.sh",import.meta.url),"utf8");
+ const powershell=await readFile(new URL("../runtime/puretokens-skill-install.ps1",import.meta.url),"utf8");
+ assert.doesNotMatch(shell,/retired_skills|legacy_node_runtime|codex plugin/);
+ assert.doesNotMatch(powershell,/retiredSkills|Test-LegacyNodeRuntime|Remove-LegacyCodexPlugin/);
+ assert.match(shell,/init_target "\$target_root" "\$host"/);
+ assert.match(powershell,/Invoke-Init \$targetRoot \$HostId/);
+});

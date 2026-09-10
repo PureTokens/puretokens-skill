@@ -4,7 +4,7 @@
   "capability": "image",
   "catalogUpdatedAt": "2026-09-10",
   "catalogCapturedAt": "2026-09-10T16:55:34.848Z",
-  "id": "grok-imagine-image",
+  "id": "grok-imagine",
   "parameterSchema": {
     "properties": {
       "n": {

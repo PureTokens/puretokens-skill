@@ -89,7 +89,7 @@ Claude Desktop 请选择本地 Code 会话并使用宿主 ID `claude-desktop`；
 <!-- media-model-catalog:start -->
 ## 媒体模型清单
 
-已与基础模型目录同步：2026-09-03T04:00:37.535Z。
+已与基础模型目录同步：2026-09-10T16:55:34.848Z。
 
 这份清单用于安装后的模型选择，不是每次请求的认证检查。普通生成只读取选中 profile，不预查实时目录；明确查询、所需字段／操作缺口或拒绝诊断时才读取一次认证目录，访问权限以媒体 API 实际响应为准。
 
@@ -100,6 +100,10 @@ README 只从基础目录中带有明确图片/视频能力的模型生成，不
 | 模型 ID | 提供方 | 也可以这样说 | 适合 | 示例 |
 | --- | --- | --- | --- | --- |
 | `gpt-image-2` | OpenAI | `image2` | 图片生成 | `用 gpt-image-2 生成一张图片。` |
+| `gpt-image-2.5-flare` | OpenAI | 仅精确 ID | 支持质量档位的文生图及参考图编辑（最多 6 张） | `用 gpt-image-2.5-flare 生成一张图片。` |
+| `gpt-image-2.5-sunburst` | OpenAI | 仅精确 ID | 支持质量档位的文生图及参考图编辑（最多 6 张） | `用 gpt-image-2.5-sunburst 生成一张图片。` |
+| `grok-imagine` | xAI | 仅精确 ID | 图片生成 | `用 grok-imagine 生成一张图片。` |
+| `grok-imagine-1` | xAI | 仅精确 ID | 图片生成 | `用 grok-imagine-1 生成一张图片。` |
 | `grok-imagine-image` | xAI | `grok image` | 图片生成 | `用 grok-imagine-image 生成一张图片。` |
 | `grok-imagine-image-2.0` | xAI | `grok image 2.0` | 图片生成 | `用 grok-imagine-image-2.0 生成一张图片。` |
 | `grok-imagine-image-quality` | xAI | 仅精确 ID | 图片生成 | `用 grok-imagine-image-quality 生成一张图片。` |
@@ -107,8 +111,6 @@ README 只从基础目录中带有明确图片/视频能力的模型生成，不
 | `nano-banana-2-lite` | Google | 仅精确 ID | 图片生成 | `用 nano-banana-2-lite 生成一张图片。` |
 | `nano-banana-pro` | Google | `nano banana pro` | 图片生成 | `用 nano-banana-pro 生成一张图片。` |
 | `seedream-5.0-pro` | ByteDance | 仅精确 ID | 图片生成 | `用 seedream-5.0-pro 生成一张图片。` |
-| `gpt-image-2.5-flare` | OpenAI | 仅精确 ID | 支持质量档位的文生图及参考图编辑（最多 6 张） | `用 gpt-image-2.5-flare 生成一张图片。` |
-| `gpt-image-2.5-sunburst` | OpenAI | 仅精确 ID | 支持质量档位的文生图及参考图编辑（最多 6 张） | `用 gpt-image-2.5-sunburst 生成一张图片。` |
 
 ### 视频模型
 
@@ -117,6 +119,7 @@ README 只从基础目录中带有明确图片/视频能力的模型生成，不
 | `grok-imagine-video` | xAI | `grok video` | 视频生成 | `用 grok-imagine-video 生成一条视频。` |
 | `grok-imagine-video-1.5` | xAI | 仅精确 ID | 视频生成 | `用 grok-imagine-video-1.5 生成一条短视频。` |
 | `grok-imagine-video-1.5-preview` | xAI | `grok 1.5 video` | 视频生成 | `用 grok-imagine-video-1.5-preview 生成一条视频。` |
+| `grok-video-1.5` | xAI | 仅精确 ID | 视频生成 | `用 grok-video-1.5 生成一条短视频。` |
 | `minimax-h3` | MiniMax | `minimax h3` | 视频生成 | `用 minimax-h3 生成一条视频。` |
 | `seedance-2.0` | ByteDance | 仅精确 ID | 视频生成 | `用 seedance-2.0 生成一条视频。` |
 | `seedance-2.0-fast` | ByteDance | 仅精确 ID | 视频生成 | `用 seedance-2.0-fast 生成一条视频。` |
@@ -135,11 +138,11 @@ README 只从基础目录中带有明确图片/视频能力的模型生成，不
 
 ## 更新
 
-`puretokens-update` 的原生 fetch 脚本先把官方 main 固定到精确提交和版本。检查更新只报告版本；安装／更新优先下载匹配提交的校验平台包，没有匹配包时获取同一提交的官方源码归档，再执行原生 sync。安装器同步六个 Skill 和经 SHA-256 校验的当前平台原生执行器、保护用户自己管理的同名目录、只删除已验证的旧官方 Skill，并在发现时删除已验证的旧 Node 运行器。只有带版本号的成功回执才表示更新完成。
+`puretokens-update` 的原生 fetch 脚本先把官方 main 固定到精确提交和版本。检查更新只报告版本；安装／更新优先下载匹配提交的校验平台包，没有匹配包时获取同一提交的官方源码归档，再执行原生 sync。安装器同步六个 Skill 和经 SHA-256 校验的当前平台原生执行器，保留无关目录及用户自己管理的同名目录。只有带版本号的成功回执才表示更新完成。
 
 源码同步脚本是 macOS/Linux 的 `runtime/puretokens-skill-install.sh` 和 Windows 的 `runtime/puretokens-skill-install.ps1`。它们只负责安装更新及校验复制平台执行器；用户不需要 Node、npm、Python、Go 或包管理器。
 
-每个受管目录保存 `.puretokens-managed.json` 文件清单和校验值。更新和中断恢复遇到新增、修改、缺失文件或符号链接时停止覆盖并保留现有内容。旧安装必须与执行器内置的历史文件清单或当前官方源完全匹配才能迁移；同名、版本号或自报哈希不构成归属证明。该记录用于发现意外改动，不是抵抗本机篡改的签名。
+每个受管目录保存 `.puretokens-managed.json` 文件清单和校验值。更新和中断恢复遇到新增、修改、缺失文件或符号链接时停止覆盖并保留现有内容。没有受管记录的目录只有与当前官方源完全匹配才可接管；同名、版本号或自报哈希不构成归属证明。该记录用于发现意外改动，不是抵抗本机篡改的签名。
 
 每次安装或更新成功后，安装器都会自动执行 `init`：先做不计费的固定 `/v1` 身份检查，再用一次 `/v1/media/models` 请求验证当前凭据认证，不展示凭据或宿主配置，然后输出当前使用须知和示例。验证未完成时，会给出经过脱敏的原因，例如没有当前匹配连接、缺少凭据、API 拒绝及 HTTP 状态、网络失败或 API 身份未确认；绝不打印配置 URL、provider 或 Key。之后如需再次检查，可让宿主 Agent“初始化 Pure Tokens Skills”或“检查当前 Pure Tokens 连接”；它应调用已安装执行器的 `init`，展示使用须知，但不修改配置。
 

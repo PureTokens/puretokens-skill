@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -85,22 +84,10 @@ func TestInstallationGuardAcceptsPowerShellRuntimeFormatting(t *testing.T) {
 	}
 }
 
-func TestInstallationHistoryHasExactFileInventories(t *testing.T) {
-	var document struct {
-		SchemaVersion int    `json:"schemaVersion"`
-		SourceCommit  string `json:"sourceCommit"`
-		Snapshots     []struct {
-			Name     string            `json:"name"`
-			Revision string            `json:"revision"`
-			Files    map[string]string `json:"files"`
-		} `json:"snapshots"`
-	}
-	if json.Unmarshal(installationHistory, &document) != nil || document.SchemaVersion != 1 || len(document.SourceCommit) != 40 || len(document.Snapshots) == 0 {
-		t.Fatal("migration inventories unavailable")
-	}
-	for _, snapshot := range document.Snapshots {
-		if !validInstallationName(snapshot.Name) || len(snapshot.Revision) != 40 || len(snapshot.Files) == 0 {
-			t.Fatalf("invalid snapshot: %s", snapshot.Name)
+func TestRetiredInstallationNamesAreNotManaged(t *testing.T) {
+	for _, name := range []string{".puretokens-runtime", "puretokens_image", "puretokens_workbuddy_router"} {
+		if validInstallationName(name) {
+			t.Fatal("retired installation accepted")
 		}
 	}
 }

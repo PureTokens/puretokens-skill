@@ -122,7 +122,6 @@
     "command": {
       "enum": [
         "submit",
-        "task",
         "preflight",
         "status",
         "wait",

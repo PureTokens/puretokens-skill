@@ -2,8 +2,8 @@
   "$schema": "https://puretokensx.com/schemas/model-profile.schema.json",
   "schemaVersion": 1,
   "capability": "image",
-  "catalogUpdatedAt": "2026-09-03",
-  "catalogCapturedAt": "2026-09-03T04:00:37.535Z",
+  "catalogUpdatedAt": "2026-09-10",
+  "catalogCapturedAt": "2026-09-10T16:55:34.848Z",
   "id": "gpt-image-2.5-flare",
   "parameterSchema": {
     "properties": {
@@ -55,6 +55,13 @@
         "maxLength": 6
       }
     },
+    "constraints": {
+      "reference_transport": {
+        "image": [
+          "public_https_url"
+        ]
+      }
+    },
     "lifecycle": {
       "create": {
         "successStatus": 200,
@@ -81,13 +88,6 @@
         "resultFields": [
           "content_url",
           "content_urls"
-        ]
-      }
-    },
-    "constraints": {
-      "reference_transport": {
-        "image": [
-          "public_https_url"
         ]
       }
     },

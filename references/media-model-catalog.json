@@ -1,10 +1,10 @@
 {
   "schemaVersion": 2,
-  "updatedAt": "2026-09-03",
+  "updatedAt": "2026-09-10",
   "serviceCatalog": {
     "source": "Pure Tokens base model catalog",
     "path": "/api/product/docs/model-catalog",
-    "capturedAt": "2026-09-03T04:00:37.535Z"
+    "capturedAt": "2026-09-10T16:55:34.848Z"
   },
   "availabilityNotice": {
     "en": "This list is an installed selection aid from the base catalog, not a per-request authorization check. Ordinary generation uses only the selected installed profile without a live-catalog preflight; explicit discovery, a requested profile gap or rejection diagnosis may read the authenticated catalog once. The media API decides access.",
@@ -123,6 +123,412 @@
                 "required": true,
                 "minItems": 1,
                 "maxItems": 6,
+                "transports": [
+                  "multipart_file"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "gpt-image-2.5-flare",
+      "name": "gpt-image-2.5-flare",
+      "provider": "OpenAI",
+      "vendorId": 1,
+      "capabilities": [
+        "image"
+      ],
+      "aliases": [],
+      "goodFor": {
+        "en": "Text-to-image and reference image editing (up to 6 images), with selectable quality",
+        "zh": "支持质量档位的文生图及参考图编辑（最多 6 张）"
+      },
+      "example": {
+        "en": "Use gpt-image-2.5-flare to generate an image.",
+        "zh": "用 gpt-image-2.5-flare 生成一张图片。"
+      },
+      "parameterSchema": {
+        "properties": {
+          "n": {
+            "type": "integer",
+            "enum": [
+              1
+            ],
+            "default": 1
+          },
+          "image_size": {
+            "type": "string",
+            "enum": [
+              "1K",
+              "2K",
+              "4K"
+            ],
+            "default": "1K"
+          },
+          "aspect_ratio": {
+            "type": "string",
+            "enum": [
+              "1:1",
+              "5:4",
+              "9:16",
+              "21:9",
+              "16:9",
+              "3:2",
+              "4:3",
+              "4:5",
+              "3:4",
+              "2:3"
+            ],
+            "default": "1:1"
+          },
+          "quality": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max"
+            ],
+            "default": "high"
+          },
+          "image": {
+            "type": "string[]",
+            "maxLength": 6
+          }
+        },
+        "constraints": {
+          "reference_transport": {
+            "image": [
+              "public_https_url"
+            ]
+          }
+        },
+        "lifecycle": {
+          "create": {
+            "successStatus": 200,
+            "idField": "id",
+            "object": "image",
+            "initialStatuses": [
+              "pending"
+            ]
+          },
+          "poll": {
+            "method": "GET",
+            "path": "/v1/images/{image_id}",
+            "intervalSeconds": 3,
+            "statusField": "status",
+            "pendingStatuses": [
+              "pending"
+            ],
+            "successStatuses": [
+              "completed"
+            ],
+            "failureStatuses": [
+              "failed"
+            ],
+            "resultFields": [
+              "content_url",
+              "content_urls"
+            ]
+          }
+        },
+        "operations": {
+          "image_edit": {
+            "request": {
+              "method": "POST",
+              "path": "/v1/images/edits",
+              "contentType": "multipart/form-data"
+            },
+            "requiredBodyFields": [
+              "model",
+              "prompt",
+              "image"
+            ],
+            "inputs": {
+              "image": {
+                "field": "image",
+                "required": true,
+                "minItems": 1,
+                "maxItems": 6,
+                "transports": [
+                  "multipart_file"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "gpt-image-2.5-sunburst",
+      "name": "gpt-image-2.5-sunburst",
+      "provider": "OpenAI",
+      "vendorId": 1,
+      "capabilities": [
+        "image"
+      ],
+      "aliases": [],
+      "goodFor": {
+        "en": "Text-to-image and reference image editing (up to 6 images), with selectable quality",
+        "zh": "支持质量档位的文生图及参考图编辑（最多 6 张）"
+      },
+      "example": {
+        "en": "Use gpt-image-2.5-sunburst to generate an image.",
+        "zh": "用 gpt-image-2.5-sunburst 生成一张图片。"
+      },
+      "parameterSchema": {
+        "properties": {
+          "n": {
+            "type": "integer",
+            "enum": [
+              1
+            ],
+            "default": 1
+          },
+          "image_size": {
+            "type": "string",
+            "enum": [
+              "1K",
+              "2K",
+              "4K"
+            ],
+            "default": "1K"
+          },
+          "aspect_ratio": {
+            "type": "string",
+            "enum": [
+              "1:1",
+              "5:4",
+              "9:16",
+              "21:9",
+              "16:9",
+              "3:2",
+              "4:3",
+              "4:5",
+              "3:4",
+              "2:3"
+            ],
+            "default": "1:1"
+          },
+          "quality": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max"
+            ],
+            "default": "high"
+          },
+          "image": {
+            "type": "string[]",
+            "maxLength": 6
+          }
+        },
+        "constraints": {
+          "reference_transport": {
+            "image": [
+              "public_https_url"
+            ]
+          }
+        },
+        "lifecycle": {
+          "create": {
+            "successStatus": 200,
+            "idField": "id",
+            "object": "image",
+            "initialStatuses": [
+              "pending"
+            ]
+          },
+          "poll": {
+            "method": "GET",
+            "path": "/v1/images/{image_id}",
+            "intervalSeconds": 3,
+            "statusField": "status",
+            "pendingStatuses": [
+              "pending"
+            ],
+            "successStatuses": [
+              "completed"
+            ],
+            "failureStatuses": [
+              "failed"
+            ],
+            "resultFields": [
+              "content_url",
+              "content_urls"
+            ]
+          }
+        },
+        "operations": {
+          "image_edit": {
+            "request": {
+              "method": "POST",
+              "path": "/v1/images/edits",
+              "contentType": "multipart/form-data"
+            },
+            "requiredBodyFields": [
+              "model",
+              "prompt",
+              "image"
+            ],
+            "inputs": {
+              "image": {
+                "field": "image",
+                "required": true,
+                "minItems": 1,
+                "maxItems": 6,
+                "transports": [
+                  "multipart_file"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "grok-imagine",
+      "name": "grok-imagine",
+      "provider": "xAI",
+      "vendorId": 8,
+      "capabilities": [
+        "image"
+      ],
+      "aliases": [],
+      "goodFor": {
+        "en": "Image generation",
+        "zh": "图片生成"
+      },
+      "example": {
+        "en": "Use grok-imagine to generate an image.",
+        "zh": "用 grok-imagine 生成一张图片。"
+      },
+      "parameterSchema": {
+        "properties": {
+          "n": {
+            "type": "integer",
+            "enum": [
+              1
+            ],
+            "default": 1
+          },
+          "size": {
+            "type": "string"
+          },
+          "image": {
+            "type": "json"
+          }
+        },
+        "constraints": {
+          "response_format": {
+            "value": [
+              "url"
+            ]
+          },
+          "reference_transport": {
+            "image": [
+              "public_https_url",
+              "max_1"
+            ]
+          }
+        },
+        "operations": {
+          "image_edit": {
+            "request": {
+              "method": "POST",
+              "path": "/v1/images/edits",
+              "contentType": "multipart/form-data"
+            },
+            "requiredBodyFields": [
+              "model",
+              "prompt",
+              "image"
+            ],
+            "inputs": {
+              "image": {
+                "field": "image",
+                "required": true,
+                "minItems": 1,
+                "maxItems": 1,
+                "transports": [
+                  "multipart_file"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "grok-imagine-1",
+      "name": "grok-imagine-1",
+      "provider": "xAI",
+      "vendorId": 8,
+      "capabilities": [
+        "image"
+      ],
+      "aliases": [],
+      "goodFor": {
+        "en": "Image generation",
+        "zh": "图片生成"
+      },
+      "example": {
+        "en": "Use grok-imagine-1 to generate an image.",
+        "zh": "用 grok-imagine-1 生成一张图片。"
+      },
+      "parameterSchema": {
+        "properties": {
+          "n": {
+            "type": "integer",
+            "enum": [
+              1
+            ],
+            "default": 1
+          },
+          "size": {
+            "type": "string"
+          },
+          "image": {
+            "type": "json"
+          }
+        },
+        "constraints": {
+          "response_format": {
+            "value": [
+              "url"
+            ]
+          },
+          "reference_transport": {
+            "image": [
+              "public_https_url",
+              "max_1"
+            ]
+          }
+        },
+        "operations": {
+          "image_edit": {
+            "request": {
+              "method": "POST",
+              "path": "/v1/images/edits",
+              "contentType": "multipart/form-data"
+            },
+            "requiredBodyFields": [
+              "model",
+              "prompt",
+              "image"
+            ],
+            "inputs": {
+              "image": {
+                "field": "image",
+                "required": true,
+                "minItems": 1,
+                "maxItems": 1,
                 "transports": [
                   "multipart_file"
                 ]
@@ -789,6 +1195,147 @@
       }
     },
     {
+      "id": "grok-video-1.5",
+      "name": "grok-video-1.5",
+      "provider": "xAI",
+      "vendorId": 8,
+      "capabilities": [
+        "video"
+      ],
+      "aliases": [],
+      "goodFor": {
+        "en": "Video generation",
+        "zh": "视频生成"
+      },
+      "example": {
+        "en": "Use grok-video-1.5 to generate a short video.",
+        "zh": "用 grok-video-1.5 生成一条短视频。"
+      },
+      "parameterSchema": {
+        "properties": {
+          "image": {
+            "type": "json"
+          },
+          "duration": {
+            "type": "integer",
+            "min": 1
+          },
+          "resolution": {
+            "type": "string",
+            "enum": [
+              "480p",
+              "720p"
+            ]
+          },
+          "aspect_ratio": {
+            "type": "string",
+            "enum": [
+              "1:1",
+              "16:9",
+              "9:16",
+              "4:3",
+              "3:4",
+              "3:2",
+              "2:3"
+            ]
+          }
+        },
+        "constraints": {
+          "resolution_by_mode": {
+            "text": [
+              "480p",
+              "720p"
+            ],
+            "image": [
+              "480p",
+              "720p"
+            ],
+            "reference": [
+              "480p",
+              "720p"
+            ]
+          },
+          "reference_transport": {
+            "image": [
+              "public_https_url",
+              "max_1"
+            ]
+          }
+        },
+        "operations": {
+          "video_edit": {
+            "request": {
+              "method": "POST",
+              "path": "/v1/videos/edits",
+              "contentType": "multipart/form-data"
+            },
+            "requiredBodyFields": [
+              "model",
+              "prompt",
+              "video"
+            ],
+            "inputs": {
+              "video": {
+                "field": "video",
+                "required": true,
+                "minItems": 1,
+                "maxItems": 1,
+                "transports": [
+                  "multipart_file"
+                ]
+              }
+            }
+          },
+          "image_to_video": {
+            "request": {
+              "method": "POST",
+              "path": "/v1/videos",
+              "contentType": "multipart/form-data"
+            },
+            "requiredBodyFields": [
+              "model",
+              "prompt",
+              "image"
+            ],
+            "inputs": {
+              "image": {
+                "field": "image",
+                "required": true,
+                "minItems": 1,
+                "maxItems": 1,
+                "transports": [
+                  "multipart_file"
+                ]
+              }
+            }
+          },
+          "reference_image_video": {
+            "request": {
+              "method": "POST",
+              "path": "/v1/videos",
+              "contentType": "multipart/form-data"
+            },
+            "requiredBodyFields": [
+              "model",
+              "prompt",
+              "reference_images"
+            ],
+            "inputs": {
+              "reference_images": {
+                "field": "reference_images",
+                "required": true,
+                "minItems": 1,
+                "maxItems": 1,
+                "transports": [
+                  "multipart_file"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
       "id": "minimax-h3",
       "name": "minimax-h3",
       "provider": "MiniMax",
@@ -1342,6 +1889,12 @@
       },
       "parameterSchema": {
         "properties": {
+          "first_frame_image": {
+            "type": "string"
+          },
+          "last_frame_image": {
+            "type": "string"
+          },
           "duration": {
             "type": "integer",
             "enum": [
@@ -1382,12 +1935,6 @@
           "generate_audio": {
             "type": "boolean",
             "default": true
-          },
-          "first_frame_image": {
-            "type": "string"
-          },
-          "last_frame_image": {
-            "type": "string"
           }
         },
         "operations": {
@@ -1606,6 +2153,12 @@
       },
       "parameterSchema": {
         "properties": {
+          "first_frame_image": {
+            "type": "string"
+          },
+          "last_frame_image": {
+            "type": "string"
+          },
           "duration": {
             "type": "integer",
             "enum": [
@@ -1644,12 +2197,6 @@
           "generate_audio": {
             "type": "boolean",
             "default": true
-          },
-          "first_frame_image": {
-            "type": "string"
-          },
-          "last_frame_image": {
-            "type": "string"
           }
         },
         "operations": {
@@ -1868,6 +2415,12 @@
       },
       "parameterSchema": {
         "properties": {
+          "first_frame_image": {
+            "type": "string"
+          },
+          "last_frame_image": {
+            "type": "string"
+          },
           "duration": {
             "type": "integer",
             "enum": [
@@ -1906,12 +2459,6 @@
           "generate_audio": {
             "type": "boolean",
             "default": true
-          },
-          "first_frame_image": {
-            "type": "string"
-          },
-          "last_frame_image": {
-            "type": "string"
           }
         },
         "operations": {
@@ -2130,6 +2677,12 @@
       },
       "parameterSchema": {
         "properties": {
+          "first_frame_image": {
+            "type": "string"
+          },
+          "last_frame_image": {
+            "type": "string"
+          },
           "duration": {
             "type": "integer",
             "enum": [
@@ -2184,12 +2737,6 @@
           "generate_audio": {
             "type": "boolean",
             "default": true
-          },
-          "first_frame_image": {
-            "type": "string"
-          },
-          "last_frame_image": {
-            "type": "string"
           }
         },
         "operations": {
@@ -3007,270 +3554,15 @@
           }
         }
       }
-    },
-    {
-      "id": "gpt-image-2.5-flare",
-      "name": "gpt-image-2.5-flare",
-      "provider": "OpenAI",
-      "vendorId": 1,
-      "capabilities": [
-        "image"
-      ],
-      "aliases": [],
-      "goodFor": {
-        "en": "Text-to-image and reference image editing (up to 6 images), with selectable quality",
-        "zh": "支持质量档位的文生图及参考图编辑（最多 6 张）"
-      },
-      "example": {
-        "en": "Use gpt-image-2.5-flare to generate an image.",
-        "zh": "用 gpt-image-2.5-flare 生成一张图片。"
-      },
-      "parameterSchema": {
-        "properties": {
-          "n": {
-            "type": "integer",
-            "enum": [
-              1
-            ],
-            "default": 1
-          },
-          "image_size": {
-            "type": "string",
-            "enum": [
-              "1K",
-              "2K",
-              "4K"
-            ],
-            "default": "1K"
-          },
-          "aspect_ratio": {
-            "type": "string",
-            "enum": [
-              "1:1",
-              "5:4",
-              "9:16",
-              "21:9",
-              "16:9",
-              "3:2",
-              "4:3",
-              "4:5",
-              "3:4",
-              "2:3"
-            ],
-            "default": "1:1"
-          },
-          "quality": {
-            "type": "string",
-            "enum": [
-              "low",
-              "medium",
-              "high",
-              "xhigh",
-              "max"
-            ],
-            "default": "high"
-          },
-          "image": {
-            "type": "string[]",
-            "maxLength": 6
-          }
-        },
-        "lifecycle": {
-          "create": {
-            "successStatus": 200,
-            "idField": "id",
-            "object": "image",
-            "initialStatuses": [
-              "pending"
-            ]
-          },
-          "poll": {
-            "method": "GET",
-            "path": "/v1/images/{image_id}",
-            "intervalSeconds": 3,
-            "statusField": "status",
-            "pendingStatuses": [
-              "pending"
-            ],
-            "successStatuses": [
-              "completed"
-            ],
-            "failureStatuses": [
-              "failed"
-            ],
-            "resultFields": [
-              "content_url",
-              "content_urls"
-            ]
-          }
-        },
-        "constraints": {
-          "reference_transport": {
-            "image": [
-              "public_https_url"
-            ]
-          }
-        },
-        "operations": {
-          "image_edit": {
-            "request": {
-              "method": "POST",
-              "path": "/v1/images/edits",
-              "contentType": "multipart/form-data"
-            },
-            "requiredBodyFields": [
-              "model",
-              "prompt",
-              "image"
-            ],
-            "inputs": {
-              "image": {
-                "field": "image",
-                "required": true,
-                "minItems": 1,
-                "maxItems": 6,
-                "transports": [
-                  "multipart_file"
-                ]
-              }
-            }
-          }
-        }
-      }
-    },
-    {
-      "id": "gpt-image-2.5-sunburst",
-      "name": "gpt-image-2.5-sunburst",
-      "provider": "OpenAI",
-      "vendorId": 1,
-      "capabilities": [
-        "image"
-      ],
-      "aliases": [],
-      "goodFor": {
-        "en": "Text-to-image and reference image editing (up to 6 images), with selectable quality",
-        "zh": "支持质量档位的文生图及参考图编辑（最多 6 张）"
-      },
-      "example": {
-        "en": "Use gpt-image-2.5-sunburst to generate an image.",
-        "zh": "用 gpt-image-2.5-sunburst 生成一张图片。"
-      },
-      "parameterSchema": {
-        "properties": {
-          "n": {
-            "type": "integer",
-            "enum": [
-              1
-            ],
-            "default": 1
-          },
-          "image_size": {
-            "type": "string",
-            "enum": [
-              "1K",
-              "2K",
-              "4K"
-            ],
-            "default": "1K"
-          },
-          "aspect_ratio": {
-            "type": "string",
-            "enum": [
-              "1:1",
-              "5:4",
-              "9:16",
-              "21:9",
-              "16:9",
-              "3:2",
-              "4:3",
-              "4:5",
-              "3:4",
-              "2:3"
-            ],
-            "default": "1:1"
-          },
-          "quality": {
-            "type": "string",
-            "enum": [
-              "low",
-              "medium",
-              "high",
-              "xhigh",
-              "max"
-            ],
-            "default": "high"
-          },
-          "image": {
-            "type": "string[]",
-            "maxLength": 6
-          }
-        },
-        "lifecycle": {
-          "create": {
-            "successStatus": 200,
-            "idField": "id",
-            "object": "image",
-            "initialStatuses": [
-              "pending"
-            ]
-          },
-          "poll": {
-            "method": "GET",
-            "path": "/v1/images/{image_id}",
-            "intervalSeconds": 3,
-            "statusField": "status",
-            "pendingStatuses": [
-              "pending"
-            ],
-            "successStatuses": [
-              "completed"
-            ],
-            "failureStatuses": [
-              "failed"
-            ],
-            "resultFields": [
-              "content_url",
-              "content_urls"
-            ]
-          }
-        },
-        "constraints": {
-          "reference_transport": {
-            "image": [
-              "public_https_url"
-            ]
-          }
-        },
-        "operations": {
-          "image_edit": {
-            "request": {
-              "method": "POST",
-              "path": "/v1/images/edits",
-              "contentType": "multipart/form-data"
-            },
-            "requiredBodyFields": [
-              "model",
-              "prompt",
-              "image"
-            ],
-            "inputs": {
-              "image": {
-                "field": "image",
-                "required": true,
-                "minItems": 1,
-                "maxItems": 6,
-                "transports": [
-                  "multipart_file"
-                ]
-              }
-            }
-          }
-        }
-      }
     }
   ],
   "localMetadataRevision": {
     "date": "2026-09-10",
-    "source": "PureTokenPlus_web commit 842ccf41 model metadata and Seedance adapter; user-approved Image 2.5 edits and Nano Banana ratios; existing gpt-image-2 profile preserved"
+    "source": "PureTokenPlus_web commit 842ccf41 model metadata and Seedance adapter; user-approved Image 2.5 edits and Nano Banana ratios; existing gpt-image-2 profile preserved",
+    "retainedAfterCatalogRefresh": [
+      "Nano Banana 4:5 and 5:4 ratios",
+      "Seedance first/last frame operations and exclusive reference constraints"
+    ],
+    "note": "Public catalog was fetched again; these previously approved supplemental declarations remain separately sourced and are not claimed as returned by that catalog."
   }
 }

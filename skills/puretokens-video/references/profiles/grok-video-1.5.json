@@ -4,12 +4,22 @@
   "capability": "video",
   "catalogUpdatedAt": "2026-09-10",
   "catalogCapturedAt": "2026-09-10T16:55:34.848Z",
-  "id": "grok-imagine-video",
+  "id": "grok-video-1.5",
   "parameterSchema": {
     "properties": {
+      "image": {
+        "type": "json"
+      },
       "duration": {
         "type": "integer",
         "min": 1
+      },
+      "resolution": {
+        "type": "string",
+        "enum": [
+          "480p",
+          "720p"
+        ]
       },
       "aspect_ratio": {
         "type": "string",
@@ -22,25 +32,9 @@
           "3:2",
           "2:3"
         ]
-      },
-      "resolution": {
-        "type": "string",
-        "enum": [
-          "480p",
-          "720p"
-        ]
-      },
-      "image": {
-        "type": "json"
       }
     },
     "constraints": {
-      "reference_transport": {
-        "image": [
-          "public_https_url",
-          "max_1"
-        ]
-      },
       "resolution_by_mode": {
         "text": [
           "480p",
@@ -54,9 +48,38 @@
           "480p",
           "720p"
         ]
+      },
+      "reference_transport": {
+        "image": [
+          "public_https_url",
+          "max_1"
+        ]
       }
     },
     "operations": {
+      "video_edit": {
+        "request": {
+          "method": "POST",
+          "path": "/v1/videos/edits",
+          "contentType": "multipart/form-data"
+        },
+        "requiredBodyFields": [
+          "model",
+          "prompt",
+          "video"
+        ],
+        "inputs": {
+          "video": {
+            "field": "video",
+            "required": true,
+            "minItems": 1,
+            "maxItems": 1,
+            "transports": [
+              "multipart_file"
+            ]
+          }
+        }
+      },
       "image_to_video": {
         "request": {
           "method": "POST",
@@ -94,29 +117,6 @@
         "inputs": {
           "reference_images": {
             "field": "reference_images",
-            "required": true,
-            "minItems": 1,
-            "maxItems": 1,
-            "transports": [
-              "multipart_file"
-            ]
-          }
-        }
-      },
-      "video_edit": {
-        "request": {
-          "method": "POST",
-          "path": "/v1/videos/edits",
-          "contentType": "multipart/form-data"
-        },
-        "requiredBodyFields": [
-          "model",
-          "prompt",
-          "video"
-        ],
-        "inputs": {
-          "video": {
-            "field": "video",
             "required": true,
             "minItems": 1,
             "maxItems": 1,

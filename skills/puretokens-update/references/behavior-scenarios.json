@@ -45,33 +45,8 @@
     },
     {
       "id": "update-unmanaged-conflict",
-      "when": "a current or retired target directory is missing the matching managed Skill markers",
+      "when": "a current target directory is missing the matching managed Skill markers",
       "then": "report the exact conflict and stop before changing any target directory; do not overwrite, delete, rename, or merge it"
-    },
-    {
-      "id": "update-managed-retired-skill",
-      "when": "a verified retired managed Skill directory or an older hidden retired backup is present in the target root",
-      "then": "after all current official Skills install or upgrade successfully, delete that verified retired directory so the host cannot continue discovering it; never delete an unmanaged directory"
-    },
-    {
-      "id": "update-managed-executor-and-legacy-node-runtime",
-      "when": "the target is synchronized",
-      "then": "Install exactly one checksum-verified platform executor. Remove a legacy runtime only when its entire directory matches a reviewed historical inventory, including file bytes and directory entries. Added, changed, missing or unknown entries block removal; never rely only on filenames or a self-reported runtime name."
-    },
-    {
-      "id": "update-codex-legacy-plugin",
-      "when": "the target is Codex's ~/.agents/skills and the official Codex plugin list contains the exact legacy puretokens-media plugin",
-      "then": "before synchronizing Skills, remove only the exact listed plugin selector through the official Codex plugin interface, then list plugins again and require that puretokens-media is absent; never read plugin configuration or remove another plugin"
-    },
-    {
-      "id": "update-codex-legacy-plugin-unavailable",
-      "when": "the Codex CLI cannot inspect, remove, or verify removal of the legacy plugin, including workspace-managed plugin cases",
-      "then": "If plugin inspection is unavailable, report that limitation and continue normal installation. If a legacy plugin was actually discovered but cannot be removed and verified, stop migration and guide its removal in Codex Plugins."
-    },
-    {
-      "id": "update-codex-legacy-plugin-restart",
-      "when": "the exact legacy puretokens-media plugin was removed and verified",
-      "then": "require a full Codex application restart, then a brand-new conversation before testing; an existing conversation can retain the already-loaded legacy Skill instructions"
     },
     {
       "id": "update-managed-sync",
