@@ -18,7 +18,7 @@ func zcodeRoot(home, dataBase string) (string, error) {
 		base = home
 	}
 	if !filepath.IsAbs(base) {
-		return "", credentialFailure("active_connection_unavailable", "The ZCode data directory is unavailable.", "Run this Skill in ZCode's configured execution environment, then run init again.")
+		return "", credentialFailure("active_connection_unavailable", "The ZCode data directory is unavailable.", "")
 	}
 	return filepath.Join(base, ".zcode"), nil
 }
@@ -38,7 +38,7 @@ func credentialFromZCode() (string, error) {
 func credentialFromZCodeFile(path string) (string, error) {
 	data, err := readBoundedFile(path, maxConfigBytes)
 	if err != nil {
-		return "", credentialFailure("active_connection_unavailable", "The ZCode connection record is unavailable.", "Open ZCode to finish any legacy migration and apply the Pure Tokens connection, then run init again.")
+		return "", credentialFailure("active_connection_unavailable", "The ZCode connection record is unavailable.", "")
 	}
 	defer clear(data)
 	decoder := json.NewDecoder(bytes.NewReader(data))
@@ -72,26 +72,26 @@ func credentialFromZCodeFile(path string) (string, error) {
 			continue
 		}
 		if selected != nil {
-			return "", credentialFailure("active_connection_ambiguous", "ZCode has more than one enabled Pure Tokens connection for this request.", "Keep one enabled Pure Tokens connection in ZCode for this Skill, then run init again.")
+			return "", credentialFailure("active_connection_ambiguous", "ZCode has more than one enabled Pure Tokens connection for this request.", "")
 		}
 		selected = provider
 	}
 	if selected == nil {
-		return "", credentialFailure("active_connection_not_puretokens", "ZCode has no enabled matching Pure Tokens connection for this request.", "Enable the Pure Tokens connection in ZCode, then run init again.")
+		return "", credentialFailure("active_connection_not_puretokens", "The ZCode adapter could not recognize an enabled matching connection in the supported saved record; no API request was sent.", "")
 	}
 	if jsonString(selected["kind"]) != "openai-compatible" {
-		return "", credentialFailure("active_connection_unavailable", "The enabled ZCode connection uses an unsupported authentication format.", "Apply the supported Pure Tokens connection in ZCode, then run init again.")
+		return "", credentialFailure("active_connection_unavailable", "The enabled ZCode connection uses an unsupported authentication format.", "")
 	}
 	options := jsonObject(selected["options"])
 	token := jsonString(options["apiKey"])
 	// Only inline bearer credentials are supported. Do not interpret template
 	// references, external stores, or arbitrary process environment variables.
 	if strings.ContainsAny(token, "\r\n\x00") || strings.Contains(token, "${") || strings.Contains(token, "{env:") {
-		return "", credentialFailure("active_connection_credential_missing", "The enabled Pure Tokens connection has no supported inline credential.", "Apply the Pure Tokens connection in ZCode, then run init again.")
+		return "", credentialFailure("active_connection_credential_missing", "The enabled Pure Tokens connection has no supported inline credential.", "")
 	}
 	return matchingCredential(jsonString(options["baseURL"]), token, "/v1", "/v1/")
 }
 
 func zcodeUnreadableConfig() error {
-	return credentialFailure("active_connection_unavailable", "The ZCode connection record is unreadable or ambiguous.", "Repair the connection through ZCode's settings, then run init again.")
+	return credentialFailure("active_connection_unavailable", "The ZCode connection record is unreadable or ambiguous.", "")
 }

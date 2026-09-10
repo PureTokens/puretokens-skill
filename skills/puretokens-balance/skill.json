@@ -87,5 +87,5 @@
     "balanceRequiresExistingAccountSession": false,
     "doesNotUseMcpOrFallbackTransport": true
   },
-  "sourceSha256": "a20465f3f038bde216d74f72634da968ac304ec624e6441d66eda495a236e749"
+  "sourceSha256": "50e747bedae329efcb7e161f089c84acb31551c57c64157610da898c4c3e9b3c"
 }

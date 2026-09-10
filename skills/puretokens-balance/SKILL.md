@@ -5,6 +5,8 @@ description: 查询当前 Pure Tokens 连接的账户钱包余额、当前 Key �
 
 # Pure Tokens Balance
 
+宿主绑定与本地失败停止：首次调用前根据当前应用或用户明确指定确定一个 host；本次任务所有 Skill 和执行器命令沿用该 host，不从安装目录推断宿主。任何命令返回 `active_connection_*`、`workbuddy_*` 或 `host_credential_adapter_unavailable` 本地失败时，立即停止本次 API 流程并返回脱敏说明；不得自动调用 puretokens-connection、init、doctor、models 或其他 Skill 重复探测，不得枚举、更换 `--host` 或借用其他客户端凭据。保留用户原任务和已有 task ID；本次调用未发请求不代表此前没有提交任务，不自动重提。只有用户明确要求重查或出现可验证的新诊断依据时，才在原 host 做一次相应检查；“继续生成”本身不是切换宿主或重复探测的授权。改变执行宿主必须有用户明确指定，不能把失败恢复当作指定。
+
 仅询问消费记录入口或额度范围时，直接使用下方说明，不运行执行器、不读取凭据或请求网络。用户实际要求查询余额时，调用安装的单次原生执行器查询余额。从当前 SKILL.md 的绝对目录解析同级 `../.puretokens-executor/puretokens-api`；Windows 使用 `puretokens-api.exe`，不要依赖工作目录或 PATH。调用 `<绝对执行器路径> balance --host <当前宿主 ID>`。仅执行器私密读取文档列出的当前宿主明确连接记录；Skill 不读取配置、不传 Key／Base URL，不自行 HTTP，也不使用其他传输。
 
 执行器复用现有 Pure Tokens API Key，与官方 CC Switch 查询使用同一接口：`GET https://console.puretokensx.com/api/product/console/api-keys/usage`。成功后仅再读取一次公开的 `GET https://console.puretokensx.com/api/product/console/status` 获取金额换算比例，该请求不携带 Key。最多两次 GET，共用 30 秒截止时间，不自动重试。余额是固定 console 域名的特例；其他 API Skill 的固定 `https://api.puretokensx.com` 地址不变。不需要 Desktop、Web 登录态或用户粘贴 Key；不加 init、模型目录、其他 endpoint 或浏览器查询。详细规则按需读 `references/execution-contract.json`，异常时读 `references/behavior-scenarios.json`。
@@ -35,3 +37,5 @@ description: 查询当前 Pure Tokens 连接的账户钱包余额、当前 Key �
 当前会话若使用未反映在宿主已声明有效文件中的配置覆盖，停止并说明无法确认有效连接；不读取其他配置或借用默认连接。
 
 宿主目录、会话选择限制或特定客户端故障才按需读 `references/desktop-hosts.md`；普通请求不增加诊断前置步骤。
+
+本地连接失败按执行器脱敏状态解释：未识别、不可读、不支持或未验证均不等于“尚未配置”。保留现有连接，不据此要求重装、切换模型、重配或更换凭据；`api_request_executed: false` 时说明未请求 API、未认证凭据。具体宿主限制见 `references/desktop-hosts.md`。

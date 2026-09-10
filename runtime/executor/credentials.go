@@ -19,6 +19,8 @@ import (
 
 const pureTokensHost = "api.puretokensx.com"
 
+const connectionDiagnosticNextAction = "Stop this automatic API flow. Keep the bound host; do not try another --host or invoke connection, init, doctor, models, or another Skill as a recovery probe. Preserve the original request and any existing task ID; never automatically resubmit. Only an explicit recheck request or verified new diagnostic evidence permits one relevant check on the same host. Changing host requires explicit user selection. Keep existing connections. Report the host version and this safe diagnostic code for adapter compatibility checks; do not share configuration contents or credentials. This result does not prove that the host was never configured. Do not reinstall, switch the chat model, or replace credentials solely because of this check."
+
 type credentialResolutionError struct {
 	status     string
 	message    string
@@ -30,6 +32,11 @@ func (err *credentialResolutionError) Error() string {
 }
 
 func credentialFailure(status, message, nextAction string) error {
+	// Local selection/reading failures cannot establish that a user has never
+	// configured the host, or justify replacing a working connection.
+	if strings.HasPrefix(status, "active_connection_") || strings.HasPrefix(status, "workbuddy_") || status == "host_credential_adapter_unavailable" {
+		nextAction = connectionDiagnosticNextAction
+	}
 	return &credentialResolutionError{status: status, message: message, nextAction: nextAction}
 }
 
@@ -38,7 +45,10 @@ func credentialFailureDetails(err error) (string, string, string) {
 	if errors.As(err, &resolution) {
 		return resolution.status, resolution.message, resolution.nextAction
 	}
-	return "active_connection_unavailable", "The active host connection record could not be read.", "Open the host connection settings, apply the Pure Tokens connection again, then run init again."
+	if os.IsNotExist(err) {
+		return "active_connection_record_missing", "The adapter's declared connection record was not found in this execution environment; no API request was sent.", connectionDiagnosticNextAction
+	}
+	return "active_connection_unavailable", "The adapter could not read or interpret the declared effective connection; no API request was sent.", connectionDiagnosticNextAction
 }
 
 func credentialFromCodex() (string, error) {
@@ -65,7 +75,7 @@ func credentialFromCodexFile(configPath string) (string, error) {
 		}
 	}
 	if active == "" {
-		return "", credentialFailure("active_connection_unavailable", "Codex has no active configured connection.", "Apply the Pure Tokens connection in Codex, then run init again.")
+		return "", credentialFailure("active_connection_selection_unconfirmed", "The Codex adapter could not resolve a connection from the declared selection.", "")
 	}
 	table := []string{"model_providers", active}
 	endpoint := tomlValue(document, table, "base_url")
@@ -151,10 +161,10 @@ func credentialFromWorkBuddyFile(configPath string) (string, error) {
 		items, supported = jsonObject(value)["models"].([]any)
 	}
 	if !supported {
-		return "", credentialFailure("workbuddy_record_format_unsupported", "The WorkBuddy connection record format is not supported.", "Keep existing connections. Report the WorkBuddy version and this safe diagnostic code; do not share configuration contents or switch chat models.")
+		return "", credentialFailure("workbuddy_record_format_unsupported", "The WorkBuddy connection record format is not supported.", "")
 	}
 	if len(items) == 0 {
-		return "", credentialFailure("workbuddy_connection_not_found", "No connection entries were found in the supported WorkBuddy record.", "If Pure Tokens was already configured, report adapter compatibility with the WorkBuddy version. Otherwise configure it when API features are needed. Installation does not require changing the chat model.")
+		return "", credentialFailure("workbuddy_connection_not_found", "No connection entries were found in the supported WorkBuddy record.", "")
 	}
 	keys := make(map[string]struct{})
 	matchedEndpoint := false
@@ -170,17 +180,17 @@ func credentialFromWorkBuddyFile(configPath string) (string, error) {
 	}
 	if len(keys) == 0 {
 		if matchedEndpoint {
-			return "", credentialFailure("workbuddy_credential_missing", "The configured Pure Tokens record has no usable credential.", "Apply the Pure Tokens connection in WorkBuddy again, then run init.")
+			return "", credentialFailure("workbuddy_credential_missing", "The configured Pure Tokens record has no usable credential.", "")
 		}
-		return "", credentialFailure("workbuddy_connection_not_found", "The WorkBuddy adapter could not confirm a matching Pure Tokens connection in its supported record format.", "If this conversation already works through Pure Tokens, keep the working connection and report an adapter compatibility issue with the WorkBuddy version and this safe diagnostic code. Do not share credentials or configuration contents. Otherwise check the selected connection in WorkBuddy.")
+		return "", credentialFailure("workbuddy_connection_not_found", "The WorkBuddy adapter could not confirm a matching Pure Tokens connection in its supported record format.", "")
 	}
 	if len(keys) != 1 {
-		return "", credentialFailure("workbuddy_connection_ambiguous", "WorkBuddy has no single unambiguous Pure Tokens credential for this check.", "Multiple saved Pure Tokens credentials match; the adapter cannot select one safely. Keep existing connections and report the ambiguity without sharing credentials. Switching the chat model does not resolve this selection.")
+		return "", credentialFailure("workbuddy_connection_ambiguous", "WorkBuddy has no single unambiguous Pure Tokens credential for this check.", "")
 	}
 	for key := range keys {
 		return key, nil
 	}
-	return "", credentialFailure("workbuddy_credential_missing", "The active WorkBuddy Pure Tokens connection has no usable credential.", "Apply the Pure Tokens connection in WorkBuddy again, then run init again.")
+	return "", credentialFailure("workbuddy_credential_missing", "The active WorkBuddy Pure Tokens connection has no usable credential.", "")
 }
 
 func credentialFromGrokBuild() (string, error) {
@@ -198,7 +208,7 @@ func credentialFromGrokBuildFile(configPath string) (string, error) {
 	}
 	active := tomlValue(document, []string{"models"}, "default")
 	if active == "" {
-		return "", credentialFailure("active_connection_unavailable", "Grok Build does not have an active configured connection for this check.", "Select and apply the Pure Tokens connection in Grok Build, then run init again.")
+		return "", credentialFailure("active_connection_selection_unconfirmed", "The Grok Build adapter could not resolve a connection from the declared selection.", "")
 	}
 	table := []string{"model", active}
 	return matchingCredential(tomlValue(document, table, "base_url"), tomlValue(document, table, "api_key"), "/v1", "/v1/")
@@ -220,7 +230,7 @@ func credentialFromOpenCodeFile(configPath string) (string, error) {
 	model := jsonString(document["model"])
 	providerID, _, found := strings.Cut(model, "/")
 	if !found || providerID == "" {
-		return "", credentialFailure("active_connection_unavailable", "OpenCode does not have an active configured connection for this check.", "Select and apply the Pure Tokens connection in OpenCode, then run init again.")
+		return "", credentialFailure("active_connection_selection_unconfirmed", "The OpenCode adapter could not resolve a connection from the declared selection.", "")
 	}
 	provider := jsonObject(jsonObject(document["provider"])[providerID])
 	options := jsonObject(provider["options"])
@@ -247,13 +257,27 @@ func configuredDirectory(home string, defaultDirectory string, overrideNames ...
 
 func matchingCredential(endpoint, token string, allowedPaths ...string) (string, error) {
 	if !matchesPureTokensEndpoint(endpoint, allowedPaths...) {
-		return "", credentialFailure("active_connection_not_puretokens", "The active host connection does not target the Pure Tokens API.", "Select or apply the Pure Tokens connection in the host, then run init again.")
+		return "", endpointRecognitionFailure(endpoint, allowedPaths...)
 	}
 	token = strings.TrimSpace(token)
 	if token == "" {
-		return "", credentialFailure("active_connection_credential_missing", "The active Pure Tokens connection has no usable credential.", "Apply the Pure Tokens connection in the host again, then run init again.")
+		return "", credentialFailure("active_connection_credential_missing", "The active Pure Tokens connection has no usable credential.", "")
 	}
 	return token, nil
+}
+
+func endpointRecognitionFailure(endpoint string, allowedPaths ...string) error {
+	message := "The adapter could not recognize the declared connection under the fixed Pure Tokens endpoint rules; no credential authentication or API request was performed."
+	if strings.TrimSpace(endpoint) == "" {
+		return credentialFailure("active_connection_endpoint_missing", "The adapter could not resolve an endpoint from the supported record fields; no API request was sent.", "")
+	}
+	parsed, err := url.Parse(strings.TrimSpace(endpoint))
+	if err == nil && strings.EqualFold(parsed.Hostname(), pureTokensHost) && !matchesPureTokensEndpoint(endpoint, allowedPaths...) {
+		return credentialFailure("active_connection_endpoint_unsupported", "The declared endpoint uses an unsupported form for this adapter; no credential authentication or API request was performed.", "")
+	}
+	// Keep the existing code for consumers, but do not turn an allowlist
+	// mismatch into a claim about the user's configuration or key validity.
+	return credentialFailure("active_connection_not_puretokens", message, "")
 }
 
 func matchesPureTokensEndpoint(value string, allowedPaths ...string) bool {

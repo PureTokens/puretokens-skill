@@ -5,6 +5,8 @@ description: 当前宿主使用 Pure Tokens 连接时，任何生成或编辑视
 
 # Pure Tokens Video
 
+宿主绑定与本地失败停止：首次调用前根据当前应用或用户明确指定确定一个 host；本次任务所有 Skill 和执行器命令沿用该 host，不从安装目录推断宿主。任何命令返回 `active_connection_*`、`workbuddy_*` 或 `host_credential_adapter_unavailable` 本地失败时，立即停止本次 API 流程并返回脱敏说明；不得自动调用 puretokens-connection、init、doctor、models 或其他 Skill 重复探测，不得枚举、更换 `--host` 或借用其他客户端凭据。保留用户原任务和已有 task ID；本次调用未发请求不代表此前没有提交任务，不自动重提。只有用户明确要求重查或出现可验证的新诊断依据时，才在原 host 做一次相应检查；“继续生成”本身不是切换宿主或重复探测的授权。改变执行宿主必须有用户明确指定，不能把失败恢复当作指定。
+
 ## 执行边界
 
 当前宿主上下文选择 Pure Tokens 或用户明确指定时，必须调用安装的原生执行器；它是唯一 API 传输，固定请求 `https://api.puretokensx.com`。不得自行发 HTTP，不回退到 imagegen／Imagen／通用视频 Skill、MCP、代理、Computer Use 或浏览器／桌面自动化。仅执行器在内存中使用当前宿主匹配连接；Skill 不读配置、不传或展示凭据。不需要用户安装 Node、Python、Go 或 Desktop。
@@ -39,3 +41,5 @@ description: 当前宿主使用 Pure Tokens 连接时，任何生成或编辑视
 只有用户明确检查参数时用 preflight，它不创建任务、不报价、不证明权限。特定宿主安装或交付问题才读 `references/desktop-hosts.md`；本地夹具和 init 成功均不等于实机附件验收。ZCode／Qoder 连接存在不证明当前聊天选择；不据配置存在擅自路由。
 
 当前会话若使用未反映在宿主已声明有效文件中的配置覆盖，停止并说明无法确认有效连接；不读取其他配置或借用默认连接。
+
+本地连接失败按执行器脱敏状态解释：未识别、不可读、不支持或未验证均不等于“尚未配置”。保留现有连接，不据此要求重装、切换模型、重配或更换凭据；`api_request_executed: false` 时说明未请求 API、未认证凭据。具体宿主限制见 `references/desktop-hosts.md`。

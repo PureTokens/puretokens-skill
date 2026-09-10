@@ -5,6 +5,8 @@ description: 用户要求检查版本、安装、升级、诊断或了解 Pure T
 
 # Pure Tokens Update
 
+宿主绑定与本地失败停止：首次调用前根据当前应用或用户明确指定确定一个 host；本次任务所有 Skill 和执行器命令沿用该 host，不从安装目录推断宿主。任何命令返回 `active_connection_*`、`workbuddy_*` 或 `host_credential_adapter_unavailable` 本地失败时，立即停止本次 API 流程并返回脱敏说明；不得自动调用 puretokens-connection、init、doctor、models 或其他 Skill 重复探测，不得枚举、更换 `--host` 或借用其他客户端凭据。保留用户原任务和已有 task ID；本次调用未发请求不代表此前没有提交任务，不自动重提。只有用户明确要求重查或出现可验证的新诊断依据时，才在原 host 做一次相应检查；“继续生成”本身不是切换宿主或重复探测的授权。改变执行宿主必须有用户明确指定，不能把失败恢复当作指定。
+
 只响应用户主动的安装、升级、检查或帮助请求。普通媒体生成不自动更新、初始化或诊断。仅问用法时直接读 `references/usage-guide.md` 回答，不运行 init／doctor，不查凭据或访问网络。异常时才读 `references/behavior-scenarios.json`。
 
 ## 检查、安装和更新
@@ -51,3 +53,5 @@ Windows 安装只运行一次官方 fetch／sync 流程并汇总同步、清理�
 安装汇报必须区分文件同步与 init：保留实际宿主、同步版本、init 已验证／失败／未执行的结果，下一步只指向该宿主。官方 sync 在同步成功后自动执行一次 init；已有 init 结果不重复运行。仅复制文件不代表原生安装完成。若原生同步已确认成功但 init 明确未执行，只运行一次同宿主 init；输出不确定先说明未确认，不重装或猜成功。
 
 安装和更新不检查、移除或迁移 Codex 插件，不运行 codex plugin 命令，也不汇报旧插件状态。同步后执行同宿主 init，再提示在该宿主新开会话。
+
+本地连接失败按执行器脱敏状态解释：未识别、不可读、不支持或未验证均不等于“尚未配置”。保留现有连接，不据此要求重装、切换模型、重配或更换凭据；`api_request_executed: false` 时说明未请求 API、未认证凭据。具体宿主限制见 `references/desktop-hosts.md`。

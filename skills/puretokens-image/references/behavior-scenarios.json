@@ -9,6 +9,11 @@
       "then": "select puretokens-image before generic imagegen, Imagen, or another image Skill. Once selected, use only the fixed Images API path; a missing executor, rejection, or failure must stop safely and must not invoke a generic media Skill."
     },
     {
+      "id": "image-local-connection-failure-stops-host-probing",
+      "when": "A command for the bound host returns an active_connection_*, workbuddy_*, or host_credential_adapter_unavailable local failure, including when the user asks to continue generation.",
+      "then": "Stop the automatic API flow. Do not invoke connection, init, doctor, models, another Skill, or another --host as a recovery probe. Preserve the original request and any existing task ID; never resubmit automatically. Explain only that this invocation sent no API request. An explicit recheck request or verified new diagnostic evidence permits one relevant check on the same host; changing host requires explicit user selection."
+    },
+    {
       "id": "image-model-alias-ambiguous",
       "when": "an alias resolves to multiple exact model IDs",
       "then": "ask the user to choose an exact ID; do not submit"

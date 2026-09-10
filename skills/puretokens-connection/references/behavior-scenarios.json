@@ -9,6 +9,11 @@
       "then": "State only that the fixed API returns the expected public identity. This does not verify credentials, funds, model authorization or media/attachment availability."
     },
     {
+      "id": "connection-local-connection-failure-stops-host-probing",
+      "when": "A command for the bound host returns an active_connection_*, workbuddy_*, or host_credential_adapter_unavailable local failure, including when the user asks to continue generation.",
+      "then": "Stop the automatic API flow. Do not invoke connection, init, doctor, models, another Skill, or another --host as a recovery probe. Preserve the original request and any existing task ID; never resubmit automatically. Explain only that this invocation sent no API request. An explicit recheck request or verified new diagnostic evidence permits one relevant check on the same host; changing host requires explicit user selection."
+    },
+    {
       "id": "connection-identity-unconfirmed",
       "when": "GET https://api.puretokensx.com/v1 returns unreadable JSON, missing fields, or values other than the declared Pure Tokens API identity",
       "then": "state that the fixed Pure Tokens API did not return a confirmable identity and do not assert that the user's other connection belongs to another service"

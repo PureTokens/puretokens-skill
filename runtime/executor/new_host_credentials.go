@@ -67,7 +67,7 @@ func credentialFromNewHost(host string) (string, error) {
 
 func inlineHostCredential(endpoint, token string) (string, error) {
 	if strings.ContainsAny(token, "\r\n\x00") || strings.Contains(token, "${") || strings.Contains(token, "{env:") {
-		return "", credentialFailure("active_connection_credential_missing", "The host connection has no supported inline credential.", "Apply the supported Pure Tokens connection in the host, then run init again.")
+		return "", credentialFailure("active_connection_credential_missing", "The host connection has no supported inline credential.", "")
 	}
 	return matchingCredential(endpoint, token, "", "/", "/v1", "/v1/")
 }
@@ -79,11 +79,11 @@ func credentialFromKimiFile(path string) (string, error) {
 	}
 	model := tomlValue(doc, nil, "default_model")
 	if model == "" {
-		return "", errors.New("active model unavailable")
+		return "", credentialFailure("active_connection_selection_unconfirmed", "The Kimi Code adapter could not resolve the declared model selection.", "")
 	}
 	provider := tomlValue(doc, []string{"models", model}, "provider")
 	if provider == "" {
-		return "", errors.New("active connection unavailable")
+		return "", credentialFailure("active_connection_selection_unconfirmed", "The Kimi Code adapter could not resolve the declared connection selection.", "")
 	}
 	table := []string{"providers", provider}
 	endpoint := tomlValue(doc, table, "base_url")
@@ -93,7 +93,7 @@ func credentialFromKimiFile(path string) (string, error) {
 	switch tomlValue(doc, table, "type") {
 	case "openai", "openai_responses", "anthropic":
 	default:
-		return "", errors.New("unsupported authentication format")
+		return "", credentialFailure("active_connection_format_unsupported", "The adapter cannot use the declared authentication format.", "")
 	}
 	return inlineHostCredential(endpoint, tomlValue(doc, table, "api_key"))
 }
@@ -115,24 +115,37 @@ func credentialFromQoderFile(path string) (string, error) {
 	}
 	providers := jsonObject(jsonObject(value)["providers"])
 	if providers == nil {
-		return "", errors.New("host configuration unavailable")
+		return "", credentialFailure("active_connection_format_unsupported", "The Qoder adapter cannot interpret the saved connection record format.", "")
+	}
+	if len(providers) == 0 {
+		return "", credentialFailure("active_connection_selection_unconfirmed", "The Qoder adapter found no connection entries in its supported saved record.", "")
 	}
 	var selected map[string]any
+	var rejection error
+	rejectionStatus := ""
 	for _, raw := range providers {
 		p := jsonObject(raw)
 		if !matchesPureTokensEndpoint(jsonString(p["baseUrl"]), "", "/", "/v1", "/v1/") {
+			candidate := endpointRecognitionFailure(jsonString(p["baseUrl"]), "", "/", "/v1", "/v1/")
+			status, _, _ := credentialFailureDetails(candidate)
+			if rejection == nil {
+				rejection, rejectionStatus = candidate, status
+			} else if status != rejectionStatus {
+				rejection = credentialFailure("active_connection_selection_unconfirmed", "The Qoder adapter could not resolve a matching connection from the supported saved entries.", "")
+				rejectionStatus = "active_connection_selection_unconfirmed"
+			}
 			continue
 		}
 		if selected != nil {
-			return "", credentialFailure("active_connection_ambiguous", "The host has multiple matching Pure Tokens connections.", "Keep one matching connection for this Skill, then run init again.")
+			return "", credentialFailure("active_connection_ambiguous", "The host has multiple matching Pure Tokens connections.", "")
 		}
 		selected = p
 	}
 	if selected == nil {
-		return "", credentialFailure("active_connection_not_puretokens", "The host has no matching Pure Tokens connection.", "Apply the Pure Tokens connection in the host, then run init again.")
+		return "", rejection
 	}
 	if jsonString(selected["type"]) != "openai-compatible" || jsonString(selected["protocol"]) != "openai" {
-		return "", errors.New("unsupported authentication format")
+		return "", credentialFailure("active_connection_format_unsupported", "The Qoder adapter cannot use the declared authentication format.", "")
 	}
 	return inlineHostCredential(jsonString(selected["baseUrl"]), jsonString(selected["apiKey"]))
 }

@@ -77,7 +77,7 @@ func credentialFromClaudeDesktopRoot(root string) (string, error) {
 }
 
 func desktopSelectionFailure() error {
-	return credentialFailure("active_connection_unavailable", "The desktop host has no supported active connection for this request.", "Select and apply the Pure Tokens connection in this desktop host, then run init again.")
+	return credentialFailure("active_connection_unavailable", "The desktop adapter could not resolve a supported effective connection for this request.", "")
 }
 
 func credentialFromDSHDesktop() (string, error) {

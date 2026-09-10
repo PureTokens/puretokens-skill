@@ -17,7 +17,7 @@ func TestWorkBuddyUnrecognizedRecordPreservesWorkingConnection(t *testing.T) {
 		t.Fatal("unrecognized endpoint accepted")
 	}
 	_, _, next := credentialFailureDetails(err)
-	if !strings.Contains(next, "keep the working connection") {
+	if !strings.Contains(next, "Keep existing connections") {
 		t.Fatalf("misleading guidance: %+v", next)
 	}
 }

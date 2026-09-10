@@ -9,6 +9,11 @@
       "then": "invoke init once for public identity followed by one authenticated catalog read; separate credential verification from identity and show only the relevant sanitized result"
     },
     {
+      "id": "update-local-connection-failure-stops-host-probing",
+      "when": "A command for the bound host returns an active_connection_*, workbuddy_*, or host_credential_adapter_unavailable local failure, including when the user asks to continue generation.",
+      "then": "Stop the automatic API flow. Do not invoke connection, init, doctor, models, another Skill, or another --host as a recovery probe. Preserve the original request and any existing task ID; never resubmit automatically. Explain only that this invocation sent no API request. An explicit recheck request or verified new diagnostic evidence permits one relevant check on the same host; changing host requires explicit user selection."
+    },
+    {
       "id": "update-init-unverified",
       "when": "init cannot resolve a verified credential, cannot reach the fixed API, receives an API rejection, or receives an unconfirmed identity",
       "then": "state that configuration verification is incomplete, show the executor's sanitized status, message, next action, and only a returned non-zero HTTP status, then still show the usage guide; do not modify configuration, claim media availability, or expose host configuration"

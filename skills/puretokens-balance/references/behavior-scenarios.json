@@ -9,6 +9,11 @@
       "then": "invoke the installed executor once with the active host; read fixed console api-keys/usage with the matching API key, then public status without a credential; at most two GETs within 30 seconds, no init, catalog, browser login or media preflight"
     },
     {
+      "id": "balance-local-connection-failure-stops-host-probing",
+      "when": "A command for the bound host returns an active_connection_*, workbuddy_*, or host_credential_adapter_unavailable local failure, including when the user asks to continue generation.",
+      "then": "Stop the automatic API flow. Do not invoke connection, init, doctor, models, another Skill, or another --host as a recovery probe. Preserve the original request and any existing task ID; never resubmit automatically. Explain only that this invocation sent no API request. An explicit recheck request or verified new diagnostic evidence permits one relevant check on the same host; changing host requires explicit user selection."
+    },
+    {
       "id": "balance-wallet-response",
       "when": "usage succeeds with unlimited_quota true and a positive public quota_per_unit",
       "then": "divide actual total_available by quota_per_unit; default to one concise account wallet balance line in USD; never call the wallet unlimited or subtract used again"
