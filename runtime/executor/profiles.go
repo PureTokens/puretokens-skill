@@ -327,6 +327,22 @@ func prepareProfileRequest(request *taskRequest, svc service) error {
 			}
 		}
 	}
+	// Frame mode and general references are mutually exclusive, across both
+	// JSON URLs and multipart files. The profile supplies the field groups.
+	groups := profile.Parameters.Constraints["exclusive_reference_sets"]
+	presentGroups := 0
+	for _, fields := range groups {
+		for _, field := range array(fields) {
+			key := fmt.Sprint(field)
+			if counts[key] > 0 || request.Parameters[key] != nil {
+				presentGroups++
+				break
+			}
+		}
+	}
+	if presentGroups > 1 {
+		return errors.New("First/last frames cannot be combined with additional reference media.")
+	}
 	for key, others := range profile.Parameters.Constraints["requires_together"] {
 		if _, exists := request.Parameters[key]; exists {
 			for _, other := range array(others) {
@@ -359,7 +375,7 @@ func prepareProfileRequest(request *taskRequest, svc service) error {
 		}
 	}
 	mode := "text"
-	if counts["image"] > 0 || request.Parameters["image"] != nil || counts["first_frame_image"] > 0 {
+	if counts["image"] > 0 || request.Parameters["image"] != nil || counts["first_frame_image"] > 0 || counts["last_frame_image"] > 0 || request.Parameters["first_frame_image"] != nil || request.Parameters["last_frame_image"] != nil {
 		mode = "image"
 	}
 	if opName == "reference_image_video" || opName == "reference_video" || opName == "reference_audio" {

@@ -122,6 +122,11 @@ func finishKnownTask(output io.Writer, result receipt) error {
 	return nil
 }
 
+var (
+	errInvalidMedia  = errors.New("invalid media content")
+	errMediaTooLarge = errors.New("media exceeds size limit")
+)
+
 func contentFailure(err error, status, retry int, code, message string) receipt {
 	result := apiFailure("content", status, retry, code, message, "Keep this task ID. Retrieve only the missing index; do not submit another task.")
 	if status >= 300 {
@@ -132,6 +137,14 @@ func contentFailure(err error, status, retry int, code, message string) receipt 
 	result.NextAction = "Keep this task ID. Check network access and free disk space, then retrieve this same index again."
 	var network net.Error
 	switch {
+	case errors.Is(err, errMediaTooLarge):
+		result.LocalErrorCode = "media_size_limit_exceeded"
+		result.ErrorMessage = "The content response exceeds the supported media size limit."
+		result.NextAction = "Keep the task ID and contact Pure Tokens support about this output size; do not repeat the submission."
+	case errors.Is(err, errInvalidMedia):
+		result.LocalErrorCode = "invalid_media_content"
+		result.ErrorMessage = "The content response is incomplete or is not a supported native media file."
+		result.NextAction = "Keep the task ID. Retrieve this same index only when requested; if the content remains invalid, contact Pure Tokens support."
 	case errors.Is(err, os.ErrPermission):
 		result.LocalErrorCode = "output_permission_denied"
 		result.ErrorMessage = "The selected output directory is not writable."

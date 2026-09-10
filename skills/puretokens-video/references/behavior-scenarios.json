@@ -66,7 +66,7 @@
     {
       "id": "video-submission-executor-output-unknown",
       "when": "the executor POST started but returns an execution error, empty output, truncated output, or output that cannot be parsed before a task ID is confirmed",
-      "then": "treat submission acceptance as unknown and do not invoke POST again, submit a replacement task, or claim the task was not created, charged, or refunded. If no verified task_id is available, return one unknown-submission receipt and end the current response without further tool, status, polling, or deliberation work."
+      "then": "treat submission acceptance as unknown and do not invoke POST again, submit a replacement task, or claim the task was not created, charged, or refunded. If no verified task_id is available, return one unknown-submission receipt and end the current response after only local cleanup of this temporary request file; no further API, status, polling or submission work."
     },
     {
       "id": "video-unknown-submission-continuation-without-id",
@@ -221,7 +221,7 @@
     {
       "id": "video-task-poll-delay",
       "when": "the same task is in a supported pending state",
-      "then": "honor a valid positive Retry-After delay when returned; otherwise wait 5, 10, 20, 40, then 60 seconds, with at most seven same-task status reads during a submission or explicit same-task continuation turn"
+      "then": "honor a valid positive Retry-After delay when returned; otherwise wait 5, 10, 20, 40, then 60 seconds, with at most seven same-task status reads per bounded wait window"
     },
     {
       "id": "video-task-poll-rate-limited",
@@ -235,13 +235,13 @@
     },
     {
       "id": "video-task-polling-deadline",
-      "when": "300 seconds have elapsed since a task submission response and the task is still in a supported pending state",
-      "then": "report the current state, stop automatic polling, and require an explicit user request to continue the same task; do not resubmit"
+      "when": "300 seconds have elapsed since the current bounded wait window began and the task is still in a supported pending state",
+      "then": "Return ok=true with supported pending status, wait_outcome and preserved wait_windows_completed. Only next_step=wait permits one more bounded foreground window while the authorized delivery remains active. At two completed windows or retry_deferred stop and offer explicit continuation. Never POST again."
     },
     {
       "id": "video-task-explicit-continuation",
       "when": "the user explicitly asks to continue querying the returned task_id",
-      "then": "start a new bounded polling window for that same task only; do not submit, inspect, or substitute another task"
+      "then": "Start one bounded same-task window on an explicit user request. Preserve the saturated wait_windows_completed counter; this does not reset automatic continuation permission. Never submit or substitute another task."
     },
     {
       "id": "video-task-terminal-failure",
@@ -255,8 +255,8 @@
     },
     {
       "id": "video-content-delivery-failure",
-      "when": "a task is complete but native content cannot be delivered",
-      "then": "report the delivery failure and offer only a same-task content retry; do not claim success"
+      "when": "content retrieval fails before a verified local file is available",
+      "then": "Keep the task ID and offer only a same-task content retry when requested; never resubmit. If the download already succeeded and only host handoff failed, use completed-record resume to verify the existing file locally and reattach it without another content GET."
     },
     {
       "id": "video-content-resource-bound",

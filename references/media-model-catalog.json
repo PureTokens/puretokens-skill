@@ -1015,6 +1015,8 @@
               "3:2",
               "3:4",
               "4:3",
+              "4:5",
+              "5:4",
               "9:16",
               "16:9",
               "21:9"
@@ -1129,6 +1131,8 @@
               "3:2",
               "3:4",
               "4:3",
+              "4:5",
+              "5:4",
               "9:16",
               "16:9",
               "21:9"
@@ -1247,6 +1251,8 @@
               "3:2",
               "3:4",
               "4:3",
+              "4:5",
+              "5:4",
               "9:16",
               "16:9",
               "21:9",
@@ -1376,6 +1382,12 @@
           "generate_audio": {
             "type": "boolean",
             "default": true
+          },
+          "first_frame_image": {
+            "type": "string"
+          },
+          "last_frame_image": {
+            "type": "string"
           }
         },
         "operations": {
@@ -1470,6 +1482,107 @@
                 ]
               }
             }
+          },
+          "first_frame_video": {
+            "request": {
+              "method": "POST",
+              "path": "/v1/videos",
+              "contentType": "multipart/form-data"
+            },
+            "requiredBodyFields": [
+              "model",
+              "prompt",
+              "first_frame_image"
+            ],
+            "inputs": {
+              "first_frame_image": {
+                "field": "first_frame_image",
+                "required": true,
+                "minItems": 1,
+                "maxItems": 1,
+                "transports": [
+                  "multipart_file"
+                ]
+              }
+            }
+          },
+          "last_frame_video": {
+            "request": {
+              "method": "POST",
+              "path": "/v1/videos",
+              "contentType": "multipart/form-data"
+            },
+            "requiredBodyFields": [
+              "model",
+              "prompt",
+              "last_frame_image"
+            ],
+            "inputs": {
+              "last_frame_image": {
+                "field": "last_frame_image",
+                "required": true,
+                "minItems": 1,
+                "maxItems": 1,
+                "transports": [
+                  "multipart_file"
+                ]
+              }
+            }
+          },
+          "first_last_frame_video": {
+            "request": {
+              "method": "POST",
+              "path": "/v1/videos",
+              "contentType": "multipart/form-data"
+            },
+            "requiredBodyFields": [
+              "model",
+              "prompt",
+              "first_frame_image",
+              "last_frame_image"
+            ],
+            "inputs": {
+              "first_frame_image": {
+                "field": "first_frame_image",
+                "required": true,
+                "minItems": 1,
+                "maxItems": 1,
+                "transports": [
+                  "multipart_file"
+                ]
+              },
+              "last_frame_image": {
+                "field": "last_frame_image",
+                "required": true,
+                "minItems": 1,
+                "maxItems": 1,
+                "transports": [
+                  "multipart_file"
+                ]
+              }
+            }
+          }
+        },
+        "constraints": {
+          "reference_transport": {
+            "first_frame_image": [
+              "public_https_url"
+            ],
+            "last_frame_image": [
+              "public_https_url"
+            ]
+          },
+          "exclusive_reference_sets": {
+            "frames": [
+              "first_frame_image",
+              "last_frame_image"
+            ],
+            "references": [
+              "image",
+              "reference_images",
+              "reference_videos",
+              "reference_audios"
+            ]
           }
         }
       }
@@ -1531,6 +1644,12 @@
           "generate_audio": {
             "type": "boolean",
             "default": true
+          },
+          "first_frame_image": {
+            "type": "string"
+          },
+          "last_frame_image": {
+            "type": "string"
           }
         },
         "operations": {
@@ -1625,6 +1744,107 @@
                 ]
               }
             }
+          },
+          "first_frame_video": {
+            "request": {
+              "method": "POST",
+              "path": "/v1/videos",
+              "contentType": "multipart/form-data"
+            },
+            "requiredBodyFields": [
+              "model",
+              "prompt",
+              "first_frame_image"
+            ],
+            "inputs": {
+              "first_frame_image": {
+                "field": "first_frame_image",
+                "required": true,
+                "minItems": 1,
+                "maxItems": 1,
+                "transports": [
+                  "multipart_file"
+                ]
+              }
+            }
+          },
+          "last_frame_video": {
+            "request": {
+              "method": "POST",
+              "path": "/v1/videos",
+              "contentType": "multipart/form-data"
+            },
+            "requiredBodyFields": [
+              "model",
+              "prompt",
+              "last_frame_image"
+            ],
+            "inputs": {
+              "last_frame_image": {
+                "field": "last_frame_image",
+                "required": true,
+                "minItems": 1,
+                "maxItems": 1,
+                "transports": [
+                  "multipart_file"
+                ]
+              }
+            }
+          },
+          "first_last_frame_video": {
+            "request": {
+              "method": "POST",
+              "path": "/v1/videos",
+              "contentType": "multipart/form-data"
+            },
+            "requiredBodyFields": [
+              "model",
+              "prompt",
+              "first_frame_image",
+              "last_frame_image"
+            ],
+            "inputs": {
+              "first_frame_image": {
+                "field": "first_frame_image",
+                "required": true,
+                "minItems": 1,
+                "maxItems": 1,
+                "transports": [
+                  "multipart_file"
+                ]
+              },
+              "last_frame_image": {
+                "field": "last_frame_image",
+                "required": true,
+                "minItems": 1,
+                "maxItems": 1,
+                "transports": [
+                  "multipart_file"
+                ]
+              }
+            }
+          }
+        },
+        "constraints": {
+          "reference_transport": {
+            "first_frame_image": [
+              "public_https_url"
+            ],
+            "last_frame_image": [
+              "public_https_url"
+            ]
+          },
+          "exclusive_reference_sets": {
+            "frames": [
+              "first_frame_image",
+              "last_frame_image"
+            ],
+            "references": [
+              "image",
+              "reference_images",
+              "reference_videos",
+              "reference_audios"
+            ]
           }
         }
       }
@@ -1686,6 +1906,12 @@
           "generate_audio": {
             "type": "boolean",
             "default": true
+          },
+          "first_frame_image": {
+            "type": "string"
+          },
+          "last_frame_image": {
+            "type": "string"
           }
         },
         "operations": {
@@ -1780,6 +2006,107 @@
                 ]
               }
             }
+          },
+          "first_frame_video": {
+            "request": {
+              "method": "POST",
+              "path": "/v1/videos",
+              "contentType": "multipart/form-data"
+            },
+            "requiredBodyFields": [
+              "model",
+              "prompt",
+              "first_frame_image"
+            ],
+            "inputs": {
+              "first_frame_image": {
+                "field": "first_frame_image",
+                "required": true,
+                "minItems": 1,
+                "maxItems": 1,
+                "transports": [
+                  "multipart_file"
+                ]
+              }
+            }
+          },
+          "last_frame_video": {
+            "request": {
+              "method": "POST",
+              "path": "/v1/videos",
+              "contentType": "multipart/form-data"
+            },
+            "requiredBodyFields": [
+              "model",
+              "prompt",
+              "last_frame_image"
+            ],
+            "inputs": {
+              "last_frame_image": {
+                "field": "last_frame_image",
+                "required": true,
+                "minItems": 1,
+                "maxItems": 1,
+                "transports": [
+                  "multipart_file"
+                ]
+              }
+            }
+          },
+          "first_last_frame_video": {
+            "request": {
+              "method": "POST",
+              "path": "/v1/videos",
+              "contentType": "multipart/form-data"
+            },
+            "requiredBodyFields": [
+              "model",
+              "prompt",
+              "first_frame_image",
+              "last_frame_image"
+            ],
+            "inputs": {
+              "first_frame_image": {
+                "field": "first_frame_image",
+                "required": true,
+                "minItems": 1,
+                "maxItems": 1,
+                "transports": [
+                  "multipart_file"
+                ]
+              },
+              "last_frame_image": {
+                "field": "last_frame_image",
+                "required": true,
+                "minItems": 1,
+                "maxItems": 1,
+                "transports": [
+                  "multipart_file"
+                ]
+              }
+            }
+          }
+        },
+        "constraints": {
+          "reference_transport": {
+            "first_frame_image": [
+              "public_https_url"
+            ],
+            "last_frame_image": [
+              "public_https_url"
+            ]
+          },
+          "exclusive_reference_sets": {
+            "frames": [
+              "first_frame_image",
+              "last_frame_image"
+            ],
+            "references": [
+              "image",
+              "reference_images",
+              "reference_videos",
+              "reference_audios"
+            ]
           }
         }
       }
@@ -1857,6 +2184,12 @@
           "generate_audio": {
             "type": "boolean",
             "default": true
+          },
+          "first_frame_image": {
+            "type": "string"
+          },
+          "last_frame_image": {
+            "type": "string"
           }
         },
         "operations": {
@@ -1951,6 +2284,107 @@
                 ]
               }
             }
+          },
+          "first_frame_video": {
+            "request": {
+              "method": "POST",
+              "path": "/v1/videos",
+              "contentType": "multipart/form-data"
+            },
+            "requiredBodyFields": [
+              "model",
+              "prompt",
+              "first_frame_image"
+            ],
+            "inputs": {
+              "first_frame_image": {
+                "field": "first_frame_image",
+                "required": true,
+                "minItems": 1,
+                "maxItems": 1,
+                "transports": [
+                  "multipart_file"
+                ]
+              }
+            }
+          },
+          "last_frame_video": {
+            "request": {
+              "method": "POST",
+              "path": "/v1/videos",
+              "contentType": "multipart/form-data"
+            },
+            "requiredBodyFields": [
+              "model",
+              "prompt",
+              "last_frame_image"
+            ],
+            "inputs": {
+              "last_frame_image": {
+                "field": "last_frame_image",
+                "required": true,
+                "minItems": 1,
+                "maxItems": 1,
+                "transports": [
+                  "multipart_file"
+                ]
+              }
+            }
+          },
+          "first_last_frame_video": {
+            "request": {
+              "method": "POST",
+              "path": "/v1/videos",
+              "contentType": "multipart/form-data"
+            },
+            "requiredBodyFields": [
+              "model",
+              "prompt",
+              "first_frame_image",
+              "last_frame_image"
+            ],
+            "inputs": {
+              "first_frame_image": {
+                "field": "first_frame_image",
+                "required": true,
+                "minItems": 1,
+                "maxItems": 1,
+                "transports": [
+                  "multipart_file"
+                ]
+              },
+              "last_frame_image": {
+                "field": "last_frame_image",
+                "required": true,
+                "minItems": 1,
+                "maxItems": 1,
+                "transports": [
+                  "multipart_file"
+                ]
+              }
+            }
+          }
+        },
+        "constraints": {
+          "reference_transport": {
+            "first_frame_image": [
+              "public_https_url"
+            ],
+            "last_frame_image": [
+              "public_https_url"
+            ]
+          },
+          "exclusive_reference_sets": {
+            "frames": [
+              "first_frame_image",
+              "last_frame_image"
+            ],
+            "references": [
+              "image",
+              "reference_images",
+              "reference_videos",
+              "reference_audios"
+            ]
           }
         }
       }
@@ -2573,6 +3007,270 @@
           }
         }
       }
+    },
+    {
+      "id": "gpt-image-2.5-flare",
+      "name": "gpt-image-2.5-flare",
+      "provider": "OpenAI",
+      "vendorId": 1,
+      "capabilities": [
+        "image"
+      ],
+      "aliases": [],
+      "goodFor": {
+        "en": "Text-to-image and reference image editing (up to 6 images), with selectable quality",
+        "zh": "支持质量档位的文生图及参考图编辑（最多 6 张）"
+      },
+      "example": {
+        "en": "Use gpt-image-2.5-flare to generate an image.",
+        "zh": "用 gpt-image-2.5-flare 生成一张图片。"
+      },
+      "parameterSchema": {
+        "properties": {
+          "n": {
+            "type": "integer",
+            "enum": [
+              1
+            ],
+            "default": 1
+          },
+          "image_size": {
+            "type": "string",
+            "enum": [
+              "1K",
+              "2K",
+              "4K"
+            ],
+            "default": "1K"
+          },
+          "aspect_ratio": {
+            "type": "string",
+            "enum": [
+              "1:1",
+              "5:4",
+              "9:16",
+              "21:9",
+              "16:9",
+              "3:2",
+              "4:3",
+              "4:5",
+              "3:4",
+              "2:3"
+            ],
+            "default": "1:1"
+          },
+          "quality": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max"
+            ],
+            "default": "high"
+          },
+          "image": {
+            "type": "string[]",
+            "maxLength": 6
+          }
+        },
+        "lifecycle": {
+          "create": {
+            "successStatus": 200,
+            "idField": "id",
+            "object": "image",
+            "initialStatuses": [
+              "pending"
+            ]
+          },
+          "poll": {
+            "method": "GET",
+            "path": "/v1/images/{image_id}",
+            "intervalSeconds": 3,
+            "statusField": "status",
+            "pendingStatuses": [
+              "pending"
+            ],
+            "successStatuses": [
+              "completed"
+            ],
+            "failureStatuses": [
+              "failed"
+            ],
+            "resultFields": [
+              "content_url",
+              "content_urls"
+            ]
+          }
+        },
+        "constraints": {
+          "reference_transport": {
+            "image": [
+              "public_https_url"
+            ]
+          }
+        },
+        "operations": {
+          "image_edit": {
+            "request": {
+              "method": "POST",
+              "path": "/v1/images/edits",
+              "contentType": "multipart/form-data"
+            },
+            "requiredBodyFields": [
+              "model",
+              "prompt",
+              "image"
+            ],
+            "inputs": {
+              "image": {
+                "field": "image",
+                "required": true,
+                "minItems": 1,
+                "maxItems": 6,
+                "transports": [
+                  "multipart_file"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "gpt-image-2.5-sunburst",
+      "name": "gpt-image-2.5-sunburst",
+      "provider": "OpenAI",
+      "vendorId": 1,
+      "capabilities": [
+        "image"
+      ],
+      "aliases": [],
+      "goodFor": {
+        "en": "Text-to-image and reference image editing (up to 6 images), with selectable quality",
+        "zh": "支持质量档位的文生图及参考图编辑（最多 6 张）"
+      },
+      "example": {
+        "en": "Use gpt-image-2.5-sunburst to generate an image.",
+        "zh": "用 gpt-image-2.5-sunburst 生成一张图片。"
+      },
+      "parameterSchema": {
+        "properties": {
+          "n": {
+            "type": "integer",
+            "enum": [
+              1
+            ],
+            "default": 1
+          },
+          "image_size": {
+            "type": "string",
+            "enum": [
+              "1K",
+              "2K",
+              "4K"
+            ],
+            "default": "1K"
+          },
+          "aspect_ratio": {
+            "type": "string",
+            "enum": [
+              "1:1",
+              "5:4",
+              "9:16",
+              "21:9",
+              "16:9",
+              "3:2",
+              "4:3",
+              "4:5",
+              "3:4",
+              "2:3"
+            ],
+            "default": "1:1"
+          },
+          "quality": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max"
+            ],
+            "default": "high"
+          },
+          "image": {
+            "type": "string[]",
+            "maxLength": 6
+          }
+        },
+        "lifecycle": {
+          "create": {
+            "successStatus": 200,
+            "idField": "id",
+            "object": "image",
+            "initialStatuses": [
+              "pending"
+            ]
+          },
+          "poll": {
+            "method": "GET",
+            "path": "/v1/images/{image_id}",
+            "intervalSeconds": 3,
+            "statusField": "status",
+            "pendingStatuses": [
+              "pending"
+            ],
+            "successStatuses": [
+              "completed"
+            ],
+            "failureStatuses": [
+              "failed"
+            ],
+            "resultFields": [
+              "content_url",
+              "content_urls"
+            ]
+          }
+        },
+        "constraints": {
+          "reference_transport": {
+            "image": [
+              "public_https_url"
+            ]
+          }
+        },
+        "operations": {
+          "image_edit": {
+            "request": {
+              "method": "POST",
+              "path": "/v1/images/edits",
+              "contentType": "multipart/form-data"
+            },
+            "requiredBodyFields": [
+              "model",
+              "prompt",
+              "image"
+            ],
+            "inputs": {
+              "image": {
+                "field": "image",
+                "required": true,
+                "minItems": 1,
+                "maxItems": 6,
+                "transports": [
+                  "multipart_file"
+                ]
+              }
+            }
+          }
+        }
+      }
     }
-  ]
+  ],
+  "localMetadataRevision": {
+    "date": "2026-09-10",
+    "source": "PureTokenPlus_web commit 842ccf41 model metadata and Seedance adapter; user-approved Image 2.5 edits and Nano Banana ratios; existing gpt-image-2 profile preserved"
+  }
 }

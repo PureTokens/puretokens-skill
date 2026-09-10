@@ -55,6 +55,16 @@
       "id": "seedream-5.0-pro",
       "aliases": [],
       "profile": "profiles/seedream-5.0-pro.json"
+    },
+    {
+      "id": "gpt-image-2.5-flare",
+      "aliases": [],
+      "profile": "profiles/gpt-image-2.5-flare.json"
+    },
+    {
+      "id": "gpt-image-2.5-sunburst",
+      "aliases": [],
+      "profile": "profiles/gpt-image-2.5-sunburst.json"
     }
   ]
 }

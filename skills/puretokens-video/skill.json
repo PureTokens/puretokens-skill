@@ -76,7 +76,7 @@
     "doesNotInvokeOtherMediaSkillsAsApiFallback": true,
     "neverExposesCredentialsOrHostConfiguration": true,
     "defaultModel": "grok-imagine-video-1.5-preview",
-    "normalSubmissionUsesInstalledModelIndexAndSelectedProfile": true,
+    "normalSubmissionUsesSelectedProfileAndIndexWhenNeeded": true,
     "usesLazyModelProfileLoading": true,
     "loadsBehaviorScenariosOnDemandOnly": true,
     "exactModelCoreSubmissionDoesNotRequireCatalogPreflight": true,
@@ -113,5 +113,5 @@
     "supportsOptionalContinuationRecord": true,
     "userReceiptIsConcise": true
   },
-  "sourceSha256": "621e4806e1232cdcd128b0178169cac32fe0040dac56faa707b281afa60ed4a5"
+  "sourceSha256": "f7e3a3661b0469ec72f5e791d72a5215678c9841608905b5451b2e5284500007"
 }

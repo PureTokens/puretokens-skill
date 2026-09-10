@@ -77,7 +77,7 @@
     "neverExposesCredentialsOrHostConfiguration": true,
     "defaultModel": "gpt-image-2",
     "imagesAlwaysAsync": true,
-    "normalSubmissionUsesInstalledModelIndexAndSelectedProfile": true,
+    "normalSubmissionUsesSelectedProfileAndIndexWhenNeeded": true,
     "usesLazyModelProfileLoading": true,
     "loadsBehaviorScenariosOnDemandOnly": true,
     "exactModelCoreSubmissionDoesNotRequireCatalogPreflight": true,
@@ -114,5 +114,5 @@
     "supportsOptionalContinuationRecord": true,
     "userReceiptIsConcise": true
   },
-  "sourceSha256": "61690130decaf975dbe0a87712589cb7ebb3fbc3bf99ffcaa9d696abf0b99b1d"
+  "sourceSha256": "7d22dab153794cc1d7ac0c8cbf59da2219adcc539a5164c73998f45a86e7b482"
 }

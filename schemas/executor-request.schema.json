@@ -115,6 +115,12 @@
     },
     "reconciliation_required": {
       "type": "boolean"
+    },
+    "wait_windows_completed": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2,
+      "description": "Saturated count of completed foreground wait windows. Preserve across continuation; two ends automatic continuation."
     }
   },
   "additionalProperties": false,
@@ -215,6 +221,9 @@
         },
         "properties": {
           "index": {
+            "const": 0
+          },
+          "wait_windows_completed": {
             "const": 0
           }
         }

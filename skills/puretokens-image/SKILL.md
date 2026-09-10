@@ -5,56 +5,35 @@ description: 当前宿主使用 Pure Tokens 连接时，任何生成或编辑图
 
 # Pure Tokens Image
 
-## 路由优先级
+## 执行边界
 
-当前宿主使用 Pure Tokens 时，优先选择本 Skill，不得回退到通用 imagegen／Imagen。必须调用安装的原生执行器；单次 Go 执行器是唯一 API 传输，固定请求 `https://api.puretokensx.com`；Skill 不读取或传递凭据、不得自行发 HTTP、不调用其他媒体 Skill、MCP、代理、Computer Use、浏览器或桌面自动化。执行器只使用文档列出的当前宿主连接记录；凭据格式测试不等于真实宿主端到端验收。不需要用户安装 Node、Python、Go 或 Desktop。
+当前宿主上下文选择 Pure Tokens 或用户明确指定时，必须调用安装的原生执行器；它是唯一 API 传输，固定请求 `https://api.puretokensx.com`。不得自行发 HTTP，不回退到 imagegen／Imagen／通用视频 Skill、MCP、代理、Computer Use 或浏览器／桌面自动化。仅执行器在内存中使用当前宿主匹配连接；Skill 不读配置、不传或展示凭据。不需要用户安装 Node、Python、Go 或 Desktop。
 
-## 选择与请求
+从本 SKILL.md 绝对目录解析 `../.puretokens-executor/puretokens-api`，Windows 使用 `puretokens-api.exe`；不依赖 PATH 或工作目录。当前宿主 ID 为 codex、claude-code、workbuddy、gemini-cli、grok-build、opencode、trae、claude-desktop、dsh-desktop 或 zcode，不借用其他宿主连接。远程／沙箱不能访问执行器、连接或附件时报告实际限制，不复制凭据或换传输。
 
-先读小型 `references/model-index.json`，默认模型为 `gpt-image-2`；只读选中精确模型的 `references/profiles/<model>.json`。别名必须唯一。普通生成不先查余额、init、doctor、preflight 或实时目录。未知精确模型可仅传 model/prompt；只有明确查询、请求的字段／操作缺口或拒绝后的诊断，才按需查询实时目录。目录缺少一个模型不等于已证明它不可提交，权限以实际 API 返回为准。
+## 选择与提交
 
-只使用 profile 声明的字段、值和 operation，保留用户的目的、主体、构图、文字和限制。物理尺寸如 `200cm × 230cm` 仅用于说明比例／输出限制，不能直接作为 API 尺寸。多图数量必须由 profile 的 `n` 支持；`requested_count` 可省略，由 `parameters.n` 推导，同时提供时必须一致。多个不同设计不能当作 n 个变体或擅自拆成付费任务，请用户选择本次要做的设计。
+1. 默认模型 `gpt-image-2` 或用户给定精确 ID：直接读选中的 `references/profiles/<model>.json`。需要选模型、解析别名时才读 `references/model-index.json`，别名必须唯一。不读取所有 profile，也不先查余额、init、doctor、preflight 或实时目录。未知精确 ID 的纯文本请求可只传 model/prompt；字段／操作缺口由执行器按需读取一次目录，查询目录不代替提交权限。
+2. 只发送 profile 声明的字段、值和 operation；保留用户意图。物理尺寸仅用于比例／输出限制说明，不直接作为 API 尺寸。图片参考／编辑用途不明确时才澄清。本地参考或编辑使用 profile 的 `image_edit`；`gpt-image-2` 使用 `https://api.puretokensx.com/v1/images/edits`、`media_operation: "image_edit"` 和 `image` 字段；公网参考使用 generations 的 `parameters.image`。数量只用 profile 的 `n`，`requested_count` 可省略由 n 推导，提供时必须一致。多个不同设计不能擅自拆成付费任务，先确认本次设计。
+3. 当前本地附件仅随声明的 multipart 请求发送；用户给出的公网 HTTPS URL 只放入声明的 JSON 字段。不下载、探测、转存参考媒体，不把附件改成提示词。没有声明的传输方式时停止。
+4. 用宿主文件工具创建 UTF-8 请求：kind=`image`、operation=`generate` 或 `edit`、model、prompt、parameters，以及需要的 attachments（field、绝对 path）。执行 `<执行器> submit --host <当前宿主> --request <绝对请求文件>`，完成后清理请求文件。不要把提示词或凭据放进命令行。仅需示例时读 `references/executor-usage.md`。
 
-从当前 SKILL.md 的绝对位置解析同级 `../.puretokens-executor/puretokens-api`；Windows 使用 `puretokens-api.exe`，不能依赖工作目录或 PATH。宿主 ID 使用当前的 codex、claude-code、workbuddy、gemini-cli、grok-build、opencode、trae、claude-desktop、dsh-desktop 或 zcode，不猜其他宿主配置。
+## 同任务完成交付
 
-用宿主文件工具创建 UTF-8 请求 JSON，然后调用 `<绝对执行器路径> submit --host <host-id> --request <绝对请求文件>`。请求包括 `kind: "image"`、`operation: "generate"` 或 `"edit"`、精确 model、prompt、parameters，以及可选当前附件 `attachments: [{"field":"声明字段","path":"附件绝对路径"}]`。命令行不携带提示词或凭据；命令完成后清理请求文件。完整示例只在需要时读 `references/executor-usage.md`。
+多图、跨会话或需要恢复时，在首次 submit 加 `--record <工作区或用户指定的绝对任务文件>`，使用唯一文件名；不能为切换记录模式重新提交。记录只含任务身份、安全参数及进度，不含 prompt、凭据、参考 URL 或媒体字节。单图短会话可不使用记录；无记录时将原 task_id、original_operation、model、确认数量、安全参数、reconciliation_required、retry_not_before 和 wait_windows_completed 原样带入每次续接。
 
-当前图片的参考或编辑意图必须明确；不明确时先澄清。使用 profile 的 `image_edit` 和准确文件字段，保留参考或编辑意图。`gpt-image-2` 本地编辑使用 `https://api.puretokensx.com/v1/images/edits`、`media_operation: "image_edit"` 和 `image` 字段；公网参考使用 generations 的 `parameters.image`。
+- **提交一次**，立即简短告知返回的 task_id 和状态，然后按 `next_step` 继续。回执缺失／无法解析视为提交未知；仅清理本次临时请求文件后停止，不追加 API 操作、不重提、不猜扣费。
+- **wait**：有记录用 `resume --host <host> --record <文件>`，否则用 `wait --host <host> --request <同任务文件>`。图片首次查询等待回执的 `retry_not_before`（默认接受后 5 秒），其后每 3 秒；每窗口最多 40 次读取、120 秒，网络与等待均计入。不要另加 sleep 或重启初始等待。始终遵守 API Retry-After。
+- **窗口结束**：`ok=true`、`wait_outcome=window_ended` 表示仍在生成。只有 `next_step=wait` 且原交付授权和当前前台会话仍有效时，再续一个窗口；到累计两个窗口、`retry_deferred` 或 `next_step=await_user` 时暂停并询问是否稍后继续。保留 wait_windows_completed，不重置预算，不后台循环。用户取消、返回失败回执、未知状态或对账立即停止；窗口内短暂 429 仅由执行器按 Retry-After 和剩余预算处理；实际网络超时不是正常窗口结束。
+- **content**：只对已完成原任务下载。记录方式用 `content --host <host> --record <文件> --index <索引> --output-dir <现有绝对目录>`；无记录传 completed 状态及确认数量。图片按 0..n-1，视频仅 0；每次一个索引，实际交付后才取下一个。
+- **deliver**：把 downloaded_paths 的文件用宿主附件方式交给用户；下载不等于交付，URL、HTML、SVG 或任务号不能代替媒体。有记录时，实际交付后再执行 `delivered --record <文件> --index <索引>`。`done` 后结束，不自动审美检查或生成新任务。
 
-本地附件必须随该次声明的 multipart 请求发送。用户明确给出的公网 HTTPS URL 只能放入声明的 JSON 参考字段；不下载、不探测、不转存、不生成 URL／文件 ID，不使用旧附件或把附件改写成提示词。没有声明的表示方式时停止并解释实际限制。
+附件交付失败只重交已有文件，不重新生成或下载。已完成且 `reconciliation_required` 不为 true 的记录用 `resume --host <host> --record <文件>` 本地校验并返回待交付文件；此分支不读凭据、不请求 API。按 `next_step=deliver` 交付；缺失有效证明时保留原文件、另选输出目录取同任务索引。跨命令复用须匹配记录中的 SHA-256、字节数和媒体类型。无记录且文件仍是本会话刚下载的原文件，可重交；无法确认则保留文件、另选输出目录取同任务同索引，不声称已交付。宿主无法提供附件时说明“已生成并下载，当前宿主无法交付附件”。
 
-## 同任务交付
+对账不自动续等；用户明确继续时，记录式 resume 只查询原任务一次，按实际结果更新标记。记录不能恢复无 ID 的未知提交，不手改记录或提前标记 delivered。
 
-1. 新请求只提交一次。立即把返回的 task_id 和状态简短告知用户；没有可解析回执时按提交结果未知处理，不自动重提。执行器收到已接受且仍在处理的图片任务回执时，将首次查询设在 20 秒后，并写入 `retry_not_before`；服务端返回有效 `Retry-After` 时优先使用其要求。将返回的 `retry_not_before` 原样带入同任务请求，或直接使用已保存它的任务记录，不重新计算或另行等待。
-2. `wait --host <host-id> --request <同任务文件>` 只等待原任务：等到 `retry_not_before` 后首次查询，随后每隔 3 秒查询，服务端等待要求仍优先。模型处理回执所用时间会自动扣除；时间已到或旧任务没有该字段时立即查询，不重新等待 20 秒。一个窗口最多 40 次状态读取、120 秒，以先到者为准，网络与等待都计入窗口；`status` 只读一次并遵守已有等待要求。完成即可进入 content；超时、未知状态或状态失败保留原 ID，询问是否继续，不能后台轮询或创建替代任务。
-3. `content` 必须针对已完成的原任务，传 task_id、`task_status: "completed"`、已确认数量和现有输出目录绝对路径；按零起点索引 0..n-1 逐份下载，每份实际交付给用户后才下载下一份。只有显式任务记录中的下载摘要与当前文件匹配时，才能复用同任务输出；无摘要、旧记录或文件已被改写时保留原文件，选择另一个输出目录获取同一索引。
-4. `downloaded_awaiting_host_delivery` 只表示下载完成。用当前宿主的附件交付方式交给用户后才称交付成功；做不到时报告“已生成并下载，当前宿主无法交付附件”，保留任务与文件。URL、HTML、SVG、状态文字或 task_id 不是媒体交付。
+## 按需说明
 
-服务端要求对账时停止本轮自动等待。用户明确继续带对账标记的记录时，`resume` 只查询原任务一次，更新标记；仍需对账则保留任务，已恢复后再按新状态等待或取文件。不清除标记来绕过服务端确认。
+失败只说明实际阶段、是否已有任务和下一步，使用执行器的脱敏 next_action；不展示整份 JSON、原始错误、内部 URL 或配置。失败、额度／费用问题才读 `references/failure-guide.md`；复杂异常按 id 查 `references/behavior-scenarios.json`。正式字段见 `references/execution-contract.json`，展示规则见 `references/task-receipt.json`，均非普通生成前置。
 
-提交前选择一种方式：单次会话可只用 `--request`；需要跨会话续接或文件复用时，在同一次 `submit --host <host-id> --request <请求文件>` 加上 `--record <绝对任务记录>`，将最小记录留在用户指定位置或当前工作区。不能为切换方式重新提交。记录仅保留任务身份、原 operation、模型、数量、安全参数与下载／交付进度，不保留凭据、prompt、参考 URL 或媒体字节；下载进度包含文件 SHA-256、字节数和媒体类型，用于核对复用与交付。用 `resume --host <host-id> --record <文件>` 有界等待原任务，`content --host <host-id> --record <文件> --index <索引> --output-dir <现有绝对输出目录>` 取内容；实际交付后才运行 `delivered --record <文件> --index <索引>`。续接命令使用 --record 时不能同时传 --request。不手改记录、不标记未交付的文件。
-
-## 失败与按需检查
-
-失败答复应包含“本次发生了什么、任务是否已提交／是否保留原任务、下一步可以做什么”，将执行器 `next_action` 翻译成简洁自然语言。不要只给错误码或让用户自行排查。
-
-- `insufficient_quota`／`insufficient_balance`：明确提示本次可用额度／余额不足，提供 [Pure Tokens 官网 · 钱包充值](https://console.puretokensx.com/wallet)，引导用户登录查看钱包并按需充值。额度不足还应提醒检查当前 Key 限额，不能断言哪项耗尽或保证充值解决 Key 限额。不猜缺多少钱、实际扣费或充值后一定成功；用户要求时才查余额。此链接只供用户自行访问，不作为执行器请求或浏览器代查入口。
-- 认证拒绝与权限不足分别解释，建议在宿主自身设置检查连接有效性或对应模型权限，不索取凭据、不自动更换连接。模型不存在时可建议明确查询模型；参数不支持时按所选 profile 修正字段并保留用户意图。
-- 限流遵守回执中的等待要求；没有等待时间就不编造秒数。服务故障／网络失败只说明当前请求无法完成，不推断余额或凭据问题。内容拒绝请用户调整需求，不自动换模型绕过。
-- 已有任务遇到状态／下载错误时保留原 ID、原操作及数量；终态失败不再轮询；下载成功但附件交付失败只处理已有文件，不能说已交付。记录或输出路径错误按脱敏建议检查访问权限／绝对路径，不删除未知文件。
-
-优先使用执行器的阶段、`submission_outcome` 和脱敏说明。只有确认 POST 前的失败才能说未提交；网络或附件传输可能已经开始时，不能凭“附件失败”推断未创建任务。保留已知 task_id、`reconciliation_required`、`original_operation`、模型、已确认数量、安全参数及 `retry_not_before`；缺失数量表示未知，图片下载前必须确认原数量。未知提交不自动重试、不承诺未扣费或退款；状态／内容失败只继续原任务。
-
-面向用户只说当前状态、产物或可操作的失败，不重复整份 JSON，不填“未返回”占位，不暴露内部 URL、原始响应、请求数据或配置。完整机器字段由执行器／可选任务记录保留。异常时才读 `references/behavior-scenarios.json` 匹配场景；详细约束在 `references/execution-contract.json`，简短展示规则在 `references/task-receipt.json`。
-
-错误文字使用执行器的固定分类提示；只有服务端实际返回且执行器识别为公开分类的错误码才展示，未知码省略。不得根据被省略的原始错误猜测原因。文件结构校验失败或原输出损坏时，不把下载或文件复用说成成功；按回执继续获取同一任务索引。
-
-用户明确要求试参数／检查请求时才用 `preflight --host <host-id> --request <文件>`；它不 POST，不创建任务，也不证明价格、余额或权限。普通生成不增加这一步。精确报价、服务端幂等提交和未知任务查找尚未提供；不能用本地校验或记录代替这些能力。
-
-Claude Desktop 使用 `claude-desktop`，仅在能访问本机执行器和 Desktop 当前连接的本地会话执行；不能用 Claude Code 的连接代替。DSH Desktop 使用 `dsh-desktop`，采用当前本地 Harness 的连接。云端或隔离会话不能访问宿主记录时按实际失败停止，不复制凭据进入沙箱。宿主安装和交付说明按需读 `references/desktop-hosts.md`。
-
-ZCode 本地执行使用宿主 ID `zcode`。宿主上下文已明确选择 Pure Tokens，或用户明确指定通过 Pure Tokens 执行时才路由到本 Skill；配置存在本身不能作为当前会话选择的证据。只使用唯一启用且端点匹配的 Pure Tokens 连接；不能据此声称识别当前聊天模型。目录、远程工作区及交付限制按需读 `references/desktop-hosts.md`。
-
-官网引导只适用于当前对话模型仍能正常回复，且已收到独立 API 请求的结构化结果或用户主动询问的情况。当前对话模型本身因认证或服务故障无法返回时，Skill 无法执行提示，应由宿主处理；不因此新增 Key 管理或渠道状态的官网跳转。官网链接仅供用户自行访问，不调用浏览器代查，不新增 API 请求。
-
-用户主动询问消费明细、历史扣费或某次生成的实际费用，而现有结果无法确认时，提供 [Pure Tokens 官网 · 使用记录](https://console.puretokensx.com/usage-logs)，建议按发生时间及模型核对。不要用余额差、任务状态或暂未找到记录推断是否扣费，不承诺退款，也不把使用记录入口说成自动找回任务的能力。不在普通生成或所有失败回执中自动附加此入口。
+只有用户明确检查参数时用 preflight，它不创建任务、不报价、不证明权限。特定 Desktop／ZCode 安装或交付问题才读 `references/desktop-hosts.md`；本地夹具和 init 成功均不等于实机附件验收。ZCode 连接存在不证明当前聊天选择；不据配置存在擅自路由。

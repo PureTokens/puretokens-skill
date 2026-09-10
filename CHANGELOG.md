@@ -6,6 +6,14 @@
 
 ## 0.18.0 — 2026-09-07
 
+- Query newly accepted images after a default 5 seconds while retaining the 120-second window; compute download digests during transfer. Completed records can verify local files for attachment redelivery, while reconciliation still queries the original task separately.
+
+- Shorten media entry instructions with on-demand failure guidance and direct exact-model profiles. Treat normal wait-window exhaustion as successful pending with one bounded foreground continuation, preserve the budget in records, and return machine next-step hints. Classify invalid/oversized media accurately.
+
+- Support Image 2.5 flare/sunburst reference edits with up to six images, and add 4:5 / 5:4 aspect ratios to all three Nano Banana profiles while keeping lite limited to 1K.
+
+- Add approved Image 2.5 flare/sunburst profiles and safe quality persistence; add Seedance first/last-frame inputs with mutually exclusive reference modes. Preserve the existing gpt-image-2 profile. New metadata follows the approved Web source; live availability remains API-controlled.
+
 - Launch Windows installer executor calls without extra console windows, capture UTF-8 output and retain exit-code checks without shell or elevation.
 
 - Preserve completed Windows installs when host cleanup is denied, verify installed inventories before success, and avoid blaming working WorkBuddy connections for adapter mismatches.

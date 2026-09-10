@@ -111,7 +111,7 @@ test("media routing prioritizes Pure Tokens specialists before generic media Ski
       readFile(path.join(base, "agents", "openai.yaml"), "utf8"),
       readFile(path.join(base, "references", "behavior-scenarios.json"), "utf8").then(JSON.parse)
     ]);
-    assert.match(skill, /路由优先级/);
+    assert.match(skill, /任何生成或编辑.*请求都优先使用本 Skill/);
     assert.match(skill, new RegExp(genericSkill));
     assert.match(manifest.description, /Primary/);
     assert.match(agentMetadata, /Primary/);

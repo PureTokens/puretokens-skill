@@ -130,6 +130,28 @@
         "content",
         "delivered"
       ]
+    },
+    "wait_windows_completed": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2,
+      "description": "Saturated count of completed foreground wait windows. Preserve across continuation; two ends automatic continuation."
+    },
+    "wait_outcome": {
+      "enum": [
+        "window_ended",
+        "retry_deferred"
+      ]
+    },
+    "next_step": {
+      "enum": [
+        "wait",
+        "content",
+        "deliver",
+        "await_user",
+        "done"
+      ],
+      "description": "Local orchestration hint, never authorization to submit or bypass host policy."
     }
   },
   "additionalProperties": false,
@@ -214,6 +236,55 @@
           "task_id",
           "status"
         ]
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "wait_outcome"
+        ]
+      },
+      "then": {
+        "required": [
+          "task_id",
+          "status",
+          "wait_windows_completed",
+          "next_step"
+        ],
+        "properties": {
+          "ok": {
+            "const": true
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "queued",
+              "processing",
+              "running",
+              "in_progress"
+            ]
+          },
+          "next_step": {
+            "enum": [
+              "wait",
+              "await_user"
+            ]
+          }
+        },
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "failure_phase"
+              ]
+            },
+            {
+              "required": [
+                "error_message"
+              ]
+            }
+          ]
+        }
       }
     }
   ]

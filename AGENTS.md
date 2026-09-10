@@ -17,7 +17,8 @@ This repository owns the six installable Skill instructions, model selections, c
 ## Skill behavior
 
 - Media submissions are asynchronous. Submit once and immediately return the receipt before any wait or download; use separate status/wait/content commands, retain only the same returned task ID, and never automatically resubmit after uncertain output, status failure, timeout or delivery failure.
-- Do not make `/v1/media/models` a preflight for ordinary core generation. Read the small installed model index, then only the selected model profile; read the live catalog only for explicit discovery, an installed-profile gap, or post-rejection diagnosis.
+- Do not make `/v1/media/models` a preflight for ordinary core generation. Read only the selected profile for a default or exact model ID; use the small installed index only for selection or alias resolution; read the live catalog only for explicit discovery, an installed-profile gap, or post-rejection diagnosis.
+- Normal wait-window exhaustion is successful pending, not a task failure. Preserve wait_windows_completed; at most two foreground windows per automatic delivery, then require explicit continuation. Errors, reconciliation and deferred retries stop automatic continuation; never resubmit.
 - Treat physical dimensions as a request for guidance, not an API size value. Only declared model fields and values may be sent.
 - Native bytes, not URLs, HTML, SVG, task IDs or status text, are required for successful delivery.
 - Keep every user-facing failure sanitized. Never expose raw responses, request data, internal URLs, stacks, upstream identities, credentials or user media.

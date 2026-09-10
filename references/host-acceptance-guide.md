@@ -55,3 +55,24 @@ The check reports pending cells; it does not convert them to passes.
 Each host has macOS, windows and linux summary slots. Pending means acceptance remains to be done, not proven client availability. This release schedules Linux targets for Claude Code, Codex, Gemini CLI, Grok Build and OpenCode; other Linux combinations are unavailable with an explicit reason until a client execution target is verified. Record Linux evidence with `os: linux` and a matching `linux-amd64` or `linux-arm64` executor. Do not substitute Windows/macOS hashes.
 
 Four summary checks and the nine detailed cases above are distinct. The validator reports pending summary cells and the count of detailed case outcomes actually recorded; absence of evidence is never a pass.
+
+## Delivery latency measurements
+
+For the selected authorized host/release, record elapsed milliseconds for:
+request preparation to accepted receipt; accepted receipt to observed completed
+status; observed completion to verified download; verified download to actual
+openable/playable attachment handoff. Record status/content request counts and
+whether the user had to repeat a continuation request. These are client-observed
+intervals, not server generation-time estimates.
+
+Keep timing evidence with the existing per-host acceptance artifact, using only
+case names, durations, request counts, release/host identity and safe failure
+codes. Do not store prompts, credentials, reference URLs or media bytes. Compare
+single-image, local-image edit, video and interrupted-handoff recovery. Include a
+normal first-window expiry, an actual network error and an interrupted process in
+isolated fault-injection tests; never create production failures for measurement.
+A recovery passes only when the same task is retained, no replacement POST is
+sent, and the existing verified download is handed off without another content
+GET. Local fixtures and virtual-clock timings remain separate from real-host
+acceptance. Start with the user's two most-used accessible hosts; do not infer
+which hosts or billable tasks are authorized from this guide.

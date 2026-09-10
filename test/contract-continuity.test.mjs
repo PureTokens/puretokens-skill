@@ -14,7 +14,7 @@ test("continuation contracts require integrity, original operation and waiting c
   for(const field of ["downloadProofFields","reuseRequiresMatchingProof","validatesBeforeCreation","legacyRecordWithoutProof"]){
    const changed=structuredClone(record);delete changed[field];assert.ok(validate(changed).length,field);
   }
-  for(const field of ["original_operation","download_proofs","retry_not_before","reconciliation_required"]){
+  for(const field of ["original_operation","download_proofs","retry_not_before","reconciliation_required","wait_windows_completed"]){
    const changed=structuredClone(record);changed.preserves=changed.preserves.filter(x=>x!==field);assert.ok(validate(changed).length,field);
   }
  }

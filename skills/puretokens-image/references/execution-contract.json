@@ -43,7 +43,7 @@
         "/v1/images/generations",
         "/v1/images/edits"
       ],
-      "pathSource": "installed_model_index_and_selected_profile_or_on_demand_live_profile_operation_path",
+      "pathSource": "selected_profile_with_model_index_only_for_selection_or_on_demand_live_profile_operation_path",
       "contentType": "profile_declared_json_or_multipart",
       "requiresDeclaredProfileOperation": "image_edit",
       "requiredBodyFields": [
@@ -119,19 +119,19 @@
   },
   "parameterValidation": {
     "defaultModel": "gpt-image-2",
-    "normalSubmissionUsesInstalledModelIndexAndSelectedProfile": true,
+    "normalSubmissionUsesSelectedProfileAndIndexWhenNeeded": true,
     "exactModelCoreSubmissionDoesNotRequireCatalogPreflight": true,
     "onDemandLiveCatalogRead": "only_for_explicit_discovery_installed_profile_gap_or_post_rejection_diagnosis",
-    "allOptionalParametersRequire": "installed_model_index_and_selected_profile_parameter_schema_or_on_demand_live_input_schema",
+    "allOptionalParametersRequire": "selected_profile_with_model_index_only_for_selection_parameter_schema_or_on_demand_live_input_schema",
     "enforcesDeclaredRequiresTogether": true,
     "sizeExpressionPrecedence": "send_only_the_highest_precedence_user_supplied_declared_size_expression",
     "whenProfileIsMissing": "do_not_submit_requested_optional_parameters_or_media_operations",
     "explicitPreflightCommand": "preflight --host <host-id> --request <request-file>; never POST; not a normal-generation preflight"
   },
   "inputMediaValidation": {
-    "publicUrlReferenceRequires": "installed_model_index_and_selected_profile_or_on_demand_live_profile_property_and_declared_reference_transport",
-    "publicUrlEditRequires": "installed_model_index_and_selected_profile_or_on_demand_live_profile_image_edit_operation_with_application_json_exact_field_and_public_url_transport",
-    "nativeAttachmentRequires": "installed_model_index_and_selected_profile_or_on_demand_live_profile_image_edit_operation_for_current_visual_reference_or_explicit_edit",
+    "publicUrlReferenceRequires": "selected_profile_with_model_index_only_for_selection_or_on_demand_live_profile_property_and_declared_reference_transport",
+    "publicUrlEditRequires": "selected_profile_with_model_index_only_for_selection_or_on_demand_live_profile_image_edit_operation_with_application_json_exact_field_and_public_url_transport",
+    "nativeAttachmentRequires": "selected_profile_with_model_index_only_for_selection_or_on_demand_live_profile_image_edit_operation_for_current_visual_reference_or_explicit_edit",
     "imageEditOperation": "image_edit",
     "nativeVisualReferenceUsesImageEditOperation": true,
     "nativeVisualReferencePromptSemantics": "preserve_reference_intent_while_using_the_declared_image_edit_multipart_transport",
@@ -140,7 +140,7 @@
     "skillNeverDownloadsOrRehostsMedia": true,
     "hostStagesCurrentRequestAttachment": true,
     "requiresManagedExecutorAttachmentByteDelivery": true,
-    "nativeReferenceAttachmentRequires": "installed_model_index_and_selected_profile_or_on_demand_profile_image_edit_operation_with_multipart_file_transport",
+    "nativeReferenceAttachmentRequires": "selected_profile_with_model_index_only_for_selection_or_on_demand_profile_image_edit_operation_with_multipart_file_transport",
     "untransportableNativeReferenceMustNeverBeConvertedToTextPrompt": true,
     "whenNativeReferenceTransportUnavailable": "stop_before_post_when_no_declared_image_edit_multipart_operation_or_no_native_byte_delivery_and_require_public_https_url_or_explicit_new_text_only_request",
     "requestScope": "current_user_request_only_no_unrelated_skill_history_workspace_search_or_quality_review",
@@ -164,7 +164,7 @@
     "serverDelay": "honor_valid_positive_retry_after_before_fallback",
     "serverDelayMustFitRemainingAutomaticDeadline": true,
     "afterHttp429": "honor_valid_positive_retry_after_then_continue_same_task_if_remaining_budget",
-    "initialDelaySeconds": 20,
+    "initialDelaySeconds": 5,
     "initialDelayAnchor": "receipt_of_accepted_pending_submission_only_when_no_api_retry_after",
     "initialDelayPersistence": "existing_retry_not_before_field_in_receipt_request_and_optional_task_record",
     "initialDelayOnContinuation": "wait_only_remaining_retry_not_before_or_read_immediately_if_absent_or_expired",
@@ -178,8 +178,11 @@
     "oneInFlightStatusReadPerTask": true,
     "automaticPollingScope": "submission_or_explicit_same_task_continuation_turn_only_no_background_timer_or_queue",
     "afterStatusReadError": "stop_on_5xx_transport_or_timeout_and_require_explicit_same_task_continuation",
-    "explicitContinuation": "new_bounded_same_task_polling_window_only_when_explicitly_requested",
-    "afterDeadline": "report_pending_and_require_explicit_same_task_continuation"
+    "explicitContinuation": "explicit_user_request_allows_another_bounded_window_without_resetting_automatic_budget",
+    "afterDeadline": "successful_pending_window_receipt_one_foreground_continuation_then_ask",
+    "maxForegroundWaitWindows": 2,
+    "windowProgressField": "wait_windows_completed_saturates_at_2_preserved_in_receipts_requests_records",
+    "afterLongServerWait": "successful_retry_deferred_receipt_preserve_retry_not_before_offer_later_continuation"
   },
   "submissionFailure": {
     "modelParameterOrCapabilityRejection": "one_on_demand_catalog_read_then_require_explicit_corrected_new_request",
@@ -187,7 +190,7 @@
     "serverTransportOrTimeoutWithoutTaskId": "report_submission_outcome_unknown_without_declaring_task_absent_or_resubmitting",
     "hostExecutionPolicyBlockedBeforeRequestStarts": "report_validation_no_api_request_or_task_id_and_require_host_session_with_external_network_permission",
     "hostInvocationOutputUnknown": "treat_submission_outcome_as_unknown_do_not_repeat_post_or_submit_replacement_task",
-    "hostUnknownOutcomeResponse": "one_terminal_receipt_then_end_turn_without_followup_tool_status_or_poll_work",
+    "hostUnknownOutcomeResponse": "one_unknown_receipt_then_only_local_request_cleanup_no_further_api_or_task_work",
     "noTaskIdLaterContinuation": "require_explicit_confirmation_of_a_new_billable_request_before_one_new_post"
   },
   "failureReceipt": {
@@ -245,7 +248,8 @@
       "download_proofs",
       "delivered_indexes",
       "retry_not_before",
-      "reconciliation_required"
+      "reconciliation_required",
+      "wait_windows_completed"
     ],
     "excludes": [
       "credentials",

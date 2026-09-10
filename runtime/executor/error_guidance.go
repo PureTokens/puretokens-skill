@@ -2,6 +2,36 @@ package main
 
 import "strings"
 
+// This is a local orchestration hint, never authorization to create a task.
+// Recompute after record persistence/handoff checks, which can change success.
+func guideReceipt(result receipt) receipt {
+	result = guideFailure(result)
+	result.NextStep = ""
+	if result.Kind == "" {
+		return result
+	}
+	switch {
+	case !result.OK:
+		result.WaitOutcome = ""
+		result.NextStep = "await_user"
+	case result.DeliveryStatus == "delivered":
+		result.NextStep = "done"
+	case len(result.DownloadedPaths) > 0:
+		result.NextStep = "deliver"
+	case result.TaskID == "":
+		result.NextStep = "await_user"
+	case result.ReconciliationRequired || terminalFailure(result.Status) || result.Status == "unknown":
+		result.NextStep = "await_user"
+	case terminalSuccess(result.Status):
+		result.NextStep = "content"
+	case result.WaitOutcome == "retry_deferred" || result.WaitWindowsCompleted >= 2:
+		result.NextStep = "await_user"
+	default:
+		result.NextStep = "wait"
+	}
+	return result
+}
+
 // Curated actions only. Never derive a diagnosis or an action from raw server text.
 func apiErrorAction(code string, status int) string {
 	switch code {

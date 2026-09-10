@@ -36,7 +36,7 @@ func runPollingTimeline(t *testing.T, kind string, override *pollRequest, reply 
 	t.Helper()
 	request := taskRequest{Kind: kind, TaskID: "paid-task", Poll: override}
 	if kind == "image" {
-		request.RetryNotBefore = pollingFixtureTime.Add(20 * time.Second).Format(time.RFC3339)
+		request.RetryNotBefore = pollingFixtureTime.Add(5 * time.Second).Format(time.RFC3339)
 	}
 	return runPollingRequestTimeline(t, request, reply)
 }
@@ -108,10 +108,14 @@ func TestImagePollingFindsShortTasksWithoutLongBackoff(t *testing.T) {
 		completedAt, detectedAt time.Duration
 		reads                   int
 	}{
-		{40 * time.Second, 41 * time.Second, 8},
-		{46 * time.Second, 47 * time.Second, 10},
-		{59 * time.Second, 59 * time.Second, 14},
-		{61 * time.Second, 62 * time.Second, 15},
+		{2 * time.Second, 5 * time.Second, 1},
+		{5 * time.Second, 5 * time.Second, 1},
+		{10 * time.Second, 11 * time.Second, 3},
+		{15 * time.Second, 17 * time.Second, 5},
+		{40 * time.Second, 41 * time.Second, 13},
+		{46 * time.Second, 47 * time.Second, 15},
+		{59 * time.Second, 59 * time.Second, 19},
+		{61 * time.Second, 62 * time.Second, 20},
 	} {
 		t.Run(test.completedAt.String(), func(t *testing.T) {
 			result, reads, err := runPollingTimeline(t, "image", nil, func(_ int, elapsed time.Duration) pollingReply {
@@ -145,7 +149,7 @@ func TestImagePollingDoesNotRestartInitialWaitAfterServerOrNetworkDelay(t *testi
 					return pollingReply{state: "completed"}
 				}
 			},
-			expect: []time.Duration{20 * time.Second, 90 * time.Second, 93 * time.Second},
+			expect: []time.Duration{5 * time.Second, 75 * time.Second, 78 * time.Second},
 		},
 		{
 			name: "slow response crosses first minute",
@@ -155,7 +159,7 @@ func TestImagePollingDoesNotRestartInitialWaitAfterServerOrNetworkDelay(t *testi
 				}
 				return pollingReply{state: "completed"}
 			},
-			expect: []time.Duration{20 * time.Second, 81 * time.Second},
+			expect: []time.Duration{5 * time.Second, 66 * time.Second},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -175,17 +179,17 @@ func TestImagePollingKeepsDeadlineAndReadBounds(t *testing.T) {
 		count    int
 		lastRead time.Duration
 	}{
-		{"default deadline", nil, 0, 34, 119 * time.Second},
-		{"shorter window", &pollRequest{DeadlineSecs: 8}, 0, 0, 0},
-		{"lower read limit", &pollRequest{MaxStatusReads: 3}, 0, 3, 26 * time.Second},
-		{"server delays hit read limit first", nil, 1, 40, 59 * time.Second},
-		{"oversized overrides cannot extend window", &pollRequest{MaxStatusReads: 100, DeadlineSecs: 300}, 0, 34, 119 * time.Second},
+		{"default deadline", nil, 0, 39, 119 * time.Second},
+		{"shorter window", &pollRequest{DeadlineSecs: 8}, 0, 1, 5 * time.Second},
+		{"lower read limit", &pollRequest{MaxStatusReads: 3}, 0, 3, 11 * time.Second},
+		{"server delays hit read limit first", nil, 1, 40, 44 * time.Second},
+		{"oversized overrides cannot extend window", &pollRequest{MaxStatusReads: 100, DeadlineSecs: 300}, 0, 39, 119 * time.Second},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			result, reads, err := runPollingTimeline(t, "image", test.override, func(int, time.Duration) pollingReply {
 				return pollingReply{retry: test.retry}
 			})
-			if err == nil || result.OK || result.TaskID != "paid-task" || result.Status != "pending" || len(reads) != test.count || (len(reads) > 0 && reads[len(reads)-1] != test.lastRead) {
+			if err != nil || !result.OK || result.WaitWindowsCompleted != 1 || result.TaskID != "paid-task" || result.Status != "pending" || len(reads) != test.count || (len(reads) > 0 && reads[len(reads)-1] != test.lastRead) {
 				t.Fatalf("unbounded wait: %+v reads=%v err=%v", result, reads, err)
 			}
 		})
@@ -219,7 +223,7 @@ func TestImagePollingStopsOnUnsafeContinuation(t *testing.T) {
 func TestVideoPollingRetainsExistingSchedule(t *testing.T) {
 	result, reads, err := runPollingTimeline(t, "video", nil, func(int, time.Duration) pollingReply { return pollingReply{} })
 	want := []time.Duration{5 * time.Second, 15 * time.Second, 35 * time.Second, 75 * time.Second, 135 * time.Second, 195 * time.Second, 255 * time.Second}
-	if err == nil || result.OK || !reflect.DeepEqual(reads, want) {
+	if err != nil || !result.OK || result.WaitOutcome != "window_ended" || !reflect.DeepEqual(reads, want) {
 		t.Fatalf("video schedule changed: %+v reads=%v err=%v", result, reads, err)
 	}
 }
@@ -230,11 +234,11 @@ func TestImageSubmissionSchedulesInitialWaitFromAcceptedResponse(t *testing.T) {
 		httpStatus, delay, retry  int
 		wantError                 bool
 	}{
-		{name: "pending", kind: "image", state: "pending", delay: 20},
-		{name: "queued", kind: "image", state: "queued", delay: 20},
-		{name: "processing", kind: "image", state: "processing", delay: 20},
-		{name: "invalid header", kind: "image", state: "pending", header: "invalid", delay: 20},
-		{name: "server requests shorter wait", kind: "image", state: "pending", header: "5", delay: 5, retry: 5},
+		{name: "pending", kind: "image", state: "pending", delay: 5},
+		{name: "queued", kind: "image", state: "queued", delay: 5},
+		{name: "processing", kind: "image", state: "processing", delay: 5},
+		{name: "invalid header", kind: "image", state: "pending", header: "invalid", delay: 5},
+		{name: "server requests shorter wait", kind: "image", state: "pending", header: "2", delay: 2, retry: 2},
 		{name: "server requests longer wait", kind: "image", state: "pending", header: "45", delay: 45, retry: 45},
 		{name: "already complete", kind: "image", state: "completed"},
 		{name: "failed task", kind: "image", state: "failed", wantError: true},
@@ -303,7 +307,7 @@ func TestImageInitialWaitSurvivesHandoffAndTaskRecords(t *testing.T) {
 						} else if request.Method == http.MethodGet && request.URL.Path == "/v1/images/paid-task" {
 							gets++
 							state = "completed"
-							if now.Before(pollingFixtureTime.Add(20 * time.Second)) {
+							if now.Before(pollingFixtureTime.Add(5 * time.Second)) {
 								t.Fatal("queried before the recorded initial wait")
 							}
 						} else {
@@ -326,7 +330,7 @@ func TestImageInitialWaitSurvivesHandoffAndTaskRecords(t *testing.T) {
 					t.Fatal(err)
 				}
 				accepted := decodeReceipt(t, &out)
-				if accepted.RetryNotBefore != "2026-09-06T00:00:20Z" || accepted.RetryAfterSecs != 0 {
+				if accepted.RetryNotBefore != "2026-09-06T00:00:05Z" || accepted.RetryAfterSecs != 0 {
 					t.Fatalf("missing or misreported initial wait: %+v", accepted)
 				}
 				now = now.Add(handoff)
@@ -343,7 +347,7 @@ func TestImageInitialWaitSurvivesHandoffAndTaskRecords(t *testing.T) {
 					err = executeExistingTask("wait", bytes.NewReader(data), &out, svc)
 				}
 				result := decodeReceipt(t, &out)
-				wantWait := max(time.Duration(0), 20*time.Second-handoff)
+				wantWait := max(time.Duration(0), 5*time.Second-handoff)
 				if err != nil || !result.OK || result.TaskID != accepted.TaskID || result.Status != "completed" ||
 					posts != 1 || gets != 1 || !reflect.DeepEqual(waits, []time.Duration{wantWait}) || result.RetryNotBefore != "" {
 					t.Fatalf("initial wait restarted: %+v waits=%v posts=%d gets=%d err=%v", result, waits, posts, gets, err)
@@ -378,7 +382,7 @@ func TestImageOlderRecordsContinueWithoutInventingInitialWait(t *testing.T) {
 	}
 	request := taskRequest{Kind: "image", TaskID: "paid-task"}
 	result, reads, err := runPollingRequestTimeline(t, request, func(int, time.Duration) pollingReply { return pollingReply{} })
-	if err == nil || result.OK || len(reads) != 40 || reads[0] != 0 || reads[len(reads)-1] != 117*time.Second {
+	if err != nil || !result.OK || result.WaitOutcome != "window_ended" || len(reads) != 40 || reads[0] != 0 || reads[len(reads)-1] != 117*time.Second {
 		t.Fatalf("continuation window is unbounded: %+v reads=%v err=%v", result, reads, err)
 	}
 }

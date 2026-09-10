@@ -74,7 +74,9 @@ Claude Desktop 请选择本地 Code 会话并使用宿主 ID `claude-desktop`；
 
 ## 图片、视频与异步任务
 
-普通文生图和文生视频先读取很小的已安装模型索引，再只读取被选中模型的 profile；不会加载全部模型，也不会在每次提交前查询模型目录。`puretokens-image` 默认使用 `gpt-image-2`；`puretokens-video` 使用其已安装默认模型。只有用户明确查询当前模型、请求选中 profile 没有的参数/媒体操作，或需要诊断模型/参数/capability 拒绝时，才读取实时目录。
+普通生成使用默认模型或精确 ID 时只读选中 profile；需要选择模型或解析别名时才读小型索引。不加载全部模型，也不在每次提交前查实时目录。`puretokens-image` 默认使用 `gpt-image-2`；`puretokens-video` 使用其已安装默认模型。只有用户明确查询当前模型、请求选中 profile 没有的参数/媒体操作，或需要诊断模型/参数/capability 拒绝时，才读取实时目录。
+
+正常等待窗口结束表示任务仍在生成，不算失败。当前已授权的前台交付最多再续一个窗口，随后暂停并询问用户；任务记录保存该预算。错误、对账及无法容纳的等待要求停止自动续等。视频、多图和跨会话任务默认使用明确的工作区任务记录；附件交付失败时重交已验证文件，不重新提交或下载。
 
 生图和生视频都是异步任务。每个新请求最多一次 POST；得到顶层任务 ID 后，只轮询和获取同一个任务。若 POST 可能已开始但未取得任务 ID，提交结果即为未知：不会重复提交，也不会声称未扣费。多图按 `0..n-1` 顺序交付；视频仅在任务终态成功后交付。
 
@@ -103,6 +105,8 @@ README 只从基础目录中带有明确图片/视频能力的模型生成，不
 | `nano-banana-2-lite` | Google | 仅精确 ID | 图片生成 | `用 nano-banana-2-lite 生成一张图片。` |
 | `nano-banana-pro` | Google | `nano banana pro` | 图片生成 | `用 nano-banana-pro 生成一张图片。` |
 | `seedream-5.0-pro` | ByteDance | 仅精确 ID | 图片生成 | `用 seedream-5.0-pro 生成一张图片。` |
+| `gpt-image-2.5-flare` | OpenAI | 仅精确 ID | 支持质量档位的文生图及参考图编辑（最多 6 张） | `用 gpt-image-2.5-flare 生成一张图片。` |
+| `gpt-image-2.5-sunburst` | OpenAI | 仅精确 ID | 支持质量档位的文生图及参考图编辑（最多 6 张） | `用 gpt-image-2.5-sunburst 生成一张图片。` |
 
 ### 视频模型
 

@@ -214,7 +214,8 @@
             "download_proofs",
             "delivered_indexes",
             "retry_not_before",
-            "reconciliation_required"
+            "reconciliation_required",
+            "wait_windows_completed"
           ]
         },
         "excludes": {

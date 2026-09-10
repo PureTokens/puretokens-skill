@@ -40,7 +40,7 @@ func safePublicCode(code string) string {
 func taskReceipt(request taskRequest, id, status string) receipt {
 	parameters := make(map[string]any)
 	// Media URLs, prompts and file paths are deliberately excluded from receipts.
-	for _, key := range []string{"n", "size", "image_size", "aspect_ratio", "width", "height", "duration", "resolution", "generate_audio", "strength"} {
+	for _, key := range []string{"n", "size", "image_size", "aspect_ratio", "width", "height", "duration", "resolution", "generate_audio", "strength", "quality"} {
 		if value, exists := request.Parameters[key]; exists {
 			switch v := value.(type) {
 			case string:
@@ -73,7 +73,7 @@ func taskReceipt(request taskRequest, id, status string) receipt {
 					continue
 				}
 			}
-			if key == "size" || key == "image_size" || key == "aspect_ratio" || key == "resolution" || key == "strength" {
+			if key == "size" || key == "image_size" || key == "aspect_ratio" || key == "resolution" || key == "strength" || key == "quality" {
 				if text, ok := value.(string); !ok || !safeParameterString(key, text) {
 					continue
 				}
@@ -111,7 +111,7 @@ func taskReceipt(request taskRequest, id, status string) receipt {
 	if _, err := time.Parse(time.RFC3339, retryAt); err != nil {
 		retryAt = ""
 	}
-	return receipt{OK: true, Kind: kind, Operation: operation, OriginalOperation: original, Model: model, TaskID: id, Status: status, RequestedCount: count, Parameters: parameters, RetryNotBefore: retryAt, ReconciliationRequired: request.ReconciliationRequired}
+	return receipt{OK: true, Kind: kind, Operation: operation, OriginalOperation: original, Model: model, TaskID: id, Status: status, RequestedCount: count, Parameters: parameters, RetryNotBefore: retryAt, ReconciliationRequired: request.ReconciliationRequired, WaitWindowsCompleted: min(2, max(0, request.WaitWindowsCompleted))}
 }
 
 // A safe field name alone does not make arbitrary request text safe to persist.
@@ -123,6 +123,7 @@ func safeParameterString(key, text string) bool {
 		"aspect_ratio": `^(auto|[1-9][0-9]{0,2}:[1-9][0-9]{0,2})$`,
 		"resolution":   `^[1-9][0-9]{0,3}[pPkK]$`,
 		"strength":     `^(LOW|MID|HIGH)$`,
+		"quality":      `^(low|medium|high|xhigh|max)$`,
 	}
 	pattern, ok := patterns[key]
 	return ok && regexp.MustCompile(pattern).MatchString(text)

@@ -69,7 +69,7 @@ test("actual executor JSON and executable documentation conform to their schemas
 
 test("media receipt schemas reject lost task context and unsafe metadata", () => {
   const receipt = example("record-0-submit-receipt");
-  assert.equal(receipt.retry_not_before, "2026-09-06T00:00:20Z");
+  assert.equal(receipt.retry_not_before, "2026-09-06T00:00:05Z");
   assert.equal(receipt.retry_after_seconds, undefined, "local delay is not an API Retry-After");
   const initialRecord = example("record-0-submit-artifact");
   assert.equal(initialRecord.format, "puretokens-task-v1");

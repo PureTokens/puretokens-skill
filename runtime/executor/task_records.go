@@ -29,6 +29,7 @@ type taskRecord struct {
 	SubmissionOutcome      string                `json:"submission_outcome,omitempty"`
 	ReconciliationRequired bool                  `json:"reconciliation_required,omitempty"`
 	RetryNotBefore         string                `json:"retry_not_before,omitempty"`
+	WaitWindowsCompleted   int                   `json:"wait_windows_completed,omitempty"`
 	OutputDir              string                `json:"output_dir,omitempty"`
 	Downloaded             map[int]string        `json:"downloaded,omitempty"`
 	DownloadProofs         map[int]downloadProof `json:"download_proofs,omitempty"`
@@ -75,6 +76,7 @@ func (writer *recordReceiptWriter) writeReceipt(result receipt) {
 	}
 	record.ReconciliationRequired = result.ReconciliationRequired
 	record.RetryNotBefore = result.RetryNotBefore
+	record.WaitWindowsCompleted = result.WaitWindowsCompleted
 	if record.Downloaded == nil {
 		record.Downloaded = make(map[int]string)
 	}
@@ -147,7 +149,7 @@ func (writer *recordReceiptWriter) writeReceipt(result receipt) {
 	} else {
 		writer.record = record
 	}
-	writeJSON(writer.output, guideFailure(result))
+	writeJSON(writer.output, guideReceipt(result))
 }
 
 func (record taskRecord) request() taskRequest {
@@ -157,6 +159,7 @@ func (record taskRecord) request() taskRequest {
 		RequestedCount: record.RequestedCount, Parameters: record.Parameters,
 		TaskStatus: record.Status, RetryNotBefore: record.RetryNotBefore,
 		ReconciliationRequired: record.ReconciliationRequired, OutputDir: record.OutputDir,
+		WaitWindowsCompleted: record.WaitWindowsCompleted,
 	}
 }
 
@@ -168,6 +171,7 @@ func recordFromRequest(request taskRequest) taskRecord {
 		RequestedCount: result.RequestedCount, Parameters: result.Parameters,
 		Status: result.Status, RetryNotBefore: result.RetryNotBefore,
 		ReconciliationRequired: result.ReconciliationRequired, OutputDir: request.OutputDir,
+		WaitWindowsCompleted: result.WaitWindowsCompleted,
 	}
 }
 
@@ -193,7 +197,7 @@ func loadTaskRecord(path string) (taskRecord, error) {
 	if decoder.Decode(&extra) != io.EOF {
 		return record, errors.New("record contains additional content")
 	}
-	if record.Format != taskRecordFormat || (record.Kind != "image" && record.Kind != "video") || (record.TaskID != "" && !validTaskID(record.TaskID)) || record.RequestedCount < 0 || record.RequestedCount > 6 {
+	if record.Format != taskRecordFormat || (record.Kind != "image" && record.Kind != "video") || (record.TaskID != "" && !validTaskID(record.TaskID)) || record.RequestedCount < 0 || record.RequestedCount > 6 || record.WaitWindowsCompleted < 0 || record.WaitWindowsCompleted > 2 {
 		return record, errors.New("record has unsupported metadata")
 	}
 	if record.TaskID != "" {
@@ -342,6 +346,10 @@ func executeRecordedTask(command, path string, request taskRequest, index int, o
 			writeReceipt(output, result)
 			return errors.New("task record has no id")
 		}
+	}
+	if svc.localRecoveryOnly && ((command != "resume" && command != "wait") || !terminalSuccess(record.Status) || record.ReconciliationRequired) {
+		writeReceipt(output, mergeFailure(taskReceipt(request, request.TaskID, record.Status), validationFailure("The task record changed before local recovery. Keep the record and review its current state before continuing.")))
+		return errors.New("local recovery state changed")
 	}
 	svc.downloadProofs = make(map[string]downloadProof)
 	for i, proof := range record.DownloadProofs {

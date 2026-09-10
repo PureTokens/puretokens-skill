@@ -15,7 +15,7 @@
       "task_id",
       "status"
     ],
-    "nextAction": "Report only a meaningful status change or the need for explicit continuation."
+    "nextAction": "Follow next_step while preserving wait_windows_completed. A normal window ending is still processing, not a task failure; allow one more authorized foreground window, then ask. Errors and deferred retries stop automatic continuation."
   },
   "reconciliation": {
     "requiredFields": [

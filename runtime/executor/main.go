@@ -36,7 +36,7 @@ const (
 var executorVersion = "0.18.0"
 var executorSourceSHA256 = "unbuilt"
 
-const imageInitialPollDelay = 20 * time.Second
+const imageInitialPollDelay = 5 * time.Second
 
 type attachment struct {
 	Field             string `json:"field"`
@@ -53,6 +53,7 @@ type taskRequest struct {
 	OriginalOperation      string `json:"original_operation,omitempty"`
 	RetryNotBefore         string `json:"retry_not_before,omitempty"`
 	ReconciliationRequired bool   `json:"reconciliation_required,omitempty"`
+	WaitWindowsCompleted   int    `json:"wait_windows_completed,omitempty"`
 	route                  string
 
 	Kind           string         `json:"kind"`
@@ -73,17 +74,20 @@ type pollRequest struct {
 }
 
 type receipt struct {
-	RequestedCount    int            `json:"requested_count,omitempty"`
-	Parameters        map[string]any `json:"parameters,omitempty"`
-	SubmissionOutcome string         `json:"submission_outcome,omitempty"`
-	DownloadedPaths   []string       `json:"downloaded_paths,omitempty"`
-	DownloadedIndexes []int          `json:"downloaded_indexes,omitempty"`
-	DeliveryStatus    string         `json:"delivery_status,omitempty"`
-	LocalErrorCode    string         `json:"local_error_code,omitempty"`
-	OriginalOperation string         `json:"original_operation,omitempty"`
-	RetryNotBefore    string         `json:"retry_not_before,omitempty"`
-	RecordPath        string         `json:"record_path,omitempty"`
-	DeliveredIndexes  []int          `json:"delivered_indexes,omitempty"`
+	RequestedCount       int            `json:"requested_count,omitempty"`
+	Parameters           map[string]any `json:"parameters,omitempty"`
+	SubmissionOutcome    string         `json:"submission_outcome,omitempty"`
+	DownloadedPaths      []string       `json:"downloaded_paths,omitempty"`
+	DownloadedIndexes    []int          `json:"downloaded_indexes,omitempty"`
+	DeliveryStatus       string         `json:"delivery_status,omitempty"`
+	LocalErrorCode       string         `json:"local_error_code,omitempty"`
+	OriginalOperation    string         `json:"original_operation,omitempty"`
+	RetryNotBefore       string         `json:"retry_not_before,omitempty"`
+	RecordPath           string         `json:"record_path,omitempty"`
+	DeliveredIndexes     []int          `json:"delivered_indexes,omitempty"`
+	WaitWindowsCompleted int            `json:"wait_windows_completed,omitempty"`
+	WaitOutcome          string         `json:"wait_outcome,omitempty"`
+	NextStep             string         `json:"next_step,omitempty"`
 
 	OK                     bool   `json:"ok"`
 	Kind                   string `json:"kind,omitempty"`
@@ -118,13 +122,14 @@ type service struct {
 	profilesRoot string
 	host         string
 
-	baseURL         string
-	client          *http.Client
-	token           string
-	downloadTimeout time.Duration
-	now             func() time.Time
-	wait            func(context.Context, time.Duration) bool
-	downloadProofs  map[string]downloadProof
+	baseURL           string
+	client            *http.Client
+	token             string
+	downloadTimeout   time.Duration
+	now               func() time.Time
+	wait              func(context.Context, time.Duration) bool
+	downloadProofs    map[string]downloadProof
+	localRecoveryOnly bool
 }
 
 func main() {
@@ -205,6 +210,12 @@ func run(args []string, input io.Reader, output io.Writer) error {
 	}
 	svc := service{baseURL: apiOrigin, client: &http.Client{Timeout: 90 * time.Second, CheckRedirect: rejectRedirect}, profilesRoot: installedSkillsRoot(), host: *host}
 	if command == "delivered" {
+		return executeRecordedTask(command, *recordFile, request, *index, *outputDir, output, svc)
+	}
+	// A recorded completed task needs only local proof verification to expose
+	// an undelivered file. Do not make attachment recovery depend on credentials.
+	if (command == "resume" || command == "wait") && *recordFile != "" && terminalSuccess(request.TaskStatus) && !request.ReconciliationRequired {
+		svc.localRecoveryOnly = true
 		return executeRecordedTask(command, *recordFile, request, *index, *outputDir, output, svc)
 	}
 	token, err := credentialForHost(*host)
@@ -574,6 +585,9 @@ func validateTaskRequest(request taskRequest) error {
 	if request.RequestedCount < 0 || request.RequestedCount > 6 {
 		return errors.New("invalid requested count")
 	}
+	if request.WaitWindowsCompleted < 0 || request.WaitWindowsCompleted > 2 {
+		return errors.New("invalid wait progress")
+	}
 	if request.Operation != "continue" && request.OutputDir != "" {
 		info, err := os.Stat(request.OutputDir)
 		if err != nil || !info.IsDir() {
@@ -591,7 +605,7 @@ func validateTaskRequest(request taskRequest) error {
 		}
 		return nil
 	}
-	if request.TaskID != "" || request.TaskStatus != "" || request.OriginalOperation != "" || request.RetryNotBefore != "" || request.ReconciliationRequired || request.Index != 0 {
+	if request.TaskID != "" || request.TaskStatus != "" || request.OriginalOperation != "" || request.RetryNotBefore != "" || request.ReconciliationRequired || request.Index != 0 || request.WaitWindowsCompleted != 0 {
 		return errors.New("new submissions cannot contain existing-task metadata")
 	}
 	if strings.TrimSpace(request.Model) == "" || strings.TrimSpace(request.Prompt) == "" {
@@ -722,17 +736,20 @@ func endpointFor(request taskRequest) string {
 
 func pollAndDeliver(output io.Writer, svc service, request taskRequest, result receipt) error {
 	policy := pollingPolicy(request.Kind, request.Poll)
+	windowEnd := svc.clock().Add(time.Duration(policy.deadline) * time.Second)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(policy.deadline)*time.Second)
 	defer cancel()
 	if request.ReconciliationRequired || terminalFailure(result.Status) || terminalSuccess(result.Status) {
 		return finishKnownTask(output, result)
 	}
+	deferred := false
 	for read := 0; read < policy.maxReads; read++ {
 		delay := time.Duration(policy.delays[min(read, len(policy.delays)-1)]) * time.Second
 		if result.RetryNotBefore != "" {
 			delay = retryDelay(result.RetryNotBefore, svc.clock())
 		}
 		if !svc.waitFor(ctx, delay) {
+			deferred = true
 			break
 		}
 		result.RetryNotBefore = ""
@@ -759,7 +776,7 @@ func pollAndDeliver(output io.Writer, svc service, request taskRequest, result r
 			return nil
 		}
 	}
-	if result.HTTPStatus == http.StatusTooManyRequests || retryDelay(result.RetryNotBefore, svc.clock()) > 0 {
+	if !result.OK {
 		result.OK = false
 		result.FailurePhase = "status"
 		result.NextAction = "Wait until retry_not_before, then continue this same task. The automatic wait window ended; do not submit again."
@@ -769,12 +786,22 @@ func pollAndDeliver(output io.Writer, svc service, request taskRequest, result r
 		writeReceipt(output, result)
 		return errors.New("retry exceeds wait window")
 	}
-	result.OK = false
-	result.FailurePhase = "status"
-	result.ErrorMessage = "The task is still pending after the automatic wait window."
-	result.NextAction = "Keep this task ID and ask whether to continue waiting for it. Do not submit another task."
+	// A bounded foreground wait ending is not a task or network failure.
+	// Persist a saturated counter so a host can continue once automatically,
+	// without resetting its budget at every receipt/record handoff.
+	result.WaitWindowsCompleted = min(2, result.WaitWindowsCompleted+1)
+	result.WaitOutcome = "window_ended"
+	result.NextAction = "The task is still processing. Continue this same task once more in the active foreground session if delivery is still requested; do not submit again."
+	if result.WaitWindowsCompleted >= 2 {
+		result.NextAction = "The task is still processing after two wait windows. Keep its ID and ask whether to continue later; do not submit again."
+	}
+	remainingRetry := retryDelay(result.RetryNotBefore, svc.clock())
+	if remainingRetry > 0 && (deferred || remainingRetry >= windowEnd.Sub(svc.clock())) {
+		result.WaitOutcome = "retry_deferred"
+		result.NextAction = "The task is still processing. Preserve retry_not_before and offer continuation at that time; the remaining wait does not fit this foreground window. Do not submit again."
+	}
 	writeReceipt(output, result)
-	return errors.New("polling deadline")
+	return nil
 }
 
 func waitContext(ctx context.Context, delay time.Duration) bool {
@@ -975,14 +1002,14 @@ func (svc service) download(ctx context.Context, path, kind, outputDir string) (
 	}
 	contentType := strings.ToLower(strings.TrimSpace(strings.Split(response.Header.Get("Content-Type"), ";")[0]))
 	if (kind == "image" && !strings.HasPrefix(contentType, "image/")) || (kind == "video" && !strings.HasPrefix(contentType, "video/")) || contentType == "image/svg+xml" {
-		return "", response.StatusCode, retryAfter(response), "", "", errors.New("invalid media content type")
+		return "", response.StatusCode, retryAfter(response), "", "", errInvalidMedia
 	}
 	limit := maxImageBytes
 	if kind == "video" {
 		limit = maxVideoBytes
 	}
 	if response.ContentLength > limit {
-		return "", response.StatusCode, retryAfter(response), "", "", errors.New("media delivery exceeds limit")
+		return "", response.StatusCode, retryAfter(response), "", "", errMediaTooLarge
 	}
 	directory := outputDir
 	if directory == "" {
@@ -991,7 +1018,7 @@ func (svc service) download(ctx context.Context, path, kind, outputDir string) (
 	reader := bufio.NewReader(response.Body)
 	prefix, _ := reader.Peek(512)
 	if !validMediaPrefix(prefix, contentType) {
-		return "", response.StatusCode, 0, "", "", errors.New("invalid media bytes")
+		return "", response.StatusCode, 0, "", "", errInvalidMedia
 	}
 	extension := extensionFor(contentType, kind)
 	file, err := os.CreateTemp(directory, ".puretokens-part-*."+extension)
@@ -1001,19 +1028,21 @@ func (svc service) download(ctx context.Context, path, kind, outputDir string) (
 	name := file.Name()
 	defer os.Remove(name)
 	writer := io.LimitReader(reader, limit+1)
-	written, copyErr := io.Copy(file, writer)
+	streamDigest := sha256.New()
+	written, copyErr := io.Copy(io.MultiWriter(file, streamDigest), writer)
 	closeErr := file.Close()
 	if copyErr != nil || closeErr != nil {
 		return "", response.StatusCode, retryAfter(response), "", "", errors.Join(copyErr, closeErr)
 	}
-	if written == 0 || written > limit || !validMediaFile(name, contentType) {
-		_ = os.Remove(name)
-		return "", response.StatusCode, retryAfter(response), "", "", errors.New("media delivery exceeded limit")
+	if written > limit {
+		return "", response.StatusCode, retryAfter(response), "", "", errMediaTooLarge
 	}
-	proof, err := fingerprintDownload(name, contentType)
-	if err != nil {
-		return "", response.StatusCode, retryAfter(response), "", "", err
+	if written == 0 || !validMediaFile(name, contentType) {
+		return "", response.StatusCode, retryAfter(response), "", "", errInvalidMedia
 	}
+	// Hash the bytes as they are downloaded, avoiding an extra complete scan
+	// of the temporary file. The finalized file is still re-read and verified.
+	proof := downloadProof{SHA256: fmt.Sprintf("%x", streamDigest.Sum(nil)), Bytes: written, MediaType: contentType}
 	destination := filepath.Join(directory, outputID+"."+extension)
 	if err := os.Link(name, destination); err != nil {
 		if os.IsExist(err) || copyDownloadExclusive(name, destination) != nil {
@@ -1112,7 +1141,7 @@ func validationFailure(message string) receipt {
 }
 
 func writeReceipt(output io.Writer, result receipt) {
-	result = guideFailure(result)
+	result = guideReceipt(result)
 	if writer, ok := output.(*recordReceiptWriter); ok {
 		writer.writeReceipt(result)
 		return

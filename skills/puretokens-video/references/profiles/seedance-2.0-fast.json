@@ -45,6 +45,12 @@
       "generate_audio": {
         "type": "boolean",
         "default": true
+      },
+      "first_frame_image": {
+        "type": "string"
+      },
+      "last_frame_image": {
+        "type": "string"
       }
     },
     "operations": {
@@ -139,6 +145,107 @@
             ]
           }
         }
+      },
+      "first_frame_video": {
+        "request": {
+          "method": "POST",
+          "path": "/v1/videos",
+          "contentType": "multipart/form-data"
+        },
+        "requiredBodyFields": [
+          "model",
+          "prompt",
+          "first_frame_image"
+        ],
+        "inputs": {
+          "first_frame_image": {
+            "field": "first_frame_image",
+            "required": true,
+            "minItems": 1,
+            "maxItems": 1,
+            "transports": [
+              "multipart_file"
+            ]
+          }
+        }
+      },
+      "last_frame_video": {
+        "request": {
+          "method": "POST",
+          "path": "/v1/videos",
+          "contentType": "multipart/form-data"
+        },
+        "requiredBodyFields": [
+          "model",
+          "prompt",
+          "last_frame_image"
+        ],
+        "inputs": {
+          "last_frame_image": {
+            "field": "last_frame_image",
+            "required": true,
+            "minItems": 1,
+            "maxItems": 1,
+            "transports": [
+              "multipart_file"
+            ]
+          }
+        }
+      },
+      "first_last_frame_video": {
+        "request": {
+          "method": "POST",
+          "path": "/v1/videos",
+          "contentType": "multipart/form-data"
+        },
+        "requiredBodyFields": [
+          "model",
+          "prompt",
+          "first_frame_image",
+          "last_frame_image"
+        ],
+        "inputs": {
+          "first_frame_image": {
+            "field": "first_frame_image",
+            "required": true,
+            "minItems": 1,
+            "maxItems": 1,
+            "transports": [
+              "multipart_file"
+            ]
+          },
+          "last_frame_image": {
+            "field": "last_frame_image",
+            "required": true,
+            "minItems": 1,
+            "maxItems": 1,
+            "transports": [
+              "multipart_file"
+            ]
+          }
+        }
+      }
+    },
+    "constraints": {
+      "reference_transport": {
+        "first_frame_image": [
+          "public_https_url"
+        ],
+        "last_frame_image": [
+          "public_https_url"
+        ]
+      },
+      "exclusive_reference_sets": {
+        "frames": [
+          "first_frame_image",
+          "last_frame_image"
+        ],
+        "references": [
+          "image",
+          "reference_images",
+          "reference_videos",
+          "reference_audios"
+        ]
       }
     }
   }

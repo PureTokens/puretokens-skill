@@ -74,7 +74,9 @@ For Claude Desktop, use a local Code session and host ID `claude-desktop`; its a
 
 ## Images and videos
 
-Normal text generation first reads a small installed model index, then only the selected model profile; it does not load every model or fetch the catalog before every task. `puretokens-image` defaults to `gpt-image-2`; `puretokens-video` uses its installed default. The live catalog is read only when a user explicitly asks for current models, requests an option or media operation absent from the selected profile, or needs a post-rejection diagnosis.
+Normal generation reads only the selected profile for a default or exact model ID; the small index is needed only for model selection or alias resolution. It does not load every model or fetch the catalog before every task. `puretokens-image` defaults to `gpt-image-2`; `puretokens-video` uses its installed default. The live catalog is read only when a user explicitly asks for current models, requests an option or media operation absent from the selected profile, or needs a post-rejection diagnosis.
+
+A normal wait window ending means the task is still processing, not failed. The active authorized delivery can continue for one more bounded foreground window, then pauses for user input. Task records preserve this budget; errors, reconciliation and deferred retries stop automatic continuation. Videos, multiple outputs and cross-session work use explicit workspace task records by default. A failed attachment handoff reuses the verified existing file rather than submitting or downloading again.
 
 Image and video tasks are asynchronous. Each submission creates at most one POST. Once a returned top-level task ID is known, the Skill polls and retrieves only that task. If a POST may have started but the task ID is missing, acceptance is unknown: it never submits a duplicate task or claims that no charge occurred. Image content is delivered sequentially from zero-based indexes `0..n-1`; video content is delivered only after terminal success.
 
@@ -103,6 +105,8 @@ README is generated only from base-catalog models with explicit image/video capa
 | `nano-banana-2-lite` | Google | Exact ID only | Image generation | `Use nano-banana-2-lite to generate an image.` |
 | `nano-banana-pro` | Google | `nano banana pro` | Image generation | `Use nano-banana-pro to generate an image.` |
 | `seedream-5.0-pro` | ByteDance | Exact ID only | Image generation | `Use seedream-5.0-pro to generate an image.` |
+| `gpt-image-2.5-flare` | OpenAI | Exact ID only | Text-to-image and reference image editing (up to 6 images), with selectable quality | `Use gpt-image-2.5-flare to generate an image.` |
+| `gpt-image-2.5-sunburst` | OpenAI | Exact ID only | Text-to-image and reference image editing (up to 6 images), with selectable quality | `Use gpt-image-2.5-sunburst to generate an image.` |
 
 ### Video models
 
