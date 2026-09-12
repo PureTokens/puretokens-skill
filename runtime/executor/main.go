@@ -33,7 +33,7 @@ const (
 	maxVideoBytes    int64 = 512 << 20
 )
 
-var executorVersion = "0.18.1"
+var executorVersion = "0.18.2"
 var executorSourceSHA256 = "unbuilt"
 
 const imageInitialPollDelay = 5 * time.Second

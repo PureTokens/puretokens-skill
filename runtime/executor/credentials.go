@@ -219,22 +219,19 @@ func credentialFromOpenCode() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return credentialFromOpenCodeFile(filepath.Join(home, ".config", "opencode", "opencode.json"))
-}
-
-func credentialFromOpenCodeFile(configPath string) (string, error) {
-	document, err := readJSONObject(configPath)
+	cwd, err := os.Getwd()
 	if err != nil {
 		return "", err
 	}
-	model := jsonString(document["model"])
-	providerID, _, found := strings.Cut(model, "/")
-	if !found || providerID == "" {
-		return "", credentialFailure("active_connection_selection_unconfirmed", "The OpenCode adapter could not resolve a connection from the declared selection.", "")
+	return credentialFromOpenCodeAt(home, cwd, os.Getenv)
+}
+
+func credentialFromOpenCodeFile(configPath string) (string, error) {
+	document, err := readOpenCodeObject(configPath)
+	if err != nil {
+		return "", err
 	}
-	provider := jsonObject(jsonObject(document["provider"])[providerID])
-	options := jsonObject(provider["options"])
-	return matchingCredential(jsonString(options["baseURL"]), jsonString(options["apiKey"]), "/v1", "/v1/")
+	return credentialFromOpenCodeDocument(document, "")
 }
 
 // configuredDirectory accepts only the documented host configuration-directory

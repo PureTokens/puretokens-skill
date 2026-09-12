@@ -66,11 +66,33 @@ an API adapter.
 Run `npm run acceptance:validate` after editing evidence. It rejects passed
 summary cells without matching real-host evidence, mismatched release versions,
 missing evidence artifacts and executor hashes that do not match the release.
+It also checks credential fixture outcomes and API-dependent acceptance against
+the adapter state in `references/host-support.json`.
 The check reports pending cells; it does not convert them to passes.
 
 ## Platform matrix and counts
 
-Each host has macOS, windows and linux summary slots. Pending means acceptance remains to be done, not proven client availability. This release schedules Linux targets for Claude Code, Codex, Gemini CLI, Grok Build and OpenCode; other Linux combinations are unavailable with an explicit reason until a client execution target is verified. Record Linux evidence with `os: linux` and a matching `linux-amd64` or `linux-arm64` executor. Do not substitute Windows/macOS hashes.
+Each host has macOS, windows and linux summary slots. Pending means an in-scope
+acceptance check remains to be done, not proven client availability. Unavailable
+means the check is outside this release's supported scope and needs an explicit
+reason; it is neither a pass nor missing test evidence.
+
+An adapter marked `pending` in the host registry is not implemented in this
+release. Its `credentialFixtures` must be `unavailable`, as must the
+`authenticatedAPI`, `sameTaskResume` and `nativeAttachmentDelivery` summaries
+on every OS and all detailed cases except `installation`. Trae currently has
+this classification: macOS and Windows installation remain pending, but API
+and media acceptance are unavailable. Installation-only real-host evidence is
+valid and establishes only `installation-verified`; a safe stop before a
+request is not a failed or passed authenticated API case.
+
+For a `fixture-tested` adapter, `credentialFixtures` must be `passed`, but
+real-host checks stay pending until tested. When adding an adapter, update its
+fixture classification and reassess each unavailable check and reason; never
+carry forward the old no-adapter exclusion or mark real-host checks passed
+from fixtures.
+
+This release schedules Linux targets for Claude Code, Codex, Gemini CLI, Grok Build and OpenCode; other Linux combinations are unavailable with an explicit reason until a client execution target is verified. Record Linux evidence with `os: linux` and a matching `linux-amd64` or `linux-arm64` executor. Do not substitute Windows/macOS hashes.
 
 Four summary checks and the nine detailed cases above are distinct. The validator reports pending summary cells and the count of detailed case outcomes actually recorded; absence of evidence is never a pass.
 
@@ -121,6 +143,8 @@ which hosts or billable tasks are authorized from this guide.
 The manual stable publication gate requires every declared available host/OS
 summary check to pass with matching real-host evidence. An API-capable target
 also needs all nine detailed cases passed together in one local environment.
+Hosts without an adapter require only installation acceptance on their declared
+installation targets; their API-dependent cases must remain unavailable.
 Unavailable targets must have an explicit reason; they are not advertised as
 accepted. At least one complete media environment is required, so an empty or
 all-unavailable matrix cannot authorize a stable release. These gates do not

@@ -52,6 +52,8 @@ From 0.18.1 onward, each distributed version is immutable. Increment the version
 
 Stable promotion also runs `node scripts/validate-host-acceptance.mjs --stable`: every declared available target needs real evidence, API-capable targets need all nine cases passed in one local environment, and an empty/all-unavailable matrix is rejected. Regular development gates still accept honest pending evidence. Run real-host acceptance only with explicit authorization; do not turn it into paid CI traffic.
 
+Acceptance classification must match the credential adapter state in `references/host-support.json`. Hosts without an adapter keep installation acceptance separate and mark API-dependent summaries and detailed cases `unavailable` with an explicit reason, not `pending` or `passed`. Credential fixtures never substitute for real-host evidence.
+
 Exact media quotes, server idempotency and discovery of unknown submissions are server-side dependencies not implemented here. Do not claim these guarantees from validation, local records or catalog data. Keep keys, cookies and user media out of source, fixtures and release artifacts.
 
 Build identity is recorded in `runtime/executor/build-proof.json` and embedded in each executable. `npm run validate` checks inputs and artifact identities; `npm run executor:verify` independently rebuilds and compares all six outputs. Current-platform Go tests also execute the packaged binary offline. These development checks add no user runtime dependency.

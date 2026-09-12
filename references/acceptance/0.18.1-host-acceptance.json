@@ -1,10 +1,63 @@
 {
   "schemaVersion": 1,
-  "version": "0.18.2",
+  "version": "0.18.1",
   "checkedAt": "2026-09-12",
-  "method": "isolated fixture coverage; 0.18.2 real-host acceptance pending; 0.18.1 evidence archived separately",
+  "method": "isolated fixture coverage and separately recorded real-host acceptance; no paid media tasks",
   "guide": "references/host-acceptance-guide.md",
-  "evidence": [],
+  "evidence": [
+    {
+      "method": "real-host",
+      "host": "codex",
+      "os": "macOS",
+      "hostVersion": "Codex CLI 0.153.4",
+      "osVersion": "macOS 26.6.2 (25G83)",
+      "osArchitecture": "arm64",
+      "executionMode": "local",
+      "shellVersion": "zsh 5.9; system sh GNU bash 3.2.57",
+      "executorPlatform": "darwin-arm64",
+      "executorSha256": "d381ccd1c4f826d533e83fc5d23032540e02cf7507d4cad5dce52541fe9ca25b",
+      "version": "0.18.1",
+      "checkedAt": "2026-09-12",
+      "artifact": "references/acceptance/0.18.1-codex-macos-arm64.md",
+      "cases": {
+        "installation": "passed",
+        "authenticatedAPI": "pending",
+        "image-generation": "pending",
+        "uploaded-image-edit": "pending",
+        "generated-image-edit": "pending",
+        "multiple-images": "pending",
+        "video-generation": "pending",
+        "sameTaskResume": "pending",
+        "nativeAttachmentDelivery": "pending"
+      }
+    },
+    {
+      "method": "real-host",
+      "host": "opencode",
+      "os": "macOS",
+      "hostVersion": "OpenCode 1.18.23",
+      "osVersion": "macOS 26.6.2 (25G83)",
+      "osArchitecture": "arm64",
+      "executionMode": "local",
+      "shellVersion": "zsh 5.9; system sh",
+      "executorPlatform": "darwin-arm64",
+      "executorSha256": "d381ccd1c4f826d533e83fc5d23032540e02cf7507d4cad5dce52541fe9ca25b",
+      "version": "0.18.1",
+      "checkedAt": "2026-09-12",
+      "artifact": "references/acceptance/0.18.1-opencode-macos-arm64.md",
+      "cases": {
+        "installation": "pending",
+        "authenticatedAPI": "pending",
+        "image-generation": "pending",
+        "uploaded-image-edit": "pending",
+        "generated-image-edit": "pending",
+        "multiple-images": "pending",
+        "video-generation": "pending",
+        "sameTaskResume": "pending",
+        "nativeAttachmentDelivery": "pending"
+      }
+    }
+  ],
   "hosts": [
     {
       "host": "claude-code",
@@ -32,7 +85,7 @@
       "host": "codex",
       "credentialFixtures": "passed",
       "macOS": {
-        "installation": "pending",
+        "installation": "passed",
         "authenticatedAPI": "pending",
         "sameTaskResume": "pending",
         "nativeAttachmentDelivery": "pending"

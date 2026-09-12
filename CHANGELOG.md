@@ -4,6 +4,12 @@
 
 # Changelog
 
+## 0.18.2 - 2026-09-12
+
+- Fix OpenCode rejecting a valid saved service when no default chat model is configured. Resolve exactly one enabled matching service only when the default is absent; explicit selections never fall back.
+- Support bounded JSONC configuration merging, declared XDG/project/managed layers and OpenCode's native API-key store. Reject ambiguous connections, unsupported hooks, dynamic authentication and invalid overrides without changing user configuration.
+- Separate saved service verification from current chat identity. Rebuild all platform executors; retain 0.18.1 acceptance as history instead of carrying its passes into the new candidate.
+
 ## 0.18.1 - 2026-09-12
 
 - Default installation now resolves a verified stable release manifest and downloads only the current OS/architecture archive. Missing releases never fall back to main or a full source archive; explicit local source sync remains available.

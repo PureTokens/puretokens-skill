@@ -15,12 +15,20 @@ export function hostAcceptanceLevel(evidence) {
   return "api-verified";
 }
 
-export function validateHostAcceptance(document, version, manifest, hostIds) {
+export function validateHostAcceptance(document, version, manifest, supportedHosts) {
   const errors = [];
   if (document?.schemaVersion !== 1 || document.version !== version || !Array.isArray(document.hosts) ||
       !Array.isArray(document.evidence) || !/^\d{4}-\d{2}-\d{2}$/.test(document.checkedAt ?? "")) {
     return ["Host acceptance must identify the release/date, host matrix and real-host evidence array."];
   }
+  if (!Array.isArray(supportedHosts) || supportedHosts.some(host =>
+    typeof host?.id !== "string" || !/^[a-z][a-z0-9-]*$/.test(host.id) ||
+    !["fixture-tested", "pending"].includes(host.credentialAdapter)) ||
+    new Set(supportedHosts.map(host => host.id)).size !== supportedHosts.length) {
+    return ["Host acceptance requires unique host support metadata with a known credential adapter state."];
+  }
+  const supportById = new Map(supportedHosts.map(host => [host.id, host]));
+  const hostIds = [...supportById.keys()];
   const ids = document.hosts.map(host => host.host);
   if (new Set(ids).size !== ids.length || ids.length !== hostIds.length || hostIds.some(id => !ids.includes(id))) {
     errors.push("Host acceptance must cover each supported host exactly once.");
@@ -46,9 +54,25 @@ export function validateHostAcceptance(document, version, manifest, hostIds) {
     if (evidence.executionMode === "wsl" && evidence.os !== "linux") {
       errors.push("WSL evidence must identify its Linux execution environment.");
     }
+    if (supportById.get(evidence.host)?.credentialAdapter === "pending") {
+      for (const check of acceptanceCases.filter(id => id !== "installation")) {
+        if (evidence.cases?.[check] !== "unavailable") {
+          errors.push(`${evidence.host}/${evidence.os}/${check} evidence must be unavailable: this release has no credential adapter.`);
+        }
+      }
+    }
+  }
+  for (const host of document.hosts) {
+    const support = supportById.get(host.host);
+    if (support && host.credentialFixtures !== (support.credentialAdapter === "fixture-tested" ? "passed" : "unavailable")) {
+      errors.push(`${host.host}/credentialFixtures must match its registered credential adapter state; fixtures are not real-host evidence.`);
+    }
   }
   for (const host of document.hosts) for (const os of acceptancePlatforms) for (const check of summaryCases) {
     const state = host[os]?.[check];
+    if (supportById.get(host.host)?.credentialAdapter === "pending" && check !== "installation" && state !== "unavailable") {
+      errors.push(`${host.host}/${os}/${check} must be unavailable: this release has no credential adapter.`);
+    }
     if (state === "unavailable" && !host[os]?.reason?.trim()) errors.push(`${host.host}/${os} must explain why this release cannot accept that target.`);
     if (!states.has(state)) errors.push(`Invalid ${host.host}/${os}/${check} acceptance state.`);
     if (state === "passed" && !document.evidence.some(item => item.method === "real-host" && item.host === host.host && item.os === os && item.executionMode === "local" && item.cases?.[check] === "passed")) {
@@ -83,7 +107,7 @@ export async function checkHostAcceptance({stable = false} = {}) {
     read("references/host-acceptance.json"), read("package.json"),
     read("runtime/executor/manifest.json"), read("references/host-support.json"),
   ]);
-  const errors = validateHostAcceptance(document, pkg.version, manifest, support.supported.map(host => host.id));
+  const errors = validateHostAcceptance(document, pkg.version, manifest, support.supported);
   if (stable) errors.push(...validateStableHostAcceptance(document));
   for (const evidence of document.evidence ?? []) {
     if (typeof evidence.artifact !== "string") continue;

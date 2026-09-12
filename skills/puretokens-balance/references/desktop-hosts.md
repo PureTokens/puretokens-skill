@@ -34,6 +34,14 @@ WorkBuddy 适配器无法匹配连接时，不据此断言当前聊天未使用 
 
 宿主绑定与本地失败停止：首次调用前根据当前应用或用户明确指定确定一个 host；本次任务所有 Skill 和执行器命令沿用该 host，不从安装目录推断宿主。任何命令返回 `active_connection_*`、`workbuddy_*` 或 `host_credential_adapter_unavailable` 本地失败时，立即停止本次 API 流程并返回脱敏说明；不得自动调用 puretokens-connection、init、doctor、models 或其他 Skill 重复探测，不得枚举、更换 `--host` 或借用其他客户端凭据。保留用户原任务和已有 task ID；本次调用未发请求不代表此前没有提交任务，不自动重提。只有用户明确要求重查或出现可验证的新诊断依据时，才在原 host 做一次相应检查；“继续生成”本身不是切换宿主或重复探测的授权。改变执行宿主必须有用户明确指定，不能把失败恢复当作指定。
 
+## OpenCode
+
+Use `--host opencode`. The executor merges declared global, explicit-file, project, `.opencode` and system-managed JSON/JSONC layers. It honors XDG roots, absolute `OPENCODE_CONFIG`/`OPENCODE_CONFIG_DIR`, and `OPENCODE_DISABLE_PROJECT_CONFIG`. A configured default must select an enabled provider; an absent default permits exactly one endpoint-matching saved Pure Tokens service. Multiple matches stop without comparing keys. Do not add a default model or change the user's chat selection to make init pass.
+
+After verifying the endpoint, the executor checks the matching native API-key entry in OpenCode's XDG data-root `auth.json`; static inline provider credentials take precedence. No reference expansion, environment-key fallback, configuration changes or session/history inspection. Plugins, dynamic/remote authentication, managed preferences and unrepresented session overrides are unsupported. Saved service verification is not current chat identity and is not a routing signal by itself; route here only when host context selects Pure Tokens or the user explicitly requests it. Installation, API verification and native attachment delivery are separate checks.
+
+Shared `.agents/skills` or project Skills can shadow the user installation. Verify the actual loaded Skill location and version in a fresh local session; installing new bytes alone does not prove that OpenCode loaded them.
+
 ## Pi
 
 Use `--host pi`. Skills use `~/.pi/agent/skills`, or absolute `PI_CODING_AGENT_DIR/skills` without parent traversal. The executor first verifies one matching `models.json` endpoint using `openai-completions`, then checks only sibling `auth.json` for the same provider ID. Its inline `api_key` entry takes precedence; unsupported or unreadable active authentication stops without fallback. With no matching auth entry, only custom providers without built-in environment authentication may use the saved inline value. Commands, `$` interpolation/escapes and unrepresented CLI, extension or session overrides are unsupported. Never remove active authentication to force fallback. Saved connection verification does not prove current chat selection. Real API and attachment delivery remain unverified.
