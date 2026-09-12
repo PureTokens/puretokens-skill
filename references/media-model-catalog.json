@@ -1,14 +1,14 @@
 {
   "schemaVersion": 2,
-  "updatedAt": "2026-09-10",
+  "updatedAt": "2026-09-12",
   "serviceCatalog": {
     "source": "Pure Tokens base model catalog",
     "path": "/api/product/docs/model-catalog",
-    "capturedAt": "2026-09-10T16:55:34.848Z"
+    "capturedAt": "2026-09-12T02:04:41.893Z"
   },
   "availabilityNotice": {
-    "en": "This list is an installed selection aid from the base catalog, not a per-request authorization check. Ordinary generation uses only the selected installed profile without a live-catalog preflight; explicit discovery, a requested profile gap or rejection diagnosis may read the authenticated catalog once. The media API decides access.",
-    "zh": "这份清单用于安装后的模型选择，不是每次请求的认证检查。普通生成只读取选中 profile，不预查实时目录；明确查询、所需字段／操作缺口或拒绝诊断时才读取一次认证目录，访问权限以媒体 API 实际响应为准。"
+    "en": "This list is an installed selection aid, not a per-request authorization check. Ordinary generation reads only the selected profile; live discovery is limited to explicit requests, profile gaps or rejection diagnosis. Reviewed local compatibility supplements are separately sourced.",
+    "zh": "这份清单用于安装后的模型选择，不是每次请求的认证检查。普通生成只读选中 profile；仅明确查询、profile 缺口或拒绝诊断时读取实时目录。经审查的本地兼容补充定义单独注明来源。"
   },
   "models": [
     {
@@ -1562,8 +1562,6 @@
               "3:2",
               "3:4",
               "4:3",
-              "4:5",
-              "5:4",
               "9:16",
               "16:9",
               "21:9"
@@ -1678,8 +1676,6 @@
               "3:2",
               "3:4",
               "4:3",
-              "4:5",
-              "5:4",
               "9:16",
               "16:9",
               "21:9"
@@ -1798,8 +1794,6 @@
               "3:2",
               "3:4",
               "4:3",
-              "4:5",
-              "5:4",
               "9:16",
               "16:9",
               "21:9",
@@ -3557,12 +3551,11 @@
     }
   ],
   "localMetadataRevision": {
-    "date": "2026-09-10",
-    "source": "PureTokenPlus_web commit 842ccf41 model metadata and Seedance adapter; user-approved Image 2.5 edits and Nano Banana ratios; existing gpt-image-2 profile preserved",
+    "date": "2026-09-12",
+    "source": "references/media-parameter-review.md; scripts/reviewed-media-supplements.mjs",
     "retainedAfterCatalogRefresh": [
-      "Nano Banana 4:5 and 5:4 ratios",
-      "Seedance first/last frame operations and exclusive reference constraints"
+      "Seedance first/last frame operations and exclusive reference constraints when both frame fields remain declared"
     ],
-    "note": "Public catalog was fetched again; these previously approved supplemental declarations remain separately sourced and are not claimed as returned by that catalog."
+    "note": "Local compatibility additions are not claimed as returned by the public catalog or as live availability proof."
   }
 }

@@ -4,18 +4,25 @@ $root = Join-Path ([IO.Path]::GetTempPath()) ('pt-installer-test-' + [Guid]::New
 $target = Join-Path $root 'skills'
 $installer = Join-Path $repository 'runtime/puretokens-skill-install.ps1'
 $savedEnvironment = @{}
-foreach ($name in @('USERPROFILE', 'HOME', 'CODEX_HOME', 'APPDATA', 'DSH_HOME', 'CLAUDE_CONFIG_DIR', 'ZCODE_DATA_BASE_DIR', 'KIMI_CODE_HOME', 'QODER_CONFIG_DIR', 'QODER_CLI_HOME', 'QODER_CONFIG_DIR_NAME')) { $savedEnvironment[$name] = [Environment]::GetEnvironmentVariable($name, 'Process') }
+foreach ($name in @('USERPROFILE', 'HOME', 'CODEX_HOME', 'APPDATA', 'DSH_HOME', 'CLAUDE_CONFIG_DIR', 'ZCODE_DATA_BASE_DIR', 'KIMI_CODE_HOME', 'QODER_CONFIG_DIR', 'QODER_CLI_HOME', 'QODER_CONFIG_DIR_NAME', 'PI_CODING_AGENT_DIR')) { $savedEnvironment[$name] = [Environment]::GetEnvironmentVariable($name, 'Process') }
 try {
   New-Item -ItemType Directory $root | Out-Null
   $env:USERPROFILE = Join-Path $root 'home'
   $env:HOME = $env:USERPROFILE
   $env:CODEX_HOME = Join-Path $env:USERPROFILE '.codex'
   New-Item -ItemType Directory $env:USERPROFILE | Out-Null
-  foreach ($engine in @('powershell.exe', 'pwsh')) {
-    $command = Get-Command $engine -ErrorAction Stop
-    foreach ($newHost in @('kimi-code', 'qoder')) {
-      $variable = if ($newHost -eq 'kimi-code') { 'KIMI_CODE_HOME' } else { 'QODER_CONFIG_DIR' }
-      $hostRoot = Join-Path $root "$newHost $engine spaces"
+  $engines = @('powershell.exe', 'pwsh')
+  $x86PowerShell = Join-Path $env:SystemRoot 'SysWOW64\WindowsPowerShell\v1.0\powershell.exe'
+  if (Test-Path -LiteralPath $x86PowerShell) { $engines += 'powershell-x86' }
+  foreach ($engine in $engines) {
+    $command = if ($engine -eq 'powershell-x86') { [PSCustomObject]@{ Source = $x86PowerShell } } else { Get-Command $engine -ErrorAction Stop }
+    if ($engine -eq 'powershell-x86') {
+      $actualProcess = & $command.Source -NoProfile -Command '[Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString()'
+      if ($LASTEXITCODE -ne 0 -or $actualProcess -ne 'X86') { throw "SysWOW64 fixture did not execute a 32-bit PowerShell process" }
+    }
+    foreach ($newHost in @('kimi-code', 'qoder', 'pi')) {
+      $variable = switch ($newHost) { 'kimi-code' { 'KIMI_CODE_HOME' }; 'qoder' { 'QODER_CONFIG_DIR' }; 'pi' { 'PI_CODING_AGENT_DIR' } }
+      $hostRoot = Join-Path $root ("$newHost $engine " + [char]0x7528 + [char]0x6237 + " spaces")
       [Environment]::SetEnvironmentVariable($variable, $hostRoot, 'Process')
       $location = & $command.Source -NoProfile -ExecutionPolicy Bypass -File $installer locate -HostId $newHost
       if ($LASTEXITCODE -ne 0 -or $location -ne (Join-Path $hostRoot 'skills')) { throw "$engine new host directory mismatch" }
@@ -28,6 +35,15 @@ try {
       if ($LASTEXITCODE -eq 0) { throw "$engine accepted relative new host directory" }
       [Environment]::SetEnvironmentVariable($variable, '', 'Process')
     }
+    $piLocation = & $command.Source -NoProfile -ExecutionPolicy Bypass -File $installer locate -HostId pi
+    if ($LASTEXITCODE -ne 0 -or $piLocation -ne (Join-Path $env:USERPROFILE '.pi\agent\skills')) { throw "$engine Pi default directory mismatch" }
+    foreach ($invalid in @('relative', 'C:relative', '\rooted', (Join-Path $root 'invalid\..\unexpected'))) {
+      $env:PI_CODING_AGENT_DIR = $invalid
+      & $command.Source -NoProfile -ExecutionPolicy Bypass -File $installer sync -HostId pi *> $null
+      if ($LASTEXITCODE -eq 0) { throw "$engine accepted an invalid Pi directory" }
+    }
+    if ((Test-Path -LiteralPath (Join-Path $root 'invalid')) -or (Test-Path -LiteralPath (Join-Path $root 'unexpected'))) { throw "$engine wrote through an invalid Pi root" }
+    $env:PI_CODING_AGENT_DIR = ''
     $env:APPDATA = Join-Path $root "Roaming with spaces"
     $env:DSH_HOME = ""
     $env:CLAUDE_CONFIG_DIR = ""
@@ -56,6 +72,9 @@ try {
     # and PowerShell 7. Bypass applies to this child process only.
     & $command.Source -NoProfile -ExecutionPolicy Bypass -File $installer sync -Target $engineTarget
     if ($LASTEXITCODE -ne 0) { throw "$engine advertised installer entry failed" }
+    $installedRuntime = Get-Content -LiteralPath (Join-Path $engineTarget '.puretokens-executor/runtime.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+    $expectedPlatform = if ([Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString() -eq 'Arm64') { 'windows-arm64' } else { 'windows-amd64' }
+    if ($installedRuntime.platform -ne $expectedPlatform) { throw "$engine selected a process architecture instead of the operating system architecture" }
     # Simulate a host deletion guard without bypassing it: successful sync and
     # init must remain observable, the stage is retained, and the lock released.
     $guardRunner = Join-Path $root "guard-$engine.ps1"

@@ -22,7 +22,7 @@ Install or update the official Pure Tokens Skills from https://github.com/PureTo
 请从官方仓库安装或更新 Pure Tokens Skills：https://github.com/PureTokens/puretokens-skill。
 ```
 
-Agent 将官方仓库的 `runtime/puretokens-skill-fetch.sh`（Windows 为 `.ps1`）下载到本地文件后，使用当前宿主 ID 执行 install；已安装时可使用同级 `.puretokens-executor` 中的 fetch 脚本执行 check-update 或 update。下载不能直接管道进 shell。
+Agent 从官方仓库最新正式发布的附件下载 `puretokens-skill-fetch.sh`（Windows 为 `.ps1`）到本地文件，使用当前宿主 ID 执行 install。固定下载入口为 `https://github.com/PureTokens/puretokens-skill/releases/latest/download/puretokens-skill-fetch.sh`，Windows 将末尾 `.sh` 改为 `.ps1`。已安装时使用同级 `.puretokens-executor` 中的 fetch 执行 check-update 或 update。下载不能直接管道进 shell；没有正式发布资源就停止，不改用 main、源码归档或镜像。
 
 安装执行边界：确认宿主后，将官方 fetch 下载为本地文件并执行一次，由脚本完成提交固定、下载、校验、同步和 init。不要在正常安装中额外审计整份脚本、逐项探测 PowerShell 能力、重复核对清单或再跑 doctor。必要的宿主审批照常遵守。遇到启动被拒绝、输出不可用、超时、下载或校验失败，报告已完成阶段与脱敏失败并停止；不得创建 probe、shim、Python 补丁、修改官方脚本、换启动路径或自动重试。只有用户另行要求开发排查时才进入调试流程。
 
@@ -69,8 +69,11 @@ Computer Use、浏览器自动化以及打开或点击 Pure Tokens Switch/Deskto
 | ZCode | `~/.zcode/skills` | 本地连接适配；真实 API 和附件交付待验收 |
 | Kimi Code | `~/.kimi-code/skills` | 凭据夹具覆盖；真实 API 与附件交付待验收 |
 | Qoder | `~/.qoder/skills` | IDE／CLI 本地执行；真实 API 与附件交付待验收 |
+| Pi | `~/.pi/agent/skills` | 内联认证优先级通过夹具测试；真实 API 与附件交付待验收 |
 
-十二个宿主以 `references/host-support.json` 为唯一契约。表中为默认目录；Claude／WorkBuddy 支持明确配置目录覆盖，DSH 支持本地 Harness 明确设置的 `DSH_HOME`。Gemini 如已有较高优先级的 `.agents/skills` 安装，会更新该目录并报告重复副本。不会依据 provider 名判断。
+宿主列表以 `references/host-support.json` 为唯一契约。表中为默认目录；Claude／WorkBuddy 支持明确配置目录覆盖，Pi 支持不含父级跳转的绝对 `PI_CODING_AGENT_DIR`，DSH 支持本地 Harness 明确设置的 `DSH_HOME`。Gemini 如已有较高优先级的 `.agents/skills` 安装，会更新该目录并报告重复副本。不会依据 provider 名判断。
+
+注册、安装、API 验证和完整媒体交付是不同状态。实机证据需记录客户端、系统、Shell 版本、架构与执行模式；只有完整用例通过，才能确认该具体环境能打开图片、播放视频并完成附件交付。目前尚无实机验收记录。本地结果不代表 WSL、远程或沙箱模式也已通过，详见 `references/host-acceptance-guide.md` 与 `references/host-acceptance.json`。
 
 Claude Desktop 请选择本地 Code 会话并使用宿主 ID `claude-desktop`；它读取 Desktop 当前第三方连接，不借用 Claude Code 的凭据。云端、SSH、WSL 或 Cowork 隔离环境不等于本机环境，无法访问本机连接或执行器时会停止。DSH 使用 `dsh-desktop`；项目或自定义 Skill 目录可能覆盖用户目录，应核对实际加载位置。安装示例及边界见 [桌面宿主说明](skills/puretokens-update/references/desktop-hosts.md)。
 
@@ -89,9 +92,9 @@ Claude Desktop 请选择本地 Code 会话并使用宿主 ID `claude-desktop`；
 <!-- media-model-catalog:start -->
 ## 媒体模型清单
 
-已与基础模型目录同步：2026-09-10T16:55:34.848Z。
+已与基础模型目录同步：2026-09-12T02:04:41.893Z。
 
-这份清单用于安装后的模型选择，不是每次请求的认证检查。普通生成只读取选中 profile，不预查实时目录；明确查询、所需字段／操作缺口或拒绝诊断时才读取一次认证目录，访问权限以媒体 API 实际响应为准。
+这份清单用于安装后的模型选择，不是每次请求的认证检查。普通生成只读选中 profile；仅明确查询、profile 缺口或拒绝诊断时读取实时目录。经审查的本地兼容补充定义单独注明来源。
 
 README 只从基础目录中带有明确图片/视频能力的模型生成，不通过模型名称推断。已安装模型索引用于选择模型，只有被选中模型的 profile 承载已知参数；实时目录只在明确查询、安装 profile 缺口或提交被拒后的诊断时按需读取。发布前从受控基础目录刷新，并运行 `npm run release:validate`；当快照超过七天时发布校验会失败。
 
@@ -138,13 +141,15 @@ README 只从基础目录中带有明确图片/视频能力的模型生成，不
 
 ## 更新
 
-`puretokens-update` 的原生 fetch 脚本先把官方 main 固定到精确提交和版本。检查更新只报告版本；安装／更新优先下载匹配提交的校验平台包，没有匹配包时获取同一提交的官方源码归档，再执行原生 sync。安装器同步六个 Skill 和经 SHA-256 校验的当前平台原生执行器，保留无关目录及用户自己管理的同名目录。只有带版本号的成功回执才表示更新完成。
+`puretokens-update` 的原生 fetch 读取最新正式发布清单，固定其中的版本、源码提交、目录选择器和平台包校验和。只下载当前系统／架构的平台包，不回退整库源码；包内仅含六个通用 Skill、一个平台执行器及当前系统脚本。检查更新不写入或执行 init。同版安装／更新先核验执行器与七份受管清单，完整则直接返回，不下载包、不重写、不 init；缺失、改动或未完成事务则停止，保留文件。显式本地源码 sync 仅供维护开发使用。
+
+首次安装或实际更新后仍自动 init，最多两次只读请求共用 20 秒总预算，不自动重试。文件同步成功与连接验证分别报告，验证超时不回滚安装、不重装，也不证明凭据无效。只有带版本的同步成功回执才表示本次安装完成；同版核验回执表示原安装完整，未修改文件。
 
 源码同步脚本是 macOS/Linux 的 `runtime/puretokens-skill-install.sh` 和 Windows 的 `runtime/puretokens-skill-install.ps1`。它们只负责安装更新及校验复制平台执行器；用户不需要 Node、npm、Python、Go 或包管理器。
 
 每个受管目录保存 `.puretokens-managed.json` 文件清单和校验值。更新和中断恢复遇到新增、修改、缺失文件或符号链接时停止覆盖并保留现有内容。没有受管记录的目录只有与当前官方源完全匹配才可接管；同名、版本号或自报哈希不构成归属证明。该记录用于发现意外改动，不是抵抗本机篡改的签名。
 
-每次安装或更新成功后，安装器都会自动执行 `init`：先做不计费的固定 `/v1` 身份检查，再用一次 `/v1/media/models` 请求验证当前凭据认证，不展示凭据或宿主配置，然后输出当前使用须知和示例。验证未完成时，会给出经过脱敏的原因，例如没有当前匹配连接、缺少凭据、API 拒绝及 HTTP 状态、网络失败或 API 身份未确认；绝不打印配置 URL、provider 或 Key。之后如需再次检查，可让宿主 Agent“初始化 Pure Tokens Skills”或“检查当前 Pure Tokens 连接”；它应调用已安装执行器的 `init`，展示使用须知，但不修改配置。
+首次安装或实际版本更新后，安装器自动执行 `init`；同版完整性核验通过时不执行。先做不计费的固定 `/v1` 身份检查，再用一次 `/v1/media/models` 请求验证当前凭据认证，两次共用 20 秒总预算，不展示凭据或宿主配置，然后输出当前使用须知和示例。验证未完成时，会给出经过脱敏的原因，例如没有当前匹配连接、缺少凭据、API 拒绝及 HTTP 状态、网络失败或 API 身份未确认；绝不打印配置 URL、provider 或 Key。之后如需再次检查，可让宿主 Agent“初始化 Pure Tokens Skills”或“检查当前 Pure Tokens 连接”；它应调用已安装执行器的 `init`，展示使用须知，但不修改配置。
 
 ## 维护者校验
 

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { execFile as execFileCallback } from "node:child_process";
 import { promisify } from "node:util";
-import { cp, mkdir, mkdtemp, readFile, readdir, rm, writeFile, chmod } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readFile, readdir, rm, writeFile, chmod, stat, symlink } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import os from "node:os";
 import path from "node:path";
@@ -11,6 +11,38 @@ const execFile = promisify(execFileCallback);
 const commit = "a".repeat(40);
 const version = "0.17.0";
 const scripts = ["puretokens-skill-install.sh", "puretokens-skill-install.ps1", "puretokens-skill-fetch.sh", "puretokens-skill-fetch.ps1"];
+
+test("PowerShell download diagnostics classify exceptions and suppress private messages", async t => {
+  try { await execFile("pwsh", ["-NoProfile", "-Command", "$PSVersionTable.PSVersion.ToString()"]); }
+  catch (error) { if (error.code === "ENOENT") { t.skip("PowerShell is unavailable; Windows execution remains unverified"); return; } throw error; }
+  const root = await mkdtemp(path.join(os.tmpdir(), "pt-ps-diagnostic-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const source = await readFile(path.join(repositoryRoot, "runtime/puretokens-skill-fetch.ps1"), "utf8");
+  const functions = source.slice(source.indexOf("function Fail("), source.indexOf("$locationOptions ="));
+  const script = path.join(root, "diagnostic.ps1");
+  await writeFile(script, `$ErrorActionPreference='Stop'
+${functions}
+function Invoke-WebRequest {
+  param($Uri,$OutFile,$TimeoutSec,$Headers,$UserAgent,[switch]$UseBasicParsing,[switch]$PassThru)
+  $script:calls++
+  if ($script:mode -eq 'timeout') { throw [System.Net.WebException]::new('private-fixture', [System.Net.WebExceptionStatus]::Timeout) }
+  if ($script:mode -eq 'dns_failure') { throw [System.Net.WebException]::new('private-fixture', [System.Net.WebExceptionStatus]::NameResolutionFailure) }
+  if ($script:mode -eq 'tls_failure') { throw [System.Net.WebException]::new('private-fixture', [System.Net.WebExceptionStatus]::TrustFailure) }
+  return [PSCustomObject]@{StatusCode=403}
+}
+foreach ($mode in @('timeout','dns_failure','tls_failure','http_error')) {
+  $script:mode=$mode; $script:calls=0; $failed=$false
+  try { Get-OfficialFile 'https://example.invalid/private' 'unused' resolve_revision | Out-Null }
+  catch {
+    $failed=$true; $message=$_.Exception.Message
+    if ($message -notlike "*stage=resolve_revision error_code=$mode *" -or $message -match 'private-fixture|example.invalid') { throw 'unsafe or incorrect diagnostic' }
+    if ($message -notlike '*installed_files_changed=false*') { throw 'missing preservation state' }
+  }
+  if (-not $failed -or $script:calls -ne 1) { throw 'failure retried or suppressed' }
+}
+`);
+  await execFile("pwsh", ["-NoProfile", "-File", script]);
+});
 
 async function fixture(t) {
   const root = await mkdtemp(path.join(os.tmpdir(), "pt-distribution-test-"));
@@ -56,17 +88,17 @@ test("repackaging replaces the archive and removes deleted members", async t => 
   assert.equal((await readdir(releases)).some(p => p.endsWith(".tmp")), false);
 });
 
-async function mockDownloads(f, mode = "source") {
+async function mockDownloads(f, mode = "platform") {
   const tools = path.join(f.root, "tools");
   await mkdir(tools);
-  await writeFile(path.join(f.root, "commit.json"), JSON.stringify({ sha: commit }, null, 2));
-  const sourceCopy = path.join(f.root, `puretokens-skill-${commit}`);
-  await cp(f.source, sourceCopy, { recursive: true });
-  await execFile("zip", ["-qr", path.join(f.root, "source.zip"), path.basename(sourceCopy)], { cwd: f.root });
   await execFile("zip", ["-qr", path.join(f.root, "platform.zip"), "puretokens-skill"], { cwd: f.root });
   const checksum = createHash("sha256").update(await readFile(path.join(f.root, "platform.zip"))).digest("hex");
-  await writeFile(path.join(f.root, "release.json"), JSON.stringify({ version, sourceCommit: commit, files: {
-    [f.platform]: { filename: `puretokens-skill-${version}-${f.platform}.zip`, sha256: mode === "bad-checksum" ? "0".repeat(64) : checksum }
+  const selectorChecksum = createHash("sha256").update(await readFile(path.join(f.source, "runtime/puretokens-skill-install.sh"))).digest("hex");
+  const executorChecksum = createHash("sha256").update(await readFile(path.join(f.source, "runtime/executor/bin", `puretokens-api-${f.platform}`))).digest("hex");
+  await writeFile(path.join(f.root, "release.json"), JSON.stringify({ schemaVersion: 2, version, sourceCommit: commit, installers: {
+    shell: {filename: "puretokens-skill-install.sh", sha256: selectorChecksum},
+  }, files: {
+    [f.platform]: { filename: `puretokens-skill-${version}-${f.platform}.zip`, sha256: mode === "bad-checksum" ? "0".repeat(64) : checksum, executorSha256: executorChecksum }
   } }, null, 2));
   const curl = path.join(tools, "curl");
   await writeFile(curl, `#!/bin/sh
@@ -74,19 +106,23 @@ while [ "$#" -gt 0 ]; do
   case "$1" in --output) destination=$2; shift 2 ;; https:*) request_url=$1; shift ;; *) shift ;; esac
 done
 printf '%s\\n' "$request_url" >> "$PT_FETCH_FIXTURE/requests"
+if [ -n "\${PT_FAIL_MATCH:-}" ]; then
+  case "$request_url" in *"$PT_FAIL_MATCH"*)
+    printf '%s' "$PT_FAIL_HTTP"
+    printf '%s' 'private-exception-must-not-leak' >&2
+    exit "$PT_FAIL_EXIT" ;;
+  esac
+fi
 case "$request_url" in
-  https://api.github.com/repos/PureTokens/puretokens-skill/commits/main) file=commit.json ;;
-  https://raw.githubusercontent.com/PureTokens/puretokens-skill/${commit}/package.json) file=puretokens-skill/package.json ;;
-  https://raw.githubusercontent.com/PureTokens/puretokens-skill/${commit}/runtime/puretokens-skill-install.sh) file=puretokens-skill/runtime/puretokens-skill-install.sh ;;
-  https://github.com/PureTokens/puretokens-skill/releases/download/v${version}/release-manifest.json)
-    if [ "$PT_FETCH_MODE" = source ]; then printf 404; exit 0; fi
+  https://github.com/PureTokens/puretokens-skill/releases/latest/download/release-manifest.json)
+    if [ "$PT_FETCH_MODE" = missing ]; then printf 404; exit 0; fi
     file=release.json ;;
-  https://github.com/PureTokens/puretokens-skill/releases/download/v${version}/puretokens-skill-${version}-${f.platform}.zip) file=platform.zip ;;
-  https://codeload.github.com/PureTokens/puretokens-skill/zip/${commit})
+  https://github.com/PureTokens/puretokens-skill/releases/download/v${version}/puretokens-skill-install.sh) file=puretokens-skill/runtime/puretokens-skill-install.sh ;;
+  https://github.com/PureTokens/puretokens-skill/releases/download/v${version}/puretokens-skill-${version}-${f.platform}.zip)
     if [ -n "\${PT_INSTALL_DURING_DOWNLOAD:-}" ]; then
       sh "$PT_INSTALL_DURING_DOWNLOAD/runtime/puretokens-skill-install.sh" sync --target "$PT_FIXTURE_TARGET" --source "$PT_INSTALL_DURING_DOWNLOAD" > "$PT_FETCH_FIXTURE/concurrent-update"
     fi
-    file=source.zip ;;
+    file=platform.zip ;;
   *) exit 99 ;;
 esac
 cp "$PT_FETCH_FIXTURE/$file" "$destination"
@@ -96,7 +132,7 @@ printf 200
   return { ...f.env, PATH: `${tools}${path.delimiter}${f.env.PATH}`, PT_FETCH_FIXTURE: f.root, PT_FETCH_MODE: mode };
 }
 
-test("check-update reads only pinned metadata and does not install or initialize", async t => {
+test("check-update reads stable metadata and its verified selector only", async t => {
   const f = await fixture(t);
   const env = await mockDownloads(f);
   const wrapper = path.join(f.source, "runtime/puretokens-skill-fetch.sh");
@@ -104,14 +140,47 @@ test("check-update reads only pinned metadata and does not install or initialize
   assert.match(stdout, /installed=not_installed available=0.17.0/);
   await assert.rejects(readFile(path.join(f.target, ".puretokens-executor/runtime.json")));
   const requests = (await readFile(path.join(f.root, "requests"), "utf8")).trim().split("\n");
-  assert.equal(requests.length, 3);
-  assert.ok(requests[1].includes(commit));
+  assert.equal(requests.length, 2);
+  assert.ok(requests[0].includes("/releases/latest/download/"));
+  assert.ok(requests[1].includes(`/releases/download/v${version}/`));
   assert.deepEqual(await readdir(path.join(f.root, "tmp")), []);
 });
 
-for (const mode of ["source", "platform"]) test(`download wrapper installs verified ${mode} through native sync`, async t => {
+test("download failures identify the stage and safe category without retries or target changes", async t => {
   const f = await fixture(t);
-  const env = await mockDownloads(f, mode);
+  const base = await mockDownloads(f);
+  await mkdir(f.target);
+  await writeFile(path.join(f.target, "sentinel"), "keep");
+  const cases = [
+    ["release-manifest.json", "read_release_manifest", "403", "0", "http_error", 1],
+    ["install.sh", "download_selector", "429", "0", "http_error", 2],
+    ["install.sh", "download_selector", "000", "28", "timeout", 2],
+    ["release-manifest.json", "read_release_manifest", "000", "6", "dns_failure", 1],
+    [".zip", "download_platform_archive", "000", "35", "tls_failure", 3],
+    ["release-manifest.json", "read_release_manifest", "000", "7", "connection_failure", 1],
+    ["release-manifest.json", "read_release_manifest", "404", "0", "http_error", 1],
+    ["release-manifest.json", "read_release_manifest", "200", "28", "timeout", 1],
+    [".zip", "download_platform_archive", "404", "0", "http_error", 3],
+  ];
+  for (const [match, stage, http, exit, category, count] of cases) {
+    await writeFile(path.join(f.root, "requests"), "");
+    await assert.rejects(execFile("sh", [path.join(f.source, "runtime/puretokens-skill-fetch.sh"), "install", "--target", f.target], {
+      env: { ...base, PT_FAIL_MATCH: match, PT_FAIL_HTTP: http, PT_FAIL_EXIT: exit }
+    }), error => {
+      assert.ok(error.stderr.includes(`stage=${stage} error_code=${category} http_status=${Number(http)}`));
+      assert.match(error.stderr, /installation_status=not_completed installed_files_changed=false/);
+      assert.doesNotMatch(error.stderr, /private-exception-must-not-leak/);
+      return true;
+    });
+    assert.equal((await readFile(path.join(f.root, "requests"), "utf8")).trim().split("\n").length, count);
+    assert.deepEqual(await readdir(f.target), ["sentinel"]);
+    assert.equal(await readFile(path.join(f.target, "sentinel"), "utf8"), "keep");
+  }
+});
+
+test("download wrapper installs only the verified stable platform package", async t => {
+  const f = await fixture(t);
+  const env = await mockDownloads(f);
   const standalone = path.join(f.root, "puretokens-skill-fetch.sh");
   await cp(path.join(f.source, "runtime/puretokens-skill-fetch.sh"), standalone);
   const { stdout } = await execFile("sh", [standalone, "install", "--target", f.target], { env });
@@ -119,8 +188,8 @@ for (const mode of ["source", "platform"]) test(`download wrapper installs verif
   const installed = JSON.parse(await readFile(path.join(f.target, ".puretokens-executor/runtime.json"), "utf8"));
   assert.equal(installed.version, version);
   const requests = await readFile(path.join(f.root, "requests"), "utf8");
-  if (mode === "platform") assert.doesNotMatch(requests, /codeload/);
-  else assert.ok(requests.includes(`/zip/${commit}`));
+  assert.doesNotMatch(requests, /codeload|commits\/main|raw\.githubusercontent/);
+  assert.equal(requests.trim().split("\n").length, 3);
   assert.deepEqual(await readdir(path.join(f.root, "tmp")), []);
 });
 
@@ -132,15 +201,21 @@ test("published checksum mismatch stops before target mutation", async t => {
   assert.deepEqual(await readdir(path.join(f.root, "tmp")), []);
 });
 
-test("a release for a different source revision falls back to the pinned source", async t => {
+test("unpublished or invalid stable metadata never falls back to main or source", async t => {
   const f = await fixture(t);
   const env = await mockDownloads(f, "platform");
   const releaseFile = path.join(f.root, "release.json");
   const release = JSON.parse(await readFile(releaseFile, "utf8"));
-  release.sourceCommit = "b".repeat(40);
+  for (const change of [{sourceCommit: null}, {schemaVersion: 1}, {version: "0.18.1-rc.1"}, {version: "../unsafe"}]) {
+    await writeFile(releaseFile, JSON.stringify({...release, ...change}, null, 2));
+    await writeFile(path.join(f.root, "requests"), "");
+    await assert.rejects(execFile("sh", [path.join(f.source, "runtime/puretokens-skill-fetch.sh"), "install", "--target", f.target], { env }));
+    assert.equal((await readFile(path.join(f.root, "requests"), "utf8")).trim().split("\n").length, 1);
+    await assert.rejects(stat(f.target));
+  }
   await writeFile(releaseFile, JSON.stringify(release, null, 2));
-  await execFile("sh", [path.join(f.source, "runtime/puretokens-skill-fetch.sh"), "install", "--target", f.target], { env });
-  assert.match(await readFile(path.join(f.root, "requests"), "utf8"), /codeload/);
+  await assert.rejects(execFile("sh", [path.join(f.source, "runtime/puretokens-skill-fetch.sh"), "install", "--target", f.target], {env:{...env, PT_FETCH_MODE:"missing"}}), /read_release_manifest/);
+  assert.doesNotMatch(await readFile(path.join(f.root, "requests"), "utf8"), /codeload|commits\/main/);
 });
 
 test("legacy sibling installer is replaced by the pinned directory selector", async t => {
@@ -152,13 +227,12 @@ test("legacy sibling installer is replaced by the pinned directory selector", as
   await writeFile(path.join(bootstrap, "puretokens-skill-install.sh"), "#!/bin/sh\nexit 79\n");
   const { stdout } = await execFile("sh", [path.join(bootstrap, "puretokens-skill-fetch.sh"), "check-update", "--target", f.target], { env });
   assert.match(stdout, /available=0.17.0/);
-  assert.match(await readFile(path.join(f.root, "requests"), "utf8"), /runtime\/puretokens-skill-install\.sh/);
+  assert.match(await readFile(path.join(f.root, "requests"), "utf8"), /releases\/download\/v0\.17\.0\/puretokens-skill-install\.sh/);
   assert.deepEqual(await readdir(path.join(f.root, "tmp")), []);
 });
 
 test("sync rejects an older download after a newer version wins the installation lock", async t => {
   const f = await fixture(t);
-  await execFile("sh", [path.join(f.source, "runtime/puretokens-skill-install.sh"), "sync", "--target", f.target], { env: f.env });
   const newer = path.join(f.root, "newer-source");
   await cp(f.source, newer, { recursive: true });
   await writeFile(path.join(newer, "package.json"), JSON.stringify({ version: "0.18.0" }, null, 2));
@@ -206,5 +280,116 @@ test("pinned selector handles new hosts even beside a marked old installer", asy
  await execFile("sh",[path.join(entry,"puretokens-skill-fetch.sh"),"install","--host","zcode"],{env});
  assert.ok(await readFile(path.join(env.ZCODE_DATA_BASE_DIR,".zcode/skills/puretokens-image/SKILL.md")));
  const requests=await readFile(path.join(f.root,"requests"),"utf8");
- assert.ok(requests.includes(`/${commit}/runtime/puretokens-skill-install.sh`));
+ assert.ok(requests.includes(`/releases/download/v${version}/puretokens-skill-install.sh`));
+});
+
+test("same-version install and update verify inventories without archive, writes or init", async t => {
+  const f = await fixture(t);
+  const env = await mockDownloads(f);
+  const wrapper = path.join(f.source, "runtime/puretokens-skill-fetch.sh");
+  await execFile("sh", [wrapper, "install", "--target", f.target], {env});
+  async function snapshot(directory) {
+    const result = {};
+    for (const entry of await readdir(directory, {withFileTypes:true})) {
+      const full = path.join(directory, entry.name);
+      if (entry.isDirectory()) result[entry.name] = await snapshot(full);
+      else result[entry.name] = {sha: createHash("sha256").update(await readFile(full)).digest("hex"), mtime:(await stat(full)).mtimeMs};
+    }
+    return result;
+  }
+  const before = await snapshot(f.target);
+  for (const command of ["install", "update"]) {
+    await writeFile(path.join(f.root, "requests"), "");
+    const {stdout} = await execFile("sh", [wrapper, command, "--target", f.target, "--host", "codex"], {env});
+    assert.match(stdout, /already current and verified/);
+    assert.doesNotMatch(stdout, /Pure Tokens Skill init:/);
+    assert.deepEqual(await snapshot(f.target), before);
+    const requests = (await readFile(path.join(f.root, "requests"), "utf8")).trim().split("\n");
+    assert.equal(requests.length, 2);
+    assert.ok(requests.every(url=>!url.endsWith(".zip")));
+  }
+});
+
+test("Gemini same-version verification accepts shared roots, HOME aliases and trailing slashes", async t => {
+  const f = await fixture(t);
+  const env = await mockDownloads(f);
+  const wrapper = path.join(f.source, "runtime/puretokens-skill-fetch.sh");
+  const shared = path.join(f.env.HOME, ".agents/skills");
+  await execFile("sh", [wrapper, "install", "--target", shared], {env});
+  const alias = path.join(f.root, "home-alias");
+  await symlink(f.env.HOME, alias, "dir");
+  for (const [home, target] of [[f.env.HOME, null], [alias, null], [alias, `${shared}/`]]) {
+    await writeFile(path.join(f.root, "requests"), "");
+    const args = [wrapper, "update", "--host", "gemini-cli"];
+    if (target) args.push("--target", target);
+    const {stdout} = await execFile("sh", args, {env:{...env, HOME:home}});
+    assert.match(stdout, /already current and verified/);
+    assert.doesNotMatch(stdout, /Pure Tokens Skill init:/);
+    assert.equal((await readFile(path.join(f.root,"requests"),"utf8")).trim().split("\n").length, 2);
+  }
+});
+
+test("same-version shortcut rejects a newer sync between identity and inventory verification", async t => {
+  const f = await fixture(t);
+  const env = await mockDownloads(f);
+  const wrapper = path.join(f.source, "runtime/puretokens-skill-fetch.sh");
+  await execFile("sh", [wrapper, "install", "--target", f.target], {env});
+  const newer = path.join(f.root, "newer-source");
+  await cp(f.source, newer, {recursive:true});
+  await writeFile(path.join(newer,"package.json"), JSON.stringify({version:"99.0.0"},null,2));
+  await writeFile(path.join(newer,"skills/puretokens-image/newer-marker"),"preserve newer installation");
+  const shim = path.join(f.root, "tools/sh");
+  await writeFile(shim, `#!/bin/sh
+if [ "\${2:-}" = verify-installed ]; then
+  /bin/sh "$PT_NEWER_SOURCE/runtime/puretokens-skill-install.sh" sync --target "$PT_FIXTURE_TARGET" --source "$PT_NEWER_SOURCE" > "$PT_FETCH_FIXTURE/concurrent-update"
+fi
+exec /bin/sh "$@"
+`, {mode:0o755});
+  await writeFile(path.join(f.root,"requests"),"");
+  await assert.rejects(execFile("sh", [wrapper,"update","--target",f.target], {
+    env:{...env, PT_NEWER_SOURCE:newer, PT_FIXTURE_TARGET:f.target}
+  }), error => {
+    assert.match(error.stderr, /installed release changed during verification/);
+    assert.doesNotMatch(error.stdout, /already current and verified/);
+    return true;
+  });
+  assert.equal(JSON.parse(await readFile(path.join(f.target,".puretokens-executor/runtime.json"),"utf8")).version,"99.0.0");
+  assert.equal(await readFile(path.join(f.target,"puretokens-image/newer-marker"),"utf8"),"preserve newer installation");
+  assert.doesNotMatch(await readFile(path.join(f.root,"requests"),"utf8"),/\.zip/);
+});
+
+test("same-version changed or missing files and recovery stages stop without repair", async t => {
+  const f = await fixture(t);
+  const env = await mockDownloads(f);
+  const wrapper = path.join(f.source, "runtime/puretokens-skill-fetch.sh");
+  await execFile("sh", [wrapper, "install", "--target", f.target], {env});
+  const file = path.join(f.target, "puretokens-image/SKILL.md");
+  const original = await readFile(file);
+  for (const change of ["modified", "missing", "stage", "executor"]) {
+    if (change === "modified") await writeFile(file, "user changes");
+    if (change === "missing") await rm(file);
+    const stage = path.join(f.target, ".puretokens-skill-stage.unresolved");
+    if (change === "stage") await mkdir(stage);
+    const binary = path.join(f.target, ".puretokens-executor/puretokens-api");
+    const originalBinary = change === "executor" ? await readFile(binary) : null;
+    if (originalBinary) await writeFile(binary, "invalid executable");
+    await writeFile(path.join(f.root, "requests"), "");
+    await assert.rejects(execFile("sh", [wrapper, "update", "--target", f.target], {env}));
+    assert.doesNotMatch(await readFile(path.join(f.root, "requests"), "utf8"), /\.zip/);
+    if (change === "modified") assert.equal(await readFile(file,"utf8"), "user changes");
+    if (change === "missing") await assert.rejects(stat(file));
+    if (change === "stage") await rm(stage, {recursive:true});
+    if (originalBinary) await writeFile(binary, originalBinary);
+    await writeFile(file, original);
+  }
+});
+
+test("stable selector checksum is verified before execution", async t => {
+  const f = await fixture(t);
+  const env = await mockDownloads(f);
+  const release = JSON.parse(await readFile(path.join(f.root,"release.json"),"utf8"));
+  release.installers.shell.sha256 = "0".repeat(64);
+  await writeFile(path.join(f.root,"release.json"),JSON.stringify(release,null,2));
+  await assert.rejects(execFile("sh",[path.join(f.source,"runtime/puretokens-skill-fetch.sh"),"install","--target",f.target],{env}),/selector checksum mismatch/);
+  await assert.rejects(stat(f.target));
 });

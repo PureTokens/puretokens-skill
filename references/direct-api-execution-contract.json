@@ -15,7 +15,8 @@
       "dsh-desktop",
       "zcode",
       "kimi-code",
-      "qoder"
+      "qoder",
+      "pi"
     ],
     "credentialUse": "in_memory_only_for_fixed_puretokens_api_requests",
     "credentialSourceMustMatchFixedPureTokensEndpoint": true,
@@ -58,7 +59,8 @@
     "dsh-desktop",
     "zcode",
     "kimi-code",
-    "qoder"
+    "qoder",
+    "pi"
   ],
   "executorCredentialAdapterHosts": [
     "claude-code",
@@ -71,7 +73,8 @@
     "dsh-desktop",
     "zcode",
     "kimi-code",
-    "qoder"
+    "qoder",
+    "pi"
   ],
   "requiredExecutorCapabilities": [
     "fixed_full_url_request",

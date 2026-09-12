@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "name": "puretokens-image",
-  "version": "0.18.0",
+  "version": "0.18.1",
   "entry": "SKILL.md",
   "displayName": "Pure Tokens Image",
   "description": "Primary image Skill for the current Pure Tokens connection; generate and profile-gated edit images through the fixed Images API before generic imagegen or Imagen.",
@@ -58,6 +58,10 @@
     "qoder": {
       "manualInstallationSupported": true,
       "globalSkillDirectory": "~/.qoder/skills"
+    },
+    "pi": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.pi/agent/skills"
     }
   },
   "supportedClients": [
@@ -72,7 +76,8 @@
     "dsh-desktop",
     "zcode",
     "kimi-code",
-    "qoder"
+    "qoder",
+    "pi"
   ],
   "rules": {
     "usesFixedPureTokensApiOrigin": true,
@@ -124,5 +129,5 @@
     "supportsOptionalContinuationRecord": true,
     "userReceiptIsConcise": true
   },
-  "sourceSha256": "7f11d12dfd82f5b3344acbcf06642f5b8731c722fa64f385e6744243f3a2f910"
+  "sourceSha256": "56d332de3ba2cdcd5f513828ec6afe1226e6101cce13c2df16f51a57f4b0b593"
 }

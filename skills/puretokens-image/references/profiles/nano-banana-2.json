@@ -2,8 +2,8 @@
   "$schema": "https://puretokensx.com/schemas/model-profile.schema.json",
   "schemaVersion": 1,
   "capability": "image",
-  "catalogUpdatedAt": "2026-09-10",
-  "catalogCapturedAt": "2026-09-10T16:55:34.848Z",
+  "catalogUpdatedAt": "2026-09-12",
+  "catalogCapturedAt": "2026-09-12T02:04:41.893Z",
   "id": "nano-banana-2",
   "parameterSchema": {
     "properties": {
@@ -35,8 +35,6 @@
           "3:2",
           "3:4",
           "4:3",
-          "4:5",
-          "5:4",
           "9:16",
           "16:9",
           "21:9"

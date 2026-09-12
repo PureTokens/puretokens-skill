@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "name": "puretokens-connection",
-  "version": "0.18.0",
+  "version": "0.18.1",
   "entry": "SKILL.md",
   "displayName": "Pure Tokens Connection",
   "description": "Check the fixed Pure Tokens API identity declaration.",
@@ -56,6 +56,10 @@
     "qoder": {
       "manualInstallationSupported": true,
       "globalSkillDirectory": "~/.qoder/skills"
+    },
+    "pi": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.pi/agent/skills"
     }
   },
   "supportedClients": [
@@ -70,7 +74,8 @@
     "dsh-desktop",
     "zcode",
     "kimi-code",
-    "qoder"
+    "qoder",
+    "pi"
   ],
   "rules": {
     "usesFixedPureTokensApiOrigin": true,

@@ -2,16 +2,18 @@
 [CmdletBinding()]
 param(
   [Parameter(Position = 0, Mandatory = $true)]
-  [ValidateSet("check", "init", "sync", "locate")]
+  [ValidateSet("check", "verify-installed", "init", "sync", "locate")]
   [string]$Command,
   [Parameter(Mandatory = $false)]
   [string]$Target,
   [Parameter(Mandatory = $false)]
-  [ValidateSet("claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae", "claude-desktop", "dsh-desktop", "zcode", "kimi-code", "qoder")]
+  [ValidateSet("claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae", "claude-desktop", "dsh-desktop", "zcode", "kimi-code", "qoder", "pi")]
   [Alias("Host")]
   [string]$HostId,
   [Parameter(Mandatory = $false)]
-  [string]$Source
+  [string]$Source,
+  [Parameter(Mandatory = $false)]
+  [string]$ReleaseManifest
 )
 
 $ErrorActionPreference = "Stop"
@@ -45,7 +47,7 @@ function Invoke-NativeExecutor([string]$Executable, [string[]]$ArgumentList) {
     # Drain both pipes concurrently; errors cannot block behind a full pipe.
     $stdout = $process.StandardOutput.ReadToEndAsync()
     $stderr = $process.StandardError.ReadToEndAsync()
-    $timeoutMs = if ($ArgumentList[0] -eq "init") { 195000 } else { 30000 }
+    $timeoutMs = if ($ArgumentList[0] -eq "init") { 25000 } else { 30000 }
     if (-not $process.WaitForExit($timeoutMs)) {
       try { $process.Kill(); $null = $process.WaitForExit(5000) } catch { }
       Fail "native executor timed out; stop this installation attempt and report the stage; do not retry or modify the installer"
@@ -89,7 +91,7 @@ function Assert-OwnedInstallation([string]$Directory, [string]$Name, [string]$So
 }
 
 function Get-ExecutorPlatform() {
-  $architecture = [System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant()
+  $architecture = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant()
   switch ($architecture) {
     "x64" { return "windows-amd64" }
     "arm64" { return "windows-arm64" }
@@ -126,7 +128,6 @@ function Test-OfficialSource([string]$SourceRoot) {
   if (-not (Test-Path -LiteralPath (Join-Path $SourceRoot "runtime\puretokens-skill-install.ps1") -PathType Leaf)) { Fail "official source is missing the Windows installer" }
   if (-not (Test-Path -LiteralPath (Join-Path $SourceRoot "runtime\puretokens-skill-fetch.ps1") -PathType Leaf)) { Fail "official source is missing the download wrapper" }
   $null = Get-ExecutorArtifact $SourceRoot
-  if (-not (Test-Path -LiteralPath (Join-Path $SourceRoot "runtime\puretokens-skill-install.sh") -PathType Leaf)) { Fail "official source is missing the macOS/Linux installer" }
   foreach ($name in $currentSkills) {
     if (-not (Test-ManagedSkill (Join-Path (Join-Path $SourceRoot "skills") $name) $name)) { Fail "official source has an invalid Skill: $name" }
   }
@@ -140,6 +141,42 @@ function Test-InstalledTarget([string]$TargetRoot) {
   if (-not (Test-ManagedExecutor (Join-Path $TargetRoot ".puretokens-executor"))) { Fail "target is missing the managed native executor" }
 }
 
+function Confirm-ReleaseIdentity([string]$TargetRoot) {
+  if ([string]::IsNullOrWhiteSpace($ReleaseManifest)) { return }
+  try {
+    $release = Get-Content -LiteralPath $ReleaseManifest -Raw -Encoding UTF8 | ConvertFrom-Json
+    $installed = Get-Content -LiteralPath (Join-Path $TargetRoot ".puretokens-executor/runtime.json") -Raw -Encoding UTF8 | ConvertFrom-Json
+  } catch { Fail "release identity is unreadable; existing files were preserved" }
+  $platform = Get-ExecutorPlatform
+  $artifact = $release.files.PSObject.Properties[$platform].Value
+  if ($release.version -cnotmatch '^\d+\.\d+\.\d+$' -or $null -eq $artifact -or $artifact.executorSha256 -cnotmatch '^[0-9a-f]{64}$') { Fail "selected release identity is invalid" }
+  if ($installed.version -cne $release.version -or $installed.platform -cne $platform) { Fail "installed release changed during verification; existing files were preserved" }
+  $executor = Join-Path $TargetRoot ".puretokens-executor/puretokens-api.exe"
+  if (-not (Test-Path -LiteralPath $executor -PathType Leaf) -or ((Get-Item -LiteralPath $executor).Attributes -band [IO.FileAttributes]::ReparsePoint)) { Fail "installed executor is missing or unsupported; existing files were preserved" }
+  if ((Get-FileHash -LiteralPath $executor -Algorithm SHA256).Hash.ToLowerInvariant() -cne $artifact.executorSha256) { Fail "installed executor changed during verification; existing files were preserved" }
+}
+
+function Confirm-InstalledInventories([string]$TargetRoot) {
+  $TargetRoot = (Resolve-Path -LiteralPath $TargetRoot).Path
+  $readLock = $null
+  try {
+    $lockFile = Join-Path $TargetRoot ".puretokens-install.lock"
+    if (Test-InstallationEntry $lockFile) {
+      try { $readLock = [IO.File]::Open($lockFile, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::None) }
+      catch { Fail "installation transaction requires review; existing files were preserved" }
+    }
+    Test-InstalledTarget $TargetRoot
+    if (@(Get-ChildItem -LiteralPath $TargetRoot -Force -Filter ".puretokens-skill-stage-*").Count -gt 0) { Fail "installation transaction requires review; existing files were preserved" }
+    Test-GeminiDuplicates $TargetRoot
+    Confirm-ReleaseIdentity $TargetRoot
+    $script:ownershipGuard = Join-Path $TargetRoot ".puretokens-executor/puretokens-api.exe"
+    foreach ($name in ($currentSkills + @(".puretokens-executor"))) {
+      Assert-OwnedInstallation (Join-Path $TargetRoot $name) $name
+    }
+    Confirm-ReleaseIdentity $TargetRoot
+  } finally { if ($null -ne $readLock) { $readLock.Dispose() } }
+  Write-Output "Pure Tokens installed inventories verified; no files changed and init was not run."
+}
 function Show-UsageGuide([string]$TargetRoot) {
   $guide = Join-Path (Join-Path $TargetRoot "puretokens-update") "references\usage-guide.md"
   if (Test-Path -LiteralPath $guide -PathType Leaf) {
@@ -191,6 +228,12 @@ function Get-TargetForHost([string]$RequestedHost) {
     "kimi-code" {
       if ($env:KIMI_CODE_HOME) { return (Join-Path $env:KIMI_CODE_HOME "skills") }
       return (Join-Path $env:USERPROFILE ".kimi-code\skills")
+    }
+    "pi" {
+      $piRoot = if ($env:PI_CODING_AGENT_DIR) { $env:PI_CODING_AGENT_DIR } else { Join-Path $env:USERPROFILE ".pi\agent" }
+      if ($piRoot -notmatch '^(?:[A-Za-z]:[\\/]|[\\/]{2}[^\\/]+[\\/][^\\/]+(?:[\\/]|$))') { Fail "Pi agent directory must be absolute" }
+      if (($piRoot -split '[\\/]') -contains '..') { Fail "Pi agent directory must not contain parent traversal" }
+      return (Join-Path $piRoot "skills")
     }
     "qoder" {
       if ($env:QODER_CONFIG_DIR) { return (Join-Path $env:QODER_CONFIG_DIR "skills") }
@@ -268,9 +311,16 @@ $stageRoot = $null
 $updateLock = $null
 try {
   if ([string]::IsNullOrWhiteSpace($Target) -and [string]::IsNullOrWhiteSpace($HostId)) { Fail "-Host or -Target is required" }
+  if ($HostId -eq "pi") { $null = Get-TargetForHost $HostId }
   if ([string]::IsNullOrWhiteSpace($Target)) { $Target = Get-TargetForHost $HostId }
   if (-not [System.IO.Path]::IsPathRooted($Target)) { Fail "-Target must be an absolute Skill directory" }
+  if ($ReleaseManifest -and ($Command -ne "verify-installed" -or -not (Test-Path -LiteralPath $ReleaseManifest -PathType Leaf))) { Fail "release manifest is only supported for installed verification" }
   if ($Command -eq "locate") { Write-Output $Target; exit 0 }
+
+  if ($Command -eq "verify-installed") {
+    Confirm-InstalledInventories $Target
+    exit 0
+  }
 
   if ($Command -eq "init") {
     $targetRoot = (Resolve-Path -LiteralPath $Target).Path

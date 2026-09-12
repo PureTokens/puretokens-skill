@@ -66,11 +66,13 @@ for (const [platform, artifact] of Object.entries(manifest.artifacts)) {
     const bundle = path.join(temp, "puretokens-skill");
     await mkdir(path.join(bundle, "runtime/executor/bin"), { recursive: true });
     await cp(path.join(root, "skills"), path.join(bundle, "skills"), { recursive: true });
-    for (const file of publicFiles) await cp(path.join(root, file), path.join(bundle, file));
+    const extension = platform.startsWith("windows-") ? ".ps1" : ".sh";
+    const platformFiles = publicFiles.filter(file => !file.startsWith("runtime/") || file.endsWith(extension));
+    for (const file of platformFiles) await cp(path.join(root, file), path.join(bundle, file));
     const binary = await readFile(path.join(root, "runtime/executor", artifact.path));
     if (createHash("sha256").update(binary).digest("hex") !== artifact.sha256) throw new Error(`Binary checksum mismatch: ${platform}`);
     await writeFile(path.join(bundle, "runtime/executor", artifact.path), binary, { mode: 0o755 });
-    const expectedBundle = new Map([...sourceSnapshot].filter(([file]) => file.startsWith("skills/") || publicFiles.includes(file) || file === `runtime/executor/${artifact.path}`));
+    const expectedBundle = new Map([...sourceSnapshot].filter(([file]) => file.startsWith("skills/") || platformFiles.includes(file) || file === `runtime/executor/${artifact.path}`));
     if (!sameSnapshot(await snapshot(bundle, ["README.md", "package.json", "skills", "runtime"]), expectedBundle)) sourceCommit = null;
     await writeFile(path.join(bundle, "runtime/executor/manifest.json"), JSON.stringify({ ...manifest, artifacts: { [platform]: artifact } }, null, 2));
     const name = `puretokens-skill-${manifest.version}-${platform}.zip`;
@@ -83,11 +85,19 @@ for (const [platform, artifact] of Object.entries(manifest.artifacts)) {
       await rename(temporaryArchive, path.join(destination, name));
     } finally { await rm(temporaryArchive, { force: true }); }
     const bytes = await readFile(path.join(destination, name));
-    files[platform] = { filename: name, sha256: createHash("sha256").update(bytes).digest("hex"), bytes: bytes.length };
+    files[platform] = { filename: name, sha256: createHash("sha256").update(bytes).digest("hex"), bytes: bytes.length, executorSha256: artifact.sha256 };
   } finally { await rm(temp, { recursive: true, force: true }); }
 }
+const installers = {};
+for (const [system, extension] of [["shell", "sh"], ["powershell", "ps1"]]) {
+  const filename = `puretokens-skill-install.${extension}`;
+  const bytes = await readFile(path.join(root, "runtime", filename));
+  await writeFile(path.join(destination, filename), bytes);
+  await cp(path.join(root, "runtime", `puretokens-skill-fetch.${extension}`), path.join(destination, `puretokens-skill-fetch.${extension}`));
+  installers[system] = { filename, sha256: createHash("sha256").update(bytes).digest("hex") };
+}
 if (!sameSnapshot(sourceSnapshot, await snapshot(root, sourceScopes)) || matchingCommit(sourceSnapshot) !== sourceCommit) sourceCommit = null;
-await writeFile(path.join(destination, "release-manifest.json"), `${JSON.stringify({ version: manifest.version, sourceCommit, files }, null, 2)}\n`);
+await writeFile(path.join(destination, "release-manifest.json"), `${JSON.stringify({ schemaVersion: 2, version: manifest.version, sourceCommit, installers, files }, null, 2)}\n`);
 console.log(sourceCommit
   ? `Prepared ${Object.keys(files).length} platform-only releases matching source commit ${sourceCommit}.`
   : `Prepared ${Object.keys(files).length} draft platform candidates. sourceCommit is unavailable because source/build inputs are not verified against a clean commit; fetch will not select these as published assets.`);

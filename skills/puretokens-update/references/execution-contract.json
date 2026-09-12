@@ -4,7 +4,8 @@
   "kind": "update",
   "transport": {
     "localSkillManager": true,
-    "usesOfficialMainBranch": true,
+    "usesVerifiedStableRelease": true,
+    "doesNotFallBackToSourceArchive": true,
     "doesNotUseCustomInstallPayload": true,
     "doesNotReadCredentialsOrHostConfiguration": true,
     "requiresPinnedOfficialSourceRevision": true,
@@ -14,18 +15,21 @@
     "sync": {
       "commandTemplate": "native_fetch install_or_update --host <current-supported-host>",
       "sourceRepository": "https://github.com/PureTokens/puretokens-skill.git",
-      "sourceBranch": "main",
-      "validationCommand": "pin_main_revision_verify_matching_platform_package_or_pinned_source_then_native_sync",
-      "directorySelector": "download_from_the_same_pinned_commit_never_reuse_a_sibling_by_marker"
+      "releaseManifest": "https://github.com/PureTokens/puretokens-skill/releases/latest/download/release-manifest.json",
+      "validationCommand": "pin_stable_manifest_verify_selector_and_platform_package_then_native_sync",
+      "directorySelector": "download_checksum_verified_selector_from_the_same_stable_release",
+      "sameVersion": "verify_release_executor_checksum_and_all_managed_inventories_then_no_download_sync_or_init"
     },
     "init": {
       "commandTemplate": "native_executor init --host <current-supported-host>",
       "checks": "public_identity_then_one_authenticated_catalog_check_without_displaying_configuration",
+      "totalDeadlineSeconds": 20,
+      "maxRequests": 2,
       "usageGuide": "references/usage-guide.md"
     },
     "checkUpdate": {
       "commandTemplate": "native_fetch check-update --host <current-supported-host>",
-      "checks": "pinned_official_version_and_managed_installed_version_without_sync_or_init"
+      "checks": "stable_release_manifest_verified_selector_and_managed_installed_version_without_sync_or_init"
     },
     "help": {
       "source": "references/usage-guide.md",

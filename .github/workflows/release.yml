@@ -29,12 +29,10 @@ jobs:
       # compared bytes. Package the verified committed artifacts.
       - name: Package the checked-out revision
         run: GITHUB_SHA="$(git rev-parse HEAD)" npm run release:package
-      - name: Require committed distribution and build inputs
-        run: node -e 'const m=require("./dist/releases/release-manifest.json");if(!m.sourceCommit)throw new Error("Draft candidates cannot be promoted. Commit matching source, build inputs and generated executors first.")'
+      - name: Verify all archives and committed source before promotion
+        run: npm run release:verify -- --publishable
       - uses: actions/upload-artifact@v4
         with:
           name: pinned-platform-release-candidates
           path: |
             dist/releases/*
-            runtime/puretokens-skill-fetch.sh
-            runtime/puretokens-skill-fetch.ps1

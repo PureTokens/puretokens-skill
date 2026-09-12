@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -19,18 +20,21 @@ func TestAttachmentChangesFailBeforeOrDuringTransmission(t *testing.T) {
 			if err := validateTaskRequest(req); err != nil {
 				t.Fatal(err)
 			}
-			mutate := func() {
+			mutate := func() error {
 				switch change {
 				case "grow":
-					os.Truncate(path, attachmentLimit("image")+100)
+					return os.Truncate(path, attachmentLimit("image")+100)
 				case "shrink":
-					os.Truncate(path, 1)
+					return os.Truncate(path, 1)
 				case "replace":
-					os.Remove(path)
-					os.WriteFile(path, []byte("different"), 0600)
+					if err := os.Remove(path); err != nil {
+						return err
+					}
+					return os.WriteFile(path, []byte("different"), 0600)
 				case "same-size":
-					os.WriteFile(path, []byte("modified-data"), 0600)
+					return os.WriteFile(path, []byte("modified-data"), 0600)
 				}
+				return fmt.Errorf("unknown mutation: %s", change)
 			}
 			// Hold and hash verified handles, then change input before streaming.
 			files, err := openAttachments(req)
@@ -38,15 +42,28 @@ func TestAttachmentChangesFailBeforeOrDuringTransmission(t *testing.T) {
 				t.Fatal(err)
 			}
 			defer closeAttachments(files)
-			mutate()
-			err = files[0].copyTo(io.Discard)
-			// Replacement after opening retains the verified original handle and bytes.
-			if change == "replace" {
-				if err != nil {
-					t.Fatal("original descriptor must remain valid", err)
+			var streamed bytes.Buffer
+			if err := mutate(); err != nil {
+				if change != "replace" || runtime.GOOS != "windows" {
+					t.Fatal("fixture mutation failed", err)
 				}
-			} else if err == nil {
-				t.Fatal("changed stream accepted")
+				// Windows may deny deletion while a verified handle is open.
+				if err := files[0].copyTo(&streamed); err != nil || streamed.String() != "original-data" {
+					t.Fatal("blocked replacement changed the original attachment", err)
+				}
+				closeAttachments(files)
+				if err := mutate(); err != nil {
+					t.Fatal("replacement still failed after closing the handle", err)
+				}
+			} else {
+				err = files[0].copyTo(&streamed)
+				if change == "replace" {
+					if err != nil || streamed.String() != "original-data" {
+						t.Fatal("replacement changed the held original attachment", err)
+					}
+				} else if err == nil {
+					t.Fatal("changed stream accepted")
+				}
 			}
 			if _, _, body, err := taskRequestBody(req); err == nil {
 				body.(io.Closer).Close()

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -27,6 +28,9 @@ func validDownloadProof(proof downloadProof, kind string) bool {
 
 func fingerprintDownload(path, mediaType string) (downloadProof, error) {
 	var proof downloadProof
+	if !filepath.IsAbs(path) {
+		return proof, errors.New("download is not a local absolute path")
+	}
 	if !validMediaFile(path, mediaType) {
 		return proof, errors.New("download is not valid media")
 	}

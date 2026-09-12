@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { repositoryRoot } from "./skill-registry.mjs";
+import { supplementReviewedParameters } from "./reviewed-media-supplements.mjs";
 
 const catalogPath = path.join(
   repositoryRoot,
@@ -155,7 +156,7 @@ export function buildPublishedCatalog(previous, models, args) {
       aliases: editorial.aliases || [],
       goodFor: editorial.goodFor || genericCopy(model.id, model.capabilities).goodFor,
       example: editorial.example || genericCopy(model.id, model.capabilities).example,
-      ...(model.parameterSchema ? { parameterSchema: model.parameterSchema } : {})
+      ...(model.parameterSchema ? { parameterSchema: supplementReviewedParameters(model) } : {})
     };
   }).sort((left, right) => left.id.localeCompare(right.id, "en", { numeric: true }));
   const capturedAt = args.capturedAt || new Date().toISOString();
@@ -168,10 +169,16 @@ export function buildPublishedCatalog(previous, models, args) {
       capturedAt
     },
     availabilityNotice: {
-      en: "This list is generated from Pure Tokens' base model catalog using explicit image/video capabilities. At execution time, the exact model and required capability must still appear in the authenticated GET https://api.puretokensx.com/v1/media/models response.",
-      zh: "这份清单由 Pure Tokens 基础模型目录中的明确图片/视频能力生成。实际执行时，精确模型和所需能力仍必须出现在认证后的 GET https://api.puretokensx.com/v1/media/models 响应中。"
+      en: "This list is an installed selection aid, not a per-request authorization check. Ordinary generation reads only the selected profile; live discovery is limited to explicit requests, profile gaps or rejection diagnosis. Reviewed local compatibility supplements are separately sourced.",
+      zh: "这份清单用于安装后的模型选择，不是每次请求的认证检查。普通生成只读选中 profile；仅明确查询、profile 缺口或拒绝诊断时读取实时目录。经审查的本地兼容补充定义单独注明来源。"
     },
-    models: normalized
+    models: normalized,
+    localMetadataRevision: {
+      date: "2026-09-12",
+      source: "references/media-parameter-review.md; scripts/reviewed-media-supplements.mjs",
+      retainedAfterCatalogRefresh: ["Seedance first/last frame operations and exclusive reference constraints when both frame fields remain declared"],
+      note: "Local compatibility additions are not claimed as returned by the public catalog or as live availability proof."
+    }
   };
 }
 

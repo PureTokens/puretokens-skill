@@ -6,7 +6,7 @@
     {
       "id": "update-init",
       "when": "the user explicitly asks to initialize or verify the current connection",
-      "then": "invoke init once for public identity followed by one authenticated catalog read; separate credential verification from identity and show only the relevant sanitized result"
+      "then": "invoke init once for public identity followed by one authenticated catalog read, sharing one 20-second total deadline without retries; separate credential verification from identity and show only the relevant sanitized result"
     },
     {
       "id": "update-local-connection-failure-stops-host-probing",
@@ -20,7 +20,7 @@
     },
     {
       "id": "update-host-unknown",
-      "when": "the active host cannot be identified as Claude Code, Codex, WorkBuddy, Gemini CLI, Grok Build, OpenCode, or Trae",
+      "when": "the active host cannot be identified as one of the registered supported hosts",
       "then": "Ask which supported host the user is using; do not guess the host or its configuration/Skill directory."
     },
     {
@@ -31,16 +31,16 @@
     {
       "id": "update-fresh-source-checkout",
       "when": "an official Skill install or update is requested",
-      "then": "Use the official native fetch wrapper, installed or freshly downloaded to a local file. It pins official main to one commit and version, selects matching checksum-verified platform assets or retrieves that exact official source archive, then invokes its sync. No third-party mirror, remote shell pipe or user runtime installation."
+      "then": "Use the official native fetch wrapper, installed or freshly downloaded from the stable release to a local file. Pin the stable manifest version and source commit, verify its selector and current-platform archive, then invoke native sync. No main/source archive fallback, third-party mirror, remote shell pipe or user runtime installation."
     },
     {
       "id": "update-source-acquisition-unavailable",
-      "when": "the official pinned package/source cannot be downloaded or the native installer cannot execute",
+      "when": "the stable manifest, selector or platform archive cannot be downloaded or the native installer cannot execute",
       "then": "Report the actual failure and stop before installed-file writes. Do not install Git, Node, Python, Go, dependencies or an alternate transport."
     },
     {
       "id": "update-validation-failed",
-      "when": "the pinned official package or source fails checksum or source validation",
+      "when": "the stable selector or platform archive fails checksum or source validation",
       "then": "report the validation failure and stop before changing installed Skills. Do not run Node, npm packages, generators, docs sync, formatters, repair commands, Git writes, or any other source-mutating command to make the official checkout pass."
     },
     {
@@ -66,7 +66,7 @@
     {
       "id": "update-check-only",
       "when": "the user asks whether an update exists",
-      "then": "Run fetch check-update for the current host. It reads the pinned official version and managed installed version without synchronization or init. Report a difference without claiming that files changed."
+      "then": "Run fetch check-update for the current host. It reads the stable manifest and verified selector to compare the installed version without synchronization or init. A matching version alone does not prove installed integrity."
     },
     {
       "id": "update-doctor",
@@ -81,7 +81,12 @@
     {
       "id": "old-marked-selector-new-host",
       "when": "a sibling installer carries the old locate marker but does not support the requested host",
-      "then": "download and use the directory selector from the same pinned source commit; never reuse the sibling based only on its marker"
+      "then": "download and checksum-verify the directory selector from the same stable release; never reuse the sibling based only on its marker"
+    },
+    {
+      "id": "same-version-verified",
+      "when": "install or update finds the selected stable version already installed",
+      "then": "Verify the selected release executor checksum and all seven managed inventories. Only an intact installation with no unresolved transaction returns already current, without archive download, file writes or init. Missing or modified files stop without automatic repair."
     },
     {
       "id": "install-host-launch-failure",

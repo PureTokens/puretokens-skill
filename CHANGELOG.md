@@ -4,6 +4,18 @@
 
 # Changelog
 
+## 0.18.1 - 2026-09-12
+
+- Default installation now resolves a verified stable release manifest and downloads only the current OS/architecture archive. Missing releases never fall back to main or a full source archive; explicit local source sync remains available.
+- Same-version install/update verifies the selected executor and every managed inventory, then skips archive download, writes and init. Changed/missing files stop without automatic repair.
+- Give installation init one 20-second total deadline across both read-only checks. Preserve successful file installation when connection verification fails.
+- Package only the current system's scripts; validate all six archives and uploaded draft assets before explicit stable publication. Pending real-host acceptance blocks stable promotion, not local development checks.
+
+- Complete Pi registration, media entry guidance and installation lifecycle coverage. Resolve endpoint-verified inline authentication in its effective order; reject unsupported references and unrepresented higher-priority authentication without falling back.
+- Preserve completed delivery on task resume. Accept copied Windows/POSIX task metadata while requiring local absolute paths and matching byte proofs for attachment handoff; rebind downloads only through an explicit output directory.
+- Select Windows executors by OS architecture, including 32-bit PowerShell on 64-bit Windows. Align Pi root validation across installers and executor; add Unicode/space-path and invalid-root regressions.
+- Enforce immutable distribution versions in the maintainer release gate and disable cached Go test results in the engineering gate. Real-host installation, API and full media delivery remain separate evidence levels, not inferred from fixtures.
+
 ## 0.18.0 — 2026-09-07
 
 - Refresh the official media catalog to 23 models, adding grok-imagine, grok-imagine-1 and grok-video-1.5; retain separately sourced, previously approved Nano Banana ratios and Seedance frame operations.

@@ -11,9 +11,11 @@ description: 当前宿主使用 Pure Tokens 连接时，任何生成或编辑图
 
 当前宿主上下文选择 Pure Tokens 或用户明确指定时，必须调用安装的原生执行器；它是唯一 API 传输，固定请求 `https://api.puretokensx.com`。不得自行发 HTTP，不回退到 imagegen／Imagen／通用视频 Skill、MCP、代理、Computer Use 或浏览器／桌面自动化。仅执行器在内存中使用当前宿主匹配连接；Skill 不读配置、不传或展示凭据。不需要用户安装 Node、Python、Go 或 Desktop。
 
-从本 SKILL.md 绝对目录解析 `../.puretokens-executor/puretokens-api`，Windows 使用 `puretokens-api.exe`；不依赖 PATH 或工作目录。当前宿主 ID 为 codex、claude-code、workbuddy、gemini-cli、grok-build、opencode、trae、claude-desktop、dsh-desktop、zcode、kimi-code 或 qoder，不借用其他宿主连接。远程／沙箱不能访问执行器、连接或附件时报告实际限制，不复制凭据或换传输。
+从本 SKILL.md 绝对目录解析 `../.puretokens-executor/puretokens-api`，Windows 使用 `puretokens-api.exe`；不依赖 PATH 或工作目录。当前宿主 ID 为 codex、claude-code、workbuddy、gemini-cli、grok-build、opencode、trae、claude-desktop、dsh-desktop、zcode、kimi-code、qoder 或 pi，不借用其他宿主连接。远程／沙箱不能访问执行器、连接或附件时报告实际限制，不复制凭据或换传输。
 
 ## 选择与提交
+
+当前宿主若已明确无法提供本次附件字节或交付所需媒体，提交前停止并说明限制，不创建付费任务。注册、安装、init 或 API 成功都不能证明附件能力；验收待完成也不等于当前宿主已确定不支持。
 
 1. 默认模型 `gpt-image-2` 或用户给定精确 ID：直接读选中的 `references/profiles/<model>.json`。需要选模型、解析别名时才读 `references/model-index.json`，别名必须唯一。不读取所有 profile，也不先查余额、init、doctor、preflight 或实时目录。未知精确 ID 的纯文本请求可只传 model/prompt；字段／操作缺口由执行器按需读取一次目录，查询目录不代替提交权限。
 2. 只发送 profile 声明的字段、值和 operation；保留用户意图。物理尺寸仅用于比例／输出限制说明，不直接作为 API 尺寸。图片参考／编辑用途不明确时才澄清。本地参考或编辑使用 profile 的 `image_edit`；`gpt-image-2` 使用 `https://api.puretokensx.com/v1/images/edits`、`media_operation: "image_edit"` 和 `image` 字段；公网参考使用 generations 的 `parameters.image`。数量只用 profile 的 `n`，`requested_count` 可省略由 n 推导，提供时必须一致。多个不同设计不能擅自拆成付费任务，先确认本次设计。
@@ -32,7 +34,7 @@ description: 当前宿主使用 Pure Tokens 连接时，任何生成或编辑图
 
 附件交付失败只重交已有文件，不重新生成或下载。已完成且 `reconciliation_required` 不为 true 的记录用 `resume --host <host> --record <文件>` 本地校验并返回待交付文件；此分支不读凭据、不请求 API。按 `next_step=deliver` 交付；缺失有效证明时保留原文件、另选输出目录取同任务索引。跨命令复用须匹配记录中的 SHA-256、字节数和媒体类型。无记录且文件仍是本会话刚下载的原文件，可重交；无法确认则保留文件、另选输出目录取同任务同索引，不声称已交付。宿主无法提供附件时说明“已生成并下载，当前宿主无法交付附件”。
 
-对账不自动续等；用户明确继续时，记录式 resume 只查询原任务一次，按实际结果更新标记。记录不能恢复无 ID 的未知提交，不手改记录或提前标记 delivered。
+已全部交付的记录恢复后返回 done，不再下载。换电脑或系统时保留原记录；旧文件不可用时，用 content 的 --output-dir 明确选择新电脑上的现有绝对目录，只取同任务未交付索引，不手改记录或复制凭据。对账不自动续等；用户明确继续时，记录式 resume 只查询原任务一次，按实际结果更新标记。记录不能恢复无 ID 的未知提交，不手改记录或提前标记 delivered。
 
 ## 按需说明
 

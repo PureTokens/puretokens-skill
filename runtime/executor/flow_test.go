@@ -175,6 +175,14 @@ func TestRecordedFlowReattachesWithoutRefetchOrResubmission(t *testing.T) {
 	}
 	// This fixture simulates acknowledgement; it is not real-host acceptance.
 	invoke("delivered", taskRequest{}, "done")
+	invoke("resume", taskRequest{}, "done")
+	out.Reset()
+	if err := run([]string{"resume", "--host", "fixture-unsupported", "--record", recordPath}, strings.NewReader(""), &out); err != nil {
+		t.Fatal(err)
+	}
+	if result := decodeReceipt(t, &out); result.NextStep != "done" || result.DeliveryStatus != "delivered" {
+		t.Fatal("fully delivered task was not restored as done")
+	}
 	if posts != 1 || reads != 41 || downloads != 1 {
 		t.Fatalf("duplicated work: posts=%d status=%d content=%d", posts, reads, downloads)
 	}

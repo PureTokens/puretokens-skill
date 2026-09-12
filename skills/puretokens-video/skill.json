@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "name": "puretokens-video",
-  "version": "0.18.0",
+  "version": "0.18.1",
   "entry": "SKILL.md",
   "displayName": "Pure Tokens Video",
   "description": "Primary video Skill for the current Pure Tokens connection; generate and profile-gated animate, reference, or edit video through the fixed Videos API before generic video Skills.",
@@ -58,6 +58,10 @@
     "qoder": {
       "manualInstallationSupported": true,
       "globalSkillDirectory": "~/.qoder/skills"
+    },
+    "pi": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.pi/agent/skills"
     }
   },
   "supportedClients": [
@@ -72,7 +76,8 @@
     "dsh-desktop",
     "zcode",
     "kimi-code",
-    "qoder"
+    "qoder",
+    "pi"
   ],
   "rules": {
     "usesFixedPureTokensApiOrigin": true,
@@ -123,5 +128,5 @@
     "supportsOptionalContinuationRecord": true,
     "userReceiptIsConcise": true
   },
-  "sourceSha256": "28a11a7584034856653646eb1d2b609f88bd6686a22767771714d84531485738"
+  "sourceSha256": "caa8e70adad2dde57d2cd75df3573e7e0c646b18266c105205ebf484a48e3f92"
 }

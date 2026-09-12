@@ -8,14 +8,30 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"unicode"
 )
 
 func kimiQoderRoot(host, home string, getenv func(string) string) (string, error) {
-	if host != "kimi-code" && host != "qoder" {
+	if host != "kimi-code" && host != "qoder" && host != "pi" {
 		return "", errors.New("unsupported host")
 	}
 	if !filepath.IsAbs(home) {
 		return "", errors.New("host directory unavailable")
+	}
+	if host == "pi" {
+		root := getenv("PI_CODING_AGENT_DIR")
+		if root == "" {
+			root = filepath.Join(home, ".pi", "agent")
+		}
+		if !filepath.IsAbs(root) {
+			return "", errors.New("host directory unavailable")
+		}
+		for _, part := range strings.Split(filepath.ToSlash(root), "/") {
+			if part == ".." {
+				return "", errors.New("host directory unavailable")
+			}
+		}
+		return root, nil
 	}
 	if host == "kimi-code" {
 		root := getenv("KIMI_CODE_HOME")
@@ -50,6 +66,93 @@ func kimiQoderRoot(host, home string, getenv func(string) string) (string, error
 	return filepath.Join(base, name), nil
 }
 
+func readPiObject(path string) (map[string]any, error) {
+	data, err := readBoundedFile(path, maxConfigBytes)
+	if err != nil {
+		return nil, err
+	}
+	defer clear(data)
+	decoder := json.NewDecoder(bytes.NewReader(bytes.TrimPrefix(data, []byte{0xef, 0xbb, 0xbf})))
+	value, err := decodeUniqueConfigValue(decoder, 0)
+	if err != nil || jsonObject(value) == nil {
+		return nil, credentialFailure("active_connection_format_unsupported", "The Pi connection record could not be interpreted; no API request was sent.", "")
+	}
+	if _, err := decoder.Token(); err != io.EOF {
+		return nil, credentialFailure("active_connection_format_unsupported", "The Pi connection record is unreadable.", "")
+	}
+	return jsonObject(value), nil
+}
+
+func credentialFromPiFile(path string) (string, error) {
+	document, err := readPiObject(path)
+	if err != nil {
+		return "", err
+	}
+	providers := jsonObject(document["providers"])
+	var p map[string]any
+	var providerID string
+	for id, raw := range providers {
+		candidate := jsonObject(raw)
+		if !matchesPureTokensEndpoint(jsonString(candidate["baseUrl"]), "/v1", "/v1/") {
+			continue
+		}
+		if p != nil {
+			return "", credentialFailure("active_connection_ambiguous", "The Pi adapter cannot safely select one matching saved connection.", "")
+		}
+		p = candidate
+		providerID = id
+	}
+	if p == nil {
+		return "", credentialFailure("active_connection_selection_unconfirmed", "The Pi adapter could not recognize a matching saved connection; no API request was sent.", "")
+	}
+	if jsonString(p["api"]) != "openai-completions" {
+		return "", credentialFailure("active_connection_format_unsupported", "The Pi Pure Tokens provider uses an unsupported API format; no API request was sent.", "")
+	}
+	// The ID links this endpoint-verified entry to its higher-priority auth
+	// record. It is never used as evidence of the service's identity.
+	auth, err := readPiObject(filepath.Join(filepath.Dir(path), "auth.json"))
+	if err != nil && !os.IsNotExist(err) {
+		return "", credentialFailure("active_connection_format_unsupported", "The Pi effective authentication record could not be interpreted; no API request was sent.", "")
+	}
+	if value, exists := auth[providerID]; exists {
+		entry := jsonObject(value)
+		if jsonString(entry["type"]) != "api_key" {
+			return "", credentialFailure("active_connection_format_unsupported", "The Pi effective authentication format is not supported; no fallback credential was used.", "")
+		}
+		return piInlineCredential(jsonString(p["baseUrl"]), jsonString(entry["key"]))
+	}
+	if piBuiltinEnvironmentAuth(providerID) {
+		return "", credentialFailure("active_connection_selection_unconfirmed", "The Pi effective authentication may override the saved inline value; no fallback credential was used.", "")
+	}
+	return piInlineCredential(jsonString(p["baseUrl"]), jsonString(p["apiKey"]))
+}
+
+func piInlineCredential(endpoint, token string) (string, error) {
+	if strings.Contains(token, "$") || strings.HasPrefix(strings.TrimSpace(token), "!") ||
+		strings.IndexFunc(token, unicode.IsControl) >= 0 {
+		return "", credentialFailure("active_connection_format_unsupported", "Pi dynamic or escaped credential values are not supported; no API request was sent.", "")
+	}
+	return inlineHostCredential(endpoint, token)
+}
+
+// Pi 71dca871: packages/ai/src/env-api-keys.ts. These IDs can resolve
+// authentication before models.json. Refuse that fallback without reading env.
+func piBuiltinEnvironmentAuth(id string) bool {
+	switch id {
+	case "github-copilot", "anthropic", "amazon-bedrock",
+		"ant-ling", "qwen-token-plan", "qwen-token-plan-cn", "qwen-token-plan-individual",
+		"openai", "google", "groq", "cerebras", "xai", "openrouter",
+		"vercel-ai-gateway", "zai", "zai-coding-cn", "mistral", "minimax", "minimax-cn",
+		"huggingface", "opencode", "opencode-go", "kimi-coding",
+		"moonshotai", "moonshotai-cn", "nvidia", "deepseek", "radius", "baseten",
+		"xiaomi", "together", "fireworks", "xiaomi-token-plan-cn",
+		"xiaomi-token-plan-ams", "xiaomi-token-plan-sgp", "google-vertex",
+		"azure-openai-responses", "cloudflare-workers-ai", "cloudflare-ai-gateway":
+		return true
+	}
+	return false
+}
+
 func credentialFromNewHost(host string) (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -58,6 +161,9 @@ func credentialFromNewHost(host string) (string, error) {
 	root, err := kimiQoderRoot(host, home, os.Getenv)
 	if err != nil {
 		return "", err
+	}
+	if host == "pi" {
+		return credentialFromPiFile(filepath.Join(root, "models.json"))
 	}
 	if host == "kimi-code" {
 		return credentialFromKimiFile(filepath.Join(root, "config.toml"))

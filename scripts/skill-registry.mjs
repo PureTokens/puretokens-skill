@@ -105,6 +105,13 @@ export async function validateRepository() {
     if (supportedHostIds.length && JSON.stringify(declaredClients) !== JSON.stringify(supportedHostIds)) {
       errors.push(`${directory}: supportedClients must match references/host-support.json`);
     }
+    if (name === "puretokens-image" || name === "puretokens-video") {
+      const hostLine = skillText.split("\n").find(line => line.includes("当前宿主 ID 为")) ?? "";
+      const entryHosts = (hostLine.split("当前宿主 ID 为")[1]?.split("，")[0] ?? "").match(/[a-z]+(?:-[a-z]+)*/g) ?? [];
+      if (!sameArray([...entryHosts].sort(), supportedHostIds)) {
+        errors.push(`${directory}: the ordinary media entry host list must match references/host-support.json`);
+      }
+    }
     validateHostDistributions(errors, directory, manifest, hostSupport);
     if (forbiddenPattern.test(skillText) || forbiddenPattern.test(JSON.stringify(manifest))) {
       errors.push(`${directory}: skill content contains a forbidden credential or local endpoint marker`);
@@ -495,20 +502,24 @@ function validateContinuationIntegrity(errors, label, contract) {
 
 function validateUpdateContract(errors, label, contract) {
   const transport = contract.transport;
-  if (!transport || transport.localSkillManager !== true || transport.usesOfficialMainBranch !== true ||
+  if (!transport || transport.localSkillManager !== true || transport.usesVerifiedStableRelease !== true ||
+    transport.doesNotFallBackToSourceArchive !== true ||
     transport.requiresPinnedOfficialSourceRevision !== true || transport.doesNotUseCustomInstallPayload !== true ||
     transport.doesNotReadCredentialsOrHostConfiguration !== true || transport.doesNotSubmitMediaOrUseMcp !== true) {
     errors.push(`${label} must use the local official Skill manager without reading credentials, submitting media, or using MCP`);
   }
   const sync = contract.operations?.sync;
-  if (!sync || sync.directorySelector !== "download_from_the_same_pinned_commit_never_reuse_a_sibling_by_marker" || sync.commandTemplate !== "native_fetch install_or_update --host <current-supported-host>" ||
-    sync.sourceRepository !== "https://github.com/PureTokens/puretokens-skill.git" || sync.sourceBranch !== "main" || sync.validationCommand !== "pin_main_revision_verify_matching_platform_package_or_pinned_source_then_native_sync") {
-    errors.push(`${label} must define the pinned official package/source sync operation`);
+  if (!sync || sync.directorySelector !== "download_checksum_verified_selector_from_the_same_stable_release" || sync.commandTemplate !== "native_fetch install_or_update --host <current-supported-host>" ||
+    sync.sourceRepository !== "https://github.com/PureTokens/puretokens-skill.git" ||
+    sync.releaseManifest !== "https://github.com/PureTokens/puretokens-skill/releases/latest/download/release-manifest.json" ||
+    sync.validationCommand !== "pin_stable_manifest_verify_selector_and_platform_package_then_native_sync" ||
+    sync.sameVersion !== "verify_release_executor_checksum_and_all_managed_inventories_then_no_download_sync_or_init") {
+    errors.push(`${label} must define stable platform-only sync and the verified same-version shortcut`);
   }
   const init = contract.operations?.init;
   if (!init || init.commandTemplate !== "native_executor init --host <current-supported-host>" ||
     init.checks !== "public_identity_then_one_authenticated_catalog_check_without_displaying_configuration" ||
-    init.usageGuide !== "references/usage-guide.md") {
+    init.totalDeadlineSeconds !== 20 || init.maxRequests !== 2 || init.usageGuide !== "references/usage-guide.md") {
     errors.push(`${label} must define the safe init identity check and usage guide`);
   }
   const result = contract.result;

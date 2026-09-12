@@ -83,14 +83,20 @@ func TestImage25ReferenceEdits(t *testing.T) {
 }
 func TestNanoBananaPortraitLandscapeRatios(t *testing.T) {
 	for _, model := range []string{"nano-banana-2", "nano-banana-2-lite", "nano-banana-pro"} {
-		for _, ratio := range []string{"4:5", "5:4"} {
+		for _, ratio := range []string{"3:4", "4:3"} {
 			r := taskRequest{Kind: "image", Operation: "generate", Model: model, Prompt: "fixture", Parameters: map[string]any{"aspect_ratio": ratio, "image_size": "1K"}}
 			if err := prepareProfileRequest(&r, profileService()); err != nil {
 				t.Fatalf("%s %s: %v", model, ratio, err)
 			}
 		}
+		for _, ratio := range []string{"4:5", "5:4"} {
+			r := taskRequest{Kind: "image", Operation: "generate", Model: model, Prompt: "fixture", Parameters: map[string]any{"aspect_ratio": ratio, "image_size": "1K"}}
+			if prepareProfileRequest(&r, profileService()) == nil {
+				t.Fatalf("%s accepted ratio absent from live schema: %s", model, ratio)
+			}
+		}
 	}
-	r := taskRequest{Kind: "image", Operation: "generate", Model: "nano-banana-2-lite", Prompt: "fixture", Parameters: map[string]any{"aspect_ratio": "4:5", "image_size": "2K"}}
+	r := taskRequest{Kind: "image", Operation: "generate", Model: "nano-banana-2-lite", Prompt: "fixture", Parameters: map[string]any{"aspect_ratio": "3:4", "image_size": "2K"}}
 	if prepareProfileRequest(&r, profileService()) == nil {
 		t.Fatal("lite accepted unsupported 2K")
 	}

@@ -110,6 +110,15 @@
       "credentialAdapter": "fixture-tested",
       "guidance": "Native executor credential-format fixtures; actual host API and attachment delivery acceptance remains pending.",
       "directorySelection": "QODER_CONFIG_DIR/skills; otherwise QODER_CLI_HOME or home plus QODER_CONFIG_DIR_NAME (default .qoder), then skills."
+    },
+    {
+      "id": "pi",
+      "delivery": "native-installer",
+      "globalSkillDirectory": "~/.pi/agent/skills",
+      "directMediaExecution": "managed-native-executor",
+      "credentialAdapter": "fixture-tested",
+      "guidance": "Local Pi only. Verify one matching models.json endpoint before checking the same provider ID in sibling auth.json. Supported inline auth takes precedence; dynamic or unrepresented authentication stops without fallback. Real-host API and attachment delivery remain pending.",
+      "directorySelection": "PI_CODING_AGENT_DIR/skills when explicitly configured with an absolute root without parent traversal; otherwise ~/.pi/agent/skills."
     }
   ]
 }

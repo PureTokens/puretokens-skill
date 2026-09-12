@@ -6,7 +6,7 @@ set -eu
 current_skills="puretokens-balance puretokens-connection puretokens-models puretokens-image puretokens-video puretokens-update"
 
 usage() {
-  printf '%s\n' "Usage: puretokens-skill-install.sh <check|init|sync|locate> (--host <claude-code|codex|workbuddy|gemini-cli|grok-build|opencode|trae|claude-desktop|dsh-desktop|zcode|kimi-code|qoder> | --target <absolute-skill-directory>) [--source <absolute-official-source-directory>]"
+  printf '%s\n' "Usage: puretokens-skill-install.sh <check|verify-installed|init|sync|locate> (--host <claude-code|codex|workbuddy|gemini-cli|grok-build|opencode|trae|claude-desktop|dsh-desktop|zcode|kimi-code|qoder|pi> | --target <absolute-skill-directory>) [--source <absolute-official-source-directory>]"
 }
 
 fail() {
@@ -75,6 +75,12 @@ target_for_host() {
   case "$host" in
     claude-code|claude-desktop) printf '%s\n' "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills" ;;
     kimi-code) printf '%s\n' "${KIMI_CODE_HOME:-$HOME/.kimi-code}/skills" ;;
+    pi)
+      pi_root=${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}
+      case "$pi_root" in /*) ;; *) fail "Pi agent directory must be absolute" ;; esac
+      case "$pi_root/" in */../*) fail "Pi agent directory must not contain parent traversal" ;; esac
+      printf '%s\n' "$pi_root/skills"
+      ;;
     qoder)
       if [ -n "${QODER_CONFIG_DIR:-}" ]; then
         printf '%s\n' "$QODER_CONFIG_DIR/skills"
@@ -133,7 +139,6 @@ validate_source() {
   [ -f "$source_root/package.json" ] || fail "official source is missing package.json"
   source_release_version "$source_root" >/dev/null || fail "official source has an invalid Skill version"
   [ -f "$source_root/runtime/puretokens-skill-install.sh" ] || fail "official source is missing the macOS/Linux installer"
-  [ -f "$source_root/runtime/puretokens-skill-install.ps1" ] || fail "official source is missing the Windows installer"
   [ -f "$source_root/runtime/puretokens-skill-fetch.sh" ] || fail "official source is missing the download wrapper"
   [ -f "$source_root/runtime/executor/manifest.json" ] || fail "official source is missing the executor manifest"
   executor_artifact "$source_root" >/dev/null
@@ -149,6 +154,45 @@ validate_target() {
     managed_skill "$target_root/$name" "$name" || fail "target is missing the managed Skill: $name"
   done
   managed_executor "$target_root/.puretokens-executor" || fail "target is missing the managed native executor"
+}
+
+verify_no_transaction() {
+  for entry in "$target_root/.puretokens-install-lock" "$target_root"/.puretokens-skill-stage.*; do
+    [ ! -e "$entry" ] && [ ! -L "$entry" ] || fail "installation transaction requires review; existing files were preserved"
+  done
+}
+
+verify_release_identity() {
+  [ -n "$release_manifest" ] || return 0
+  expected_version=$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$release_manifest" | sed -n '1p')
+  expected_platform=$(executor_platform)
+  expected_checksum=$(sed -n "/\"$expected_platform\"[[:space:]]*:/,/}/ s/.*\"executorSha256\"[[:space:]]*:[[:space:]]*\"\\([^\"]*\\)\".*/\\1/p" "$release_manifest" | sed -n '1p')
+  printf '%s\n' "$expected_version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || fail "selected release version is invalid"
+  printf '%s\n' "$expected_checksum" | grep -Eq '^[0-9a-f]{64}$' || fail "selected release executor checksum is invalid"
+  identity="$target_root/.puretokens-executor/runtime.json"
+  actual_version=$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$identity" | sed -n '1p')
+  actual_platform=$(sed -n 's/.*"platform"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$identity" | sed -n '1p')
+  [ "$actual_version" = "$expected_version" ] && [ "$actual_platform" = "$expected_platform" ] ||
+    fail "installed release changed during verification; existing files were preserved"
+  [ -f "$executor" ] && [ ! -L "$executor" ] && [ "$(sha256_file "$executor")" = "$expected_checksum" ] ||
+    fail "installed executor changed during verification; existing files were preserved"
+}
+
+verify_installed() {
+  target_root=$(cd "$1" 2>/dev/null && pwd -P) || fail "could not resolve --target"
+  validate_target "$target_root"
+  verify_no_transaction
+  check_gemini_duplicates
+  executor="$target_root/.puretokens-executor/puretokens-api"
+  verify_release_identity
+  for name in $current_skills .puretokens-executor; do
+    "$executor" install-verify --directory "$target_root/$name" --name "$name" ||
+      fail "installed files are missing or modified; existing files were preserved"
+  done
+  # A completed concurrent sync must not turn this into a stale success receipt.
+  verify_release_identity
+  verify_no_transaction
+  printf '%s\n' "Pure Tokens installed inventories verified; no files changed and init was not run."
 }
 
 usage_guide() {
@@ -411,24 +455,33 @@ shift
 target=
 host=
 source=
+release_manifest=
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --target) [ "$#" -ge 2 ] || fail "--target requires an absolute directory"; target=$2; shift 2 ;;
     --host) [ "$#" -ge 2 ] || fail "--host requires a supported host ID"; host=$2; shift 2 ;;
     --source) [ "$#" -ge 2 ] || fail "--source requires an absolute official source directory"; source=$2; shift 2 ;;
+    --release-manifest) [ "$#" -ge 2 ] || fail "--release-manifest requires a file"; release_manifest=$2; shift 2 ;;
     *) usage; exit 2 ;;
   esac
 done
 
 [ -n "$target" ] || [ -n "$host" ] || fail "--host or --target is required"
-case "$host" in ''|claude-code|codex|workbuddy|gemini-cli|grok-build|opencode|trae|claude-desktop|dsh-desktop|zcode|kimi-code|qoder) ;; *) fail "unsupported host" ;; esac
+case "$host" in ''|claude-code|codex|workbuddy|gemini-cli|grok-build|opencode|trae|claude-desktop|dsh-desktop|zcode|kimi-code|qoder|pi) ;; *) fail "unsupported host" ;; esac
+[ "$host" != pi ] || target_for_host "$host" >/dev/null
 [ -n "$target" ] || target=$(target_for_host "$host")
 [ "${target#/}" != "$target" ] || fail "--target must be an absolute Skill directory"
 [ -z "$source" ] || [ "${source#/}" != "$source" ] || fail "--source must be an absolute official source directory"
-case "$command_name" in check|init|sync|locate) ;; *) usage; exit 2 ;; esac
+case "$command_name" in check|verify-installed|init|sync|locate) ;; *) usage; exit 2 ;; esac
+[ -z "$release_manifest" ] || { [ "$command_name" = verify-installed ] && [ -f "$release_manifest" ]; } || fail "release manifest is only supported for installed verification"
 
 if [ "$command_name" = locate ]; then
   printf '%s\n' "$target"
+  exit 0
+fi
+
+if [ "$command_name" = "verify-installed" ]; then
+  verify_installed "$target"
   exit 0
 fi
 

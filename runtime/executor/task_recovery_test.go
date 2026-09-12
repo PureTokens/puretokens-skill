@@ -3,17 +3,105 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
 )
+
+func TestTaskRecordSurvivesForeignDownloadPaths(t *testing.T) {
+	id := "portable-task"
+	name := fmt.Sprintf("puretokens-%x.png", sha256.Sum256([]byte(contentPath("image", id, 0))))
+	foreign := "C:\\Users\\fixture\\Pictures\\" + name
+	if runtime.GOOS == "windows" {
+		foreign = "/home/fixture/Pictures/" + name
+	}
+	dir := t.TempDir()
+	recordPath := filepath.Join(dir, "task.json")
+	image := fixturePNG(t)
+	record := taskRecord{
+		Format: taskRecordFormat, Kind: "image", TaskID: id, Model: "gpt-image-2",
+		OriginalOperation: "generate", RequestedCount: 1, Status: "completed",
+		OutputDir:  foreign[:len(foreign)-len(name)],
+		Downloaded: map[int]string{0: foreign},
+		DownloadProofs: map[int]downloadProof{0: {
+			SHA256: fmt.Sprintf("%x", sha256.Sum256(image)), Bytes: int64(len(image)), MediaType: "image/png",
+		}},
+	}
+	if err := saveTaskRecord(recordPath, record, true); err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	if err := run([]string{"resume", "--host", "fixture-unsupported", "--record", recordPath}, strings.NewReader(""), &out); err != nil {
+		t.Fatal("foreign paths prevented local task recovery", err)
+	}
+	result := decodeReceipt(t, &out)
+	if result.NextStep != "content" || result.TaskID != id || len(result.DownloadedPaths) != 0 {
+		t.Fatal("foreign local files were handed off or task identity was lost")
+	}
+	calls := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		if r.Method != http.MethodGet || r.URL.Path != "/v1/images/"+id+"/content" {
+			t.Error("portable recovery did not keep the original task")
+		}
+		w.Header().Set("Content-Type", "image/png")
+		w.Write(image)
+	}))
+	defer server.Close()
+	out.Reset()
+	if err := executeRecordedTask("content", recordPath, taskRequest{}, 0, dir, &out, fixtureService(server)); err != nil {
+		t.Fatal("explicit local output rebinding failed", err)
+	}
+	rebound, err := loadTaskRecord(recordPath)
+	if err != nil || calls != 1 || rebound.OutputDir != dir || rebound.Downloaded[0] != filepath.Join(dir, name) ||
+		!matchesDownloadProof(rebound.Downloaded[0], rebound.DownloadProofs[0]) {
+		t.Fatal("portable recovery lost local download proof")
+	}
+}
+
+func TestRecordedDownloadPathFormatsRemainBoundToTask(t *testing.T) {
+	id := "portable-task"
+	name := fmt.Sprintf("puretokens-%x.png", sha256.Sum256([]byte(contentPath("image", id, 0))))
+	for _, directory := range []string{"/home/fixture/", "C:\\Users\\fixture\\", "C:/Users/fixture/", "\\\\server\\share\\"} {
+		if recordedDownloadFormat("image", id, 0, directory+name) != "image/png" {
+			t.Fatal("valid portable download metadata rejected")
+		}
+		if recordedDownloadFormat("image", "another-task", 0, directory+name) != "" {
+			t.Fatal("portable filename was not bound to task identity")
+		}
+	}
+	for _, value := range []string{name, "C:" + name, "../" + name, "https://example.invalid/" + name, "/tmp/\x00/" + name} {
+		if recordedDownloadFormat("image", id, 0, value) != "" {
+			t.Fatal("non-file or malformed path accepted as download metadata")
+		}
+	}
+}
+
+func TestExistingRelativeMediaCannotPassLocalDownloadProof(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	absolute := filepath.Join(dir, "fixture.png")
+	if err := os.WriteFile(absolute, fixturePNG(t), 0600); err != nil {
+		t.Fatal(err)
+	}
+	proof, err := fingerprintDownload(absolute, "image/png")
+	if err != nil || !matchesDownloadProof(absolute, proof) {
+		t.Fatal("positive absolute-file integrity check failed")
+	}
+	if matchesDownloadProof("fixture.png", proof) {
+		t.Fatal("an existing relative file bypassed the native absolute path boundary")
+	}
+}
 
 func TestContinuationUnknownCountIsNotInvented(t *testing.T) {
 	calls := 0

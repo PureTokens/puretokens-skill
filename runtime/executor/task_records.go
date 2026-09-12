@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -131,6 +132,10 @@ func (writer *recordReceiptWriter) writeReceipt(result receipt) {
 			result.DeliveryStatus = "downloaded_awaiting_host_delivery"
 		}
 	}
+	if result.OK && terminalSuccess(result.Status) && !result.ReconciliationRequired && record.deliveryComplete() {
+		result.DeliveryStatus = "delivered"
+		result.NextAction = "All requested indexes have already been handed off. No further content request is needed."
+	}
 	if err := saveTaskRecord(writer.path, record, false); err != nil {
 		writer.err = err
 		result.OK = false
@@ -150,6 +155,14 @@ func (writer *recordReceiptWriter) writeReceipt(result receipt) {
 		writer.record = record
 	}
 	writeJSON(writer.output, guideReceipt(result))
+}
+
+func (record taskRecord) deliveryComplete() bool {
+	count := record.RequestedCount
+	if record.Kind == "video" {
+		count = 1
+	}
+	return count > 0 && len(record.Delivered) == count
 }
 
 func (record taskRecord) request() taskRequest {
@@ -230,14 +243,41 @@ func loadTaskRecord(path string) (taskRecord, error) {
 	return record, nil
 }
 
-func recordedDownloadFormat(kind, taskID string, index int, path string) string {
-	if !validTaskID(taskID) || !filepath.IsAbs(path) {
+func recordedDownloadFormat(kind, taskID string, index int, filePath string) string {
+	name := recordedPathBase(filePath)
+	if !validTaskID(taskID) || name == "" {
 		return ""
 	}
 	stem := fmt.Sprintf("puretokens-%x", sha256.Sum256([]byte(contentPath(kind, taskID, index))))
 	for _, format := range []string{"image/png", "image/jpeg", "image/webp", "image/gif", "image/avif", "video/mp4", "video/webm"} {
-		if strings.HasPrefix(format, kind+"/") && filepath.Base(path) == stem+"."+extensionFor(format, kind) {
+		if strings.HasPrefix(format, kind+"/") && name == stem+"."+extensionFor(format, kind) {
 			return format
+		}
+	}
+	return ""
+}
+
+// A copied task may name files on another OS. Validate their identity without
+// resolving them locally; byte verification still requires a native absolute path.
+func recordedPathBase(value string) string {
+	if strings.ContainsAny(value, "\x00\r\n") {
+		return ""
+	}
+	if filepath.IsAbs(value) {
+		return filepath.Base(value)
+	}
+	if path.IsAbs(value) {
+		return path.Base(value)
+	}
+	windows := strings.ReplaceAll(value, "\\", "/")
+	if len(windows) >= 3 && windows[1:3] == ":/" &&
+		(windows[0] >= 'A' && windows[0] <= 'Z' || windows[0] >= 'a' && windows[0] <= 'z') {
+		return path.Base(windows)
+	}
+	if strings.HasPrefix(windows, "//") {
+		parts := strings.Split(windows[2:], "/")
+		if len(parts) >= 3 && parts[0] != "" && parts[0] != "?" && parts[0] != "." && parts[1] != "" {
+			return path.Base(windows)
 		}
 	}
 	return ""
@@ -378,7 +418,7 @@ func executeRecordedTask(command, path string, request taskRequest, index int, o
 		}
 		result := taskReceipt(request, request.TaskID, record.Status)
 		result.DeliveryStatus = "partially_delivered"
-		if record.RequestedCount > 0 && len(writer.record.Delivered) == record.RequestedCount || record.Kind == "video" && len(writer.record.Delivered) == 1 {
+		if writer.record.deliveryComplete() {
 			result.DeliveryStatus = "delivered"
 		}
 		result.NextAction = "Delivery acknowledgement saved. Continue only the remaining indexes, if any."

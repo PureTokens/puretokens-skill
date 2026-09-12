@@ -218,8 +218,8 @@ test("Gemini selects an existing shared Skill and detects its lower-priority dup
 
 test("new hosts install and update in their declared isolated roots", async t => {
  const f = await fixture(t);
- for (const [host, variable] of [["kimi-code", "KIMI_CODE_HOME"], ["qoder", "QODER_CONFIG_DIR"]]) {
-  const root = path.join(f.root, `${host} with spaces`);
+ for (const [host, variable] of [["kimi-code", "KIMI_CODE_HOME"], ["qoder", "QODER_CONFIG_DIR"], ["pi", "PI_CODING_AGENT_DIR"]]) {
+  const root = path.join(f.root, `${host} \u7528\u6237 with spaces`);
   const env = {...f.env, [variable]: root};
   const target = path.join(root, "skills");
   const located = await execFile("sh", [installer, "locate", "--host", host], {env});
@@ -229,6 +229,14 @@ test("new hosts install and update in their declared isolated roots", async t =>
   assert.ok(await readFile(path.join(target, ".puretokens-executor", "puretokens-api")));
   await assert.rejects(execFile("sh", [installer, "sync", "--host", host], {env:{...env,[variable]:"relative"}}));
  }
+ const piDefault = await execFile("sh", [installer, "locate", "--host", "pi"], {env:{...f.env,PI_CODING_AGENT_DIR:""}});
+ assert.equal(piDefault.stdout.trim(), path.join(f.env.HOME, ".pi", "agent", "skills"));
+ const invalidPi = `${f.root}/invalid/../unexpected`;
+ for (const command of ["locate", "sync"]) {
+  await assert.rejects(execFile("sh", [installer, command, "--host", "pi"], {env:{...f.env,PI_CODING_AGENT_DIR:invalidPi}}));
+ }
+ await assert.rejects(readdir(path.join(f.root, "invalid")), {code:"ENOENT"});
+ await assert.rejects(readdir(path.join(f.root, "unexpected")), {code:"ENOENT"});
  const env={...f.env,QODER_CONFIG_DIR:"",QODER_CLI_HOME:path.join(f.root,"qoder parent"),QODER_CONFIG_DIR_NAME:"custom"};
  const result=await execFile("sh",[installer,"locate","--host","qoder"],{env});
  assert.equal(result.stdout.trim(),path.join(env.QODER_CLI_HOME,"custom","skills"));

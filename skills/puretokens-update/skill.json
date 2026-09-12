@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "name": "puretokens-update",
-  "version": "0.18.0",
+  "version": "0.18.1",
   "entry": "SKILL.md",
   "displayName": "Pure Tokens Update",
   "description": "Install or safely upgrade local official Pure Tokens Skills.",
@@ -57,6 +57,10 @@
     "qoder": {
       "manualInstallationSupported": true,
       "globalSkillDirectory": "~/.qoder/skills"
+    },
+    "pi": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.pi/agent/skills"
     }
   },
   "supportedClients": [
@@ -71,10 +75,13 @@
     "dsh-desktop",
     "zcode",
     "kimi-code",
-    "qoder"
+    "qoder",
+    "pi"
   ],
   "rules": {
-    "usesOfficialMainBranch": true,
+    "usesVerifiedStableRelease": true,
+    "doesNotFallBackToSourceArchive": true,
+    "verifiesSameVersionBeforeSkipping": true,
     "usesManagedSkillSync": true,
     "usesNativePlatformSourceSync": true,
     "doesNotUseCustomInstallPayload": true,
@@ -94,5 +101,5 @@
     "supportsReadOnlyDoctor": true,
     "doesNotSubmitMediaOrReadBilling": true
   },
-  "sourceSha256": "78c95e0b8e89b689af22cb1c7df9f1ccdb1317250422dabf8e7c3be9a65ce3b3"
+  "sourceSha256": "130e951e514013408a53dcb3aa51a62489942677141ee3a4027abfbd21073a2d"
 }

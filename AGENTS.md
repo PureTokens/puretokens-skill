@@ -25,7 +25,8 @@ This repository owns the six installable Skill instructions, model selections, c
 
 ## Installation and updates
 
-- The native fetch wrapper pins official main to one commit, uses matching checksum-verified platform assets or that pinned source archive, and delegates writes to Shell/PowerShell sync. Installers synchronize the six Skills and exactly one checksum-verified platform executor plus their managed fetch/sync scripts. They never install Node, npm, Python, a proxy, or a service.
+- The native fetch wrapper resolves the latest published stable release manifest, pins its version and source commit, verifies its selector and current-platform archive checksums, and delegates writes to Shell/PowerShell sync. Never fall back to main or a source archive during ordinary installation. Explicit local source sync remains available for maintainers. Installers synchronize the six Skills and exactly one checksum-verified platform executor plus only the current system's managed fetch/sync scripts. They never install Node, npm, Python, a proxy, or a service.
+- Same-version install/update may return without archive download, writes or init only after the selected release's executor checksum and all seven local managed inventories verify. Modified, missing or unresolved transaction files stop the operation without automatic repair. Installation init uses one 20-second total budget for at most two read-only requests; a failed check does not undo successful installation.
 - Updates synchronize only the six current Skills and verified managed `.puretokens-executor`. Do not inspect or migrate retired plugins, Node runtimes or retired Skill names. Never delete unknown directories.
 - Preserve the exact first `text` install prompt under the required heading in both READMEs because the client download page extracts it.
 

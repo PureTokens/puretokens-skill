@@ -6,7 +6,7 @@ param(
   [ValidateSet("check-update", "install", "update")]
   [string]$Command,
   [Alias("Host")]
-  [ValidateSet("claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae", "claude-desktop", "dsh-desktop", "zcode", "kimi-code", "qoder")]
+  [ValidateSet("claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae", "claude-desktop", "dsh-desktop", "zcode", "kimi-code", "qoder", "pi")]
   [string]$HostId,
   [string]$Target
 )
@@ -14,14 +14,44 @@ $ErrorActionPreference = "Stop"
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 function Fail([string]$Message) { throw "Pure Tokens Skill download: $Message" }
 function Read-Json([string]$File) { return (Get-Content -LiteralPath $File -Raw -Encoding UTF8 | ConvertFrom-Json) }
-function Get-OfficialFile([string]$Url, [string]$Destination) {
+function Get-OfficialFile([string]$Url, [string]$Destination, [string]$Stage) {
+  $status = 0
+  $category = "transport_failure"
+  $completed = $false
   try {
     $result = Invoke-WebRequest -UseBasicParsing -Uri $Url -OutFile $Destination -PassThru -TimeoutSec 180 -Headers @{ Accept = "application/vnd.github+json" } -UserAgent "puretokens-skill-installer"
-    return [int]$result.StatusCode
+    $status = [int]$result.StatusCode
+    $category = "http_error"
+    $completed = $true
   } catch {
-    if ($null -ne $_.Exception.Response -and [int]$_.Exception.Response.StatusCode -eq 404) { return 404 }
-    Fail "the official source download failed; installed files were not changed"
+    # Classify types/statuses only; exception messages can contain private data.
+    $exception = $_.Exception
+    for ($depth = 0; $null -ne $exception -and $depth -lt 8; $depth++) {
+      if ($exception.PSObject.Properties['Response'] -and $null -ne $exception.Response) {
+        $status = [int]$exception.Response.StatusCode
+      }
+      if ($exception -is [System.Net.WebException]) {
+        switch ($exception.Status.ToString()) {
+          'Timeout' { $category = 'timeout' }
+          'NameResolutionFailure' { $category = 'dns_failure' }
+          'ProxyNameResolutionFailure' { $category = 'dns_failure' }
+          'ConnectFailure' { $category = 'connection_failure' }
+          'TrustFailure' { $category = 'tls_failure' }
+          'SecureChannelFailure' { $category = 'tls_failure' }
+        }
+      }
+      if ($exception -is [System.OperationCanceledException] -or $exception -is [System.TimeoutException]) { $category = 'timeout' }
+      if ($exception -is [System.Security.Authentication.AuthenticationException]) { $category = 'tls_failure' }
+      if ($exception -is [System.Net.Sockets.SocketException]) {
+        $category = if ($exception.SocketErrorCode.ToString() -in @('HostNotFound','TryAgain','NoData')) { 'dns_failure' } elseif ($exception.SocketErrorCode.ToString() -eq 'TimedOut') { 'timeout' } else { 'connection_failure' }
+      }
+      if ($exception -is [System.UnauthorizedAccessException]) { $category = 'local_io_failure' }
+      $exception = $exception.InnerException
+    }
   }
+  if ($status -eq 200 -and $completed) { return 200 }
+  if ($status -ge 400 -and $status -le 599) { $category = 'http_error' } elseif ($status -lt 100 -or $status -gt 599) { $status = 0 }
+  Fail "stage=$Stage error_code=$category http_status=$status installation_status=not_completed installed_files_changed=false; the official source download failed; installed files were not changed; no automatic retry"
 }
 $locationOptions = @{}
 if ($HostId) { $locationOptions.HostId = $HostId }
@@ -30,16 +60,20 @@ if ($locationOptions.Count -eq 0) { Fail "-Host or -Target is required" }
 $downloadRoot = Join-Path ([IO.Path]::GetTempPath()) ("puretokens-download-" + [Guid]::NewGuid().ToString("N"))
 try {
   New-Item -ItemType Directory -Path $downloadRoot | Out-Null
-  $commitFile = Join-Path $downloadRoot "commit.json"
-  if ((Get-OfficialFile "https://api.github.com/repos/PureTokens/puretokens-skill/commits/main" $commitFile) -ne 200) { Fail "the official main revision could not be resolved" }
-  $sourceCommit = (Read-Json $commitFile).sha
-  if ($sourceCommit -cnotmatch '^[0-9a-f]{40}$') { Fail "the official revision is invalid" }
-  $packageFile = Join-Path $downloadRoot "package.json"
-  if ((Get-OfficialFile "https://raw.githubusercontent.com/PureTokens/puretokens-skill/$sourceCommit/package.json" $packageFile) -ne 200) { Fail "the pinned official version could not be read" }
-  $availableVersion = (Read-Json $packageFile).version
-  if ($availableVersion -notmatch '^\d+\.\d+\.\d+$') { Fail "the official version is invalid" }
+  $releaseFile = Join-Path $downloadRoot "release.json"
+  $null = Get-OfficialFile "https://github.com/PureTokens/puretokens-skill/releases/latest/download/release-manifest.json" $releaseFile read_release_manifest
+  try { $release = Read-Json $releaseFile } catch { Fail "the stable release manifest is unreadable" }
+  if ($release.schemaVersion -ne 2) { Fail "the stable release manifest format is unsupported; no source fallback" }
+  $sourceCommit = $release.sourceCommit
+  if ($sourceCommit -cnotmatch '^[0-9a-f]{40}$') { Fail "the stable release has no verified source commit" }
+  $availableVersion = $release.version
+  if ($availableVersion -cnotmatch '^\d+\.\d+\.\d+$') { Fail "the stable release version is invalid" }
+  $releaseOrigin = "https://github.com/PureTokens/puretokens-skill/releases/download/v$availableVersion"
+  $selector = $release.installers.powershell
+  if ($null -eq $selector -or $selector.filename -cne "puretokens-skill-install.ps1" -or $selector.sha256 -cnotmatch '^[0-9a-f]{64}$') { Fail "the stable directory selector is invalid" }
   $locationInstaller = Join-Path $downloadRoot "puretokens-skill-install.ps1"
-  if ((Get-OfficialFile "https://raw.githubusercontent.com/PureTokens/puretokens-skill/$sourceCommit/runtime/puretokens-skill-install.ps1" $locationInstaller) -ne 200) { Fail "the pinned directory selector is unavailable" }
+  $null = Get-OfficialFile "$releaseOrigin/$($selector.filename)" $locationInstaller download_selector
+  if ((Get-FileHash -LiteralPath $locationInstaller -Algorithm SHA256).Hash.ToLowerInvariant() -cne $selector.sha256) { Fail "stable directory selector checksum mismatch" }
   $Target = & $locationInstaller locate @locationOptions
   $installedVersion = "not_installed"
   $installedFile = Join-Path $Target ".puretokens-executor/runtime.json"
@@ -54,30 +88,26 @@ try {
   $state = if ($installedVersion -eq $availableVersion) { "current" } else { "version_differs" }
   Write-Output "Pure Tokens Skills update check: installed=$installedVersion available=$availableVersion status=$state source_commit=$sourceCommit"
   if ($Command -eq "check-update") { return }
-  if ($installedVersion -match '^\d+\.\d+\.\d+$' -and [version]$installedVersion -gt [version]$availableVersion) { Fail "the installed version is newer than official main; automatic downgrade was stopped" }
-  $architecture = [Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant()
+  if ($installedVersion -match '^\d+\.\d+\.\d+$' -and [version]$installedVersion -gt [version]$availableVersion) { Fail "the installed version is newer than the stable release; automatic downgrade was stopped" }
+  $architecture = [Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant()
   $platform = switch ($architecture) { "x64" { "windows-amd64" }; "arm64" { "windows-arm64" }; default { Fail "this operating system and CPU has no platform executor" } }
-  $releaseOrigin = "https://github.com/PureTokens/puretokens-skill/releases/download/v$availableVersion"
-  $releaseFile = Join-Path $downloadRoot "release.json"
   $archive = Join-Path $downloadRoot "source.zip"
-  $releaseStatus = Get-OfficialFile "$releaseOrigin/release-manifest.json" $releaseFile
-  $distribution = "source"
-  if ($releaseStatus -eq 200) {
-    $release = Read-Json $releaseFile
-    if ($release.version -eq $availableVersion -and $release.sourceCommit -ceq $sourceCommit) {
-      $artifact = $release.files.PSObject.Properties[$platform].Value
-      if ($null -eq $artifact -or $artifact.filename -cne "puretokens-skill-$availableVersion-$platform.zip" -or $artifact.sha256 -cnotmatch '^[0-9a-f]{64}$') { Fail "published platform metadata is invalid" }
-      if ((Get-OfficialFile "$releaseOrigin/$($artifact.filename)" $archive) -ne 200) { Fail "the published platform archive is unavailable" }
-      if ((Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant() -cne $artifact.sha256) { Fail "published platform archive checksum mismatch" }
-      $distribution = "platform"
-      $archiveRoot = "puretokens-skill"
-    }
-  } elseif ($releaseStatus -ne 404) { Fail "published platform metadata could not be checked" }
-  if ($distribution -eq "source") {
-    Write-Output "Matching published platform assets are unavailable; retrieving the pinned official source archive."
-    if ((Get-OfficialFile "https://codeload.github.com/PureTokens/puretokens-skill/zip/$sourceCommit" $archive) -ne 200) { Fail "the pinned official source archive is unavailable" }
-    $archiveRoot = "puretokens-skill-$sourceCommit"
+  $artifact = $release.files.PSObject.Properties[$platform].Value
+  if ($null -eq $artifact -or $artifact.filename -cne "puretokens-skill-$availableVersion-$platform.zip" -or $artifact.sha256 -cnotmatch '^[0-9a-f]{64}$' -or $artifact.executorSha256 -cnotmatch '^[0-9a-f]{64}$') { Fail "published platform metadata is invalid" }
+  if ($installedVersion -eq $availableVersion) {
+    $executor = Join-Path $Target ".puretokens-executor/puretokens-api.exe"
+    if (-not (Test-Path -LiteralPath $executor -PathType Leaf) -or ((Get-Item -LiteralPath $executor).Attributes -band [IO.FileAttributes]::ReparsePoint)) { Fail "installed executor is missing or unsupported; existing files were preserved" }
+    if ((Get-FileHash -LiteralPath $executor -Algorithm SHA256).Hash.ToLowerInvariant() -cne $artifact.executorSha256) { Fail "installed executor checksum mismatch; existing files were preserved" }
+    if ($installed.platform -cne $platform) { Fail "installed platform does not match; existing files were preserved" }
+    $verifyOptions = @{ Target = $Target; ReleaseManifest = $releaseFile }
+    if ($HostId) { $verifyOptions.HostId = $HostId }
+    & $locationInstaller verify-installed @verifyOptions
+    Write-Output "Pure Tokens Skills $availableVersion are already current and verified; no archive downloaded, no files changed, init not run."
+    return
   }
+  $null = Get-OfficialFile "$releaseOrigin/$($artifact.filename)" $archive download_platform_archive
+  if ((Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant() -cne $artifact.sha256) { Fail "published platform archive checksum mismatch" }
+  $archiveRoot = "puretokens-skill"
   Add-Type -AssemblyName System.IO.Compression.FileSystem
   $zip = [IO.Compression.ZipFile]::OpenRead($archive)
   try {
@@ -89,7 +119,9 @@ try {
   $unpacked = Join-Path $downloadRoot "unpacked"
   [IO.Compression.ZipFile]::ExtractToDirectory($archive, $unpacked)
   $sourceRoot = Join-Path $unpacked $archiveRoot
-  if ((Read-Json (Join-Path $sourceRoot "package.json")).version -ne $availableVersion) { Fail "the archive version does not match the pinned source" }
+  if ((Read-Json (Join-Path $sourceRoot "package.json")).version -ne $availableVersion) { Fail "the archive version does not match the stable release" }
+  if ((Get-FileHash -LiteralPath (Join-Path $sourceRoot "runtime/puretokens-skill-install.ps1") -Algorithm SHA256).Hash.ToLowerInvariant() -cne $selector.sha256) { Fail "archive selector does not match the stable release" }
+  if ((Get-FileHash -LiteralPath (Join-Path $sourceRoot "runtime/executor/bin/puretokens-api-$platform.exe") -Algorithm SHA256).Hash.ToLowerInvariant() -cne $artifact.executorSha256) { Fail "archive executor does not match the stable release" }
   $syncOptions = @{ Source = $sourceRoot; Target = $Target }
   if ($HostId) { $syncOptions.HostId = $HostId }
   & (Join-Path $sourceRoot "runtime/puretokens-skill-install.ps1") sync @syncOptions

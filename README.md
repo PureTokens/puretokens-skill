@@ -22,7 +22,7 @@ Install or update the official Pure Tokens Skills from https://github.com/PureTo
 请从官方仓库安装或更新 Pure Tokens Skills：https://github.com/PureTokens/puretokens-skill。
 ```
 
-The agent downloads the official `runtime/puretokens-skill-fetch.sh` (Windows: `.ps1`) to a local file and runs install with the current host ID. Installed copies in `.puretokens-executor` provide check-update and update. Remote content is not piped into a shell.
+The agent saves the latest official stable release's `puretokens-skill-fetch.sh` (Windows: `.ps1`) locally and runs install with the current host ID. The fixed bootstrap URL is `https://github.com/PureTokens/puretokens-skill/releases/latest/download/puretokens-skill-fetch.sh`; Windows uses the `.ps1` suffix. Installed copies in `.puretokens-executor` provide check-update and update. Never pipe remote content into a shell or fall back to main, source archives or mirrors when stable assets are absent.
 
 Installation boundary: after identifying the host, save the official fetch script locally and run it once. Let it pin the commit, download, verify, sync and initialize. Do not add full-script audits, PowerShell capability probes, duplicate inventory checks or doctor to ordinary installation. Respect required host approvals. On launch denial, unavailable output, timeout, download or verification failure, report the completed stage and sanitized failure, then stop. Do not create probes, shims or Python patches, modify official scripts, switch launch paths or retry automatically. Debugging requires a separate user request.
 
@@ -69,8 +69,11 @@ The priority is carried by the installed Skill metadata and the host's current c
 | ZCode | `~/.zcode/skills` | Local connection adapter; real API and attachment delivery acceptance pending |
 | Kimi Code | `~/.kimi-code/skills` | Credential fixtures covered; real API and attachment delivery pending |
 | Qoder | `~/.qoder/skills` | Local IDE/CLI execution; real API and attachment delivery pending |
+| Pi | `~/.pi/agent/skills` | Inline authentication precedence covered by fixtures; real API and attachment delivery pending |
 
-`references/host-support.json` defines these twelve hosts. The table shows defaults; Claude/WorkBuddy honor explicit configuration-directory overrides, and DSH honors the local Harness's explicit `DSH_HOME`. Gemini updates an existing higher-priority `.agents/skills` installation and reports managed duplicates. Provider labels never determine support.
+`references/host-support.json` defines the registered hosts. The table shows defaults; Claude/WorkBuddy honor explicit configuration-directory overrides, Pi honors an absolute `PI_CODING_AGENT_DIR` without parent traversal, and DSH honors the local Harness's explicit `DSH_HOME`. Gemini updates an existing higher-priority `.agents/skills` installation and reports managed duplicates. Provider labels never determine support.
+
+Registration, installation, authenticated API access and complete media delivery are distinct. Real-host evidence records the client/OS/shell versions, architecture and execution mode; only a complete case set establishes image opening, video playback and attachment handoff for that exact environment. No real-host acceptance entries are currently recorded. Local results do not accept WSL, remote or sandbox modes. See `references/host-acceptance-guide.md` and `references/host-acceptance.json`.
 
 For Claude Desktop, use a local Code session and host ID `claude-desktop`; its active Desktop 3P connection is separate from Claude Code authentication. Cloud, SSH, WSL and Cowork isolated environments are not the local desktop; unavailable connection records or executors stop execution. DSH uses `dsh-desktop`; project/custom Skill roots may override user roots, so verify the loaded location. See the [desktop host guide](skills/puretokens-update/references/desktop-hosts.md).
 
@@ -89,9 +92,9 @@ The selected installed profile governs ordinary requests. An explicit authentica
 <!-- media-model-catalog:start -->
 ## Media model catalog
 
-Synchronized with the base model catalog: 2026-09-10T16:55:34.848Z.
+Synchronized with the base model catalog: 2026-09-12T02:04:41.893Z.
 
-This list is an installed selection aid from the base catalog, not a per-request authorization check. Ordinary generation uses only the selected installed profile without a live-catalog preflight; explicit discovery, a requested profile gap or rejection diagnosis may read the authenticated catalog once. The media API decides access.
+This list is an installed selection aid, not a per-request authorization check. Ordinary generation reads only the selected profile; live discovery is limited to explicit requests, profile gaps or rejection diagnosis. Reviewed local compatibility supplements are separately sourced.
 
 README is generated only from base-catalog models with explicit image/video capabilities; it never infers capability from a model name. The installed model index selects a model and only that model's profile carries known parameters; the live catalog is read on demand only for explicit discovery, an installed-profile gap, or post-rejection diagnosis. Before release, refresh from the controlled base catalog and run `npm run release:validate`; the release gate fails when the snapshot is over seven days old.
 
@@ -144,7 +147,9 @@ the newly confirmed status.
 
 ## Updating
 
-`puretokens-update` resolves official main to an exact commit and version. Its native fetch wrapper checks versions without installation, or installs matching checksum-verified platform assets. When those assets are unavailable, it retrieves the same pinned official source archive and invokes native sync. The installer synchronizes all six Skills and the SHA-256-verified platform-native executor, and preserves all unrelated or unmanaged directories. The versioned success receipt is the only confirmation that an update completed.
+`puretokens-update` resolves the latest published stable manifest and pins its version, source commit, selector and platform archive checksums. It downloads only the current OS/architecture archive, containing six shared Skills, one executor and only the current system's scripts. Missing assets never fall back to main or a source archive. Check-update does not write files or run init. Same-version install/update verifies the release executor checksum and all seven managed inventories, then returns without archive download, writes or init. Missing/modified files or unresolved transactions stop without automatic repair. Explicit local source sync remains available for maintainers.
+
+A fresh installation or actual update still runs init automatically, with at most two read-only requests sharing one 20-second deadline and no automatic retry. File synchronization and connection verification are reported separately; an init timeout does not roll back installation, trigger reinstallation or prove an invalid credential. A versioned synchronization receipt confirms a completed installation; a same-version verification receipt confirms the existing installation without changing files.
 
 The source sync scripts are `runtime/puretokens-skill-install.sh` for macOS/Linux and `runtime/puretokens-skill-install.ps1` for Windows. They install, verify, and place the platform executor; users do not need Node, npm, Python, Go, or a package manager.
 
@@ -154,7 +159,7 @@ files and symlinks, preserving existing contents. An unmarked directory
 must match the current official source exactly; a matching name or self-reported version/hash is
 insufficient. Inventories detect accidental edits, not malicious local tampering.
 
-After every successful installation or update, the installer automatically runs `init`. It performs a non-billable fixed `/v1` identity check followed by one authenticated `/v1/media/models` request without displaying credentials or host configuration, then prints the current usage guide and examples. If verification does not complete, it reports a sanitized reason such as no active matching connection, missing credential, API rejection with its HTTP status, network failure, or an unconfirmed API identity; it never prints the configured URL, provider, or key. To run it again later, ask the host Agent to initialize Pure Tokens Skills or check the current Pure Tokens connection; it must invoke the installed executor's `init` command and show the guide without modifying configuration.
+After a fresh installation or actual version update, the installer automatically runs `init`; an intact same-version shortcut does not. It performs a non-billable fixed `/v1` identity check followed by one authenticated `/v1/media/models` request within a shared 20-second deadline without displaying credentials or host configuration, then prints the current usage guide and examples. If verification does not complete, it reports a sanitized reason such as no active matching connection, missing credential, API rejection with its HTTP status, network failure, or an unconfirmed API identity; it never prints the configured URL, provider, or key. To run it again later, ask the host Agent to initialize Pure Tokens Skills or check the current Pure Tokens connection; it must invoke the installed executor's `init` command and show the guide without modifying configuration.
 
 ## Development validation
 

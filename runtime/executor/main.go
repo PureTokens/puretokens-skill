@@ -33,10 +33,11 @@ const (
 	maxVideoBytes    int64 = 512 << 20
 )
 
-var executorVersion = "0.18.0"
+var executorVersion = "0.18.1"
 var executorSourceSHA256 = "unbuilt"
 
 const imageInitialPollDelay = 5 * time.Second
+const initTimeout = 20 * time.Second
 
 type attachment struct {
 	Field             string `json:"field"`
@@ -274,8 +275,15 @@ func run(args []string, input io.Reader, output io.Writer) error {
 }
 
 func executeInit(output io.Writer, svc service) error {
+	return executeInitContext(context.Background(), output, svc)
+}
+
+func executeInitContext(parent context.Context, output io.Writer, svc service) error {
+	// Identity and authentication share one budget, including response bodies.
+	ctx, cancel := context.WithTimeout(parent, initTimeout)
+	defer cancel()
 	result := initReceipt{Command: "init", ExecutorVersion: executorVersion, ConfigurationStatus: "unverified", UsageExamples: usageExamples()}
-	body, status, _, code, _, err := svc.request(context.Background(), http.MethodGet, "/v1", nil, "")
+	body, status, _, code, _, err := svc.request(ctx, http.MethodGet, "/v1", nil, "")
 	result.APIRequestExecuted = true
 	result.HTTPStatus = status
 	if err != nil {
@@ -314,7 +322,7 @@ func executeInit(output io.Writer, svc service) error {
 	basePath, _ := identity["base_url"].(string)
 	if statusValue == "ok" && name == "Pure Tokens API" && basePath == "/v1" {
 		result.APIIdentityConfirmed = true
-		authBody, authStatus, _, authCode, _, authErr := svc.request(context.Background(), http.MethodGet, "/v1/media/models", nil, "")
+		authBody, authStatus, _, authCode, _, authErr := svc.request(ctx, http.MethodGet, "/v1/media/models", nil, "")
 		authObject, authDecodeErr := readAPIObject(authBody)
 		_, catalogOK := authObject["data"].([]any)
 		if authErr != nil || authStatus != http.StatusOK || authDecodeErr != nil || !catalogOK {
@@ -390,7 +398,7 @@ func credentialForHost(host string) (string, error) {
 		return credentialFromClaudeDesktop()
 	case "dsh-desktop":
 		return credentialFromDSHDesktop()
-	case "kimi-code", "qoder":
+	case "kimi-code", "qoder", "pi":
 		return credentialFromNewHost(host)
 	case "zcode":
 		return credentialFromZCode()
