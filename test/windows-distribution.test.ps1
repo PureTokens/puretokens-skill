@@ -41,7 +41,14 @@ try {
   $global:fixtureSource = $source
   $global:fixtureRoot = $root
   Add-Type -AssemblyName System.IO.Compression.FileSystem
-  [IO.Compression.ZipFile]::CreateFromDirectory($source, (Join-Path $root "platform.zip"), [IO.Compression.CompressionLevel]::Fastest, $true)
+  # Match the Unix-built release archives even on the .NET Framework ZIP API.
+  $zip = [IO.Compression.ZipFile]::Open((Join-Path $root "platform.zip"), [IO.Compression.ZipArchiveMode]::Create)
+  try {
+    foreach ($file in @(Get-ChildItem -LiteralPath $source -Recurse -Force -File)) {
+      $entryName = "puretokens-skill/" + $file.FullName.Substring($source.Length + 1).Replace('\', '/')
+      $null = [IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $file.FullName, $entryName, [IO.Compression.CompressionLevel]::Fastest)
+    }
+  } finally { $zip.Dispose() }
   $release = @{
     schemaVersion = 2
     version = $global:fixtureVersion
@@ -171,6 +178,15 @@ try {
   $rejected = $false
   try { & $fetch install -Target (Join-Path $root "bad-checksum") } catch { $rejected = $_.Exception.Message -like "*checksum mismatch*" }
   if (-not $rejected -or (Test-Path -LiteralPath (Join-Path $root "bad-checksum"))) { throw "checksum mismatch was not rejected before mutation" }
+
+  # A matching checksum must not make a backslash member acceptable.
+  $zip = [IO.Compression.ZipFile]::Open((Join-Path $root "platform.zip"), [IO.Compression.ZipArchiveMode]::Update)
+  try { $null = $zip.CreateEntry('puretokens-skill/unsafe\member.txt') } finally { $zip.Dispose() }
+  $release.files[$platform].sha256 = (Get-FileHash -LiteralPath (Join-Path $root "platform.zip") -Algorithm SHA256).Hash.ToLowerInvariant()
+  $release | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $root "release.json") -Encoding UTF8
+  $rejected = $false
+  try { & $fetch install -Target (Join-Path $root "unsafe-archive") } catch { $rejected = $_.Exception.Message -like "*unsafe path or symlink*" }
+  if (-not $rejected -or (Test-Path -LiteralPath (Join-Path $root "unsafe-archive"))) { throw "backslash archive member was not rejected before mutation" }
 } finally {
   Remove-Item function:global:Invoke-WebRequest -ErrorAction SilentlyContinue
   foreach ($name in $savedEnvironment.Keys) { [Environment]::SetEnvironmentVariable($name, $savedEnvironment[$name], "Process") }
