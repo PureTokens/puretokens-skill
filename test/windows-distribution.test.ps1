@@ -40,6 +40,7 @@ try {
   Copy-Item -LiteralPath (Join-Path $repository "runtime/executor/bin/puretokens-api-$platform.exe") -Destination (Join-Path $source "runtime/executor/bin")
   $global:fixtureSource = $source
   $global:fixtureRoot = $root
+  Add-Type -AssemblyName System.IO.Compression
   Add-Type -AssemblyName System.IO.Compression.FileSystem
   # Match the Unix-built release archives even on the .NET Framework ZIP API.
   $zip = [IO.Compression.ZipFile]::Open((Join-Path $root "platform.zip"), [IO.Compression.ZipArchiveMode]::Create)
