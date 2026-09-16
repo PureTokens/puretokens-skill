@@ -14,6 +14,45 @@ npm run check
 
 This gate must cover repository contracts, generated-document drift, executor behavior and actual request/receipt schema conformance. Test with isolated fixtures and local HTTP servers; never use real credentials or paid media requests as routine validation. Before release, additionally run `npm run release:validate` for catalog freshness and reproducible six-platform binary verification. Fixture success does not complete real-host API, continuation or attachment-delivery acceptance; record those separately in `references/host-acceptance.json`.
 
+## Gateway Media Contract Ownership
+
+The paired gateway repository is `PureTokenPlus_web`. Its
+`docs/architecture/media-request-contract.md` owns supplier adaptation and the
+public task lifecycle. A synchronous supplier does not make the Skill
+synchronous: the gateway persists work, returns a public task ID, and executes
+with the original API token's authorization and billing scope. The executor
+keeps the public `async: true` compatibility field and never sends Pic's private
+`X-PTS-Image-Managed-Delivery` header.
+
+Cross-repository media changes must update that gateway document, its replayable
+New API patch/register and tests, and this repository's
+`references/direct-api-execution-contract.json`, matching schema/validator and
+executor regressions together. Do not revert to raw provider responses, longer
+client waits, or internal headers to work around a gateway regression. The
+2026-09-16 gateway fix requires its reviewed provider-mapping metadata projection
+to be deployed as well as code; Skill-only release cannot activate that fix.
+Local fixture acceptance is not production rollout or real-provider acceptance.
+
+Gateway correlation and the Skill `support` block are a paired contract.
+`PureTokenPlus_web` patch `037-public-support-request-id.patch` exposes the
+existing canonical gateway ID as `X-Request-ID` while retaining
+`X-Oneapi-Request-Id`. The executor accepts one lowercase canonical UUID,
+uses legacy only when the standard header is absent, and omits duplicates,
+malformed or conflicting values. Never read upstream request IDs or add client
+headers to simulate server correlation.
+
+`runtime/executor/support_summary.go` projects an explicit allowlist from the
+current receipt and latest HTTP attempt into `puretokens-support-v1`, checked by
+`schemas/support-summary.schema.json`. It adds no network/config/filesystem
+collection, automatic export/upload or persistent task-record fields. It excludes
+prompts, parameters, paths, credentials, configuration, raw errors and media.
+Request correlation does not prove task acceptance, billing or idempotency.
+A subsequent HTTP failure must clear earlier request IDs; local-only recovery
+must not restore previous HTTP evidence. Regression coverage includes header
+validation, actual receipt schemas, no additional requests, same-task recovery
+and absence from persisted records. Sharing requires user-directed private
+support, not public logs or a full receipt dump.
+
 After changing executor source, dependencies, build inputs or package metadata, use the toolchain in `runtime/executor/build-config.json` and run `npm run executor:build` to regenerate all six artifacts and their checksums before packaging. `npm run release:package` prepares one-platform archives and a manifest pinned to the source commit.
 
 Before running the release-preparation workflow, rebuild and commit the executor artifacts, checksums and matching source inputs in the selected revision. That workflow tests and validates the revision, then packages its checksum-verified committed artifacts; it rebuilds all six platforms into temporary directories with the exact toolchain in `runtime/executor/build-config.json` and compares bytes before packaging the committed artifacts. Local packaging from modified or untracked source inputs produces draft candidates with `sourceCommit: null`, which cannot be promoted as pinned release assets.
@@ -37,6 +76,13 @@ playback remains a host acceptance item.
 ## Contract changes
 
 Keep request/receipt schemas, executable behavior, installed Skill instructions and command examples in the same change. Ordinary generation reads one selected profile and submits once; explicit validation, catalog filtering and diagnostics must not become mandatory preflights. Use concise user receipts while retaining safe machine metadata. Task records are optional user/workspace artifacts without prompts, credentials, reference URLs or media bytes.
+
+Media entrypoints retain host binding, submission/stop conditions and native
+handoff. Keep recovery details in each installed `references/executor-usage.md`,
+symptom/support guidance in `references/failure-guide.md`, and user examples in
+the update Skill's usage guide. Load those sections only when relevant.
+Instruction fixtures protect these boundaries but do not prove an actual host
+or model followed them; do not convert byte savings into claimed latency gains.
 
 Align package, Skill index, all six manifests, executor version/manifest and host-acceptance release versions. Refresh each manifest's sourceSha256 after editing SKILL.md. Update both changelogs. Preserve the exact first text installation block and its heading in both READMEs; the client download page extracts them.
 

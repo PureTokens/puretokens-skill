@@ -186,6 +186,31 @@ test("media Skills load a compact index and only the selected model profile", as
   }
 });
 
+test("media entrypoints route exceptional detail without weakening support privacy", async () => {
+  for (const kind of ["image", "video"]) {
+    const base = path.join(repositoryRoot, "skills", `puretokens-${kind}`);
+    const [skill, usage, failure, receipt, scenarios] = await Promise.all([
+      readFile(path.join(base, "SKILL.md"), "utf8"),
+      readFile(path.join(base, "references/executor-usage.md"), "utf8"),
+      readFile(path.join(base, "references/failure-guide.md"), "utf8"),
+      readFile(path.join(base, "references/task-receipt.json"), "utf8").then(JSON.parse),
+      readFile(path.join(base, "references/behavior-scenarios.json"), "utf8").then(JSON.parse)
+    ]);
+    assert.ok(skill.includes("references/executor-usage.md#continuation-record"));
+    assert.match(usage, /## Continuation record/);
+    assert.match(usage, /Across computers or operating systems/);
+    assert.match(skill, /不先查余额、init、doctor、preflight 或实时目录/);
+    assert.match(skill, /累计两个窗口/);
+    assert.match(skill, /取消、失败回执、网络超时、未知状态或对账均停止自动续接/);
+    assert.match(skill, /实际交付后才执行/);
+    assert.match(failure, /api_request_attempted=true/);
+    assert.match(failure, /不自动导出、上传、读取凭据或追加诊断/);
+    assert.match(receipt.failure.conditionalFields.support, /never the whole receipt/);
+    const scenario = scenarios.scenarios.find(s => s.id === `${kind}-private-support-summary`);
+    assert.match(scenario?.then ?? "", /never resubmit to obtain one/);
+  }
+});
+
 test("the public install prompt remains extractable in both README files", async () => {
   const expected = "Install or update the official Pure Tokens Skills from https://github.com/PureTokens/puretokens-skill.";
   for (const file of ["README.md", "README.zh-CN.md"]) {

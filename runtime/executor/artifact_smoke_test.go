@@ -71,4 +71,13 @@ func TestPackagedExecutorIdentityAndOfflinePreflight(t *testing.T) {
 	if bytes.Contains(output, []byte("synthetic-artifact-token")) {
 		t.Fatal("fixture credential leaked")
 	}
+	var envelope struct {
+		Support map[string]any `json:"support"`
+	}
+	if json.Unmarshal(output, &envelope) != nil || envelope.Support["format"] != "puretokens-support-v1" ||
+		envelope.Support["executor_version"] != proof.Version || envelope.Support["host"] != "codex" ||
+		envelope.Support["command"] != "preflight" || envelope.Support["api_request_attempted"] != false ||
+		envelope.Support["request_id"] != nil || envelope.Support["http_status"] != nil {
+		t.Fatal("packaged preflight invented network evidence or omitted support metadata")
+	}
 }

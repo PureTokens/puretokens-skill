@@ -4,6 +4,14 @@
 
 # Changelog
 
+## 0.18.3 - 2026-09-16
+
+- Align Image 2.5 Flare and Sunburst with the current catalog: allow `3:1` and `1:3` for generation and editing, and reject the removed `4:5` and `5:4` ratios without converting them.
+- Refresh the 23-model catalog while preserving Image 2 and all video parameters, including the reviewed Seedance first/last-frame operations.
+- Add an allowlisted support block to executor receipts with current-invocation diagnostics and validated gateway request correlation; no extra requests, config reads, exports or task-record persistence.
+- Shorten image/video entrypoints, keep recovery details on demand, and add practical examples and symptom-based troubleshooting without changing host binding, one-submit behavior or native attachment delivery.
+- Document paired gateway ownership for synchronous image suppliers and backward-compatible request-ID headers; a Skill update alone does not deploy gateway changes.
+
 ## 0.18.2 - 2026-09-12
 
 - Fix OpenCode rejecting a valid saved service when no default chat model is configured. Resolve exactly one enabled matching service only when the default is absent; explicit selections never fall back.

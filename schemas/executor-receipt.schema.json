@@ -6,6 +6,7 @@
     "ok"
   ],
   "properties": {
+    "support": {"$ref": "support-summary.schema.json"},
     "ok": {
       "type": "boolean"
     },

@@ -128,7 +128,23 @@
     "fallback": "If the executor cannot receive an explicitly attached file by absolute path through the declared multipart representation, stop before submission, explain the declared transport, and do not invent a URL, file ID, or upload path.",
     "publicUrlRequiresInstalledOrOnDemandProfilePropertyAndTransport": true
   },
+  "supportSummary": {
+    "format": "puretokens-support-v1",
+    "source": "current_invocation_receipt_and_latest_http_attempt_only",
+    "requestIdHeaders": ["X-Request-ID", "X-Oneapi-Request-Id"],
+    "requestIdRule": "one_canonical_lowercase_uuid_legacy_only_if_standard_absent_omit_conflicts",
+    "neverUseUpstreamRequestId": true,
+    "noAdditionalIO": true,
+    "noAutomaticExportOrUpload": true,
+    "neverUseAsTaskRecordOrIdempotencyKey": true,
+    "privateSupportOnly": true
+  },
   "asyncTaskHandling": {
+    "providerProtocolOwner": "gateway",
+    "publicImageContract": "submit_once_receive_durable_task_id_then_read_same_task_status_and_protected_content",
+    "asyncFlagMeaning": "product_task_compatibility_not_supplier_async_capability",
+    "neverSendInternalWorkspaceDeliveryHeaders": true,
+    "neverSwitchToSynchronousProviderTransport": true,
     "reconciliationOutcome": "stop_ordinary_polling_retain_same_task_id_do_not_submit_replacement_or_infer_refund",
     "submissionOutputUnknown": "treat_submission_outcome_as_unknown_do_not_repeat_post_or_submit_replacement_task",
     "statusHttp429": "honor_valid_positive_retry_after_then_continue_same_task_if_remaining_budget",

@@ -4,6 +4,7 @@
   "title": "Pure Tokens managed native API execution contract",
   "type": "object",
   "required": [
+    "supportSummary",
     "schemaVersion",
     "apiOrigin",
     "authentication",
@@ -201,7 +202,34 @@
       "type": "object"
     },
     "asyncTaskHandling": {
-      "type": "object"
+      "type": "object",
+      "required": [
+        "providerProtocolOwner",
+        "publicImageContract",
+        "asyncFlagMeaning",
+        "neverSendInternalWorkspaceDeliveryHeaders",
+        "neverSwitchToSynchronousProviderTransport"
+      ],
+      "properties": {
+        "providerProtocolOwner": { "const": "gateway" },
+        "publicImageContract": { "const": "submit_once_receive_durable_task_id_then_read_same_task_status_and_protected_content" },
+        "asyncFlagMeaning": { "const": "product_task_compatibility_not_supplier_async_capability" },
+        "neverSendInternalWorkspaceDeliveryHeaders": { "const": true },
+        "neverSwitchToSynchronousProviderTransport": { "const": true }
+      }
+    },
+    "supportSummary": {
+      "const": {
+        "format": "puretokens-support-v1",
+        "source": "current_invocation_receipt_and_latest_http_attempt_only",
+        "requestIdHeaders": ["X-Request-ID", "X-Oneapi-Request-Id"],
+        "requestIdRule": "one_canonical_lowercase_uuid_legacy_only_if_standard_absent_omit_conflicts",
+        "neverUseUpstreamRequestId": true,
+        "noAdditionalIO": true,
+        "noAutomaticExportOrUpload": true,
+        "neverUseAsTaskRecordOrIdempotencyKey": true,
+        "privateSupportOnly": true
+      }
     },
     "mediaDeliveryResourceBounds": {
       "type": "object"

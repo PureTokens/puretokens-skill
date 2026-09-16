@@ -9,6 +9,7 @@
     "result"
   ],
   "properties": {
+    "support": {"$ref": "support-summary.schema.json"},
     "ok": {
       "const": true
     },

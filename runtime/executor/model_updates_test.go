@@ -2,6 +2,40 @@ package main
 
 import "testing"
 
+func TestImageModelAspectRatios(t *testing.T) {
+	for _, model := range []string{"gpt-image-2.5-flare", "gpt-image-2.5-sunburst", "gpt-image-2"} {
+		for _, operation := range []string{"generate", "edit"} {
+			for _, ratio := range []string{"3:1", "1:3", "4:5", "5:4", "16:9"} {
+				t.Run(model+"/"+operation+"/"+ratio, func(t *testing.T) {
+					newRatio := ratio == "3:1" || ratio == "1:3"
+					allowed := ratio == "16:9" || newRatio == (model != "gpt-image-2")
+					svc, transport := catalogProfileService(t, readInstalledProfileFixture(t, "image", model))
+					request := taskRequest{
+						Kind: "image", Operation: operation, Model: model, Prompt: "fixture",
+						Parameters: map[string]any{"aspect_ratio": ratio, "image_size": "2K"},
+					}
+					if operation == "edit" {
+						request.Attachments = []attachment{{Field: "image", Path: "fixture.png"}}
+					}
+					err := prepareProfileRequest(&request, svc)
+					if (err == nil) != allowed {
+						t.Fatalf("allowed=%t: %v", allowed, err)
+					}
+					if transport.calls != 0 {
+						t.Fatal("installed ratio validation must not read the live catalog")
+					}
+					if allowed {
+						if recordFromRequest(request).Parameters["aspect_ratio"] != ratio ||
+							taskReceipt(request, "", "").Parameters["aspect_ratio"] != ratio {
+							t.Fatal("validated ratio lost from the task record or receipt")
+						}
+					}
+				})
+			}
+		}
+	}
+}
+
 func TestImage25QualityAndEditBoundaries(t *testing.T) {
 	for _, model := range []string{"gpt-image-2.5-flare", "gpt-image-2.5-sunburst"} {
 		for _, quality := range []string{"low", "medium", "high", "xhigh", "max"} {

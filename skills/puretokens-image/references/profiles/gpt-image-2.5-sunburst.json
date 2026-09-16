@@ -2,8 +2,8 @@
   "$schema": "https://puretokensx.com/schemas/model-profile.schema.json",
   "schemaVersion": 1,
   "capability": "image",
-  "catalogUpdatedAt": "2026-09-12",
-  "catalogCapturedAt": "2026-09-12T02:04:41.893Z",
+  "catalogUpdatedAt": "2026-09-16",
+  "catalogCapturedAt": "2026-09-16T04:21:35.466Z",
   "id": "gpt-image-2.5-sunburst",
   "parameterSchema": {
     "properties": {
@@ -26,16 +26,16 @@
       "aspect_ratio": {
         "type": "string",
         "enum": [
-          "1:1",
-          "5:4",
-          "9:16",
+          "3:1",
           "21:9",
           "16:9",
           "3:2",
           "4:3",
-          "4:5",
+          "1:1",
           "3:4",
-          "2:3"
+          "2:3",
+          "9:16",
+          "1:3"
         ],
         "default": "1:1"
       },

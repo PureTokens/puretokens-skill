@@ -258,7 +258,23 @@ function validateDirectApiExecutionContract(errors, contract, hostSupport) {
     errors.push(`${label} must define the fail-closed direct user-media input contract`);
   }
   const asyncTaskHandling = contract.asyncTaskHandling;
-  if (!asyncTaskHandling || asyncTaskHandling.reconciliationRequiredPrecedesStateClassification !== true ||
+  if (contract.supportSummary?.format !== "puretokens-support-v1" ||
+    contract.supportSummary.noAdditionalIO !== true ||
+    contract.supportSummary.noAutomaticExportOrUpload !== true ||
+    contract.supportSummary.neverUseUpstreamRequestId !== true ||
+    contract.supportSummary.privateSupportOnly !== true ||
+    contract.supportSummary.neverUseAsTaskRecordOrIdempotencyKey !== true ||
+    contract.supportSummary.source !== "current_invocation_receipt_and_latest_http_attempt_only" ||
+    contract.supportSummary.requestIdRule !== "one_canonical_lowercase_uuid_legacy_only_if_standard_absent_omit_conflicts" ||
+    !sameArray(contract.supportSummary.requestIdHeaders ?? [], ["X-Request-ID", "X-Oneapi-Request-Id"])) {
+    errors.push(`${label} must retain the local-only, allowlisted support summary contract`);
+  }
+  if (!asyncTaskHandling || asyncTaskHandling.providerProtocolOwner !== "gateway" ||
+    asyncTaskHandling.publicImageContract !== "submit_once_receive_durable_task_id_then_read_same_task_status_and_protected_content" ||
+    asyncTaskHandling.asyncFlagMeaning !== "product_task_compatibility_not_supplier_async_capability" ||
+    asyncTaskHandling.neverSendInternalWorkspaceDeliveryHeaders !== true ||
+    asyncTaskHandling.neverSwitchToSynchronousProviderTransport !== true ||
+    asyncTaskHandling.reconciliationRequiredPrecedesStateClassification !== true ||
     asyncTaskHandling.reconciliationOutcome !== "stop_ordinary_polling_retain_same_task_id_do_not_submit_replacement_or_infer_refund" ||
     asyncTaskHandling.submissionOutputUnknown !== "treat_submission_outcome_as_unknown_do_not_repeat_post_or_submit_replacement_task" ||
     asyncTaskHandling.statusHttp429 !== "honor_valid_positive_retry_after_then_continue_same_task_if_remaining_budget" ||
@@ -739,6 +755,7 @@ async function validateSchemaDocuments(errors) {
     "schemas/task-receipt.schema.json",
     "schemas/executor-request.schema.json",
     "schemas/executor-receipt.schema.json",
+    "schemas/support-summary.schema.json",
     "schemas/model-query.schema.json",
     "schemas/model-query-receipt.schema.json",
     "schemas/task-record.schema.json",

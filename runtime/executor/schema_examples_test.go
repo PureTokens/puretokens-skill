@@ -35,6 +35,10 @@ func TestContractExamples(t *testing.T) {
 			t.Fatalf("%s did not emit a JSON document", name)
 		}
 		examples = append(examples, schemaExample{name, schema, append(json.RawMessage(nil), data...)})
+		var envelope map[string]json.RawMessage
+		if json.Unmarshal(data, &envelope) == nil && envelope["support"] != nil {
+			examples = append(examples, schemaExample{"support-" + name, "support-summary.schema.json", envelope["support"]})
+		}
 	}
 	captureValue := func(name, schema string, value any) {
 		t.Helper()
@@ -89,6 +93,7 @@ func TestContractExamples(t *testing.T) {
 				calls := 0
 				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					calls++
+					w.Header().Set("X-Request-ID", "55a3d6e3-42dd-4e67-8b08-e5c6058b2f99")
 					if r.Method != http.MethodPost || r.URL.Path != route {
 						t.Error("documented submission did an unexpected request")
 					}
@@ -107,8 +112,11 @@ func TestContractExamples(t *testing.T) {
 					io.WriteString(w, `{"id":"fixture-doc-task","status":"queued"}`)
 				}))
 				var output bytes.Buffer
+				writer := &supportReceiptWriter{output: &output, command: "submit", host: "codex"}
+				svc := fixtureService(server)
+				svc.support = writer
 				body, _ := json.Marshal(request)
-				err = executeTask(bytes.NewReader(body), &output, fixtureService(server))
+				err = executeTask(bytes.NewReader(body), writer, svc)
 				server.Close()
 				if err != nil || calls != 1 {
 					t.Fatalf("%s did not submit once without status/content reads: %v (%d calls)", name, err, calls)
@@ -276,7 +284,9 @@ func TestContractExamples(t *testing.T) {
 			}
 		})
 		var output bytes.Buffer
-		if err := executeBalance(&output, svc); err != nil {
+		writer := &supportReceiptWriter{output: &output, command: "balance", host: "codex"}
+		svc.support = writer
+		if err := executeBalance(writer, svc); err != nil {
 			t.Fatal(err)
 		}
 		capture("balance", "balance-receipt.schema.json", output.Bytes())
@@ -358,7 +368,9 @@ func TestContractExamples(t *testing.T) {
 		defer server.Close()
 		svc := service{baseURL: server.URL, client: server.Client(), token: "synthetic-doctor-fixture", profilesRoot: root}
 		var output bytes.Buffer
-		if err := executeDoctor(&output, svc, "codex"); err != nil {
+		writer := &supportReceiptWriter{output: &output, command: "doctor", host: "codex"}
+		svc.support = writer
+		if err := executeDoctor(writer, svc, "codex"); err != nil {
 			t.Fatal(err)
 		}
 		if calls != 2 {
@@ -372,7 +384,9 @@ func TestContractExamples(t *testing.T) {
 		captureValue("init-success", "init-receipt.schema.json", result.Connection)
 		output.Reset()
 		svc.token = ""
-		if err := executeDoctorCredentialFailure(&output, svc, "codex", errors.New("synthetic-private-error")); err == nil || calls != 2 {
+		writer = &supportReceiptWriter{output: &output, command: "doctor", host: "codex"}
+		svc.support = writer
+		if err := executeDoctorCredentialFailure(writer, svc, "codex", errors.New("synthetic-private-error")); err == nil || calls != 2 {
 			t.Fatal("doctor credential failure used network")
 		}
 		capture("doctor-no-credential", "doctor-receipt.schema.json", output.Bytes())

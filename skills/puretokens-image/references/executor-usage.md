@@ -66,6 +66,14 @@ Use `--record <absolute-task-json>` in an explicit workspace/user location for v
 
 `status`, `wait` and `resume` accept an existing `--record` instead of `--request`; never combine both. `resume` uses only the recorded task: reconciliation requires one status read; a completed record without reconciliation verifies local delivery files; otherwise it performs a bounded wait. Call `delivered` only after the host actually hands off that downloaded file. Records and output files are explicit user artifacts, retained or cleaned according to the user's chosen location. A record cannot recover an unknown submission that returned no task ID.
 
+Across computers or operating systems, keep the original record unchanged and
+use the current explicitly selected host's own connection. Never copy credentials.
+If old paths are unavailable, choose an existing absolute directory on this
+computer with `content --output-dir`; retrieve only undelivered indexes of the
+same task. A fully delivered record returns `done` without downloading again.
+Missing legacy download proofs do not authorize overwriting old files or
+inventing proof: preserve them and retrieve the same index into another directory.
+
 ## Explicit validation
 
 `preflight --host codex --request <file>` checks the requested model parameters and attachment representation without a POST. Use it only for an explicit check; normal generation validates during submit. It is not a price quote or a guarantee of permission, balance or media delivery. A profile gap may require one catalog GET.
@@ -85,3 +93,14 @@ Machine `next_step` is one of `wait`, `content`, `deliver`, `await_user`, `done`
 A failed attachment handoff does not call content again: for a completed record with `reconciliation_required` not true, run `resume --host <host> --record <file>` to verify and expose its existing file. This completed-record path is local-only and does not resolve credentials or read the API. Then hand off the returned verified file. If no valid file is exposed, preserve existing files and retrieve the same index into a different directory. Across commands, use the recorded digest proof; without a record, reattach only the unchanged file from this active conversation's download receipt. If that identity is uncertain, preserve it and fetch the same index into another directory. Never mark delivered before the actual host handoff.
 
 If submit output is unknown, only local cleanup of this command's temporary request file is allowed before stopping. Cleanup must never issue another API command, repeat POST or discard the task record.
+
+## Support evidence
+
+Normal JSON receipts include an allowlisted `support` block for this invocation.
+It adds no request, config read, export, upload or persistent record. Only share
+that block when the user requests troubleshooting information for private
+support; do not publish the full receipt. See [failure-guide.md](failure-guide.md).
+Its `request_id`, when present, correlates the latest HTTP response, not the
+whole task. It is neither a task ID nor an idempotency key and cannot recover
+an unknown submission. Older executors may omit this block; do not rerun a
+paid request to obtain it.

@@ -53,7 +53,7 @@ A video task has one output, index 0. Attach the returned `downloaded_paths` fil
 
 ## Continuation record
 
-Use `--record <absolute-task-json>` in an explicit workspace/user location for videos, multiple outputs or cross-session recovery. A short single-image flow may use `--request` alone. Choose before submitting. Both modes submit exactly once; do not create a second task to switch modes. Choose the output location with `content --output-dir <existing-absolute-directory>`; it can also be retained from an explicit submission output_dir. The record contains task ID, kind, model, original operation, requested count, validated safe parameters, progress and per-index download proofs (`sha256`, `bytes`, `media_type`); no prompt, credentials, reference URL or media bytes. Do not edit it by hand.
+Use `--record <absolute-task-json>` in an explicit workspace/user location by default for video. Choose before submitting; an existing unrecorded task may continue with `--request` alone, never a second submission to switch modes. Choose the output location with `content --output-dir <existing-absolute-directory>`; it can also be retained from an explicit submission output_dir. The record contains task ID, kind, model, original operation, requested count, validated safe parameters, progress and per-index download proofs (`sha256`, `bytes`, `media_type`); no prompt, credentials, reference URL or media bytes. Do not edit it by hand.
 
 ```text
 <executor> submit --host codex --request <request-file> --record <absolute-task-json>
@@ -64,11 +64,19 @@ Use `--record <absolute-task-json>` in an explicit workspace/user location for v
 
 `status`, `wait` and `resume` accept an existing `--record` instead of `--request`; never combine both. `resume` uses only the recorded task: reconciliation requires one status read; a completed record without reconciliation verifies local delivery files; otherwise it performs a bounded wait. Call `delivered` only after the host actually hands off that downloaded file. Records and output files are explicit user artifacts, retained or cleaned according to the user's chosen location. A record cannot recover an unknown submission that returned no task ID.
 
+Across computers or operating systems, keep the original record unchanged and
+use the current explicitly selected host's own connection. Never copy credentials.
+If old paths are unavailable, choose an existing absolute directory on this
+computer with `content --output-dir`; retrieve only the undelivered index 0 of
+the same task. A fully delivered record returns `done` without downloading again.
+Missing legacy download proofs do not authorize overwriting old files or
+inventing proof: preserve them and retrieve the same index into another directory.
+
 ## Explicit validation
 
 `preflight --host codex --request <file>` checks the requested model parameters and attachment representation without a POST. Use it only for an explicit check; normal generation validates during submit. It is not a price quote or a guarantee of permission, balance or media delivery. A profile gap may require one catalog GET.
 
-Machine receipts preserve available context with `original_operation` separate from the invoked command. `retry_not_before` is an RFC3339 lower bound for the next same-task read; preserve it across continuation. An omitted continuation count is unknown, not one; image content requires the confirmed original count. Report `submission_outcome: unknown` as uncertainty; never automatically resubmit. Show API codes only if actually returned, and retain only sanitized error detail. Keep user-facing updates to task ID/status, actual artifact delivery or the needed corrective action.
+Machine receipts preserve available context with `original_operation` separate from the invoked command. `retry_not_before` is an RFC3339 lower bound for the next same-task read; preserve it across continuation. An omitted continuation count is unknown, not one; video tasks only allow one output. Report `submission_outcome: unknown` as uncertainty; never automatically resubmit. Show API codes only if actually returned, and retain only sanitized error detail. Keep user-facing updates to task ID/status, actual artifact delivery or the needed corrective action.
 
 A record requiring reconciliation is an exception to bounded waiting: an explicit `resume` reads its status once, keeping the same task ID and honoring Retry-After. Continue from the new receipt; never clear the flag by hand or resubmit.
 
@@ -83,3 +91,14 @@ Machine `next_step` is one of `wait`, `content`, `deliver`, `await_user`, `done`
 A failed attachment handoff does not call content again: for a completed record with `reconciliation_required` not true, run `resume --host <host> --record <file>` to verify and expose its existing file. This completed-record path is local-only and does not resolve credentials or read the API. Then hand off the returned verified file. If no valid file is exposed, preserve existing files and retrieve the same index into a different directory. Across commands, use the recorded digest proof; without a record, reattach only the unchanged file from this active conversation's download receipt. If that identity is uncertain, preserve it and fetch the same index into another directory. Never mark delivered before the actual host handoff.
 
 If submit output is unknown, only local cleanup of this command's temporary request file is allowed before stopping. Cleanup must never issue another API command, repeat POST or discard the task record.
+
+## Support evidence
+
+Normal JSON receipts include an allowlisted `support` block for this invocation.
+It adds no request, config read, export, upload or persistent record. Only share
+that block when the user requests troubleshooting information for private
+support; do not publish the full receipt. See [failure-guide.md](failure-guide.md).
+Its `request_id`, when present, correlates the latest HTTP response, not the
+whole task. It is neither a task ID nor an idempotency key and cannot recover
+an unknown submission. Older executors may omit this block; do not rerun a
+paid request to obtain it.

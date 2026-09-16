@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "version": "0.18.2",
-  "checkedAt": "2026-09-12",
-  "method": "isolated fixture coverage; 0.18.2 real-host acceptance pending; 0.18.1 evidence archived separately",
+  "version": "0.18.3",
+  "checkedAt": "2026-09-16",
+  "method": "isolated fixture coverage; 0.18.3 real-host acceptance pending; historical evidence remains version-scoped",
   "guide": "references/host-acceptance-guide.md",
   "evidence": [],
   "hosts": [

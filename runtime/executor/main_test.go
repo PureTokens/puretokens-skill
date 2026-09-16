@@ -32,6 +32,40 @@ func TestTaskRequestBodyUsesFixedImageAsyncContract(t *testing.T) {
 	}
 }
 
+func TestManagedImageUsesPublicTaskContractWithoutWorkspaceHeaders(t *testing.T) {
+	calls := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		if r.Method != http.MethodPost || r.URL.Path != "/v1/images/generations" {
+			t.Errorf("submit must not poll or retrieve content: %s %s", r.Method, r.URL.Path)
+		}
+		if r.Header.Get("X-PTS-Image-Managed-Delivery") != "" {
+			t.Error("executor must not impersonate an internal workspace")
+		}
+		var payload map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			t.Fatal(err)
+		}
+		if payload["async"] != true || payload["model"] != "gpt-image-2" {
+			t.Error("supplier protocol must not change the public task request")
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = io.WriteString(w, `{"id":"task_managed_fixture","object":"image","status":"pending"}`)
+	}))
+	defer server.Close()
+	output := &bytes.Buffer{}
+	request := taskRequest{Kind: "image", Operation: "generate", Model: "gpt-image-2", Prompt: "fixture",
+		Parameters: map[string]any{"n": 1, "image_size": "1K", "aspect_ratio": "1:1"}}
+	err := executePreparedTask(output, service{baseURL: server.URL, token: "fixture-only", client: server.Client()}, request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if calls != 1 || !strings.Contains(output.String(), `"task_id":"task_managed_fixture"`) ||
+		!strings.Contains(output.String(), `"status":"pending"`) {
+		t.Fatalf("expected one accepted task receipt: calls=%d receipt=%s", calls, output.String())
+	}
+}
+
 func TestServiceDoesNotRetrySubmission(t *testing.T) {
 	calls := 0
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

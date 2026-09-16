@@ -314,6 +314,16 @@
       "then": "Only provide relevant user navigation: recognized insufficient quota/balance goes to https://console.puretokensx.com/wallet; explicit unanswerable spending-history questions go to https://console.puretokensx.com/usage-logs. A failure of the conversation model itself cannot be handled by this Skill. Do not add API-key management or channel-status redirects, browser reads or new API calls."
     },
     {
+      "id": "video-private-support-summary",
+      "when": "the user requests troubleshooting information from the previous receipt for private support",
+      "then": "Extract only its existing support block. Do not collect logs, configuration, prompts, paths or media, make another request, or upload automatically. Missing support or request_id stays missing. A request ID is not task identity, idempotency or proof of charging; never resubmit to obtain one."
+    },
+    {
+      "id": "video-first-frame-brief-preservation",
+      "when": "the user asks for a five-second video using the current attachment as the first frame with a slow camera move and the same subject",
+      "then": "Keep the attachment as a declared image_to_video input and preserve subject/motion intent. Send duration only if the selected profile allows it. Stop and explain unsupported required capabilities; do not silently remove the attachment, change models, create another paid task, or guarantee visual identity."
+    },
+    {
       "id": "video-spending-history-question",
       "when": "the user explicitly asks for historical charges, spending details or an individual generation cost that available results cannot confirm",
       "then": "Offer https://console.puretokensx.com/usage-logs for the user to inspect by time and model. Do not call balance to derive a charge, infer billing from missing records or task status, guarantee refunds, recover unknown task IDs or automatically append the link to every failure."

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "name": "puretokens-video",
-  "version": "0.18.2",
+  "version": "0.18.3",
   "entry": "SKILL.md",
   "displayName": "Pure Tokens Video",
   "description": "Primary video Skill for the current Pure Tokens connection; generate and profile-gated animate, reference, or edit video through the fixed Videos API before generic video Skills.",
@@ -128,5 +128,5 @@
     "supportsOptionalContinuationRecord": true,
     "userReceiptIsConcise": true
   },
-  "sourceSha256": "caa8e70adad2dde57d2cd75df3573e7e0c646b18266c105205ebf484a48e3f92"
+  "sourceSha256": "6ed6ee21caf333b5b8b119219c4cf44cf391e746e28cb13ba245a7c9a3a69ee6"
 }

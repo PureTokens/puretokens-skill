@@ -339,6 +339,16 @@
       "then": "Only provide relevant user navigation: recognized insufficient quota/balance goes to https://console.puretokensx.com/wallet; explicit unanswerable spending-history questions go to https://console.puretokensx.com/usage-logs. A failure of the conversation model itself cannot be handled by this Skill. Do not add API-key management or channel-status redirects, browser reads or new API calls."
     },
     {
+      "id": "image-private-support-summary",
+      "when": "the user requests troubleshooting information from the previous receipt for private support",
+      "then": "Extract only its existing support block. Do not collect logs, configuration, prompts, paths or media, make another request, or upload automatically. Missing support or request_id stays missing. A request ID is not task identity, idempotency or proof of charging; never resubmit to obtain one."
+    },
+    {
+      "id": "image-exact-brief-preservation",
+      "when": "the user requests a poster with exact text or a background-only edit of the current image",
+      "then": "Preserve the exact requested text and edit scope in the prompt, use the declared image_edit transport for the local reference, and submit one requested design. Do not invent API fields, silently replace the reference with text, split paid tasks, or promise exact visual fidelity."
+    },
+    {
       "id": "image-spending-history-question",
       "when": "the user explicitly asks for historical charges, spending details or an individual generation cost that available results cannot confirm",
       "then": "Offer https://console.puretokensx.com/usage-logs for the user to inspect by time and model. Do not call balance to derive a charge, infer billing from missing records or task status, guarantee refunds, recover unknown task IDs or automatically append the link to every failure."

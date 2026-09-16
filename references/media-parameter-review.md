@@ -1,15 +1,22 @@
 # Media Parameter Review
 
-Reviewed 2026-09-12. Public source: the production console's
+Reviewed 2026-09-16. Public source: the production console's
 `/api/product/docs/model-catalog`. This is selection metadata, not authenticated
 model access or paid generation proof.
 
+- Image 2.5 Flare and Sunburst: add `3:1` and `1:3`, and remove `4:5` and
+  `5:4` from the aspect-ratio enums for generation and editing. Image 2 keeps
+  its existing ratios; do not apply the Image 2.5 change to other models.
+- The catalog still contains 12 image and 11 video models. All other public
+  parameter and operation declarations match the previous snapshot. Backend
+  adapter additions alone do not expand the installed public API contract.
 - Nano Banana 2, Lite and Pro: the live aspect-ratio enums no longer declare
   `4:5` or `5:4`. Synchronize those enums exactly; do not silently convert ratios.
 - Seedance 2.0, Fast, Mini and 2.5: the live schema still declares
   `first_frame_image` and `last_frame_image`, but omits their operation entries.
   Retain the previously supported frame operations using an explicit reviewed
-  supplement, not a merge of arbitrary stale metadata.
+  supplement first reviewed on 2026-09-12, not a merge of arbitrary stale
+  metadata.
 - Local Web source evidence:
   `upstream-new-api-src/relay/channel/task/seedance/adaptor.go`,
   `normalizeRequestForModel`, reads both frame fields and rejects mixed

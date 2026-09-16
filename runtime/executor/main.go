@@ -33,7 +33,7 @@ const (
 	maxVideoBytes    int64 = 512 << 20
 )
 
-var executorVersion = "0.18.2"
+var executorVersion = "0.18.3"
 var executorSourceSHA256 = "unbuilt"
 
 const imageInitialPollDelay = 5 * time.Second
@@ -131,6 +131,7 @@ type service struct {
 	wait              func(context.Context, time.Duration) bool
 	downloadProofs    map[string]downloadProof
 	localRecoveryOnly bool
+	support           *supportReceiptWriter
 }
 
 func main() {
@@ -154,12 +155,15 @@ func run(args []string, input io.Reader, output io.Writer) error {
 	if len(args) > 0 && (args[0] == "install-inventory" || args[0] == "install-verify") {
 		return runInstallationGuard(args, output)
 	}
+	support := &supportReceiptWriter{output: output}
+	output = support
 	if len(args) < 1 {
 		writeReceipt(output, validationFailure("Choose init, doctor, connection, balance, models, preflight, submit, status, wait, content, resume or delivered."))
 		return errors.New("missing command")
 	}
 
 	command := args[0]
+	support.command = command
 	flags := flag.NewFlagSet(command, flag.ContinueOnError)
 	flags.SetOutput(io.Discard)
 	host := flags.String("host", "", "")
@@ -167,7 +171,9 @@ func run(args []string, input io.Reader, output io.Writer) error {
 	recordFile := flags.String("record", "", "")
 	index := flags.Int("index", 0, "")
 	outputDir := flags.String("output-dir", "", "")
-	if err := flags.Parse(args[1:]); err != nil || (*host == "" && command != "delivered") || len(flags.Args()) != 0 {
+	parseErr := flags.Parse(args[1:])
+	support.host = *host
+	if parseErr != nil || (*host == "" && command != "delivered") || len(flags.Args()) != 0 {
 		writeReceipt(output, validationFailure("Identify the current host and use supported command options before starting the request."))
 		return errors.New("invalid command")
 	}
@@ -209,7 +215,7 @@ func run(args []string, input io.Reader, output io.Writer) error {
 			request.Operation = "continue"
 		}
 	}
-	svc := service{baseURL: apiOrigin, client: &http.Client{Timeout: 90 * time.Second, CheckRedirect: rejectRedirect}, profilesRoot: installedSkillsRoot(), host: *host}
+	svc := service{baseURL: apiOrigin, client: &http.Client{Timeout: 90 * time.Second, CheckRedirect: rejectRedirect}, profilesRoot: installedSkillsRoot(), host: *host, support: support}
 	if command == "delivered" {
 		return executeRecordedTask(command, *recordFile, request, *index, *outputDir, output, svc)
 	}
@@ -959,7 +965,9 @@ func (svc service) requestWithBearer(ctx context.Context, method, path string, b
 	if contentType != "" {
 		req.Header.Set("Content-Type", contentType)
 	}
+	svc.support.beginRequest(method, path)
 	response, err := fixedClient(svc.client).Do(req)
+	svc.support.observeResponse(response)
 	if err != nil {
 		return nil, 0, 0, "", "", err
 	}
@@ -1003,7 +1011,9 @@ func (svc service) download(ctx context.Context, path, kind, outputDir string) (
 	req.Header.Set("Authorization", "Bearer "+svc.token)
 	client := fixedClient(svc.client)
 	client.Timeout = svc.contentTimeout()
+	svc.support.beginRequest(http.MethodGet, path)
 	response, err := client.Do(req)
+	svc.support.observeResponse(response)
 	if err != nil {
 		return "", 0, 0, "", "", err
 	}
@@ -1163,6 +1173,10 @@ func writeReceipt(output io.Writer, result receipt) {
 }
 
 func writeJSON(output io.Writer, value any) {
+	if writer, ok := output.(*supportReceiptWriter); ok {
+		writer.writeJSON(value)
+		return
+	}
 	encoder := json.NewEncoder(output)
 	encoder.SetEscapeHTML(true)
 	_ = encoder.Encode(value)

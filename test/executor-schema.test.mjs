@@ -12,7 +12,8 @@ import { compileSchema } from "./support/schema-validator.mjs";
 const schemaNames = [
   "executor-request.schema.json", "executor-receipt.schema.json", "task-record.schema.json",
   "model-query.schema.json", "model-query-receipt.schema.json", "balance-snapshot.schema.json",
-  "balance-receipt.schema.json", "init-receipt.schema.json", "doctor-receipt.schema.json"
+  "balance-receipt.schema.json", "init-receipt.schema.json", "doctor-receipt.schema.json",
+  "support-summary.schema.json"
 ];
 const documents = await Promise.all(schemaNames.map(async (name) =>
   JSON.parse(await readFile(path.join(repositoryRoot, "schemas", name), "utf8"))));
@@ -93,6 +94,34 @@ test("media receipt schemas reject lost task context and unsafe metadata", () =>
   const retry = example("status-retry");
   rejects("executor-receipt.schema.json", { ...retry, retry_not_before: "2026-02-30T12:00:00Z" }, "format");
   rejects("executor-receipt.schema.json", { ...retry, retry_not_before: "tomorrow" }, "format");
+});
+
+test("support summaries reject private data and invented network evidence", () => {
+  const submission = example("support-docs-image-0-receipt");
+  assert.equal(submission.api_request_attempted, true);
+  assert.equal(submission.request_phase, "submission");
+  assert.equal(submission.http_status, 200);
+  assert.equal(submission.request_id, "55a3d6e3-42dd-4e67-8b08-e5c6058b2f99");
+  assert.equal(submission.submission_outcome, "accepted");
+  assert.equal(example("support-doctor-success").request_phase, "catalog");
+  assert.equal(example("support-doctor-no-credential").api_request_attempted, false);
+  assert.equal(example("support-balance").request_phase, "balance_metadata");
+  const summary = example("support-continuation-credential-failure");
+  assert.equal(summary.api_request_attempted, false);
+  assert.equal(summary.command, "status");
+  assert.equal(summary.local_error_code, "host_credential_adapter_unavailable");
+  for (const addition of [
+    { prompt: "private" }, { raw_response: "private" }, { parameters: { image: "private" } },
+    { base_url: "https://private.example.test" }, { downloaded_paths: ["/private/output"] },
+    { request_id: "private-header" }, { host: "another-host" }, { api_error_code: "private-provider-code" },
+    { local_error_code: "private-error" }, { request_id: "55a3d6e3-42dd-4e67-8b08-e5c6058b2f99" },
+    { http_status: 200 }, { request_phase: "submission" }
+  ]) rejects("support-summary.schema.json", { ...summary, ...addition });
+  const response = {
+    ...summary, api_request_attempted: true, http_status: 503, request_phase: "submission",
+    request_id: "55a3d6e3-42dd-4e67-8b08-e5c6058b2f99"
+  };
+  assert.deepEqual(validators.get("support-summary.schema.json")(response), []);
 });
 
 test("task records reject credentials, raw inputs and invalid progress", () => {
