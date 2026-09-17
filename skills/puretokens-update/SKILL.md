@@ -1,6 +1,6 @@
 ---
 name: puretokens-update
-description: 用户要求检查版本、安装、升级、诊断或了解 Pure Tokens Skills 用法时使用。
+description: 用户要求安装、升级、检查版本、初始化并验证认证、诊断安装或了解 Pure Tokens Skills 用法时使用。
 ---
 
 # Pure Tokens Update
@@ -38,6 +38,8 @@ check-update 只比较版本，不证明文件完整，也不修改安装或执�
 
 ## 初始化与诊断
 
+用户意图只选择一个入口：一般“检查当前 Pure Tokens 连接”由 puretokens-connection 执行公开身份检查；明确“初始化”或“验证认证”才执行 init；排查安装执行 doctor；只问用法读本地指南。不要为同一请求依次执行这些命令。
+
 从当前 SKILL.md 的绝对目录解析同级 `../.puretokens-executor/puretokens-api`；Windows 使用 `puretokens-api.exe`，不依赖 PATH。`init --host <host-id>` 先请求固定 `/v1` 公开身份，再请求一次 `/v1/media/models` 验证认证；最多两次只读请求共用 20 秒总预算，不自动重试，无付费任务。超时仅说明连接未验证，不证明凭据无效。`doctor --host <host-id>` 额外检查本次加载位置和当前宿主已知 Skill 目录中的安装版本／重复项，再执行同样的只读检查；不扫描 Home、不读取其他宿主配置，也不自动修复。
 
 只有 init 的 configuration_status 为 verified 且 api_identity_confirmed、credential_verified 均为 true，才说身份与凭据认证通过。doctor 不能证明安装二进制校验、任意会话配置覆盖或宿主附件交付成功；按返回字段说明已检查项目与未验证项，不承诺模型权限、余额或媒体可用性。
@@ -58,6 +60,6 @@ Windows 安装只运行一次官方 fetch／sync 流程并汇总同步、清理�
 
 安装汇报保留实际宿主、同步版本、init 已验证／失败／未执行的结果，下一步只指向该宿主。仅复制文件不代表原生安装完成。只有原生同步已确认成功且 init 明确未执行时，补一次同宿主 init；同版快速返回不属于此情形。输出不确定先说明未确认，不重装或猜成功。
 
-安装和更新不检查、移除或迁移 Codex 插件，不运行 codex plugin 命令，也不汇报旧插件状态。同步后执行同宿主 init，再提示在该宿主新开会话。
+安装和更新不检查、移除或迁移 Codex 插件，不运行 codex plugin 命令，也不汇报旧插件状态。汇总脚本已有的同宿主 init 结果后提示新开会话，不另跑一次 init。`cleanup_status: pending` 单独报告，不把已完成同步改报失败，不绕过删除限制或因此重装。
 
 本地连接失败按执行器脱敏状态解释：未识别、不可读、不支持或未验证均不等于“尚未配置”。保留现有连接，不据此要求重装、切换模型、重配或更换凭据；`api_request_executed: false` 时说明未请求 API、未认证凭据。具体宿主限制见 `references/desktop-hosts.md`。

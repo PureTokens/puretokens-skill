@@ -73,7 +73,7 @@ Computer Use、浏览器自动化以及打开或点击 Pure Tokens Switch/Deskto
 
 宿主列表以 `references/host-support.json` 为唯一契约。表中为默认目录；Claude／WorkBuddy 支持明确配置目录覆盖，Pi 支持不含父级跳转的绝对 `PI_CODING_AGENT_DIR`，DSH 支持本地 Harness 明确设置的 `DSH_HOME`。Gemini 如已有较高优先级的 `.agents/skills` 安装，会更新该目录并报告重复副本。不会依据 provider 名判断。
 
-注册、安装、API 验证和完整媒体交付是不同状态。实机证据需记录客户端、系统、Shell 版本、架构与执行模式；只有完整用例通过，才能确认该具体环境能打开图片、播放视频并完成附件交付。目前尚无实机验收记录。本地结果不代表 WSL、远程或沙箱模式也已通过，详见 `references/host-acceptance-guide.md` 与 `references/host-acceptance.json`。
+注册、安装、API 验证和完整媒体交付是不同状态。实机证据需记录客户端、系统、Shell 版本、架构与执行模式；只有完整用例通过，才能确认该具体环境能打开图片、播放视频并完成附件交付。当前逐项结果以 `references/host-acceptance.json` 为准；部分通过不等于完整媒体验收。本地结果不代表 WSL、远程或沙箱模式也已通过，验收方法见 `references/host-acceptance-guide.md`。
 
 Claude Desktop 请选择本地 Code 会话并使用宿主 ID `claude-desktop`；它读取 Desktop 当前第三方连接，不借用 Claude Code 的凭据。云端、SSH、WSL 或 Cowork 隔离环境不等于本机环境，无法访问本机连接或执行器时会停止。DSH 使用 `dsh-desktop`；项目或自定义 Skill 目录可能覆盖用户目录，应核对实际加载位置。安装示例及边界见 [桌面宿主说明](skills/puretokens-update/references/desktop-hosts.md)。
 
@@ -149,14 +149,18 @@ README 只从基础目录中带有明确图片/视频能力的模型生成，不
 
 每个受管目录保存 `.puretokens-managed.json` 文件清单和校验值。更新和中断恢复遇到新增、修改、缺失文件或符号链接时停止覆盖并保留现有内容。没有受管记录的目录只有与当前官方源完全匹配才可接管；同名、版本号或自报哈希不构成归属证明。该记录用于发现意外改动，不是抵抗本机篡改的签名。
 
-首次安装或实际版本更新后，安装器自动执行 `init`；同版完整性核验通过时不执行。先做不计费的固定 `/v1` 身份检查，再用一次 `/v1/media/models` 请求验证当前凭据认证，两次共用 20 秒总预算，不展示凭据或宿主配置，然后输出当前使用须知和示例。验证未完成时，会给出经过脱敏的原因，例如没有当前匹配连接、缺少凭据、API 拒绝及 HTTP 状态、网络失败或 API 身份未确认；绝不打印配置 URL、provider 或 Key。之后如需再次检查，可让宿主 Agent“初始化 Pure Tokens Skills”或“检查当前 Pure Tokens 连接”；它应调用已安装执行器的 `init`，展示使用须知，但不修改配置。
+首次安装或实际版本更新后，安装器自动执行 `init`；同版完整性核验通过时不执行。先做不计费的固定 `/v1` 身份检查，再用一次 `/v1/media/models` 请求验证当前凭据认证，两次共用 20 秒总预算，不展示凭据或宿主配置，然后输出当前使用须知和示例。验证未完成时，会给出经过脱敏的原因，例如没有当前匹配连接、缺少凭据、API 拒绝及 HTTP 状态、网络失败或 API 身份未确认；绝不打印配置 URL、provider 或 Key。需要再次验证认证时，可要求“初始化 Pure Tokens Skills”或“验证 Pure Tokens 认证”，执行一次 `init`，不修改配置。一般“检查当前 Pure Tokens 连接”只执行 `connection` 检查公开身份，不验证认证；安装诊断使用 `doctor`，用法问题只读本地指南，不串行重复这些检查。
 
 ## 维护者校验
+
+共享宿主说明与停止规则由 `references/desktop-hosts.md`、`references/skill-fragments/host-binding.md` 和宿主注册表维护。修改后运行 `npm run docs:sync-guidance`，同步六个独立可安装 Skill 及入口摘要；工程门禁会检查漂移。这不是用户运行依赖。
 
 ```bash
 npm run check
 npm run release:validate
 ```
+
+PNG/JPEG 下载和复用会验证像素数据，解码上限为 33,554,432 像素；WebP 检查完整容器及非空图像块，不等同于完整解码。模型查询与提交共用组合约束，但线上目录查询不会改写本地 profile；本地已有枚举／范围不自动放宽，需要维护者适配并发布后显式更新。
 
 ## 执行回执与验收
 

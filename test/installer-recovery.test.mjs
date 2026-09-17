@@ -27,6 +27,25 @@ async function waitForFile(file) {
  }
  assert.fail(`Timed out waiting for fixture marker ${path.basename(file)}`);
 }
+test("OpenCode directory selection honors explicit and XDG roots without probing other directories", async t => {
+ const f = await fixture(t);
+ const xdg = path.join(f.root, "xdg config");
+ const custom = path.join(f.root, "opencode custom");
+ for (const [overrides, expected] of [
+  [{}, path.join(f.env.HOME, ".config/opencode/skills")],
+  [{ XDG_CONFIG_HOME: xdg }, path.join(xdg, "opencode/skills")],
+  [{ XDG_CONFIG_HOME: xdg, OPENCODE_CONFIG_DIR: custom }, path.join(custom, "skills")]
+ ]) {
+  const env = { ...f.env, XDG_CONFIG_HOME: "", OPENCODE_CONFIG_DIR: "", ...overrides };
+  const { stdout } = await execFile("sh", [installer, "locate", "--host", "opencode"], { env });
+  assert.equal(stdout.trim(), expected);
+ }
+ for (const key of ["XDG_CONFIG_HOME", "OPENCODE_CONFIG_DIR"]) {
+  await assert.rejects(execFile("sh", [installer, "locate", "--host", "opencode"], {
+   env: { ...f.env, XDG_CONFIG_HOME: "", OPENCODE_CONFIG_DIR: "", [key]: "relative" }
+  }));
+ }
+});
 test("desktop hosts locate and install into isolated local skill roots", async t => {
  const f = await fixture(t);
  for (const [host, key] of [["claude-desktop", "CLAUDE_CONFIG_DIR"], ["dsh-desktop", "DSH_HOME"]]) {
@@ -83,6 +102,33 @@ test("a failed update restores every existing Skill and releases its lock", asyn
  for (const name of names) assert.equal(await readFile(path.join(f.target, name, "SKILL.md"), "utf8"), originals.get(name));
  assert.equal((await readdir(f.target)).some(x => x.includes("stage") || x.includes("lock")), false);
  await install(f);
+});
+test("denied committed-stage cleanup reports pending, releases the lock and runs init once", async t => {
+ const f = await fixture(t);
+ const tools = path.join(f.root, "tools"); await mkdir(tools);
+ const attempts = path.join(f.root, "cleanup-attempts");
+ await writeFile(path.join(tools, "rm"), [
+  "#!/bin/sh",
+  'for arg in "$@"; do',
+  ' case "$arg" in */.puretokens-skill-stage.*)',
+  '  printf "denied\\n" >> "$PT_CLEANUP_ATTEMPTS"',
+  '  exit 73 ;;',
+  ' esac',
+  'done',
+  'exec /bin/rm "$@"'
+ ].join("\n"));
+ await chmod(path.join(tools, "rm"), 0o700);
+ const { stdout } = await install(f, { ...f.env, PATH: `${tools}${path.delimiter}${f.env.PATH}`, PT_CLEANUP_ATTEMPTS: attempts });
+ assert.match(stdout, /synchronized with the native API executor/);
+ assert.match(stdout, /cleanup_status: pending/);
+ assert.equal(stdout.split("Pure Tokens Skill init:").length - 1, 1);
+ assert.equal(await readFile(attempts, "utf8"), "denied\n", "do not retry a denied deletion in EXIT");
+ const entries = await readdir(f.target);
+ assert.equal(entries.includes(".puretokens-install-lock"), false);
+ assert.equal(entries.filter(name => name.startsWith(".puretokens-skill-stage.")).length, 1);
+ for (const name of names) assert.ok(await readFile(path.join(f.target, name, "SKILL.md")));
+ await install(f);
+ assert.equal((await readdir(f.target)).some(name => name.includes("stage") || name.includes("lock")), false);
 });
 test("next sync restores a recoverable interrupted transaction", async t => {
  const f = await fixture(t); await install(f);

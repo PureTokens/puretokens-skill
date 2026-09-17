@@ -6,10 +6,49 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
 )
+
+func TestModelQueryAndSubmissionShareReferenceConstraints(t *testing.T) {
+	root := filepath.Join("..", "..", "skills")
+	data, err := os.ReadFile(filepath.Join(root, "puretokens-video", "references", "profiles", "seedance-2.5.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var profile modelProfile
+	if err := json.Unmarshal(data, &profile); err != nil {
+		t.Fatal(err)
+	}
+	var schema any
+	raw, _ := json.Marshal(profile.Parameters)
+	json.Unmarshal(raw, &schema)
+	entry := map[string]any{"id": profile.ID, "capabilities": []any{"video"}, "input_schema": schema}
+	for _, tc := range []struct {
+		name       string
+		parameters map[string]any
+		valid      bool
+	}{
+		{"reference-only", map[string]any{}, true},
+		{"first-frame-with-reference", map[string]any{"first_frame_image": "https://example.com/frame.png"}, false},
+		{"last-frame-with-reference", map[string]any{"last_frame_image": "https://example.com/frame.png"}, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			query := modelQuery{Kind: "video", Model: profile.ID, Operation: "reference_image_video", Parameters: tc.parameters}
+			if got := modelQueryMatches(query, entry); got != tc.valid {
+				t.Errorf("query match = %v, want %v", got, tc.valid)
+			}
+			request := taskRequest{Kind: "video", Operation: "generate", Model: profile.ID, Prompt: "fixture", MediaOperation: query.Operation,
+				Parameters: tc.parameters, Attachments: []attachment{{Field: "reference_images", Path: "fixture.png"}}}
+			if err := prepareProfileRequest(&request, service{profilesRoot: root}); (err == nil) != tc.valid {
+				t.Errorf("submission validation disagrees: %v", err)
+			}
+		})
+	}
+}
 
 const modelQueryFixture = `{"data":[
  {"id":"image-many","capabilities":["image"],"price":0.01,"provider":"private-upstream",

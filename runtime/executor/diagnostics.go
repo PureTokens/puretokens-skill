@@ -110,7 +110,23 @@ func doctorHostLocations(host, home string, getenv func(string) string) []doctor
 		}
 		return result
 	case "opencode":
-		location = filepath.Join(home, ".config", "opencode")
+		config, err := opencodeXDG(home, "XDG_CONFIG_HOME", ".config", getenv)
+		if err != nil {
+			return nil
+		}
+		location = config
+		if explicit := getenv("OPENCODE_CONFIG_DIR"); explicit != "" {
+			if !opencodeAbsolute(explicit) {
+				return nil
+			}
+			location = explicit
+		}
+		return []doctorLocation{
+			{"host_skills", filepath.Join(location, "skills")},
+			{"global_skills", filepath.Join(config, "skills")},
+			{"shared_agents_skills", filepath.Join(home, ".agents", "skills")},
+			{"shared_claude_skills", filepath.Join(home, ".claude", "skills")},
+		}
 	case "kimi-code", "qoder", "pi":
 		var err error
 		location, err = kimiQoderRoot(host, home, getenv)

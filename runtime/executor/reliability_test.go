@@ -213,12 +213,14 @@ func FuzzMediaContainers(f *testing.F) {
 	f.Add([]byte("GIF89a"))
 	f.Add(fixtureWebM(false, false))
 	f.Add(fixtureWebM(true, true))
+	f.Add([]byte("RIFF\x0c\x00\x00\x00WEBPVP8 \x00\x00\x00\x00"))
 	f.Fuzz(func(t *testing.T, data []byte) {
 		if len(data) > 1<<20 {
 			t.Skip()
 		}
 		validGIF(bytes.NewReader(data))
 		validWebM(bytes.NewReader(data), int64(len(data)))
+		validWebPChunks(bytes.NewReader(data), 12, int64(len(data)), false)
 	})
 }
 

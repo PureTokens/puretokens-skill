@@ -73,7 +73,7 @@ The priority is carried by the installed Skill metadata and the host's current c
 
 `references/host-support.json` defines the registered hosts. The table shows defaults; Claude/WorkBuddy honor explicit configuration-directory overrides, Pi honors an absolute `PI_CODING_AGENT_DIR` without parent traversal, and DSH honors the local Harness's explicit `DSH_HOME`. Gemini updates an existing higher-priority `.agents/skills` installation and reports managed duplicates. Provider labels never determine support.
 
-Registration, installation, authenticated API access and complete media delivery are distinct. Real-host evidence records the client/OS/shell versions, architecture and execution mode; only a complete case set establishes image opening, video playback and attachment handoff for that exact environment. No real-host acceptance entries are currently recorded. Local results do not accept WSL, remote or sandbox modes. See `references/host-acceptance-guide.md` and `references/host-acceptance.json`.
+Registration, installation, authenticated API access and complete media delivery are distinct. Real-host evidence records the client/OS/shell versions, architecture and execution mode; only a complete case set establishes image opening, video playback and attachment handoff for that exact environment. Consult `references/host-acceptance.json` for current per-case evidence; partial passes are not complete media acceptance. Local results do not accept WSL, remote or sandbox modes. See `references/host-acceptance-guide.md` for the procedure.
 
 For Claude Desktop, use a local Code session and host ID `claude-desktop`; its active Desktop 3P connection is separate from Claude Code authentication. Cloud, SSH, WSL and Cowork isolated environments are not the local desktop; unavailable connection records or executors stop execution. DSH uses `dsh-desktop`; project/custom Skill roots may override user roots, so verify the loaded location. See the [desktop host guide](skills/puretokens-update/references/desktop-hosts.md).
 
@@ -159,7 +159,7 @@ files and symlinks, preserving existing contents. An unmarked directory
 must match the current official source exactly; a matching name or self-reported version/hash is
 insufficient. Inventories detect accidental edits, not malicious local tampering.
 
-After a fresh installation or actual version update, the installer automatically runs `init`; an intact same-version shortcut does not. It performs a non-billable fixed `/v1` identity check followed by one authenticated `/v1/media/models` request within a shared 20-second deadline without displaying credentials or host configuration, then prints the current usage guide and examples. If verification does not complete, it reports a sanitized reason such as no active matching connection, missing credential, API rejection with its HTTP status, network failure, or an unconfirmed API identity; it never prints the configured URL, provider, or key. To run it again later, ask the host Agent to initialize Pure Tokens Skills or check the current Pure Tokens connection; it must invoke the installed executor's `init` command and show the guide without modifying configuration.
+After a fresh installation or actual version update, the installer automatically runs `init`; an intact same-version shortcut does not. It performs a non-billable fixed `/v1` identity check followed by one authenticated `/v1/media/models` request within a shared 20-second deadline without displaying credentials or host configuration, then prints the current usage guide and examples. If verification does not complete, it reports a sanitized reason such as no active matching connection, missing credential, API rejection with its HTTP status, network failure, or an unconfirmed API identity; it never prints the configured URL, provider, or key. Ask to initialize Pure Tokens Skills or verify authentication to run `init` again explicitly. A general connection check uses only `connection` for public identity, not authentication. Installation diagnostics use `doctor`; help reads the local guide. Choose one intent, without chaining redundant checks.
 
 ## Development validation
 
@@ -169,6 +169,17 @@ Maintainers can run:
 npm run check
 npm run release:validate
 ```
+
+Maintain shared guidance in `references/desktop-hosts.md`,
+`references/skill-fragments/host-binding.md` and the host registry, then run
+`npm run docs:sync-guidance`. It produces six self-contained installed copies
+and entrypoint hashes; the engineering gate rejects drift. No user runtime is added.
+
+PNG/JPEG download and reuse validate pixel data with a 33,554,432-pixel decode
+limit. WebP checks complete containers and nonempty image chunks, not full
+codec decoding. Model queries and submissions share combination rules; live
+queries do not rewrite profiles or automatically relax installed enum/range
+limits. Changed declarations require a compatible stable update.
 
 ## Executor receipts and acceptance
 

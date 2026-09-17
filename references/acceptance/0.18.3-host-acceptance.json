@@ -1,10 +1,63 @@
 {
   "schemaVersion": 1,
-  "version": "0.18.4",
-  "checkedAt": "2026-09-17",
-  "method": "isolated fixture coverage; candidate bytes require fresh real-host acceptance; unchanged 0.18.3 evidence archived in references/acceptance/0.18.3-host-acceptance.json",
+  "version": "0.18.3",
+  "checkedAt": "2026-09-16",
+  "method": "isolated fixture coverage; 0.18.3 local macOS ARM64 OpenCode installation and DSH Harness headless installation/API verified; desktop media handoff pending; historical evidence remains version-scoped",
   "guide": "references/host-acceptance-guide.md",
-  "evidence": [],
+  "evidence": [
+    {
+      "host": "opencode",
+      "os": "macOS",
+      "hostVersion": "1.18.23",
+      "osVersion": "27.0",
+      "osArchitecture": "arm64",
+      "shellVersion": "zsh 5.9; installer executed by system sh",
+      "executionMode": "local",
+      "executorPlatform": "darwin-arm64",
+      "executorSha256": "49bbd41b4abeff5e401c48b46a26ce52e9db8b42b37f22a582c02f8f8e0eea63",
+      "version": "0.18.3",
+      "checkedAt": "2026-09-16",
+      "method": "real-host",
+      "artifact": "references/acceptance/0.18.3-opencode-macos-arm64.md",
+      "cases": {
+        "installation": "passed",
+        "authenticatedAPI": "pending",
+        "image-generation": "pending",
+        "uploaded-image-edit": "pending",
+        "generated-image-edit": "pending",
+        "multiple-images": "pending",
+        "video-generation": "pending",
+        "sameTaskResume": "pending",
+        "nativeAttachmentDelivery": "pending"
+      }
+    },
+    {
+      "host": "dsh-desktop",
+      "os": "macOS",
+      "hostVersion": "DSH Desktop 0.9.0; bundled Harness 0.1.5-rc.2; native headless profile",
+      "osVersion": "27.0",
+      "osArchitecture": "arm64",
+      "shellVersion": "zsh 5.9; installer executed by system sh",
+      "executionMode": "local",
+      "executorPlatform": "darwin-arm64",
+      "executorSha256": "49bbd41b4abeff5e401c48b46a26ce52e9db8b42b37f22a582c02f8f8e0eea63",
+      "version": "0.18.3",
+      "checkedAt": "2026-09-16",
+      "method": "real-host",
+      "artifact": "references/acceptance/0.18.3-dsh-macos-arm64.md",
+      "cases": {
+        "installation": "passed",
+        "authenticatedAPI": "passed",
+        "image-generation": "pending",
+        "uploaded-image-edit": "pending",
+        "generated-image-edit": "pending",
+        "multiple-images": "pending",
+        "video-generation": "pending",
+        "sameTaskResume": "pending",
+        "nativeAttachmentDelivery": "pending"
+      }
+    }
+  ],
   "hosts": [
     {
       "host": "claude-code",
@@ -121,7 +174,7 @@
       "host": "opencode",
       "credentialFixtures": "passed",
       "macOS": {
-        "installation": "pending",
+        "installation": "passed",
         "authenticatedAPI": "pending",
         "sameTaskResume": "pending",
         "nativeAttachmentDelivery": "pending"
@@ -191,8 +244,8 @@
       "host": "dsh-desktop",
       "credentialFixtures": "passed",
       "macOS": {
-        "installation": "pending",
-        "authenticatedAPI": "pending",
+        "installation": "passed",
+        "authenticatedAPI": "passed",
         "sameTaskResume": "pending",
         "nativeAttachmentDelivery": "pending"
       },

@@ -54,8 +54,8 @@
       "globalSkillDirectory": "~/.config/opencode/skills",
       "directMediaExecution": "managed-native-executor",
       "credentialAdapter": "fixture-tested",
-      "guidance": "Install into ~/.config/opencode/skills. The native executor has credential-format fixture coverage; actual host API and attachment delivery acceptance is pending.",
-      "directorySelection": "Use the documented default unless the user explicitly supplies an absolute target."
+      "guidance": "Install into the selected OpenCode config root. The native executor has credential-format fixture coverage; actual host API and attachment delivery acceptance is separate.",
+      "directorySelection": "OPENCODE_CONFIG_DIR/skills when explicitly configured; otherwise XDG_CONFIG_HOME/opencode/skills, default ~/.config/opencode/skills. Overrides must be absolute without parent traversal. Doctor checks the loaded root, selected/global roots and documented ~/.agents/skills and ~/.claude/skills compatibility roots, without scanning projects or deleting duplicates."
     },
     {
       "id": "trae",

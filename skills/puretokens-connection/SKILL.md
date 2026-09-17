@@ -1,6 +1,6 @@
 ---
 name: puretokens-connection
-description: 用户询问 Skill 将调用的 Pure Tokens API 是否可确认、API 身份或连接检查时使用。
+description: 用户询问固定 Pure Tokens API 公开身份或一般连接检查时使用；认证初始化和安装诊断使用 puretokens-update。
 ---
 
 # Pure Tokens Connection
@@ -17,6 +17,7 @@ description: 用户询问 Skill 将调用的 Pure Tokens API 是否可确认、A
 
 ## 身份检查
 
+- “检查当前 Pure Tokens 连接”默认指本页的公开身份检查，不证明凭据认证；用户明确要求初始化或验证认证时使用 puretokens-update 的 init，不先执行 connection 再重复 init。安装故障使用 doctor，用法问题只读本地指南。
 - 每次用户查询只调用一次 `GET https://api.puretokensx.com/v1`；不得调用模型目录、Images、Videos、余额、任务或其他路径，也不得重试。
 - 只有响应 JSON 同时明确返回 `status: "ok"`、`name: "Pure Tokens API"`、`base_url: "/v1"` 时，才回答：`固定 API 返回了 Pure Tokens API 的公开身份标识；此检查未验证凭据、余额、模型权限或媒体可用性。`
 - 响应不可读、字段缺失、值不匹配或请求失败时，只能回答：`固定 Pure Tokens API 未返回可确认的标识，当前无法完成检查。` 不得把该结果归因于用户 Base URL、API Key 或 provider 配置，也不得读取或要求用户粘贴它们。

@@ -3,6 +3,9 @@ package main
 import (
 	"bytes"
 	"encoding/binary"
+	"image"
+	"image/jpeg"
+	"image/png"
 	"io"
 	"os"
 )
@@ -64,23 +67,21 @@ func validMediaFile(path, contentType string) bool {
 	if contentType == "video/webm" {
 		return validWebM(f, stat.Size())
 	}
-	// Cheap container termination checks avoid accepting common truncated files,
-	// without decoding a large bitmap/video into RAM.
 	if contentType == "image/png" {
 		if stat.Size() < 45 {
 			return false
 		}
 		tail := make([]byte, 12)
 		_, err = f.ReadAt(tail, stat.Size()-12)
-		return err == nil && bytes.Equal(tail, []byte{0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130})
+		return err == nil && bytes.Equal(tail, []byte{0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130}) && validDecodedImage(f, png.DecodeConfig, png.Decode)
 	}
 	if contentType == "image/jpeg" {
 		tail := make([]byte, 2)
 		_, err = f.ReadAt(tail, stat.Size()-2)
-		return err == nil && bytes.Equal(tail, []byte{255, 217})
+		return err == nil && bytes.Equal(tail, []byte{255, 217}) && validDecodedImage(f, jpeg.DecodeConfig, jpeg.Decode)
 	}
 	if contentType == "image/webp" {
-		return stat.Size() >= int64(binary.LittleEndian.Uint32(prefix[4:8]))+8
+		return stat.Size() == int64(binary.LittleEndian.Uint32(prefix[4:8]))+8 && validWebPChunks(f, 12, stat.Size(), false)
 	}
 	if contentType == "video/mp4" || contentType == "image/avif" {
 		var offset int64
@@ -122,6 +123,90 @@ func validMediaFile(path, contentType string) bool {
 	}
 	_, err = f.Seek(0, io.SeekStart)
 	return err == nil
+}
+
+// DecodeConfig bounds allocation before the standard decoder verifies the
+// actual pixel stream. The limit accommodates 4K outputs and 8K widescreen.
+const maxDecodedImagePixels = 32 << 20
+
+func validDecodedImage(f *os.File, config func(io.Reader) (image.Config, error), decode func(io.Reader) (image.Image, error)) bool {
+	if _, err := f.Seek(0, io.SeekStart); err != nil {
+		return false
+	}
+	// Both reads use one bounded snapshot so a concurrent file edit cannot
+	// replace a checked header with unbounded dimensions before decoding.
+	data, err := io.ReadAll(io.LimitReader(f, maxImageBytes+1))
+	if err != nil || int64(len(data)) > maxImageBytes {
+		return false
+	}
+	dimensions, err := config(bytes.NewReader(data))
+	if err != nil || dimensions.Width <= 0 || dimensions.Height <= 0 || int64(dimensions.Width) > maxDecodedImagePixels/int64(dimensions.Height) {
+		return false
+	}
+	_, err = decode(bytes.NewReader(data))
+	return err == nil
+}
+
+// WebP uses structural validation, not a full codec decode. Require complete,
+// nonempty image payloads (including each animation frame), not just RIFF size.
+func validWebPChunks(r io.ReaderAt, start, end int64, frame bool) bool {
+	images, frames := 0, 0
+	animated, animationHeader := false, false
+	for offset := start; offset < end; {
+		var header [8]byte
+		if end-offset < 8 {
+			return false
+		}
+		if _, err := r.ReadAt(header[:], offset); err != nil {
+			return false
+		}
+		length := int64(binary.LittleEndian.Uint32(header[4:]))
+		body := offset + 8
+		next := body + length + length%2
+		if next > end {
+			return false
+		}
+		var data [10]byte
+		switch string(header[:4]) {
+		case "VP8 ":
+			if length <= 10 {
+				return false
+			}
+			if _, err := r.ReadAt(data[:], body); err != nil || data[0]&1 != 0 || !bytes.Equal(data[3:6], []byte{0x9d, 0x01, 0x2a}) ||
+				binary.LittleEndian.Uint16(data[6:8])&0x3fff == 0 || binary.LittleEndian.Uint16(data[8:10])&0x3fff == 0 {
+				return false
+			}
+			images++
+		case "VP8L":
+			if length <= 5 {
+				return false
+			}
+			if _, err := r.ReadAt(data[:5], body); err != nil || data[0] != 0x2f || data[4]&0xe0 != 0 {
+				return false
+			}
+			images++
+		case "VP8X":
+			if frame || offset != start || length != 10 {
+				return false
+			}
+			if _, err := r.ReadAt(data[:], body); err != nil {
+				return false
+			}
+			animated = data[0]&2 != 0
+		case "ANIM":
+			if frame || !animated || animationHeader || frames > 0 || length != 6 {
+				return false
+			}
+			animationHeader = true
+		case "ANMF":
+			if frame || !animated || !animationHeader || length <= 16 || !validWebPChunks(r, body+16, body+length, true) {
+				return false
+			}
+			frames++
+		}
+		offset = next
+	}
+	return (images == 1 && frames == 0 && !animated) || (images == 0 && frames > 0 && animated)
 }
 
 // Filesystems such as exFAT cannot hard-link. The transient marker prevents

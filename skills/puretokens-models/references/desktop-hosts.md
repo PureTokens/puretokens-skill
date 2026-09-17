@@ -26,7 +26,7 @@ Use host IDs `kimi-code` and `qoder` in the local execution environment. Kimi Co
 
 ## 按宿主排查
 
-WorkBuddy 适配器无法匹配连接时，不据此断言当前聊天未使用 Pure Tokens；若用户确认已配置并成功使用 Pure Tokens，保留可用连接，按具体诊断检查适配；不能把自带模型聊天正常当作 Pure Tokens 配置有效的证据。排查仅提供客户端版本及脱敏诊断码，不读取或索取配置原文。Windows 的 `cleanup_status: pending` 表示已完成事务的暂存清理被拒绝，不等于文件同步失败；按独立 init 结果说明连接状态，不绕过删除守卫。锁文件存在不等于被占用；缺少管理清单不能归因于清理失败，也不能称为无害。
+WorkBuddy 适配器无法匹配连接时，不据此断言当前聊天未使用 Pure Tokens；若用户确认已配置并成功使用 Pure Tokens，保留可用连接，按具体诊断检查适配；不能把自带模型聊天正常当作 Pure Tokens 配置有效的证据。排查仅提供客户端版本及脱敏诊断码，不读取或索取配置原文。各系统的 `cleanup_status: pending` 表示清理未完成，不等于文件同步失败；按独立 init 结果说明连接状态，不绕过删除守卫或自动重装。锁文件存在不等于被占用；缺少管理清单不能归因于清理失败，也不能称为无害。
 
 `init` 按当前宿主适配器验证已声明的有效连接，不要求用户为检查而切换聊天模型；配置选择规则依宿主而定，不能将此结果当作当前会话选择证明。WorkBuddy 使用 `workbuddy_record_missing`、`workbuddy_record_unreadable`、`workbuddy_record_format_unsupported`、`workbuddy_connection_not_found`、`workbuddy_credential_missing`、`workbuddy_connection_ambiguous` 区分本地原因；这些状态不代表安装失败，也不证明用户从未配置过。只反馈脱敏状态，不读取配置原文。
 
@@ -40,7 +40,9 @@ Use `--host opencode`. The executor merges declared global, explicit-file, proje
 
 After verifying the endpoint, the executor checks the matching native API-key entry in OpenCode's XDG data-root `auth.json`; static inline provider credentials take precedence. No reference expansion, environment-key fallback, configuration changes or session/history inspection. Plugins, dynamic/remote authentication, managed preferences and unrepresented session overrides are unsupported. Saved service verification is not current chat identity and is not a routing signal by itself; route here only when host context selects Pure Tokens or the user explicitly requests it. Installation, API verification and native attachment delivery are separate checks.
 
-Shared `.agents/skills` or project Skills can shadow the user installation. Verify the actual loaded Skill location and version in a fresh local session; installing new bytes alone does not prove that OpenCode loaded them.
+Installation selects `OPENCODE_CONFIG_DIR/skills` when explicitly set, otherwise `XDG_CONFIG_HOME/opencode/skills`, defaulting to `~/.config/opencode/skills`. These overrides must be absolute without parent traversal. A user-specified absolute target remains available; it does not establish host discovery.
+
+Doctor checks the loaded root, selected/global OpenCode roots and the documented `~/.agents/skills` and `~/.claude/skills` compatibility roots. It inspects only the six managed Skill names and the executor, not credentials in those shared roots. It does not enumerate projects or arbitrary `skills.paths`. Duplicate detection does not establish which copy the host selected and never deletes copies. Verify the actual loaded Skill location and version in a fresh local session; installing new bytes alone does not prove that OpenCode loaded them.
 
 ## Pi
 

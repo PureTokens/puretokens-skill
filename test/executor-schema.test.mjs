@@ -53,7 +53,7 @@ function rejects(schema, document, keyword) {
   if (keyword) assert.ok(errors.some((error) => error.includes(keyword)), errors.join("\n"));
 }
 
-test("actual executor JSON and executable documentation conform to their schemas", () => {
+test("actual executor JSON and executable documentation conform to their schemas", async () => {
   const coveredSchemas = new Set();
   const names = new Set();
   for (const entry of examples) {
@@ -65,7 +65,18 @@ test("actual executor JSON and executable documentation conform to their schemas
     coveredSchemas.add(entry.schema);
   }
   assert.deepEqual([...coveredSchemas].sort(), [...schemaNames].sort());
-  assert.equal(examples.filter((entry) => /^docs-(image|video)-\d$/.test(entry.name)).length, 8);
+  const expectedNames = [];
+  for (const kind of ["image", "video"]) {
+    const text = await readFile(path.join(repositoryRoot, "skills", `puretokens-${kind}`, "references/executor-usage.md"), "utf8");
+    const blocks = [...text.matchAll(/```json\s*\n([\s\S]*?)\n```/g)];
+    assert.ok(blocks.length >= 4, `${kind}: generation, attachment, status and content examples must remain`);
+    for (const [index, block] of blocks.entries()) {
+      const name = `docs-${kind}-${index}`;
+      expectedNames.push(name);
+      assert.deepEqual(example(name), JSON.parse(block[1]), `${name}: executed request differs from documentation`);
+    }
+  }
+  assert.deepEqual(examples.filter(entry => /^docs-(image|video)-\d+$/.test(entry.name)).map(entry => entry.name).sort(), expectedNames.sort());
 });
 
 test("media receipt schemas reject lost task context and unsafe metadata", () => {

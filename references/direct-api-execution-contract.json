@@ -162,6 +162,9 @@
     "handoffNativeBytesBeforeNextRead": true,
     "doesNotPersistMediaBytesInSkillStateOrLogs": true,
     "confirmedDeliveryEndsCurrentResponse": true,
+    "pngJpegValidation": "bounded_standard_decoder_checks_pixel_payload_before_download_success_and_proof_reuse",
+    "maxPngJpegDecodedPixels": 33554432,
+    "webpValidation": "complete_container_and_nonempty_frame_payload_checks_not_full_codec_decode",
     "fallback": "If the executor cannot hand off validated native media bytes, report same-task delivery as unavailable. Do not substitute a URL, HTML, SVG, status text, or a re-submitted task."
   },
   "balance": {
@@ -182,7 +185,9 @@
     "bearerNormalization": "add_sk_prefix_if_missing_in_memory_for_usage_header_only"
   },
   "optionalCommands": {
-    "preflight": "Explicit request check only; never media POST, may read one catalog for a profile gap.",
+    "preflight": "Explicit request check only; never media POST, may read one catalog for a profile gap. Existing local type/range/enum failures are not automatically relaxed.",
+    "modelQuery": "One explicit authenticated catalog read. Shares parameter and cross-field rules with submission, infers required operation inputs, but does not validate actual attachment bytes or rewrite installed profiles.",
+    "modelDeclarationRefresh": "Explicit exact-model query then user-requested compatible stable update; no automatic profile mutation, preflight or media resubmission.",
     "doctor": "Explicit diagnostics: local managed install checks and existing read-only init checks; no paid task.",
     "filteredModels": "One explicit authenticated catalog GET, filtered by declared kind/model/operation/parameters.",
     "taskRecord": "Explicit absolute user/workspace JSON with task identity, validated safe continuation metadata, and per-index download SHA-256/byte count/media type; never credentials, prompt, reference URLs or media bytes.",

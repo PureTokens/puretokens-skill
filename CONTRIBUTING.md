@@ -86,6 +86,25 @@ or model followed them; do not convert byte savings into claimed latency gains.
 
 Align package, Skill index, all six manifests, executor version/manifest and host-acceptance release versions. Refresh each manifest's sourceSha256 after editing SKILL.md. Update both changelogs. Preserve the exact first text installation block and its heading in both READMEs; the client download page extracts them.
 
+Shared guidance has one maintained source: `references/desktop-hosts.md`,
+`references/skill-fragments/host-binding.md` and `references/host-support.json`.
+Run `npm run docs:sync-guidance` after editing these or any Skill entrypoint.
+It expands self-contained installed copies, host lists and entrypoint hashes;
+`npm run check` rejects drift. This generator is a development tool only.
+
+Model queries and submissions share `runtime/executor/model_constraints.go`.
+Queries infer required operation inputs without claiming attachment-byte
+validation. Local profiles remain conservative: gaps may fetch a catalog once,
+but existing enum/range/type failures never trigger automatic relaxation.
+An explicit exact-model query can identify drift; adapting and releasing the
+profile is a maintainer action, not a mutable user-side profile cache.
+
+`workflow_trace_test.go` checks offline command, HTTP, receipt and simulated
+handoff ordering for multiple images, local edits and videos. These tests do
+not prove an actual client follows Skill instructions. PNG/JPEG integrity uses
+standard decoders with a 33,554,432-pixel cap; WebP remains structural validation.
+Keep positive fixtures, corrupted-payload cases and bounded-resource tests.
+
 ## Distribution
 
 This repository does not publish an npm package. Native fetch resolves the latest stable release manifest, pins its version/source commit and verifies its selector and current-platform ZIP. No ordinary install follows main or falls back to a source archive. Explicit local source sync remains available for maintainers. Keep six shared Skills; do not fork payloads per client or create a global shared-executor service.

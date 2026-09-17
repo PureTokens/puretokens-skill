@@ -142,8 +142,11 @@ func modelQueryMatches(query modelQuery, entry map[string]any) bool {
 	if err != nil || json.Unmarshal(body, &schema) != nil {
 		return false
 	}
+	var operation mediaOperation
+	counts := make(map[string]int)
 	if query.Operation != "" {
-		operation, exists := schema.Operations[query.Operation]
+		var exists bool
+		operation, exists = schema.Operations[query.Operation]
 		if !exists || operation.Request.Method != http.MethodPost ||
 			(operation.Request.ContentType != "application/json" && operation.Request.ContentType != "multipart/form-data") {
 			return false
@@ -157,39 +160,21 @@ func modelQueryMatches(query modelQuery, entry map[string]any) bool {
 		if !routeMatches {
 			return false
 		}
-	}
-	for name, value := range query.Parameters {
-		rule, declared := schema.Properties[name]
-		if !declared || validateProperty(name, value, rule) != nil {
-			return false
+		for _, input := range operation.Inputs {
+			if input.Required {
+				counts[input.Field] = max(1, input.Min)
+			}
 		}
-		if _, unsupported := schema.Constraints["unsupported_inputs"][name]; unsupported {
-			return false
-		}
-		if transports, declared := schema.Constraints["reference_transport"][name]; declared && validateReferences(value, transports) != nil {
-			return false
-		}
-		if companions, declared := schema.Constraints["requires_together"][name]; declared {
-			for _, companion := range array(companions) {
-				key, ok := companion.(string)
-				if !ok {
-					return false
-				}
-				if _, provided := query.Parameters[key]; !provided {
-					return false
-				}
+		for _, field := range operation.Required {
+			if mediaReferenceField(field) {
+				counts[field] = max(1, counts[field])
 			}
 		}
 	}
-	mode := "text"
-	if query.Parameters["image"] != nil || query.Parameters["first_frame_image"] != nil || query.Operation == "image_to_video" {
-		mode = "image"
+	for name, value := range query.Parameters {
+		if validateModelParameter(schema, operation, name, value, counts, operation.Request.ContentType == "multipart/form-data") != nil {
+			return false
+		}
 	}
-	if query.Operation == "reference_image_video" || query.Operation == "reference_video" || query.Operation == "reference_audio" {
-		mode = "reference"
-	}
-	if allowed, declared := schema.Constraints["resolution_by_mode"][mode]; declared && query.Parameters["resolution"] != nil && !hasValue(array(allowed), query.Parameters["resolution"]) {
-		return false
-	}
-	return true
+	return validateModelConstraints(schema, query.Operation, query.Parameters, counts) == nil
 }

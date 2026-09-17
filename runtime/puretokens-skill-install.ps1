@@ -264,7 +264,16 @@ function Get-TargetForHost([string]$RequestedHost) {
       return (Join-Path $env:USERPROFILE ".gemini\skills")
     }
     "grok-build" { return (Join-Path $env:USERPROFILE ".grok\skills") }
-    "opencode" { return (Join-Path $env:USERPROFILE ".config\opencode\skills") }
+    "opencode" {
+      $xdg = if ($env:XDG_CONFIG_HOME) { $env:XDG_CONFIG_HOME } else { Join-Path $env:USERPROFILE ".config" }
+      $config = if ($env:OPENCODE_CONFIG_DIR) { $env:OPENCODE_CONFIG_DIR } else { Join-Path $xdg "opencode" }
+      foreach ($directory in @($xdg, $config)) {
+        if ($directory -notmatch '^(?:[A-Za-z]:[\\/]|[\\/]{2}[^\\/]+[\\/][^\\/]+)' -or $directory -match '(^|[\\/])\.\.([\\/]|$)' -or $directory -match '[\x00-\x1f\x7f]') {
+          Fail "OpenCode config directories must be absolute without parent traversal"
+        }
+      }
+      return (Join-Path $config "skills")
+    }
     "trae" { return (Join-Path $env:USERPROFILE ".trae\skills") }
     default { Fail "unsupported host: $RequestedHost" }
   }

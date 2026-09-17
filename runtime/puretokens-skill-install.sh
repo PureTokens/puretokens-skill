@@ -113,7 +113,15 @@ target_for_host() {
       printf '%s\n' "$HOME/.gemini/skills"
       ;;
     grok-build) printf '%s\n' "$HOME/.grok/skills" ;;
-    opencode) printf '%s\n' "$HOME/.config/opencode/skills" ;;
+    opencode)
+      opencode_config=${XDG_CONFIG_HOME:-$HOME/.config}
+      case "$opencode_config" in /*) ;; *) fail "OpenCode XDG config directory must be absolute" ;; esac
+      case "$opencode_config/" in */../*) fail "OpenCode XDG config directory must not contain parent traversal" ;; esac
+      opencode_root=${OPENCODE_CONFIG_DIR:-$opencode_config/opencode}
+      case "$opencode_root" in /*) ;; *) fail "OpenCode config directory must be absolute" ;; esac
+      case "$opencode_root/" in */../*) fail "OpenCode config directory must not contain parent traversal" ;; esac
+      printf '%s\n' "$opencode_root/skills"
+      ;;
     trae) printf '%s\n' "$HOME/.trae/skills" ;;
     *) fail "unsupported host: $host" ;;
   esac
@@ -276,12 +284,18 @@ restore_transaction() (
   done < "$recovery_stage/plan"
 )
 
+remove_completed_stage() {
+  if ! rm -rf -- "$1" 2>/dev/null; then
+    printf '%s\n' "cleanup_status: pending; completed transaction files were retained. Host cleanup permission is required; do not delete unknown directories or reinstall solely for this warning."
+  fi
+}
+
 finish_transaction() {
   code=$?
   trap - EXIT HUP INT TERM
   if [ -n "${stage_root:-}" ] && [ -d "$stage_root" ]; then
     if [ -f "$stage_root/committed" ] || restore_transaction "$target_root" "$stage_root"; then
-      rm -rf -- "$stage_root"
+      remove_completed_stage "$stage_root"
     else
       printf '%s\n' "Update recovery is incomplete; retained the managed recovery stage. Run sync again after resolving file access." >&2
       code=1
@@ -314,7 +328,9 @@ owns_update_lock() (
 )
 
 release_update_lock() {
-  if owns_update_lock; then rm -rf -- "$lock_root"; fi
+  if owns_update_lock && ! rm -rf -- "$lock_root" 2>/dev/null; then
+    printf '%s\n' "cleanup_status: pending; the installation lock was retained. Resolve host file access before another installation; do not retry automatically."
+  fi
 }
 
 claim_update_lock() (
@@ -371,7 +387,7 @@ acquire_update_lock() {
     [ -d "$previous_stage" ] || continue
     [ -f "$previous_stage/transaction-v1" ] || fail "an unrecognized staging directory needs inspection; left untouched"
     if [ -f "$previous_stage/committed" ] || restore_transaction "$target_root" "$previous_stage"; then
-      rm -rf -- "$previous_stage"
+      rm -rf -- "$previous_stage" 2>/dev/null || fail "previous transaction cleanup is pending; resolve host file access before continuing"
     else
       fail "previous update recovery failed; retained its backup"
     fi
@@ -442,7 +458,7 @@ sync_target() {
   done < "$stage_root/plan"
   touch "$stage_root/committed"
   printf '%s\n' "Pure Tokens Skills $release_version synchronized with the native API executor at $target_root"
-  rm -rf -- "$stage_root"
+  remove_completed_stage "$stage_root"
   stage_root=
   release_update_lock
   trap - EXIT HUP INT TERM

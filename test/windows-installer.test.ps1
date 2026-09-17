@@ -4,7 +4,7 @@ $root = Join-Path ([IO.Path]::GetTempPath()) ('pt-installer-test-' + [Guid]::New
 $target = Join-Path $root 'skills'
 $installer = Join-Path $repository 'runtime/puretokens-skill-install.ps1'
 $savedEnvironment = @{}
-foreach ($name in @('USERPROFILE', 'HOME', 'CODEX_HOME', 'APPDATA', 'DSH_HOME', 'CLAUDE_CONFIG_DIR', 'ZCODE_DATA_BASE_DIR', 'KIMI_CODE_HOME', 'QODER_CONFIG_DIR', 'QODER_CLI_HOME', 'QODER_CONFIG_DIR_NAME', 'PI_CODING_AGENT_DIR')) { $savedEnvironment[$name] = [Environment]::GetEnvironmentVariable($name, 'Process') }
+foreach ($name in @('USERPROFILE', 'HOME', 'CODEX_HOME', 'APPDATA', 'DSH_HOME', 'CLAUDE_CONFIG_DIR', 'ZCODE_DATA_BASE_DIR', 'KIMI_CODE_HOME', 'QODER_CONFIG_DIR', 'QODER_CLI_HOME', 'QODER_CONFIG_DIR_NAME', 'PI_CODING_AGENT_DIR', 'XDG_CONFIG_HOME', 'OPENCODE_CONFIG_DIR')) { $savedEnvironment[$name] = [Environment]::GetEnvironmentVariable($name, 'Process') }
 try {
   New-Item -ItemType Directory $root | Out-Null
   $env:USERPROFILE = Join-Path $root 'home'
@@ -44,6 +44,20 @@ try {
     }
     if ((Test-Path -LiteralPath (Join-Path $root 'invalid')) -or (Test-Path -LiteralPath (Join-Path $root 'unexpected'))) { throw "$engine wrote through an invalid Pi root" }
     $env:PI_CODING_AGENT_DIR = ''
+    $env:XDG_CONFIG_HOME = Join-Path $root 'xdg config'
+    $env:OPENCODE_CONFIG_DIR = ''
+    $location = & $command.Source -NoProfile -ExecutionPolicy Bypass -File $installer locate -HostId opencode
+    if ($LASTEXITCODE -ne 0 -or $location -ne (Join-Path $env:XDG_CONFIG_HOME 'opencode\skills')) { throw "$engine OpenCode XDG directory mismatch" }
+    $env:OPENCODE_CONFIG_DIR = Join-Path $root 'opencode custom'
+    $location = & $command.Source -NoProfile -ExecutionPolicy Bypass -File $installer locate -HostId opencode
+    if ($LASTEXITCODE -ne 0 -or $location -ne (Join-Path $env:OPENCODE_CONFIG_DIR 'skills')) { throw "$engine OpenCode custom directory mismatch" }
+    foreach ($invalid in @('relative', 'C:relative', '\rooted', (Join-Path $root 'invalid\..\unexpected'))) {
+      $env:OPENCODE_CONFIG_DIR = $invalid
+      & $command.Source -NoProfile -ExecutionPolicy Bypass -File $installer locate -HostId opencode *> $null
+      if ($LASTEXITCODE -eq 0) { throw "$engine accepted an invalid OpenCode directory" }
+    }
+    $env:XDG_CONFIG_HOME = ''
+    $env:OPENCODE_CONFIG_DIR = ''
     $env:APPDATA = Join-Path $root "Roaming with spaces"
     $env:DSH_HOME = ""
     $env:CLAUDE_CONFIG_DIR = ""

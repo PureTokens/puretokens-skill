@@ -61,8 +61,12 @@ func TestContractExamples(t *testing.T) {
 				t.Fatal(err)
 			}
 			blocks := fences.FindAllSubmatch(document, -1)
-			if len(blocks) != 4 {
-				t.Fatalf("%s guide: expected generation, attachment, status and content examples", kind)
+			expected := 4
+			if kind == "video" {
+				expected++ // Separate local-file and public-URL reference examples.
+			}
+			if len(blocks) != expected {
+				t.Fatalf("%s guide: expected %d executable examples", kind, expected)
 			}
 			for index, block := range blocks {
 				name := fmt.Sprintf("docs-%s-%d", kind, index)

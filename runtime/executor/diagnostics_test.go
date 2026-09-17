@@ -50,6 +50,36 @@ func doctorFixtureInstallation(t *testing.T, root, version string) {
 
 func doctorNoEnvironment(string) string { return "" }
 
+func TestOpenCodeDoctorFindsDeclaredCustomAndSharedRoots(t *testing.T) {
+	home := t.TempDir()
+	xdg := filepath.Join(home, "xdg config")
+	custom := filepath.Join(home, "custom config")
+	env := func(key string) string {
+		return map[string]string{"XDG_CONFIG_HOME": xdg, "OPENCODE_CONFIG_DIR": custom}[key]
+	}
+	loaded := filepath.Join(custom, "skills")
+	doctorFixtureInstallation(t, loaded, executorVersion)
+	for _, root := range []string{filepath.Join(xdg, "opencode", "skills"), filepath.Join(home, ".agents", "skills"), filepath.Join(home, ".claude", "skills")} {
+		doctorFixtureInstallation(t, root, "0.1.0")
+	}
+	result := collectDoctorAt(loaded, "opencode", home, env)
+	if result.OK || len(result.Local.Installations) != 4 || len(result.Local.DuplicateSkills) != 6 {
+		t.Fatalf("OpenCode custom/shared copies missing: %+v", result)
+	}
+	if !reflect.DeepEqual(result.Local.Installations[0].Locations, []string{"loaded_skills", "host_skills"}) {
+		t.Fatal("selected root disagrees with installer")
+	}
+	// Do not scan an old default directory outside the effective XDG root.
+	for _, location := range doctorHostLocations("opencode", home, env) {
+		if location.path == filepath.Join(home, ".config", "opencode", "skills") {
+			t.Fatal("doctor guessed an inactive default")
+		}
+	}
+	if roots := doctorHostLocations("opencode", home, func(string) string { return "relative" }); len(roots) != 0 {
+		t.Fatal("relative OpenCode directory accepted")
+	}
+}
+
 func TestDesktopDoctorUsesOnlyDeclaredSkillRoots(t *testing.T) {
 	home := t.TempDir()
 	harness := filepath.Join(home, "Harness with spaces")

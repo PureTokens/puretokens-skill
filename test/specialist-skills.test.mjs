@@ -211,6 +211,38 @@ test("media entrypoints route exceptional detail without weakening support priva
   }
 });
 
+for (const kind of ["image", "video"]) {
+  test(`${kind} simple requests avoid planning-only rounds without bypassing safety`, async () => {
+    const base = path.join(repositoryRoot, "skills", `puretokens-${kind}`);
+    const [skill, manifest] = await Promise.all([
+      readFile(path.join(base, "SKILL.md"), "utf8"),
+      readFile(path.join(base, "skill.json"), "utf8").then(JSON.parse)
+    ]);
+    assert.equal(manifest.rules.simpleRequestsSkipPlanningOnlyRounds, true);
+    assert.equal(manifest.rules.reusesAccessibleCurrentAttachmentPath, true);
+    assert.equal(manifest.rules.followsNextStepWithoutPlanningInterludes, true);
+    const shortPath = skill.match(/## 简单请求短路径\n([\s\S]*?)(?=\n## )/)?.[1];
+    assert.ok(shortPath, "both media entrypoints must carry the short-path contract");
+    assert.match(shortPath, /模型、素材和用途明确的单次生成或编辑/);
+    assert.match(shortPath, /除非用户要求计划或任务属于复杂多阶段工作/);
+    assert.match(shortPath, /不创建或更新任务清单/);
+    assert.match(shortPath, /必要且互不依赖的读取放在同一轮/);
+    assert.match(shortPath, /已读且仍在有效上下文中的说明不重读/);
+    assert.match(shortPath, /仅缺命令用法时才读 executor-usage/);
+    assert.match(shortPath, /直接使用宿主提供且执行器可访问的附件绝对路径/);
+    assert.match(shortPath, /不为整理目录复制、重命名或改写原图/);
+    assert.match(shortPath, /宿主必须先物化附件时才保存一份字节不变的文件/);
+    assert.match(shortPath, /收到回执后直接按 `next_step` 执行/);
+    assert.match(shortPath, /不在 wait、content、deliver 之间插入任务清单或额外规划/);
+    assert.match(shortPath, /不能把 submit、wait、content 合成一个命令/);
+    assert.match(skill, /先告知返回的 task_id 和状态/);
+    assert.match(skill, /累计两个窗口/);
+    assert.match(skill, /实际交付后才执行/);
+    assert.match(skill, /media_operation/);
+    assert.match(skill, /没有声明的传输方式就停止/);
+  });
+}
+
 test("the public install prompt remains extractable in both README files", async () => {
   const expected = "Install or update the official Pure Tokens Skills from https://github.com/PureTokens/puretokens-skill.";
   for (const file of ["README.md", "README.zh-CN.md"]) {

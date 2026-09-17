@@ -271,41 +271,8 @@ func prepareProfileRequest(request *taskRequest, svc service) error {
 		}
 	}
 	for key, value := range request.Parameters {
-		if counts[key] > 0 {
-			return errors.New("Do not send the same media field as both a file and a JSON parameter.")
-		}
-		rule, exists := profile.Parameters.Properties[key]
-		if !exists {
-			input, ok := operation.Inputs[key]
-			if !ok || operation.Request.ContentType != "application/json" {
-				return errors.New("An optional field is not declared by this model; check its supported parameters before submitting.")
-			}
-			if !contains(input.Transports, "public_https_url") {
-				return errors.New("This JSON attachment transport is not supported by the model.")
-			}
-			if err := validateReferences(value, []any{"public_https_url"}); err != nil {
-				return err
-			}
-			rule = map[string]any{"type": "string[]"}
-			if input.Max > 0 {
-				rule["maxLength"] = float64(input.Max)
-			}
-		}
-		if err = validateProperty(key, value, rule); err != nil {
+		if err = validateModelParameter(profile.Parameters, operation, key, value, counts, len(request.Attachments) > 0); err != nil {
 			return err
-		}
-		if transports, exists := profile.Parameters.Constraints["reference_transport"][key]; exists {
-			if len(request.Attachments) > 0 {
-				if _, declared := operation.Inputs[key]; !declared {
-					return errors.New("Mixing URL references and local attachments requires an explicitly declared combination operation.")
-				}
-			}
-			if err = validateReferences(value, transports); err != nil {
-				return err
-			}
-		}
-		if _, unsupported := profile.Parameters.Constraints["unsupported_inputs"][key]; unsupported {
-			return errors.New("The selected model explicitly excludes this input.")
 		}
 	}
 	for _, input := range operation.Inputs {
@@ -327,30 +294,8 @@ func prepareProfileRequest(request *taskRequest, svc service) error {
 			}
 		}
 	}
-	// Frame mode and general references are mutually exclusive, across both
-	// JSON URLs and multipart files. The profile supplies the field groups.
-	groups := profile.Parameters.Constraints["exclusive_reference_sets"]
-	presentGroups := 0
-	for _, fields := range groups {
-		for _, field := range array(fields) {
-			key := fmt.Sprint(field)
-			if counts[key] > 0 || request.Parameters[key] != nil {
-				presentGroups++
-				break
-			}
-		}
-	}
-	if presentGroups > 1 {
-		return errors.New("First/last frames cannot be combined with additional reference media.")
-	}
-	for key, others := range profile.Parameters.Constraints["requires_together"] {
-		if _, exists := request.Parameters[key]; exists {
-			for _, other := range array(others) {
-				if _, ok := request.Parameters[fmt.Sprint(other)]; !ok {
-					return errors.New("Width and height must be supplied together as declared by the model.")
-				}
-			}
-		}
+	if err = validateModelConstraints(profile.Parameters, opName, request.Parameters, counts); err != nil {
+		return err
 	}
 	// Deterministically apply declared size precedence, without guessing values.
 	order := array(profile.Parameters.Constraints["size_expression_precedence"]["order"])
@@ -373,16 +318,6 @@ func prepareProfileRequest(request *taskRequest, svc service) error {
 				delete(request.Parameters, field)
 			}
 		}
-	}
-	mode := "text"
-	if counts["image"] > 0 || request.Parameters["image"] != nil || counts["first_frame_image"] > 0 || counts["last_frame_image"] > 0 || request.Parameters["first_frame_image"] != nil || request.Parameters["last_frame_image"] != nil {
-		mode = "image"
-	}
-	if opName == "reference_image_video" || opName == "reference_video" || opName == "reference_audio" {
-		mode = "reference"
-	}
-	if allowed, exists := profile.Parameters.Constraints["resolution_by_mode"][mode]; exists && request.Parameters["resolution"] != nil && !hasValue(array(allowed), request.Parameters["resolution"]) {
-		return errors.New("This resolution is unavailable for the selected reference mode. Choose a declared resolution.")
 	}
 	count := 1
 	if n, exists := request.Parameters["n"]; exists {

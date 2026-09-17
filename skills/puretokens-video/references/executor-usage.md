@@ -24,6 +24,12 @@ Current local first-frame image:
 {"kind":"video","operation":"generate","media_operation":"image_to_video","model":"grok-imagine-video-1.5-preview","prompt":"A gentle camera movement","attachments":[{"field":"image","path":"/absolute/current.png"}]}
 ```
 
+Public HTTPS first-frame URL for this model (JSON, without the multipart-only `media_operation`; do not download or rehost it):
+
+```json
+{"kind":"video","operation":"generate","model":"grok-imagine-video-1.5-preview","prompt":"A gentle camera movement","parameters":{"image":"https://example.com/current.png"}}
+```
+
 `submit` returns the task ID immediately; it never polls or downloads. Do not repeat a submission with unknown output. `status` reads once and `wait` performs one bounded window. Carry the original operation as `original_operation`, model, confirmed count and safe parameters into a same-task request:
 
 ```json
@@ -75,6 +81,8 @@ inventing proof: preserve them and retrieve the same index into another director
 ## Explicit validation
 
 `preflight --host codex --request <file>` checks the requested model parameters and attachment representation without a POST. Use it only for an explicit check; normal generation validates during submit. It is not a price quote or a guarantee of permission, balance or media delivery. A profile gap may require one catalog GET.
+
+Existing local type/range/enum restrictions are not automatically relaxed by a live catalog read. To inspect a changed declaration, explicitly query `models` for that exact ID. Catalog queries do not refresh installed files; install a compatible stable release only when the user requests an update, then validate against its profile. If no compatible release exists, report the pending adaptation. Never edit managed profiles or resubmit an existing task to bypass validation.
 
 Machine receipts preserve available context with `original_operation` separate from the invoked command. `retry_not_before` is an RFC3339 lower bound for the next same-task read; preserve it across continuation. An omitted continuation count is unknown, not one; video tasks only allow one output. Report `submission_outcome: unknown` as uncertainty; never automatically resubmit. Show API codes only if actually returned, and retain only sanitized error detail. Keep user-facing updates to task ID/status, actual artifact delivery or the needed corrective action.
 

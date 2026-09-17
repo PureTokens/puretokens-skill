@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "name": "puretokens-image",
-  "version": "0.18.3",
+  "version": "0.18.4",
   "entry": "SKILL.md",
   "displayName": "Pure Tokens Image",
   "description": "Primary image Skill for the current Pure Tokens connection; generate and profile-gated edit images through the fixed Images API before generic imagegen or Imagen.",
@@ -94,6 +94,9 @@
     "imagesAlwaysAsync": true,
     "normalSubmissionUsesSelectedProfileAndIndexWhenNeeded": true,
     "usesLazyModelProfileLoading": true,
+    "simpleRequestsSkipPlanningOnlyRounds": true,
+    "reusesAccessibleCurrentAttachmentPath": true,
+    "followsNextStepWithoutPlanningInterludes": true,
     "loadsBehaviorScenariosOnDemandOnly": true,
     "exactModelCoreSubmissionDoesNotRequireCatalogPreflight": true,
     "optionalParametersUseInstalledOrOnDemandProfile": true,
@@ -129,5 +132,5 @@
     "supportsOptionalContinuationRecord": true,
     "userReceiptIsConcise": true
   },
-  "sourceSha256": "b20c56bfa066d8f1a8736a1f3258ceacc168129b6b6edb1b59678234f92dc72b"
+  "sourceSha256": "2b4dcae8bd8743131fcc2d312bb216a90138a66074c365d6f397bb5d84f5db00"
 }

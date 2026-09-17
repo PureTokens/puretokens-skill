@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"encoding/binary"
 	"fmt"
+	"hash/crc32"
 	"io"
 	"os"
 	"path/filepath"
@@ -76,7 +78,16 @@ func TestUnprovenAndModifiedValidMediaCannotBeReused(t *testing.T) {
 	root := t.TempDir()
 	route := contentPath("image", "existing-task", 0)
 	file := filepath.Join(root, fmt.Sprintf("puretokens-%x.png", sha256.Sum256([]byte(route))))
-	original := fixturePNG(t)
+	withText := func(value string) []byte {
+		png := fixturePNG(t)
+		data := append([]byte("tEXt"), []byte("note\x00"+value)...)
+		var chunk bytes.Buffer
+		binary.Write(&chunk, binary.BigEndian, uint32(len(data)-4))
+		chunk.Write(data)
+		binary.Write(&chunk, binary.BigEndian, crc32.ChecksumIEEE(data))
+		return append(append(append([]byte{}, png[:len(png)-12]...), chunk.Bytes()...), png[len(png)-12:]...)
+	}
+	original := withText("original")
 	os.WriteFile(file, original, 0600)
 	svc := service{baseURL: "invalid", downloadProofs: make(map[string]downloadProof)}
 	if _, _, _, _, _, err := svc.download(context.Background(), route, "image", root); err == nil {
@@ -91,8 +102,10 @@ func TestUnprovenAndModifiedValidMediaCannotBeReused(t *testing.T) {
 		t.Fatal("proven file rejected", err)
 	}
 	// Preserve a structurally valid PNG while changing its metadata bytes.
-	changed := bytes.Clone(original)
-	changed[24] ^= 1
+	changed := withText("modified")
+	if len(changed) != len(original) {
+		t.Fatal("replacement must preserve the byte count")
+	}
 	os.WriteFile(file, changed, 0600)
 	if !validMediaFile(file, "image/png") {
 		t.Fatal("fixture must pass existing structural validation")

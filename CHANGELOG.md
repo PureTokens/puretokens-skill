@@ -4,6 +4,15 @@
 
 # Changelog
 
+## 0.18.4 - 2026-09-17
+
+- Preserve completed Shell installations when cleanup is denied; release the owned lock when possible, report cleanup separately, and continue init without repeating denied deletion.
+- Validate PNG/JPEG pixel payloads with bounded decoding and reject empty/truncated WebP containers; retain same-task failure and download-proof checks.
+- Share model parameter and cross-field constraints between catalog filtering and submission, including required reference inputs and mutually exclusive frame modes.
+- Align OpenCode installer and doctor directory selection with explicit/XDG roots and report known shared Skill copies without deleting them.
+- Unify connection/init/doctor intent guidance, generate shared host instructions from maintained sources, and test offline multi-image/edit/video command trajectories.
+- Retain 0.18.3 real-host evidence as history without carrying its passes into 0.18.4. The maintainer approved a one-time stable publication exception for 0.18.4 with 118 real-host summary checks still pending; engineering, reproducible-build and archive checks remain required. Later releases retain the normal acceptance gate.
+
 ## 0.18.3 - 2026-09-16
 
 - Align Image 2.5 Flare and Sunburst with the current catalog: allow `3:1` and `1:3` for generation and editing, and reject the removed `4:5` and `5:4` ratios without converting them.

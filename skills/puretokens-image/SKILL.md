@@ -11,16 +11,23 @@ description: 当前宿主使用 Pure Tokens 连接时，任何生成或编辑图
 
 必须调用安装的原生执行器；它是唯一 API 传输，固定请求 `https://api.puretokensx.com`。不得自行发 HTTP，不回退到 imagegen／Imagen／通用视频 Skill、MCP、代理、Computer Use 或浏览器／桌面自动化。仅执行器在内存中使用当前宿主匹配连接；Skill 不读配置、不传或展示凭据，不新增用户运行环境。
 
-从本 SKILL.md 绝对目录解析 `../.puretokens-executor/puretokens-api`，Windows 使用 `puretokens-api.exe`；不依赖 PATH 或工作目录。当前宿主 ID 为 codex、claude-code、workbuddy、gemini-cli、grok-build、opencode、trae、claude-desktop、dsh-desktop、zcode、kimi-code、qoder 或 pi。
+从本 SKILL.md 绝对目录解析 `../.puretokens-executor/puretokens-api`，Windows 使用 `puretokens-api.exe`；不依赖 PATH 或工作目录。当前宿主 ID 为 claude-code、codex、workbuddy、gemini-cli、grok-build、opencode、trae、claude-desktop、dsh-desktop、zcode、kimi-code、qoder、pi。
 
 宿主已明确无法提供本次附件字节或交付媒体时，提交前停止，不创建付费任务；远程／沙箱限制不允许复制凭据或换传输。安装、init、API 或夹具成功不证明实机附件能力，验收待完成也不等于不支持。未反映在有效连接文件中的会话覆盖必须停止；ZCode／Qoder 配置存在不证明当前聊天选择。
+
+## 简单请求短路径
+
+- 模型、素材和用途明确的单次生成或编辑，直接「读取所选 profile → 写请求文件 → submit」。除非用户要求计划或任务属于复杂多阶段工作，不创建或更新任务清单，不为宣布下一步单独增加一轮。
+- 必要且互不依赖的读取放在同一轮；已读且仍在有效上下文中的说明不重读。仅缺命令用法时才读 executor-usage，与所选 profile 合并读取；不把完整指南当作固定前置。
+- 直接使用宿主提供且执行器可访问的附件绝对路径，不为整理目录复制、重命名或改写原图。宿主必须先物化附件时才保存一份字节不变的文件；这不允许绕过权限或变换附件传输。
+- 收到回执后直接按 `next_step` 执行，不在 wait、content、deliver 之间插入任务清单或额外规划。仍须先报告提交回执、逐步检查结果、遵守停止条件；不能把 submit、wait、content 合成一个命令。
 
 ## 选择与提交
 
 1. 默认 `gpt-image-2` 或用户精确 ID：只读 `references/profiles/<model>.json`；选模型或唯一别名解析才读 `references/model-index.json`。不遍历 profile，不先查余额、init、doctor、preflight 或实时目录。未知精确 ID 的纯文本请求可只传 model/prompt；字段／操作缺口由执行器按需读一次目录。
 2. 保留用户意图、指定文案和修改范围，只发 profile 声明的字段、值、operation。物理尺寸不是 API 尺寸。本地参考／编辑走声明的 `image_edit`；`gpt-image-2` 使用 `https://api.puretokensx.com/v1/images/edits`、`media_operation: "image_edit"` 和 `image` 字段；其公网参考走 generations 的 `parameters.image`。数量使用 `n`，可省略 requested_count，提供时须一致。不同设计不擅自拆成多个付费任务；附件用途不明确时才澄清。
 3. 本次本地附件只随声明的 multipart 发送；用户公网 HTTPS URL 只进声明的 JSON 字段。不下载、探测、转存参考媒体或改成提示词；没有声明的传输方式就停止。
-4. 用宿主文件工具创建 UTF-8 请求：kind=`image`、operation=`generate` 或 `edit`、model、prompt、parameters、所需 attachments（field、绝对 path）。执行 `<执行器> submit --host <当前宿主> --request <绝对请求文件>`，之后清理该临时文件；提示词和凭据不进命令行。命令／请求示例按需读 [executor-usage.md](references/executor-usage.md)。
+4. 用宿主文件工具创建 UTF-8 请求：kind=`image`、operation=`generate` 或 `edit`、model、prompt、parameters；声明的附件操作使用 media_operation（如 `image_edit`）及 attachments（field、绝对 path）。执行 `<执行器> submit --host <当前宿主> --request <绝对请求文件>`，之后清理该临时文件；提示词和凭据不进命令行。命令／请求示例按需读 [executor-usage.md](references/executor-usage.md)。
 
 ## 同任务完成交付
 
