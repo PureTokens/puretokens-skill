@@ -10,7 +10,7 @@
     "capability": { "enum": ["image", "video"] },
     "catalogUpdatedAt": { "type": "string", "minLength": 1 },
     "catalogCapturedAt": { "type": "string", "format": "date-time" },
-    "id": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "id": { "type": "string", "maxLength": 160, "pattern": "^(?!\\.{1,2}$)[A-Za-z0-9_.-]+(\\([A-Za-z0-9_.-]+\\))?$(?![\\s\\S])" },
     "parameterSchema": { "type": "object" }
   },
   "additionalProperties": false

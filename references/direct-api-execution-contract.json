@@ -16,7 +16,11 @@
       "zcode",
       "kimi-code",
       "qoder",
-      "pi"
+      "pi",
+      "hermes",
+      "evox",
+      "vscode",
+      "octop"
     ],
     "credentialUse": "in_memory_only_for_fixed_puretokens_api_requests",
     "credentialSourceMustMatchFixedPureTokensEndpoint": true,
@@ -60,7 +64,11 @@
     "zcode",
     "kimi-code",
     "qoder",
-    "pi"
+    "pi",
+    "hermes",
+    "evox",
+    "vscode",
+    "octop"
   ],
   "executorCredentialAdapterHosts": [
     "claude-code",
@@ -74,7 +82,11 @@
     "zcode",
     "kimi-code",
     "qoder",
-    "pi"
+    "pi",
+    "hermes",
+    "evox",
+    "vscode",
+    "octop"
   ],
   "requiredExecutorCapabilities": [
     "fixed_full_url_request",

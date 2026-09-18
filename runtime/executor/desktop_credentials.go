@@ -143,6 +143,10 @@ func readDesktopYAML(path string) (map[string]any, error) {
 		return nil, errors.New("desktop connection record is unavailable")
 	}
 	defer clear(data)
+	return parseDesktopYAML(data)
+}
+
+func parseDesktopYAML(data []byte) (map[string]any, error) {
 	decoder := yaml.NewDecoder(bytes.NewReader(data))
 	var node yaml.Node
 	if decoder.Decode(&node) != nil || !safeDesktopYAML(&node, 0) {

@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { validModelID } from "./model-id.mjs";
 
 export const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const skillsRoot = path.join(repositoryRoot, "skills");
@@ -156,9 +157,12 @@ async function readHostSupport(errors) {
       if (!host || typeof host.guidance !== "string" || !host.guidance) {
         errors.push(`references/host-support.json: ${host?.id || "unnamed host"} needs guidance`);
       }
-      if (host?.delivery !== "native-installer" || typeof host.globalSkillDirectory !== "string" || !/^~\/(?:(?:\.[a-z-]+\/)*(?:[a-z-]+\/)?|Library\/Application Support\/dsh-desktop\/harness\/)skills$/.test(host.globalSkillDirectory) ||
+      const validDirectory = host?.id === "octop"
+        ? host.globalSkillDirectory === undefined && host.workspaceSkillDirectory === ".octop/skills"
+        : typeof host?.globalSkillDirectory === "string" && /^~\/(?:(?:\.[a-z-]+\/)*(?:[a-z-]+\/)?|Library\/Application Support\/dsh-desktop\/harness\/)skills$/.test(host.globalSkillDirectory);
+      if (host?.delivery !== "native-installer" || !validDirectory ||
         host.directMediaExecution !== "managed-native-executor" || !["fixture-tested", "pending"].includes(host.credentialAdapter)) {
-        errors.push(`references/host-support.json: ${host?.id || "unnamed host"} needs a native-installer global Skill directory`);
+        errors.push(`references/host-support.json: ${host?.id || "unnamed host"} needs a declared native-installer Skill directory`);
       }
     }
     return { supported: support.supported };
@@ -348,6 +352,9 @@ function validateHostDistributions(errors, directory, manifest, hostSupport) {
     }
     if (delivery.globalSkillDirectory !== host.globalSkillDirectory) {
       errors.push(`${directory}: ${host.id} global Skill directory must match references/host-support.json`);
+    }
+    if (delivery.workspaceSkillDirectory !== host.workspaceSkillDirectory) {
+      errors.push(`${directory}: ${host.id} workspace Skill directory must match references/host-support.json`);
     }
     if (host.id === "codex") {
       if (delivery.requiresPluginFeature !== false) errors.push(`${directory}: Codex delivery must not require the Plugin feature`);
@@ -681,7 +688,7 @@ async function validateModelIndex(errors, directory, skillDir, index) {
   const ids = new Set();
   const profilePaths = new Set();
   for (const model of index.models) {
-    if (!model || typeof model.id !== "string" || !model.id || !Array.isArray(model.aliases) || model.aliases.some((alias) => typeof alias !== "string" || !alias) ||
+    if (!model || !validModelID(model.id) || !Array.isArray(model.aliases) || model.aliases.some((alias) => typeof alias !== "string" || !alias) ||
       typeof model.profile !== "string" || model.profile !== `profiles/${model.id}.json`) {
       errors.push(`${label} models must have a non-empty id, string aliases, and their canonical profile path`);
       continue;

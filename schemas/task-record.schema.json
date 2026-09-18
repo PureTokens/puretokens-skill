@@ -23,7 +23,8 @@
     },
     "model": {
       "type": "string",
-      "pattern": "^[A-Za-z0-9_.-]{1,160}$"
+      "maxLength": 160,
+      "pattern": "^(?!\\.{1,2}$)[A-Za-z0-9_.-]+(\\([A-Za-z0-9_.-]+\\))?$(?![\\s\\S])"
     },
     "original_operation": {
       "type": "string",
@@ -78,12 +79,20 @@
         "quality": {
           "type": "string",
           "enum": [
+            "auto",
             "low",
             "medium",
             "high",
             "xhigh",
             "max"
           ]
+        },
+        "output_format": {
+          "type": "string",
+          "enum": ["png", "jpeg", "webp"]
+        },
+        "response_format": {
+          "const": "url"
         }
       },
       "additionalProperties": false

@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 
 import { repositoryRoot } from "./skill-registry.mjs";
 import { supplementReviewedParameters } from "./reviewed-media-supplements.mjs";
+import { assertModelID } from "./model-id.mjs";
 
 const catalogPath = path.join(
   repositoryRoot,
@@ -143,6 +144,7 @@ function genericCopy(id, capabilities) {
 export function buildPublishedCatalog(previous, models, args) {
   const previousById = new Map((Array.isArray(previous?.models) ? previous.models : []).map((model) => [model.id, model]));
   const normalized = models.map((model) => {
+    assertModelID(model.id);
     if (!model.provider || !Number.isInteger(model.vendorId)) {
       throw new Error(`${model.id}: base model catalog must provide provider and vendor ID`);
     }

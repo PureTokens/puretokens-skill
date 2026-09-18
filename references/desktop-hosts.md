@@ -47,3 +47,50 @@ Doctor checks the loaded root, selected/global OpenCode roots and the documented
 ## Pi
 
 Use `--host pi`. Skills use `~/.pi/agent/skills`, or absolute `PI_CODING_AGENT_DIR/skills` without parent traversal. The executor first verifies one matching `models.json` endpoint using `openai-completions`, then checks only sibling `auth.json` for the same provider ID. Its inline `api_key` entry takes precedence; unsupported or unreadable active authentication stops without fallback. With no matching auth entry, only custom providers without built-in environment authentication may use the saved inline value. Commands, `$` interpolation/escapes and unrepresented CLI, extension or session overrides are unsupported. Never remove active authentication to force fallback. Saved connection verification does not prove current chat selection. Real API and attachment delivery remain unverified.
+
+## Hermes and EvoX
+
+Use `--host hermes` or `--host evox` only in that local host. Hermes uses
+`HERMES_HOME/skills`, default `~/.hermes/skills` on macOS/Linux. Windows uses
+`%LOCALAPPDATA%/hermes/skills`; the legacy home root is used only if the current
+root does not exist. EvoX uses `EVOX_AGENT_DIR/skills`, or
+`EVOX_CODING_AGENT_DIR/skills`, default `~/.evox/agent/skills`. Conflicting,
+relative or parent-traversing overrides stop.
+
+Hermes supports its selected inline custom provider without competing model
+routes, dynamic key sources or credential pools. EvoX requires consistent
+provider/model/default-instance settings and matching canonical authentication.
+Unknown formats and legacy stores stop; do not migrate or rewrite host
+configuration. Unrepresented profile/session overrides are unsupported.
+
+## VS Code
+
+Use `--host vscode` in the local default profile; Skills install to
+`~/.copilot/skills`. Named profiles, portable mode, SSH/WSL and remote hosts
+are outside this adapter's verified scope. The native customendpoint file must
+have exactly one endpoint-matching model with an inline Bearer header.
+Multiple matching models stop as ambiguous, including multi-model Switch
+configurations; never choose the first model, compare keys, remove models,
+or alter the user's chat selection to force init to pass. This initial
+adapter does not establish full multi-model Switch compatibility.
+
+## Octop
+
+Use `--host octop` and an explicit absolute `--target` (PowerShell `-Target`)
+for the current local agent workspace's `.octop/skills` directory. Obtain
+the workspace from the host's current context, not an agent/database scan.
+There is no assumed global Skill root. Do not install into `skill-packages`
+or change Octop's package database. Doctor checks only the loaded installation.
+
+Connection reads use `OCTOP_HOME` or `~/.octop`, the documented local SQLite
+database, and a read-only transaction including committed WAL. A saved default
+selects the exact provider; without one, only a unique enabled matching
+service is supported. This is saved API capability, not current conversation
+identity. PostgreSQL, alternate database paths and session/backend overrides
+stop. Sandboxed workspaces without access to the same host connection must
+stop; never copy credentials into the workspace.
+
+All four additions have fixture coverage only. Installation, native execution,
+API authorization and host attachment handoff remain separate acceptance.
+Cursor is not a Skill host; TraeWork's current Native detection/preview does
+not imply Skill discovery or API support for the historical `trae` directory.

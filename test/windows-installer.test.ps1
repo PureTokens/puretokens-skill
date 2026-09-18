@@ -4,12 +4,17 @@ $root = Join-Path ([IO.Path]::GetTempPath()) ('pt-installer-test-' + [Guid]::New
 $target = Join-Path $root 'skills'
 $installer = Join-Path $repository 'runtime/puretokens-skill-install.ps1'
 $savedEnvironment = @{}
-foreach ($name in @('USERPROFILE', 'HOME', 'CODEX_HOME', 'APPDATA', 'DSH_HOME', 'CLAUDE_CONFIG_DIR', 'ZCODE_DATA_BASE_DIR', 'KIMI_CODE_HOME', 'QODER_CONFIG_DIR', 'QODER_CLI_HOME', 'QODER_CONFIG_DIR_NAME', 'PI_CODING_AGENT_DIR', 'XDG_CONFIG_HOME', 'OPENCODE_CONFIG_DIR')) { $savedEnvironment[$name] = [Environment]::GetEnvironmentVariable($name, 'Process') }
+foreach ($name in @('USERPROFILE', 'HOME', 'CODEX_HOME', 'APPDATA', 'LOCALAPPDATA', 'HERMES_HOME', 'EVOX_AGENT_DIR', 'EVOX_CODING_AGENT_DIR', 'OCTOP_HOME', 'DSH_HOME', 'CLAUDE_CONFIG_DIR', 'ZCODE_DATA_BASE_DIR', 'KIMI_CODE_HOME', 'QODER_CONFIG_DIR', 'QODER_CLI_HOME', 'QODER_CONFIG_DIR_NAME', 'PI_CODING_AGENT_DIR', 'XDG_CONFIG_HOME', 'OPENCODE_CONFIG_DIR')) { $savedEnvironment[$name] = [Environment]::GetEnvironmentVariable($name, 'Process') }
 try {
   New-Item -ItemType Directory $root | Out-Null
   $env:USERPROFILE = Join-Path $root 'home'
   $env:HOME = $env:USERPROFILE
   $env:CODEX_HOME = Join-Path $env:USERPROFILE '.codex'
+  $env:LOCALAPPDATA = Join-Path $env:USERPROFILE 'local'
+  $env:HERMES_HOME = ''
+  $env:EVOX_AGENT_DIR = ''
+  $env:EVOX_CODING_AGENT_DIR = ''
+  $env:OCTOP_HOME = Join-Path $env:USERPROFILE '.octop'
   New-Item -ItemType Directory $env:USERPROFILE | Out-Null
   $engines = @('powershell.exe', 'pwsh')
   $x86PowerShell = Join-Path $env:SystemRoot 'SysWOW64\WindowsPowerShell\v1.0\powershell.exe'
@@ -20,8 +25,8 @@ try {
       $actualProcess = & $command.Source -NoProfile -Command '[Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString()'
       if ($LASTEXITCODE -ne 0 -or $actualProcess -ne 'X86') { throw "SysWOW64 fixture did not execute a 32-bit PowerShell process" }
     }
-    foreach ($newHost in @('kimi-code', 'qoder', 'pi')) {
-      $variable = switch ($newHost) { 'kimi-code' { 'KIMI_CODE_HOME' }; 'qoder' { 'QODER_CONFIG_DIR' }; 'pi' { 'PI_CODING_AGENT_DIR' } }
+    foreach ($newHost in @('kimi-code', 'qoder', 'pi', 'hermes', 'evox')) {
+      $variable = switch ($newHost) { 'kimi-code' { 'KIMI_CODE_HOME' }; 'qoder' { 'QODER_CONFIG_DIR' }; 'pi' { 'PI_CODING_AGENT_DIR' }; 'hermes' { 'HERMES_HOME' }; 'evox' { 'EVOX_AGENT_DIR' } }
       $hostRoot = Join-Path $root ("$newHost $engine " + [char]0x7528 + [char]0x6237 + " spaces")
       [Environment]::SetEnvironmentVariable($variable, $hostRoot, 'Process')
       $location = & $command.Source -NoProfile -ExecutionPolicy Bypass -File $installer locate -HostId $newHost
@@ -35,6 +40,17 @@ try {
       if ($LASTEXITCODE -eq 0) { throw "$engine accepted relative new host directory" }
       [Environment]::SetEnvironmentVariable($variable, '', 'Process')
     }
+    $location = & $command.Source -NoProfile -ExecutionPolicy Bypass -File $installer locate -HostId hermes
+    if ($LASTEXITCODE -ne 0 -or $location -ne (Join-Path $env:LOCALAPPDATA 'hermes\skills')) { throw "$engine Hermes default mismatch" }
+    $location = & $command.Source -NoProfile -ExecutionPolicy Bypass -File $installer locate -HostId vscode
+    if ($LASTEXITCODE -ne 0 -or $location -ne (Join-Path $env:USERPROFILE '.copilot\skills')) { throw "$engine VS Code default mismatch" }
+    & $command.Source -NoProfile -ExecutionPolicy Bypass -File $installer sync -HostId vscode
+    if ($LASTEXITCODE -ne 0) { throw "$engine VS Code installation failed" }
+    & $command.Source -NoProfile -ExecutionPolicy Bypass -File $installer locate -HostId octop *> $null
+    if ($LASTEXITCODE -eq 0) { throw "$engine guessed an Octop global directory" }
+    $octopTarget = Join-Path $root "$engine-workspace\.octop\skills"
+    & $command.Source -NoProfile -ExecutionPolicy Bypass -File $installer sync -HostId octop -Target $octopTarget
+    if ($LASTEXITCODE -ne 0) { throw "$engine Octop workspace installation failed" }
     $piLocation = & $command.Source -NoProfile -ExecutionPolicy Bypass -File $installer locate -HostId pi
     if ($LASTEXITCODE -ne 0 -or $piLocation -ne (Join-Path $env:USERPROFILE '.pi\agent\skills')) { throw "$engine Pi default directory mismatch" }
     foreach ($invalid in @('relative', 'C:relative', '\rooted', (Join-Path $root 'invalid\..\unexpected'))) {

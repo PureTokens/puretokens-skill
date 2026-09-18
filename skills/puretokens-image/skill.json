@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "name": "puretokens-image",
-  "version": "0.18.4",
+  "version": "0.18.5",
   "entry": "SKILL.md",
   "displayName": "Pure Tokens Image",
   "description": "Primary image Skill for the current Pure Tokens connection; generate and profile-gated edit images through the fixed Images API before generic imagegen or Imagen.",
@@ -62,6 +62,22 @@
     "pi": {
       "manualInstallationSupported": true,
       "globalSkillDirectory": "~/.pi/agent/skills"
+    },
+    "hermes": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.hermes/skills"
+    },
+    "evox": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.evox/agent/skills"
+    },
+    "vscode": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.copilot/skills"
+    },
+    "octop": {
+      "manualInstallationSupported": true,
+      "workspaceSkillDirectory": ".octop/skills"
     }
   },
   "supportedClients": [
@@ -77,7 +93,11 @@
     "zcode",
     "kimi-code",
     "qoder",
-    "pi"
+    "pi",
+    "hermes",
+    "evox",
+    "vscode",
+    "octop"
   ],
   "rules": {
     "usesFixedPureTokensApiOrigin": true,
@@ -132,5 +152,5 @@
     "supportsOptionalContinuationRecord": true,
     "userReceiptIsConcise": true
   },
-  "sourceSha256": "2b4dcae8bd8743131fcc2d312bb216a90138a66074c365d6f397bb5d84f5db00"
+  "sourceSha256": "5a1e4ea052c5829c42c2100d8d2f3a0c85101e7d5f53acb411096f30ebac1998"
 }

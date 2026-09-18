@@ -4,6 +4,14 @@
 
 # Changelog
 
+## 0.18.5 - 2026-09-18
+
+- Refresh GPT Image profiles from the public catalog: `gpt-image-2`, `gpt-image-2.5` and `gpt-image-2(Sub)`; retire Flare/Sunburst entries. Enforce 1K, ten declared ratios, one output, up to ten references, declared quality and output format, and size/ratio constraints.
+- Preserve exact parenthesized model IDs safely across discovery, profiles, submission, receipts and task records. Keep the gateway-owned asynchronous task contract unchanged.
+- Register Hermes, EvoX, VS Code and Octop with bounded file/SQLite credential adapters, installer roots and isolated fixtures. Octop requires an explicit local workspace Skill target; its SQLite reader is compiled into the executor.
+- Fail closed on Hermes credential pools/overrides, inconsistent EvoX selection, multiple VS Code matching connections and unsupported Octop storage or ambiguous selection. Fixtures do not establish real-host acceptance.
+- Align Web/Switch/Skill ownership and support boundaries. The maintainer approved a one-time direct stable publication exception for 0.18.5; the 150 pending host/OS checks remain pending and are not real-host acceptance.
+
 ## 0.18.4 - 2026-09-17
 
 - Preserve completed Shell installations when cleanup is denied; release the owned lock when possible, report cleanup separately, and continue init without repeating denied deletion.

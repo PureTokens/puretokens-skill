@@ -33,7 +33,7 @@ const (
 	maxVideoBytes    int64 = 512 << 20
 )
 
-var executorVersion = "0.18.4"
+var executorVersion = "0.18.5"
 var executorSourceSHA256 = "unbuilt"
 
 const imageInitialPollDelay = 5 * time.Second
@@ -406,6 +406,8 @@ func credentialForHost(host string) (string, error) {
 		return credentialFromDSHDesktop()
 	case "kimi-code", "qoder", "pi":
 		return credentialFromNewHost(host)
+	case "hermes", "evox", "vscode", "octop":
+		return credentialFromFileClient(host)
 	case "zcode":
 		return credentialFromZCode()
 	case "gemini-cli":

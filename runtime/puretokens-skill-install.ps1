@@ -7,7 +7,7 @@ param(
   [Parameter(Mandatory = $false)]
   [string]$Target,
   [Parameter(Mandatory = $false)]
-  [ValidateSet("claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae", "claude-desktop", "dsh-desktop", "zcode", "kimi-code", "qoder", "pi")]
+  [ValidateSet("claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae", "claude-desktop", "dsh-desktop", "zcode", "kimi-code", "qoder", "pi", "hermes", "evox", "vscode", "octop")]
   [Alias("Host")]
   [string]$HostId,
   [Parameter(Mandatory = $false)]
@@ -235,6 +235,25 @@ function Get-TargetForHost([string]$RequestedHost) {
       if (($piRoot -split '[\\/]') -contains '..') { Fail "Pi agent directory must not contain parent traversal" }
       return (Join-Path $piRoot "skills")
     }
+    "hermes" {
+      $root = $env:HERMES_HOME
+      if (-not $root) {
+        if (-not $env:LOCALAPPDATA) { Fail "Hermes local data directory unavailable" }
+        $root = Join-Path $env:LOCALAPPDATA "hermes"
+        $legacy = Join-Path $env:USERPROFILE ".hermes"
+        if (-not (Test-Path -LiteralPath $root) -and (Test-Path -LiteralPath $legacy -PathType Container)) { $root = $legacy }
+      }
+      if ($root -notmatch '^[A-Za-z]:[\\/]' -or ($root -split '[\\/]') -contains '..' -or $root -match '[\x00-\x1f\x7f]') { Fail "Hermes directory must be local and absolute without parent traversal" }
+      return (Join-Path $root "skills")
+    }
+    "evox" {
+      if ($env:EVOX_AGENT_DIR -and $env:EVOX_CODING_AGENT_DIR -and $env:EVOX_AGENT_DIR -cne $env:EVOX_CODING_AGENT_DIR) { Fail "EvoX directory overrides disagree" }
+      $root = if ($env:EVOX_AGENT_DIR) { $env:EVOX_AGENT_DIR } elseif ($env:EVOX_CODING_AGENT_DIR) { $env:EVOX_CODING_AGENT_DIR } else { Join-Path $env:USERPROFILE ".evox\agent" }
+      if ($root -notmatch '^[A-Za-z]:[\\/]' -or ($root -split '[\\/]') -contains '..' -or $root -match '[\x00-\x1f\x7f]') { Fail "EvoX directory must be local and absolute without parent traversal" }
+      return (Join-Path $root "skills")
+    }
+    "vscode" { return (Join-Path $env:USERPROFILE ".copilot\skills") }
+    "octop" { Fail "Octop requires -Target with the current local workspace's absolute .octop/skills directory; no global directory is assumed" }
     "qoder" {
       if ($env:QODER_CONFIG_DIR) { return (Join-Path $env:QODER_CONFIG_DIR "skills") }
       $qoderName = ".qoder"
@@ -320,8 +339,11 @@ $stageRoot = $null
 $updateLock = $null
 try {
   if ([string]::IsNullOrWhiteSpace($Target) -and [string]::IsNullOrWhiteSpace($HostId)) { Fail "-Host or -Target is required" }
-  if ($HostId -eq "pi") { $null = Get-TargetForHost $HostId }
+  if ($HostId -in @("pi", "hermes", "evox")) { $null = Get-TargetForHost $HostId }
   if ([string]::IsNullOrWhiteSpace($Target)) { $Target = Get-TargetForHost $HostId }
+  if ($HostId -eq "octop" -and ($Target -notmatch '^[A-Za-z]:[\\/]' -or ($Target -split '[\\/]') -contains '..' -or $Target -match '[\x00-\x1f\x7f]' -or $Target -notmatch '[\\/]skills$')) {
+    Fail "Octop target must be the current local workspace's absolute .octop/skills or skills directory"
+  }
   if (-not [System.IO.Path]::IsPathRooted($Target)) { Fail "-Target must be an absolute Skill directory" }
   if ($ReleaseManifest -and ($Command -ne "verify-installed" -or -not (Test-Path -LiteralPath $ReleaseManifest -PathType Leaf))) { Fail "release manifest is only supported for installed verification" }
   if ($Command -eq "locate") { Write-Output $Target; exit 0 }

@@ -48,6 +48,20 @@ func validateModelParameter(schema parameterSchema, operation mediaOperation, na
 }
 
 func validateModelConstraints(schema parameterSchema, operation string, parameters map[string]any, counts map[string]int) error {
+	if matrix, exists := schema.Constraints["aspect_ratio_by_image_size"]; exists {
+		// Omitted values use the model's declared defaults, not invented tiers.
+		size := parameters["image_size"]
+		if size == nil {
+			size = schema.Properties["image_size"]["default"]
+		}
+		ratio := parameters["aspect_ratio"]
+		if ratio == nil {
+			ratio = schema.Properties["aspect_ratio"]["default"]
+		}
+		if size != nil && ratio != nil && !hasValue(array(matrix[fmt.Sprint(size)]), ratio) {
+			return errors.New("This aspect ratio is unavailable at the selected image size. Choose a declared combination.")
+		}
+	}
 	present := func(key string) bool { return counts[key] > 0 || parameters[key] != nil }
 	groups := 0
 	for _, fields := range schema.Constraints["exclusive_reference_sets"] {

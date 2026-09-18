@@ -11,7 +11,6 @@ import (
 	"net/url"
 	"path/filepath"
 	"reflect"
-	"regexp"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -45,7 +44,7 @@ type mediaOperation struct {
 
 func loadProfile(request taskRequest, svc service) (modelProfile, error) {
 	var profile modelProfile
-	if !regexp.MustCompile(`^[A-Za-z0-9_.-]{1,160}$`).MatchString(request.Model) || request.Model == "." || request.Model == ".." {
+	if !validModelID(request.Model) {
 		return profile, errors.New("Choose an exact model ID from the model index.")
 	}
 	if svc.profilesRoot != "" {

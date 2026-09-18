@@ -8,6 +8,16 @@ export const acceptanceExecutionModes = ["local", "wsl", "remote", "sandbox"];
 const summaryCases = ["installation", "authenticatedAPI", "sameTaskResume", "nativeAttachmentDelivery"];
 const states = new Set(["passed", "failed", "pending", "unavailable"]);
 
+export function validStablePublicationException(document) {
+  const exception = document?.stablePublicationException;
+  return exception?.kind === "maintainer-approved-pending-acceptance" &&
+    exception.version === document?.version &&
+    exception.approved === true &&
+    exception.approvedAt === document?.checkedAt &&
+    typeof exception.reason === "string" &&
+    exception.reason.trim().length >= 20;
+}
+
 export function hostAcceptanceLevel(evidence) {
   if (evidence.cases?.installation !== "passed") return "unverified";
   if (evidence.cases?.authenticatedAPI !== "passed") return "installation-verified";
@@ -26,6 +36,9 @@ export function validateHostAcceptance(document, version, manifest, supportedHos
     !["fixture-tested", "pending"].includes(host.credentialAdapter)) ||
     new Set(supportedHosts.map(host => host.id)).size !== supportedHosts.length) {
     return ["Host acceptance requires unique host support metadata with a known credential adapter state."];
+  }
+  if (document.stablePublicationException !== undefined && !validStablePublicationException(document)) {
+    errors.push("Stable publication exception must be explicit, version-bound and dated with the acceptance record.");
   }
   const supportById = new Map(supportedHosts.map(host => [host.id, host]));
   const hostIds = [...supportById.keys()];
@@ -84,6 +97,7 @@ export function validateHostAcceptance(document, version, manifest, supportedHos
 
 export function validateStableHostAcceptance(document) {
   const errors = [];
+  if (validStablePublicationException(document)) return errors;
   let mediaEnvironments = 0;
   for (const host of document.hosts ?? []) for (const os of acceptancePlatforms) {
     const target = host[os] ?? {};
@@ -123,5 +137,8 @@ export async function checkHostAcceptance({stable = false} = {}) {
   const levels = ["installation-verified", "api-verified", "media-verified"];
   console.log("Evidence levels (each applies only to its recorded host/OS/architecture/mode): " +
     levels.map(level => `${level}=${document.evidence.filter(item => hostAcceptanceLevel(item) === level).length}`).join(", ") + ".");
+  if (validStablePublicationException(document)) {
+    console.log("Stable publication exception: maintainer-approved pending acceptance for this exact version; pending evidence remains unmodified.");
+  }
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) await checkHostAcceptance({stable:process.argv.includes("--stable")});

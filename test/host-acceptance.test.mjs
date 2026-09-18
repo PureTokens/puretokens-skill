@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { acceptanceCases, acceptancePlatforms, hostAcceptanceLevel, validateHostAcceptance, validateStableHostAcceptance } from "../scripts/validate-host-acceptance.mjs";
+import { acceptanceCases, acceptancePlatforms, hostAcceptanceLevel, validStablePublicationException, validateHostAcceptance, validateStableHostAcceptance } from "../scripts/validate-host-acceptance.mjs";
 const version = "0.17.1";
 const sha = "a".repeat(64);
 const manifest = { artifacts: { "darwin-arm64": { sha256: sha } } };
@@ -188,4 +188,21 @@ test("stable publication cannot promote pending, empty or partially delivered ev
   record.evidence[0].cases["video-generation"] = "passed";
   record.evidence[0].executionMode = "remote";
   assert.ok(validateStableHostAcceptance(record).length);
+});
+
+test("stable publication exception is explicit and version-bound", () => {
+  const record = fixture();
+  assert.equal(validStablePublicationException(record), false);
+  record.stablePublicationException = {
+    kind: "maintainer-approved-pending-acceptance",
+    version,
+    approved: true,
+    approvedAt: record.checkedAt,
+    reason: "Maintainer approved direct stable publication before real-host acceptance."
+  };
+  assert.equal(validStablePublicationException(record), true);
+  assert.deepEqual(validateStableHostAcceptance(record), []);
+  assert.deepEqual(validateHostAcceptance(record, version, manifest, supportedHosts), []);
+  record.stablePublicationException.version = "0.0.0";
+  assert.ok(validateHostAcceptance(record, version, manifest, supportedHosts).some(error => error.includes("version-bound")));
 });

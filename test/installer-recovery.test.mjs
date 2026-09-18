@@ -264,7 +264,7 @@ test("Gemini selects an existing shared Skill and detects its lower-priority dup
 
 test("new hosts install and update in their declared isolated roots", async t => {
  const f = await fixture(t);
- for (const [host, variable] of [["kimi-code", "KIMI_CODE_HOME"], ["qoder", "QODER_CONFIG_DIR"], ["pi", "PI_CODING_AGENT_DIR"]]) {
+ for (const [host, variable] of [["kimi-code", "KIMI_CODE_HOME"], ["qoder", "QODER_CONFIG_DIR"], ["pi", "PI_CODING_AGENT_DIR"], ["hermes", "HERMES_HOME"], ["evox", "EVOX_AGENT_DIR"]]) {
   const root = path.join(f.root, `${host} \u7528\u6237 with spaces`);
   const env = {...f.env, [variable]: root};
   const target = path.join(root, "skills");
@@ -287,6 +287,32 @@ test("new hosts install and update in their declared isolated roots", async t =>
  const result=await execFile("sh",[installer,"locate","--host","qoder"],{env});
  assert.equal(result.stdout.trim(),path.join(env.QODER_CLI_HOME,"custom","skills"));
  await assert.rejects(execFile("sh",[installer,"locate","--host","qoder"],{env:{...env,QODER_CONFIG_DIR_NAME:"../bad"}}));
+});
+
+test("new host roots fail before writes and workspace-only Octop requires a target", async t => {
+ const f = await fixture(t);
+ const env = {...f.env, HERMES_HOME:"", EVOX_AGENT_DIR:"", EVOX_CODING_AGENT_DIR:""};
+ for (const [host, variable] of [["hermes", "HERMES_HOME"], ["evox", "EVOX_AGENT_DIR"]]) {
+  for (const invalid of ["relative", "//server/share", `${f.root}/../other`, `${f.root}\n`, `${f.root}\t`]) {
+   await assert.rejects(execFile("sh", [installer, "locate", "--host", host, "--target", f.target], {env:{...env,[variable]:invalid}}));
+  }
+ }
+ await assert.rejects(execFile("sh", [installer,"locate","--host","evox"], {env:{...env,EVOX_AGENT_DIR:f.root,EVOX_CODING_AGENT_DIR:f.target}}));
+ for (const host of ["vscode","octop"]) {
+  const target = host === "vscode" ? path.join(f.env.HOME, ".copilot/skills") : path.join(f.root,"workspace/.octop/skills");
+  const args = ["--host",host];
+  if (host === "octop") {
+   await assert.rejects(execFile("sh", [installer,"locate",...args], {env}), /requires --target/);
+   args.push("--target",target);
+  }
+  const {stdout} = await execFile("sh", [installer,"locate",...args], {env});
+  assert.equal(stdout.trim(),target);
+  await execFile("sh", [installer,"sync",...args], {env});
+  for (const name of names) assert.ok(JSON.parse(await readFile(path.join(target,name,"skill.json"),"utf8")).supportedClients.includes(host));
+ }
+ for (const invalid of [f.target, `${f.root}/../skills`, "//server/share/skills"]) {
+  await assert.rejects(execFile("sh",[installer,"locate","--host","octop","--target",invalid],{env}));
+ }
 });
 
 test("installation never invokes Codex plugins and still runs host init", async t => {

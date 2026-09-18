@@ -61,3 +61,56 @@ Pi provider IDs with built-in environment or platform authentication are blocked
 Authentication precedence and the rejection set were checked on 2026-09-12 against Pi revision `71dca871bc80b6bc97be37f0ca3189399d651fff`, `packages/coding-agent/docs/providers.md`, `docs/models.md`, `src/core/auth-storage.ts` and `packages/ai/src/env-api-keys.ts` in the official `badlogic/pi-mono` repository. These are version-scoped implementation sources, not real-host acceptance. CLI, extension and session overrides not represented by the declared files remain unsupported; stop when the effective connection cannot be confirmed. Saved availability does not establish current chat selection.
 
 The raw `env-api-keys.ts` source has SHA-256 `6876b915ffe1342f8be69ef1f75721c8a265a332a1bbbf5afe36b6f80b332552`. All 36 mapped IDs plus the three special authentication IDs are covered by the Pi precedence regression; do not substitute a model-vendor list or a differently cached documentation result for this source.
+
+## Hermes, EvoX, VS Code and Octop (2026-09-18)
+
+Implementation sources: Switch `332959e`, `crates/client-adapters/{hermes,evox,vscode,octop}`;
+official Hermes `hermes_cli/runtime_provider_custom.py`, `agent/credential_pool.py`,
+`hermes_cli/auth.py`, `tools/skills_tool.py`; official VS Code Agent Skills
+documentation; installed Octop 1.0.0 distribution source
+`octop/infra/{utils/paths.py,agents/workspace_dir.py,db/repos/settings.py,agents/providers/store.py}`.
+EvoX skill-root evidence is the installed application's embedded skill importer
+and the canonical Switch adapter, not a claim of complete runtime acceptance.
+
+- Hermes: resolve absolute `HERMES_HOME`, otherwise `~/.hermes`; Windows uses
+  `%LOCALAPPDATA%/hermes`, with legacy HOME fallback only when absent.
+  Read only `config.yaml`; `model.provider=custom:<id>` and `model.default`
+  select `providers.<id>`. Verify its `base_url` before inspecting sibling
+  `auth.json`. Support inline `api_key` and the three documented API modes.
+  Reject model route overrides, selected aliases, dynamic key commands/env,
+  alternate endpoint/header fields and any nonempty `credential_pool`.
+  This conservative pool restriction includes pools not currently selected;
+  do not remove or modify them to enable a lower-priority inline credential.
+- EvoX: absolute `EVOX_AGENT_DIR` / `EVOX_CODING_AGENT_DIR` must agree;
+  default `~/.evox/agent`. Read `settings.json` and, after endpoint recognition,
+  the exact provider entry in `auth.yaml`. Require consistent
+  `defaultProvider/defaultModel/defaultInstanceId` and
+  `config.modelPolicy.userPreference`, one declared selected model, and
+  matching endpoint/protocol with inline `type=api_key`.
+  Only existence-check legacy `config.yaml/models.json/auth.json`; reject
+  instead of migrating. Session/instance routing not represented here stops.
+- VS Code: default local `Code/User/chatLanguageModels.json` under macOS
+  Application Support or Windows APPDATA; parse native JSONC with unique keys.
+  Recognize the exact full Chat/Responses/Messages URL before using a model's
+  inline `requestHeaders.Authorization`. Require exactly one matching model,
+  independent of group names/ownership markers. More than one match is
+  ambiguous even if keys happen to match. No SecretStorage, extension,
+  process control, named/portable profile, conversation history or inferred
+  chat selection. Typical multi-model Switch configurations remain blocked;
+  this limitation must not be advertised as complete VS Code integration.
+- Octop: absolute `OCTOP_HOME` or `~/.octop`; only `config.json` (storage
+  selection), `octop.db` and its SQLite coordination files. Reject alternate
+  database environment options, nondefault paths and PostgreSQL before opening
+  storage. Open an existing database with `mode=ro`, `query_only=ON`,
+  `trusted_schema=OFF`, bounded busy/total time and one read transaction.
+  Include committed WAL; never use `immutable=1`, copy the database, migrate,
+  create a missing DB, or invoke a host CLI. `settings.active_model` links the
+  saved default by name only as a lookup reference; without a default require
+  one unique enabled matching provider. Inspect endpoint/format/model first,
+  then project only that row's `api_key`. No sessions/agents/tokens table
+  reads. Compiled SQLite is an executor dependency, not a user runtime.
+
+Paths reject traversal and non-regular/symlinked records; JSON rejects duplicate
+keys and excessive depth, YAML additionally rejects aliases and multiple
+documents. Unsupported effective overrides stop without environment credential
+fallback. No fixture establishes the active conversation or real media delivery.

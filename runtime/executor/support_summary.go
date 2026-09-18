@@ -104,7 +104,7 @@ func (writer *supportReceiptWriter) summary(document map[string]json.RawMessage)
 	}
 	switch writer.host {
 	case "codex", "claude-code", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae",
-		"claude-desktop", "dsh-desktop", "zcode", "kimi-code", "qoder", "pi":
+		"claude-desktop", "dsh-desktop", "zcode", "kimi-code", "qoder", "pi", "hermes", "evox", "vscode", "octop":
 		summary["host"] = writer.host
 	}
 	switch writer.command {

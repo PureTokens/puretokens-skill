@@ -40,6 +40,14 @@ export async function syncSkillGuidance(root, { write = false } = {}) {
     await output(`skills/${skill.name}/references/desktop-hosts.md`, desktop);
     const manifest = JSON.parse(await read(skill.manifest));
     manifest.supportedClients = support.supported.map(host => host.id);
+    for (const host of support.supported) {
+      const key = host.id.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
+      const delivery = manifest.distribution[key] ??= { manualInstallationSupported: true };
+      if (host.globalSkillDirectory) delivery.globalSkillDirectory = host.globalSkillDirectory;
+      else delete delivery.globalSkillDirectory;
+      if (host.workspaceSkillDirectory) delivery.workspaceSkillDirectory = host.workspaceSkillDirectory;
+      else delete delivery.workspaceSkillDirectory;
+    }
     if (manifest.sourceSha256 !== undefined) manifest.sourceSha256 = createHash("sha256").update(next).digest("hex");
     await output(skill.manifest, JSON.stringify(manifest, null, 2) + "\n");
   }

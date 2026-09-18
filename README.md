@@ -55,7 +55,7 @@ The priority is carried by the installed Skill metadata and the host's current c
 
 ## Supported hosts
 
-| Host | Global Skill directory | Direct execution |
+| Host | Skill directory | Direct execution |
 | --- | --- | --- |
 | Claude Code | `~/.claude/skills` | Credential fixtures tested; host end-to-end acceptance pending |
 | Codex | `~/.agents/skills` | Credential fixtures tested; host end-to-end acceptance pending |
@@ -63,13 +63,23 @@ The priority is carried by the installed Skill metadata and the host's current c
 | Gemini CLI | `~/.gemini/skills` | Credential fixtures tested; host end-to-end acceptance pending |
 | Grok Build | `~/.grok/skills` | Credential fixtures tested; host end-to-end acceptance pending |
 | OpenCode | `~/.config/opencode/skills` | Credential fixtures tested; host end-to-end acceptance pending |
-| Trae | `~/.trae/skills` | Installable; no Switch-managed credential record exists, so requests stop safely |
+| Trae / TraeWork (`trae`) | `~/.trae/skills` (legacy installation only) | No credential adapter; current TraeWork discovery is not verified |
 | Claude Desktop | `~/.claude/skills` (shared with Claude Code) | Local Code sessions; Desktop credential fixtures tested, end-to-end acceptance pending |
 | DSH Desktop | macOS: `~/Library/Application Support/dsh-desktop/harness/skills`; Windows: `%APPDATA%\dsh-desktop\harness\skills` | Credential fixtures tested; host end-to-end acceptance pending |
 | ZCode | `~/.zcode/skills` | Local connection adapter; real API and attachment delivery acceptance pending |
 | Kimi Code | `~/.kimi-code/skills` | Credential fixtures covered; real API and attachment delivery pending |
 | Qoder | `~/.qoder/skills` | Local IDE/CLI execution; real API and attachment delivery pending |
 | Pi | `~/.pi/agent/skills` | Inline authentication precedence covered by fixtures; real API and attachment delivery pending |
+| Hermes | `~/.hermes/skills`; Windows: `%LOCALAPPDATA%/hermes/skills` | Selected inline custom provider; pooled/dynamic authentication unsupported |
+| EvoX | `~/.evox/agent/skills` | Canonical default-instance settings/auth fixtures; legacy stores unsupported |
+| VS Code | `~/.copilot/skills` | Default local profile; exactly one matching model connection, otherwise stops as ambiguous |
+| Octop | Explicit current workspace `.octop/skills` target | Read-only local SQLite connection; no assumed global Skill installation |
+
+The four new adapters have fixture coverage, not real-host media acceptance.
+Hermes and EvoX honor their documented absolute data-root overrides. Octop
+requires `--host octop --target <absolute-workspace>/.octop/skills` (PowerShell:
+`-HostId octop -Target <absolute-workspace>/.octop/skills`); do not enumerate
+agents or write the global skill-package database. Cursor is not registered.
 
 `references/host-support.json` defines the registered hosts. The table shows defaults; Claude/WorkBuddy honor explicit configuration-directory overrides, Pi honors an absolute `PI_CODING_AGENT_DIR` without parent traversal, and DSH honors the local Harness's explicit `DSH_HOME`. Gemini updates an existing higher-priority `.agents/skills` installation and reports managed duplicates. Provider labels never determine support.
 
@@ -92,7 +102,7 @@ The selected installed profile governs ordinary requests. An explicit authentica
 <!-- media-model-catalog:start -->
 ## Media model catalog
 
-Synchronized with the base model catalog: 2026-09-16T04:21:35.466Z.
+Synchronized with the base model catalog: 2026-09-18T09:53:14.617Z.
 
 This list is an installed selection aid, not a per-request authorization check. Ordinary generation reads only the selected profile; live discovery is limited to explicit requests, profile gaps or rejection diagnosis. Reviewed local compatibility supplements are separately sourced.
 
@@ -103,8 +113,8 @@ README is generated only from base-catalog models with explicit image/video capa
 | Model ID | Provider | You can also say | Good for | Example |
 | --- | --- | --- | --- | --- |
 | `gpt-image-2` | OpenAI | `image2` | Image generation | `Use gpt-image-2 to generate an image.` |
-| `gpt-image-2.5-flare` | OpenAI | Exact ID only | Text-to-image and reference image editing (up to 6 images), with selectable quality | `Use gpt-image-2.5-flare to generate an image.` |
-| `gpt-image-2.5-sunburst` | OpenAI | Exact ID only | Text-to-image and reference image editing (up to 6 images), with selectable quality | `Use gpt-image-2.5-sunburst to generate an image.` |
+| `gpt-image-2.5` | OpenAI | Exact ID only | Image generation | `Use gpt-image-2.5 to generate an image.` |
+| `gpt-image-2(Sub)` | OpenAI | Exact ID only | Image generation | `Use gpt-image-2(Sub) to generate an image.` |
 | `grok-imagine` | xAI | Exact ID only | Image generation | `Use grok-imagine to generate an image.` |
 | `grok-imagine-1` | xAI | Exact ID only | Image generation | `Use grok-imagine-1 to generate an image.` |
 | `grok-imagine-image` | xAI | `grok image` | Image generation | `Use grok-imagine-image to generate an image.` |

@@ -2,11 +2,17 @@
   "$schema": "https://puretokensx.com/schemas/model-profile.schema.json",
   "schemaVersion": 1,
   "capability": "video",
-  "catalogUpdatedAt": "2026-09-16",
-  "catalogCapturedAt": "2026-09-16T04:21:35.466Z",
+  "catalogUpdatedAt": "2026-09-18",
+  "catalogCapturedAt": "2026-09-18T09:53:14.617Z",
   "id": "seedance-2.5",
   "parameterSchema": {
     "properties": {
+      "first_frame_image": {
+        "type": "string"
+      },
+      "last_frame_image": {
+        "type": "string"
+      },
       "duration": {
         "type": "integer",
         "enum": [
@@ -39,14 +45,6 @@
           30
         ]
       },
-      "resolution": {
-        "type": "string",
-        "enum": [
-          "480p",
-          "720p",
-          "1080p"
-        ]
-      },
       "aspect_ratio": {
         "type": "string",
         "enum": [
@@ -58,15 +56,17 @@
           "9:16"
         ]
       },
+      "resolution": {
+        "type": "string",
+        "enum": [
+          "480p",
+          "720p",
+          "1080p"
+        ]
+      },
       "generate_audio": {
         "type": "boolean",
         "default": true
-      },
-      "last_frame_image": {
-        "type": "string"
-      },
-      "first_frame_image": {
-        "type": "string"
       }
     },
     "operations": {
@@ -93,7 +93,7 @@
           }
         }
       },
-      "reference_audio": {
+      "reference_image_video": {
         "request": {
           "method": "POST",
           "path": "/v1/videos",
@@ -102,14 +102,14 @@
         "requiredBodyFields": [
           "model",
           "prompt",
-          "reference_audios"
+          "reference_images"
         ],
         "inputs": {
-          "reference_audios": {
-            "field": "reference_audios",
+          "reference_images": {
+            "field": "reference_images",
             "required": true,
             "minItems": 1,
-            "maxItems": 10,
+            "maxItems": 30,
             "transports": [
               "multipart_file"
             ]
@@ -139,7 +139,7 @@
           }
         }
       },
-      "reference_image_video": {
+      "reference_audio": {
         "request": {
           "method": "POST",
           "path": "/v1/videos",
@@ -148,14 +148,14 @@
         "requiredBodyFields": [
           "model",
           "prompt",
-          "reference_images"
+          "reference_audios"
         ],
         "inputs": {
-          "reference_images": {
-            "field": "reference_images",
+          "reference_audios": {
+            "field": "reference_audios",
             "required": true,
             "minItems": 1,
-            "maxItems": 30,
+            "maxItems": 10,
             "transports": [
               "multipart_file"
             ]

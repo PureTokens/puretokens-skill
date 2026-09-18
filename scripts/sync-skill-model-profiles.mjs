@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { repositoryRoot } from "./skill-registry.mjs";
+import { assertModelID } from "./model-id.mjs";
 
 const catalogPath = path.join(repositoryRoot, "references", "media-model-catalog.json");
 const targets = [
@@ -18,6 +19,7 @@ function parseMode() {
 }
 
 export function buildModelIndex(catalog, capability, defaultModel) {
+  assertModelID(defaultModel);
   if (catalog?.schemaVersion !== 2 || !Array.isArray(catalog.models)) {
     throw new Error("media-model-catalog.json must be a schemaVersion=2 model catalog");
   }
@@ -30,15 +32,19 @@ export function buildModelIndex(catalog, capability, defaultModel) {
     defaultModel,
     models: catalog.models
       .filter((model) => model.capabilities?.includes(capability))
-      .map((model) => ({
+      .map((model) => {
+        assertModelID(model.id);
+        return ({
         id: model.id,
         aliases: model.aliases || [],
         profile: `profiles/${model.id}.json`
-      }))
+        });
+      })
   };
 }
 
 export function buildModelProfile(catalog, capability, model) {
+  assertModelID(model.id);
   return {
     $schema: "https://puretokensx.com/schemas/model-profile.schema.json",
     schemaVersion: 1,
@@ -57,6 +63,7 @@ function serialized(value) {
 async function main() {
   const { write, check } = parseMode();
   const catalog = JSON.parse(await readFile(catalogPath, "utf8"));
+  for (const model of catalog.models) assertModelID(model.id);
   let changed = false;
   for (const target of targets) {
     const referencesRoot = path.join(repositoryRoot, "skills", target.skill, "references");

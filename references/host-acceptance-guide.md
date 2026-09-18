@@ -149,3 +149,9 @@ Unavailable targets must have an explicit reason; they are not advertised as
 accepted. At least one complete media environment is required, so an empty or
 all-unavailable matrix cannot authorize a stable release. These gates do not
 run paid tests automatically and never fabricate missing evidence.
+
+A maintainer may record a one-time, version-bound `stablePublicationException`
+for a direct publication decision. The exception must identify the exact version,
+share the acceptance record date, and explain the approval. It only bypasses the
+stable promotion gate; it never changes pending, unavailable or failed evidence,
+does not count as real-host acceptance, and must not be copied to a later version.

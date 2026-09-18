@@ -73,6 +73,21 @@ func doctorHostLocations(host, home string, getenv func(string) string) []doctor
 		}
 	case "codex":
 		return []doctorLocation{{"host_skills", filepath.Join(home, ".agents", "skills")}}
+	case "vscode":
+		return []doctorLocation{
+			{"host_skills", filepath.Join(home, ".copilot", "skills")},
+			{"shared_agents_skills", filepath.Join(home, ".agents", "skills")},
+			{"shared_claude_skills", filepath.Join(home, ".claude", "skills")},
+		}
+	case "octop":
+		// Only the already loaded explicit workspace installation is inspected.
+		return nil
+	case "hermes", "evox":
+		var err error
+		location, err = newClientRoot(host, runtime.GOOS, home, getenv)
+		if err != nil {
+			return nil
+		}
 	case "workbuddy":
 		location = getenv("WORKBUDDY_CONFIG_DIR")
 		if location == "" {
@@ -174,7 +189,7 @@ func collectDoctorAt(loadedRoot, host, home string, getenv func(string) string) 
 		NextAction: "Review the local findings; run the connection checks and verify attachment handoff in the current host.",
 	}
 	switch host {
-	case "claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae", "claude-desktop", "dsh-desktop", "zcode", "kimi-code", "qoder", "pi":
+	case "claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae", "claude-desktop", "dsh-desktop", "zcode", "kimi-code", "qoder", "pi", "hermes", "evox", "vscode", "octop":
 	default:
 		result.Host = "unsupported"
 		result.NextAction = "Choose a supported current host before running diagnostics."

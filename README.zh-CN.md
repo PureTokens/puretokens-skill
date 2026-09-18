@@ -55,7 +55,7 @@ Computer Use、浏览器自动化以及打开或点击 Pure Tokens Switch/Deskto
 
 ## 支持的宿主
 
-| 宿主 | 全局 Skill 目录 | 直连执行 |
+| 宿主 | Skill 目录 | 直连执行 |
 | --- | --- | --- |
 | Claude Code | `~/.claude/skills` | 凭据格式通过夹具测试；客户端端到端待验收 |
 | Codex | `~/.agents/skills` | 凭据格式通过夹具测试；客户端端到端待验收 |
@@ -63,13 +63,19 @@ Computer Use、浏览器自动化以及打开或点击 Pure Tokens Switch/Deskto
 | Gemini CLI | `~/.gemini/skills` | 凭据格式通过夹具测试；客户端端到端待验收 |
 | Grok Build | `~/.grok/skills` | 凭据格式通过夹具测试；客户端端到端待验收 |
 | OpenCode | `~/.config/opencode/skills` | 凭据格式通过夹具测试；客户端端到端待验收 |
-| Trae | `~/.trae/skills` | 可安装；Switch 没有受管凭据记录，故请求会安全停止 |
+| Trae / TraeWork（`trae`） | `~/.trae/skills`（仅历史安装） | 无凭据适配器；当前 TraeWork 的 Skill 发现未验证 |
 | Claude Desktop | `~/.claude/skills`（与 Claude Code 共享） | 本地 Code 会话；Desktop 凭据夹具通过，端到端待验收 |
 | DSH Desktop | macOS：`~/Library/Application Support/dsh-desktop/harness/skills`；Windows：`%APPDATA%\dsh-desktop\harness\skills` | 凭据格式通过夹具测试；客户端端到端待验收 |
 | ZCode | `~/.zcode/skills` | 本地连接适配；真实 API 和附件交付待验收 |
 | Kimi Code | `~/.kimi-code/skills` | 凭据夹具覆盖；真实 API 与附件交付待验收 |
 | Qoder | `~/.qoder/skills` | IDE／CLI 本地执行；真实 API 与附件交付待验收 |
 | Pi | `~/.pi/agent/skills` | 内联认证优先级通过夹具测试；真实 API 与附件交付待验收 |
+| Hermes | `~/.hermes/skills`；Windows：`%LOCALAPPDATA%/hermes/skills` | 支持选中的内联自定义连接；不支持凭据池和动态认证 |
+| EvoX | `~/.evox/agent/skills` | 默认实例的新版配置／认证夹具覆盖；不读取旧存储 |
+| VS Code | `~/.copilot/skills` | 仅本地默认 profile、唯一匹配模型；多个匹配连接时停止 |
+| Octop | 明确指定当前工作区的 `.octop/skills` | 只读本地 SQLite 连接；不假设全局 Skill 安装目录 |
+
+四个新增适配器的夹具覆盖不等于真实客户端媒体验收。Hermes、EvoX 支持文档声明的绝对数据目录覆盖；Octop 使用 `--host octop --target <绝对工作区>/.octop/skills`（PowerShell：`-HostId octop -Target <绝对工作区>/.octop/skills`），不枚举代理、不写全局 Skill 包数据库。Cursor 未注册为 Skill 宿主。
 
 宿主列表以 `references/host-support.json` 为唯一契约。表中为默认目录；Claude／WorkBuddy 支持明确配置目录覆盖，Pi 支持不含父级跳转的绝对 `PI_CODING_AGENT_DIR`，DSH 支持本地 Harness 明确设置的 `DSH_HOME`。Gemini 如已有较高优先级的 `.agents/skills` 安装，会更新该目录并报告重复副本。不会依据 provider 名判断。
 
@@ -92,7 +98,7 @@ Claude Desktop 请选择本地 Code 会话并使用宿主 ID `claude-desktop`；
 <!-- media-model-catalog:start -->
 ## 媒体模型清单
 
-已与基础模型目录同步：2026-09-16T04:21:35.466Z。
+已与基础模型目录同步：2026-09-18T09:53:14.617Z。
 
 这份清单用于安装后的模型选择，不是每次请求的认证检查。普通生成只读选中 profile；仅明确查询、profile 缺口或拒绝诊断时读取实时目录。经审查的本地兼容补充定义单独注明来源。
 
@@ -103,8 +109,8 @@ README 只从基础目录中带有明确图片/视频能力的模型生成，不
 | 模型 ID | 提供方 | 也可以这样说 | 适合 | 示例 |
 | --- | --- | --- | --- | --- |
 | `gpt-image-2` | OpenAI | `image2` | 图片生成 | `用 gpt-image-2 生成一张图片。` |
-| `gpt-image-2.5-flare` | OpenAI | 仅精确 ID | 支持质量档位的文生图及参考图编辑（最多 6 张） | `用 gpt-image-2.5-flare 生成一张图片。` |
-| `gpt-image-2.5-sunburst` | OpenAI | 仅精确 ID | 支持质量档位的文生图及参考图编辑（最多 6 张） | `用 gpt-image-2.5-sunburst 生成一张图片。` |
+| `gpt-image-2.5` | OpenAI | 仅精确 ID | 图片生成 | `用 gpt-image-2.5 生成一张图片。` |
+| `gpt-image-2(Sub)` | OpenAI | 仅精确 ID | 图片生成 | `用 gpt-image-2(Sub) 生成一张图片。` |
 | `grok-imagine` | xAI | 仅精确 ID | 图片生成 | `用 grok-imagine 生成一张图片。` |
 | `grok-imagine-1` | xAI | 仅精确 ID | 图片生成 | `用 grok-imagine-1 生成一张图片。` |
 | `grok-imagine-image` | xAI | `grok image` | 图片生成 | `用 grok-imagine-image 生成一张图片。` |

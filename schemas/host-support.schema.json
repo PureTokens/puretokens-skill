@@ -48,6 +48,9 @@
           "type": "string",
           "pattern": "^~/(?:(?:\\.[a-z-]+/)*(?:[a-z-]+/)?|Library/Application Support/dsh-desktop/harness/)skills$"
         },
+        "workspaceSkillDirectory": {
+          "const": ".octop/skills"
+        },
         "directMediaExecution": {
           "const": "managed-native-executor"
         },

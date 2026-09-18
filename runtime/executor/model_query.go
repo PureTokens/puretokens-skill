@@ -7,7 +7,6 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"regexp"
 	"sort"
 )
 
@@ -17,8 +16,6 @@ type modelQuery struct {
 	Operation  string         `json:"operation,omitempty"`
 	Parameters map[string]any `json:"parameters,omitempty"`
 }
-
-var modelQueryIDPattern = regexp.MustCompile(`^[A-Za-z0-9_.-]{1,160}$`)
 
 // input is nil for an unfiltered catalog read; callers should not pass an open
 // terminal stream when no request file was supplied. Filters stay local: the
@@ -102,7 +99,7 @@ func decodeModelQuery(input io.Reader) (modelQuery, error) {
 	if query.Kind != "" && query.Kind != "image" && query.Kind != "video" {
 		return query, errors.New("unknown media kind")
 	}
-	if query.Model != "" && (!modelQueryIDPattern.MatchString(query.Model) || query.Model == "." || query.Model == ".." || safePublicString(query.Model) != query.Model) {
+	if query.Model != "" && (!validModelID(query.Model) || safePublicString(query.Model) != query.Model) {
 		return query, errors.New("invalid exact model")
 	}
 	if query.Operation != "" && safePublicCode(query.Operation) != query.Operation {
@@ -118,7 +115,7 @@ func decodeModelQuery(input io.Reader) (modelQuery, error) {
 
 func modelQueryMatches(query modelQuery, entry map[string]any) bool {
 	id, _ := entry["id"].(string)
-	if !modelQueryIDPattern.MatchString(id) || id == "." || id == ".." || safePublicString(id) != id || (query.Model != "" && query.Model != id) {
+	if !validModelID(id) || safePublicString(id) != id || (query.Model != "" && query.Model != id) {
 		return false
 	}
 	capabilities := array(entry["capabilities"])

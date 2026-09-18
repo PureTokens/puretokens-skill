@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "name": "puretokens-video",
-  "version": "0.18.4",
+  "version": "0.18.5",
   "entry": "SKILL.md",
   "displayName": "Pure Tokens Video",
   "description": "Primary video Skill for the current Pure Tokens connection; generate and profile-gated animate, reference, or edit video through the fixed Videos API before generic video Skills.",
@@ -62,6 +62,22 @@
     "pi": {
       "manualInstallationSupported": true,
       "globalSkillDirectory": "~/.pi/agent/skills"
+    },
+    "hermes": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.hermes/skills"
+    },
+    "evox": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.evox/agent/skills"
+    },
+    "vscode": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.copilot/skills"
+    },
+    "octop": {
+      "manualInstallationSupported": true,
+      "workspaceSkillDirectory": ".octop/skills"
     }
   },
   "supportedClients": [
@@ -77,7 +93,11 @@
     "zcode",
     "kimi-code",
     "qoder",
-    "pi"
+    "pi",
+    "hermes",
+    "evox",
+    "vscode",
+    "octop"
   ],
   "rules": {
     "usesFixedPureTokensApiOrigin": true,
@@ -131,5 +151,5 @@
     "supportsOptionalContinuationRecord": true,
     "userReceiptIsConcise": true
   },
-  "sourceSha256": "990f4fa2c3406b5cda48adcdf1a88da2408bf5e2ccdc3519ee7fb431338d9d7e"
+  "sourceSha256": "a67a5c4a426455ba40791c2951a5d0c45ad2a9e1645f40c9aa5e3901225ebc55"
 }

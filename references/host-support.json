@@ -119,6 +119,42 @@
       "credentialAdapter": "fixture-tested",
       "guidance": "Local Pi only. Verify one matching models.json endpoint before checking the same provider ID in sibling auth.json. Supported inline auth takes precedence; dynamic or unrepresented authentication stops without fallback. Real-host API and attachment delivery remain pending.",
       "directorySelection": "PI_CODING_AGENT_DIR/skills when explicitly configured with an absolute root without parent traversal; otherwise ~/.pi/agent/skills."
+    },
+    {
+      "id": "hermes",
+      "delivery": "native-installer",
+      "globalSkillDirectory": "~/.hermes/skills",
+      "directMediaExecution": "managed-native-executor",
+      "credentialAdapter": "fixture-tested",
+      "guidance": "Local Hermes config.yaml selected custom provider only. Dynamic credentials, routing overrides and nonempty credential pools stop without fallback. Real-host API and delivery acceptance remain pending.",
+      "directorySelection": "Absolute HERMES_HOME/skills; otherwise ~/.hermes/skills on macOS/Linux. Windows uses LOCALAPPDATA/hermes/skills, with legacy ~/.hermes only when the current root is absent."
+    },
+    {
+      "id": "evox",
+      "delivery": "native-installer",
+      "globalSkillDirectory": "~/.evox/agent/skills",
+      "directMediaExecution": "managed-native-executor",
+      "credentialAdapter": "fixture-tested",
+      "guidance": "Local canonical settings.json and auth.yaml, with consistent selected provider/model/default instance. Legacy stores stop without migration. Real-host API and delivery acceptance remain pending.",
+      "directorySelection": "Absolute EVOX_AGENT_DIR or EVOX_CODING_AGENT_DIR plus skills; conflicting overrides stop. Otherwise ~/.evox/agent/skills."
+    },
+    {
+      "id": "vscode",
+      "delivery": "native-installer",
+      "globalSkillDirectory": "~/.copilot/skills",
+      "directMediaExecution": "managed-native-executor",
+      "credentialAdapter": "fixture-tested",
+      "guidance": "Local VS Code default profile customendpoint file only. Exactly one matching model with an inline Bearer header is supported; multiple matching models are ambiguous, not proof of an active chat selection. Portable, named and remote profiles are not supported. Real-host acceptance remains pending.",
+      "directorySelection": "Use ~/.copilot/skills; doctor also reports documented shared ~/.agents/skills and ~/.claude/skills duplicates without deleting them."
+    },
+    {
+      "id": "octop",
+      "delivery": "native-installer",
+      "workspaceSkillDirectory": ".octop/skills",
+      "directMediaExecution": "managed-native-executor",
+      "credentialAdapter": "fixture-tested",
+      "guidance": "Local Octop SQLite only. Read the saved default connection, or a unique enabled matching service when no default exists, in a read-only WAL-aware transaction. No global Skill directory or current conversation selection is inferred. Real-host acceptance remains pending.",
+      "directorySelection": "Explicit absolute --target / -Target for the current local agent workspace's .octop/skills; never enumerate agents or use the global skill-package store. OCTOP_HOME selects only the connection root."
     }
   ]
 }

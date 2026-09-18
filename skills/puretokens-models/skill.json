@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "name": "puretokens-models",
-  "version": "0.18.4",
+  "version": "0.18.5",
   "entry": "SKILL.md",
   "displayName": "Pure Tokens Models",
   "description": "Inspect fixed-Pure-Tokens authenticated media models, declared parameters, and media operations.",
@@ -60,6 +60,22 @@
     "pi": {
       "manualInstallationSupported": true,
       "globalSkillDirectory": "~/.pi/agent/skills"
+    },
+    "hermes": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.hermes/skills"
+    },
+    "evox": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.evox/agent/skills"
+    },
+    "vscode": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.copilot/skills"
+    },
+    "octop": {
+      "manualInstallationSupported": true,
+      "workspaceSkillDirectory": ".octop/skills"
     }
   },
   "supportedClients": [
@@ -75,7 +91,11 @@
     "zcode",
     "kimi-code",
     "qoder",
-    "pi"
+    "pi",
+    "hermes",
+    "evox",
+    "vscode",
+    "octop"
   ],
   "rules": {
     "usesFixedPureTokensApiOrigin": true,

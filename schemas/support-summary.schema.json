@@ -12,7 +12,7 @@
     "observed_at": {"type": "string", "format": "date-time"},
     "ok": {"type": "boolean"},
     "api_request_attempted": {"type": "boolean", "description": "The HTTP client was invoked; this does not prove server receipt, authentication, task acceptance or billing."},
-    "host": {"enum": ["codex", "claude-code", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae", "claude-desktop", "dsh-desktop", "zcode", "kimi-code", "qoder", "pi"]},
+    "host": {"enum": ["codex", "claude-code", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae", "claude-desktop", "dsh-desktop", "zcode", "kimi-code", "qoder", "pi", "hermes", "evox", "vscode", "octop"]},
     "command": {"enum": ["init", "doctor", "connection", "balance", "models", "preflight", "submit", "status", "wait", "content", "resume", "delivered"]},
     "request_phase": {"enum": ["identity", "catalog", "balance_usage", "balance_metadata", "submission", "status", "content"]},
     "http_status": {"type": "integer", "minimum": 100, "maximum": 599},

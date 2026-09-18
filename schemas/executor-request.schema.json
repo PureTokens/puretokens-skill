@@ -24,7 +24,8 @@
     },
     "model": {
       "type": "string",
-      "pattern": "^[A-Za-z0-9_.-]{1,160}$"
+      "maxLength": 160,
+      "pattern": "^(?!\\.{1,2}$)[A-Za-z0-9_.-]+(\\([A-Za-z0-9_.-]+\\))?$(?![\\s\\S])"
     },
     "prompt": {
       "type": "string"

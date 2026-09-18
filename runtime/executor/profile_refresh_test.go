@@ -90,16 +90,16 @@ func writeInstalledProfileFixture(t *testing.T, profile modelProfile) string {
 
 func TestExistingProfileRefreshesMissingOptionalFieldOnce(t *testing.T) {
 	profile := readInstalledProfileFixture(t, "image", "gpt-image-2")
-	profile.Parameters.Properties["quality"] = map[string]any{"type": "string", "enum": []any{"high"}}
+	profile.Parameters.Properties["fixture_quality"] = map[string]any{"type": "string", "enum": []any{"high"}}
 	svc, transport := catalogProfileService(t, profile)
 	request := taskRequest{
 		Kind: "image", Operation: "generate", Model: profile.ID, Prompt: "fixture prompt",
-		Parameters: map[string]any{"image_size": "2K", "quality": "high"},
+		Parameters: map[string]any{"image_size": "1K", "fixture_quality": "high"},
 	}
 	if err := prepareProfileRequest(&request, svc); err != nil {
 		t.Fatal(err)
 	}
-	if transport.calls != 1 || request.Parameters["quality"] != "high" || request.Parameters["image_size"] != "2K" {
+	if transport.calls != 1 || request.Parameters["fixture_quality"] != "high" || request.Parameters["image_size"] != "1K" {
 		t.Fatalf("refresh count or user parameters changed: calls=%d parameters=%v", transport.calls, request.Parameters)
 	}
 	if request.Model != "gpt-image-2" || endpointFor(request) != "/v1/images/generations" {
@@ -220,7 +220,7 @@ func TestProfileGapStopsAfterOneUnusableCatalogResponse(t *testing.T) {
 			}
 			request := taskRequest{
 				Kind: "image", Operation: "generate", Model: "gpt-image-2", Prompt: "fixture prompt",
-				Parameters: map[string]any{"quality": "high"},
+				Parameters: map[string]any{"fixture_quality": "high"},
 			}
 			if prepareProfileRequest(&request, svc) == nil || transport.calls != 1 {
 				t.Fatalf("unusable catalog should stop after one read, got %d", transport.calls)

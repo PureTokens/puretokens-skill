@@ -6,7 +6,7 @@ set -eu
 current_skills="puretokens-balance puretokens-connection puretokens-models puretokens-image puretokens-video puretokens-update"
 
 usage() {
-  printf '%s\n' "Usage: puretokens-skill-install.sh <check|verify-installed|init|sync|locate> (--host <claude-code|codex|workbuddy|gemini-cli|grok-build|opencode|trae|claude-desktop|dsh-desktop|zcode|kimi-code|qoder|pi> | --target <absolute-skill-directory>) [--source <absolute-official-source-directory>]"
+  printf '%s\n' "Usage: puretokens-skill-install.sh <check|verify-installed|init|sync|locate> (--host <claude-code|codex|workbuddy|gemini-cli|grok-build|opencode|trae|claude-desktop|dsh-desktop|zcode|kimi-code|qoder|pi|hermes|evox|vscode|octop> | --target <absolute-skill-directory>) [--source <absolute-official-source-directory>]"
 }
 
 fail() {
@@ -69,6 +69,16 @@ source_release_version() {
   esac
 }
 
+validate_client_root() {
+  case "$1" in /*) ;; *) fail "host directory must be absolute" ;; esac
+  case "$1/" in //*|*\\*|*/../*) fail "host directory must be local without parent traversal" ;; esac
+  case "$1" in *'
+'*) fail "host directory contains control characters" ;; esac
+  if printf '%s' "$1" | LC_ALL=C grep -q '[[:cntrl:]]'; then
+    fail "host directory contains control characters"
+  fi
+}
+
 target_for_host() {
   host=$1
   [ -n "${HOME:-}" ] || fail "cannot resolve a host Skill directory because HOME is unavailable"
@@ -81,6 +91,20 @@ target_for_host() {
       case "$pi_root/" in */../*) fail "Pi agent directory must not contain parent traversal" ;; esac
       printf '%s\n' "$pi_root/skills"
       ;;
+    hermes|evox)
+      if [ "$host" = hermes ]; then
+        client_root=${HERMES_HOME:-$HOME/.hermes}
+      else
+        if [ -n "${EVOX_AGENT_DIR:-}" ] && [ -n "${EVOX_CODING_AGENT_DIR:-}" ] && [ "$EVOX_AGENT_DIR" != "$EVOX_CODING_AGENT_DIR" ]; then
+          fail "EvoX directory overrides disagree"
+        fi
+        client_root=${EVOX_AGENT_DIR:-${EVOX_CODING_AGENT_DIR:-$HOME/.evox/agent}}
+      fi
+      validate_client_root "$client_root"
+      printf '%s\n' "$client_root/skills"
+      ;;
+    vscode) printf '%s\n' "$HOME/.copilot/skills" ;;
+    octop) fail "Octop requires --target with the current local workspace's absolute .octop/skills directory; no global directory is assumed" ;;
     qoder)
       if [ -n "${QODER_CONFIG_DIR:-}" ]; then
         printf '%s\n' "$QODER_CONFIG_DIR/skills"
@@ -483,8 +507,12 @@ while [ "$#" -gt 0 ]; do
 done
 
 [ -n "$target" ] || [ -n "$host" ] || fail "--host or --target is required"
-case "$host" in ''|claude-code|codex|workbuddy|gemini-cli|grok-build|opencode|trae|claude-desktop|dsh-desktop|zcode|kimi-code|qoder|pi) ;; *) fail "unsupported host" ;; esac
-[ "$host" != pi ] || target_for_host "$host" >/dev/null
+case "$host" in ''|claude-code|codex|workbuddy|gemini-cli|grok-build|opencode|trae|claude-desktop|dsh-desktop|zcode|kimi-code|qoder|pi|hermes|evox|vscode|octop) ;; *) fail "unsupported host" ;; esac
+case "$host" in pi|hermes|evox) target_for_host "$host" >/dev/null ;; esac
+if [ "$host" = octop ] && [ -n "$target" ]; then
+  validate_client_root "$target"
+  case "$target" in */.octop/skills|*/skills) ;; *) fail "Octop target must be the current local workspace's .octop/skills or skills directory" ;; esac
+fi
 [ -n "$target" ] || target=$(target_for_host "$host")
 [ "${target#/}" != "$target" ] || fail "--target must be an absolute Skill directory"
 [ -z "$source" ] || [ "${source#/}" != "$source" ] || fail "--source must be an absolute official source directory"

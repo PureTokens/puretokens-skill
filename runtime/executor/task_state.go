@@ -40,7 +40,7 @@ func safePublicCode(code string) string {
 func taskReceipt(request taskRequest, id, status string) receipt {
 	parameters := make(map[string]any)
 	// Media URLs, prompts and file paths are deliberately excluded from receipts.
-	for _, key := range []string{"n", "size", "image_size", "aspect_ratio", "width", "height", "duration", "resolution", "generate_audio", "strength", "quality"} {
+	for _, key := range []string{"n", "size", "image_size", "aspect_ratio", "width", "height", "duration", "resolution", "generate_audio", "strength", "quality", "output_format", "response_format"} {
 		if value, exists := request.Parameters[key]; exists {
 			switch v := value.(type) {
 			case string:
@@ -73,7 +73,7 @@ func taskReceipt(request taskRequest, id, status string) receipt {
 					continue
 				}
 			}
-			if key == "size" || key == "image_size" || key == "aspect_ratio" || key == "resolution" || key == "strength" || key == "quality" {
+			if key == "size" || key == "image_size" || key == "aspect_ratio" || key == "resolution" || key == "strength" || key == "quality" || key == "output_format" || key == "response_format" {
 				if text, ok := value.(string); !ok || !safeParameterString(key, text) {
 					continue
 				}
@@ -92,7 +92,7 @@ func taskReceipt(request taskRequest, id, status string) receipt {
 		original = ""
 	}
 	model := ""
-	if regexp.MustCompile(`^[A-Za-z0-9_.-]{1,160}$`).MatchString(request.Model) {
+	if validModelID(request.Model) {
 		model = request.Model
 	}
 	count := request.RequestedCount
@@ -118,12 +118,14 @@ func taskReceipt(request taskRequest, id, status string) receipt {
 // Keep a conservative projection even for malformed requests and imported records.
 func safeParameterString(key, text string) bool {
 	patterns := map[string]string{
-		"size":         `^(auto|[1-9][0-9]{0,4}x[1-9][0-9]{0,4})$`,
-		"image_size":   `^[1-9][0-9]?[Kk]$`,
-		"aspect_ratio": `^(auto|[1-9][0-9]{0,2}:[1-9][0-9]{0,2})$`,
-		"resolution":   `^[1-9][0-9]{0,3}[pPkK]$`,
-		"strength":     `^(LOW|MID|HIGH)$`,
-		"quality":      `^(low|medium|high|xhigh|max)$`,
+		"size":            `^(auto|[1-9][0-9]{0,4}x[1-9][0-9]{0,4})$`,
+		"image_size":      `^[1-9][0-9]?[Kk]$`,
+		"aspect_ratio":    `^(auto|[1-9][0-9]{0,2}:[1-9][0-9]{0,2})$`,
+		"resolution":      `^[1-9][0-9]{0,3}[pPkK]$`,
+		"strength":        `^(LOW|MID|HIGH)$`,
+		"quality":         `^(auto|low|medium|high|xhigh|max)$`,
+		"output_format":   `^(png|jpeg|webp)$`,
+		"response_format": `^url$`,
 	}
 	pattern, ok := patterns[key]
 	return ok && regexp.MustCompile(pattern).MatchString(text)
@@ -233,7 +235,7 @@ func projectCatalog(value any) any {
 	for _, entry := range jsonArray(document["data"]) {
 		model := jsonObject(entry)
 		id := jsonString(model["id"])
-		if !regexp.MustCompile(`^[A-Za-z0-9_.-]{1,160}$`).MatchString(id) {
+		if !validModelID(id) {
 			continue
 		}
 		result := map[string]any{"id": id}

@@ -3,16 +3,15 @@ package main
 import "testing"
 
 func TestImageModelAspectRatios(t *testing.T) {
-	for _, model := range []string{"gpt-image-2.5-flare", "gpt-image-2.5-sunburst", "gpt-image-2"} {
+	for _, model := range []string{"gpt-image-2.5", "gpt-image-2(Sub)", "gpt-image-2"} {
 		for _, operation := range []string{"generate", "edit"} {
 			for _, ratio := range []string{"3:1", "1:3", "4:5", "5:4", "16:9"} {
 				t.Run(model+"/"+operation+"/"+ratio, func(t *testing.T) {
-					newRatio := ratio == "3:1" || ratio == "1:3"
-					allowed := ratio == "16:9" || newRatio == (model != "gpt-image-2")
+					allowed := ratio != "3:1" && ratio != "1:3"
 					svc, transport := catalogProfileService(t, readInstalledProfileFixture(t, "image", model))
 					request := taskRequest{
 						Kind: "image", Operation: operation, Model: model, Prompt: "fixture",
-						Parameters: map[string]any{"aspect_ratio": ratio, "image_size": "2K"},
+						Parameters: map[string]any{"aspect_ratio": ratio, "image_size": "1K"},
 					}
 					if operation == "edit" {
 						request.Attachments = []attachment{{Field: "image", Path: "fixture.png"}}
@@ -37,9 +36,9 @@ func TestImageModelAspectRatios(t *testing.T) {
 }
 
 func TestImage25QualityAndEditBoundaries(t *testing.T) {
-	for _, model := range []string{"gpt-image-2.5-flare", "gpt-image-2.5-sunburst"} {
-		for _, quality := range []string{"low", "medium", "high", "xhigh", "max"} {
-			r := taskRequest{Kind: "image", Operation: "generate", Model: model, Prompt: "fixture", Parameters: map[string]any{"quality": quality, "image_size": "2K", "aspect_ratio": "16:9"}}
+	for _, model := range []string{"gpt-image-2", "gpt-image-2.5", "gpt-image-2(Sub)"} {
+		for _, quality := range []string{"auto", "low", "medium", "high"} {
+			r := taskRequest{Kind: "image", Operation: "generate", Model: model, Prompt: "fixture", Parameters: map[string]any{"quality": quality, "image_size": "1K", "aspect_ratio": "16:9"}}
 			if err := prepareProfileRequest(&r, profileService()); err != nil {
 				t.Fatal(err)
 			}
@@ -88,25 +87,25 @@ func TestSeedanceFrameReferences(t *testing.T) {
 }
 
 func TestImage25ReferenceEdits(t *testing.T) {
-	for _, model := range []string{"gpt-image-2.5-flare", "gpt-image-2.5-sunburst"} {
-		for _, count := range []int{1, 6, 7} {
+	for _, model := range []string{"gpt-image-2", "gpt-image-2.5", "gpt-image-2(Sub)"} {
+		for _, count := range []int{1, 6, 7, 10, 11} {
 			r := taskRequest{Kind: "image", Operation: "edit", Model: model, Prompt: "fixture", Parameters: map[string]any{"quality": "high"}}
 			for i := 0; i < count; i++ {
 				r.Attachments = append(r.Attachments, attachment{Field: "image", Path: "fixture.png"})
 			}
 			err := prepareProfileRequest(&r, profileService())
-			if (err == nil) != (count <= 6) {
+			if (err == nil) != (count <= 10) {
 				t.Fatalf("%s count %d: %v", model, count, err)
 			}
 		}
-		for _, count := range []int{1, 6, 7} {
+		for _, count := range []int{1, 6, 7, 10, 11} {
 			refs := make([]any, count)
 			for i := range refs {
 				refs[i] = "https://example.com/ref.png"
 			}
 			r := taskRequest{Kind: "image", Operation: "generate", Model: model, Prompt: "fixture", Parameters: map[string]any{"image": refs}}
 			err := prepareProfileRequest(&r, profileService())
-			if (err == nil) != (count <= 6) {
+			if (err == nil) != (count <= 10) {
 				t.Fatalf("%s URL count %d: %v", model, count, err)
 			}
 			if _, exists := taskReceipt(r, "", "").Parameters["image"]; exists {
