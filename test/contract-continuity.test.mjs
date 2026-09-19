@@ -3,6 +3,25 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { compileSchema } from "./support/schema-validator.mjs";
 const read = async file => JSON.parse(await readFile(new URL(`../${file}`, import.meta.url), "utf8"));
+test("task identity contracts and schemas accept gateway IDs and reject unsafe segments", async () => {
+ const fixtures=await read("runtime/executor/testdata/task-ids.json");
+ fixtures.accepted.push("a".repeat(256));
+ fixtures.rejected.push("a".repeat(257));
+ const patterns=[];
+ for(const kind of ["image","video"]){
+  const contract=await read(`skills/puretokens-${kind}/references/execution-contract.json`);
+  patterns.push([`${kind} contract`,new RegExp(contract.taskIdentity.acceptedFormat,"u")]);
+ }
+ for(const name of ["executor-request","executor-receipt","task-record","support-summary"]){
+  const schema=await read(`schemas/${name}.schema.json`);
+  patterns.push([`${name} schema`,new RegExp(schema.properties.task_id.pattern,"u")]);
+ }
+ for(const [name,pattern] of patterns){
+  for(const id of fixtures.accepted)assert.equal(pattern.test(id),true,`${name} rejected ${JSON.stringify(id)}`);
+  for(const id of fixtures.rejected)assert.equal(pattern.test(id),false,`${name} accepted ${JSON.stringify(id)}`);
+ }
+});
+
 test("continuation contracts require integrity, original operation and waiting context", async () => {
  const schema=await read("schemas/media-execution-contract.schema.json");
  const recordSchema=schema.properties.continuationRecord;

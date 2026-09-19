@@ -4,6 +4,13 @@
 
 # Changelog
 
+## 0.18.6 - 2026-09-19
+
+- Accept public task IDs containing dotted model labels and legacy output suffixes without rewriting their identity. Apply the same bounded rules to submission, status/wait/content, task records and support schemas; continue rejecting paths, URLs, encoded input and control characters.
+- Replace generic lifecycle test IDs with gateway-shaped image/video IDs and add shared boundary fixtures plus native receipt/schema round trips. The regression reproduced the old false "no usable task ID" failure before the fix.
+- Synchronize the paired Web task-identity contract and rebuild all six native executors. No gateway routing or credential changes; unknown submissions are never automatically retried. Existing discarded IDs cannot be recovered by this fix.
+- The maintainer approved stable publication of 0.18.6 after the offline regression and build checks, with real-host media acceptance still pending. Record a new version-bound exception without changing the 150 pending host/OS checks; do not reuse the 0.18.5 exception.
+
 ## 0.18.5 - 2026-09-18
 
 - Refresh GPT Image profiles from the public catalog: `gpt-image-2`, `gpt-image-2.5` and `gpt-image-2(Sub)`; retire Flare/Sunburst entries. Enforce 1K, ten declared ratios, one output, up to ten references, declared quality and output format, and size/ratio constraints.

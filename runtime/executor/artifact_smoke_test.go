@@ -80,4 +80,32 @@ func TestPackagedExecutorIdentityAndOfflinePreflight(t *testing.T) {
 		envelope.Support["request_id"] != nil || envelope.Support["http_status"] != nil {
 		t.Fatal("packaged preflight invented network evidence or omitted support metadata")
 	}
+	for index, id := range taskIDBoundaryFixtures(t).Accepted {
+		t.Run(fmt.Sprintf("offline-task-id-%d", index), func(t *testing.T) {
+			recordPath := filepath.Join(t.TempDir(), "task.json")
+			record := taskRecord{Format: taskRecordFormat, Kind: "image", TaskID: id,
+				Model: "gpt-image-2.5", OriginalOperation: "generate",
+				RequestedCount: 1, Status: "completed"}
+			if err := saveTaskRecord(recordPath, record, true); err != nil {
+				t.Fatal(err)
+			}
+			// A completed record resumes locally even with an unsupported host.
+			// No credential resolution, HTTP request or paid generation is possible.
+			output, err := exec.Command(absolute, "resume", "--host", "fixture-unsupported", "--record", recordPath).Output()
+			if err != nil {
+				t.Fatal("packaged executable rejected a public task ID", err)
+			}
+			var result receipt
+			var envelope struct {
+				Support map[string]any `json:"support"`
+			}
+			if json.Unmarshal(output, &result) != nil || !result.OK || result.TaskID != id || result.NextStep != "content" {
+				t.Fatal("packaged resume lost task identity or failed to offer same-task content")
+			}
+			if json.Unmarshal(output, &envelope) != nil || envelope.Support["api_request_attempted"] != false ||
+				envelope.Support["executor_version"] != proof.Version {
+				t.Fatal("packaged task recovery attempted the network or used the wrong version")
+			}
+		})
+	}
 }

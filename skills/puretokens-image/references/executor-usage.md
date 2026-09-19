@@ -26,6 +26,8 @@ Current local image edit:
 
 `submit` returns the task ID immediately; it never polls or downloads. Do not repeat a submission with unknown output. `status` reads once and `wait` performs one bounded window. Carry the original operation as `original_operation`, model, confirmed count, safe parameters and the exact returned `retry_not_before` into a same-task request. The timestamp below is illustrative; copy the actual receipt value without recalculating it, or use `--record`:
 
+Task IDs are opaque and must be preserved exactly, including dots in model-labelled IDs and colons in legacy output IDs. Never remove punctuation, derive a model from the ID, or construct a replacement ID. The executor accepts 1-256 ASCII characters: a letter, digit, `_` or `-` first, then those characters plus `.` and `:`. URLs, paths, whitespace and percent-encoded input are not task IDs; only the executor encodes the validated ID for the request path.
+
 ```json
 {"kind":"image","original_operation":"generate","task_id":"RETURNED_ID","model":"gpt-image-2","requested_count":1,"parameters":{"image_size":"1K"},"retry_not_before":"2026-09-06T00:00:05Z"}
 ```

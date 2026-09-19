@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
-  "version": "0.18.5",
-  "checkedAt": "2026-09-18",
-  "method": "isolated fixture coverage; candidate bytes require fresh real-host acceptance; unchanged 0.18.3 evidence archived in references/acceptance/0.18.3-host-acceptance.json",
+  "version": "0.18.6",
+  "checkedAt": "2026-09-19",
+  "method": "isolated fixture coverage and packaged native offline task recovery; real-host acceptance remains pending; historical 0.18.3 evidence remains in references/acceptance/0.18.3-host-acceptance.json",
   "stablePublicationException": {
     "kind": "maintainer-approved-pending-acceptance",
-    "version": "0.18.5",
+    "version": "0.18.6",
     "approved": true,
-    "approvedAt": "2026-09-18",
-    "reason": "Maintainer approved direct stable publication before real-host acceptance; pending evidence remains unchanged for follow-up testing."
+    "approvedAt": "2026-09-19",
+    "reason": "Maintainer authorized stable publication of 0.18.6 after disclosure that offline regressions and builds passed but real-host media acceptance was not performed; all pending checks remain unchanged."
   },
   "guide": "references/host-acceptance-guide.md",
   "evidence": [],

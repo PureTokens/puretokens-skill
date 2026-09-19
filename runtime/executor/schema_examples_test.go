@@ -49,6 +49,51 @@ func TestContractExamples(t *testing.T) {
 		capture(name, schema, data)
 	}
 
+	t.Run("public task identity round trips", func(t *testing.T) {
+		for index, id := range taskIDBoundaryFixtures(t).Accepted {
+			name := fmt.Sprintf("task-id-%d", index)
+			request := taskRequest{Kind: "image", Operation: "continue", TaskID: id,
+				Model: "gpt-image-2.5", OriginalOperation: "generate", RequestedCount: 1}
+			if err := validateTaskRequest(request); err != nil {
+				t.Fatalf("%s rejected a public task ID: %v", name, err)
+			}
+			captureValue(name+"-request", "executor-request.schema.json", map[string]any{
+				"kind": request.Kind, "operation": request.Operation, "task_id": id,
+				"model": request.Model, "original_operation": request.OriginalOperation,
+				"requested_count": request.RequestedCount,
+			})
+			var output bytes.Buffer
+			writer := &supportReceiptWriter{output: &output, host: "codex", command: "status"}
+			writeReceipt(writer, taskReceipt(request, id, "pending"))
+			capture(name+"-receipt", "executor-receipt.schema.json", output.Bytes())
+			var document struct {
+				Support struct {
+					TaskID string `json:"task_id"`
+				} `json:"support"`
+			}
+			expectedSupportID := id
+			// Keep the existing credential-like text redaction: this legacy
+			// fixture contains "sk-", but remains usable in the private record.
+			if id == "pic-task-mu578qtd-yipyym:image-2" {
+				expectedSupportID = ""
+			}
+			if json.Unmarshal(output.Bytes(), &document) != nil || document.Support.TaskID != expectedSupportID {
+				t.Fatalf("%s dropped its ID from the support summary", name)
+			}
+			record := recordFromRequest(request)
+			record.TaskID, record.Status = id, "pending"
+			file := filepath.Join(t.TempDir(), "task.json")
+			if err := saveTaskRecord(file, record, true); err != nil {
+				t.Fatal(err)
+			}
+			restored, err := loadTaskRecord(file)
+			if err != nil || restored.TaskID != id {
+				t.Fatalf("%s could not resume its exact recorded ID: %v", name, err)
+			}
+			captureValue(name+"-artifact", "task-record.schema.json", restored)
+		}
+	})
+
 	t.Run("documented media requests execute", func(t *testing.T) {
 		pngPath := filepath.Join(t.TempDir(), "current.png")
 		if err := os.WriteFile(pngPath, fixturePNG(t), 0600); err != nil {

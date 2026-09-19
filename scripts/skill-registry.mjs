@@ -585,7 +585,7 @@ function validateImageRetrieval(errors, label, contract) {
 
 function validateTaskIdentityStateAndSubmissionFailure(errors, label, contract, image) {
   const identity = contract.taskIdentity;
-  if (!identity || identity.receiptField !== "task_id" || identity.acceptedFormat !== "^[A-Za-z0-9_-]{1,256}$" ||
+  if (!identity || identity.receiptField !== "task_id" || identity.acceptedFormat !== "^[A-Za-z0-9_-][A-Za-z0-9._:-]{0,255}$(?![\\s\\S])" ||
     !sameArray(identity.topLevelResponseFields, ["task_id", "id"]) || identity.neverDerivesIdFromUrlsNestedObjectsOrPrompt !== true ||
     identity.pathEncoding !== "percent_encode_opaque_id_as_one_path_segment" || identity.whenMissing !== "report_task_id_not_returned_and_do_not_poll_download_or_resubmit") {
     errors.push(`${label} must normalize only a declared top-level task ID and fail closed when it is missing`);

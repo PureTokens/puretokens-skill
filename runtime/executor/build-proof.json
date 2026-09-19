@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "version": "0.18.5",
+  "version": "0.18.6",
   "toolchain": "go1.26.0",
-  "sourceSha256": "f43fe4eb2f51f7aa6d4f2a087c4dc2d1511ee9d83ccdd491de632959cb7b694d",
+  "sourceSha256": "4f6cab2fd0cf9d30289332cc4c5aeb27b082ae7334be82f14646befeff0604f8",
   "inputs": {
-    "package.json": "de8824a288f0a3611b774ea4deb720ce63e39ec7ae153d835aa9949289a7a8f3",
+    "package.json": "9a17c34a2351ac849d4e281569536866825ff656057206b20ccf721e99b0d5e1",
     "runtime/executor/attachment_stream.go": "13a7a2b7fa599e4cc79ef1401b022a6a20e78f21fb9c4c34034a4c78ae449884",
     "runtime/executor/balance.go": "838f9b9896dfce80e1b4a5adb1502ad88344711047b218e44dd7ec68c2e2b0b0",
     "runtime/executor/build-config.json": "d952dc406aec67ab7d84dd844d783bc0b79a6ef05216c5da5aeee4762e09b33b",
@@ -20,7 +20,7 @@
     "runtime/executor/go.mod": "0a81f881dd845d841cbd33640310e8cd57b3f2cdcd62d0c17154731e92f39666",
     "runtime/executor/go.sum": "61610778bc9c3f204cc9fa67ece26fd895ab8e2a578bbcdda600dd4eca8c6b7d",
     "runtime/executor/installation_guard.go": "3b5e0d55d681bbefd886f0f68987ab80aee37307a4e0207266d95cfdae8290b7",
-    "runtime/executor/main.go": "5f299e00a0ed4902f0fa364ddc70f0bcc4ec65f6ea97ed6693d018c298c3c9e9",
+    "runtime/executor/main.go": "c6f34a9e345f32800a864d6cfde392f07e08c74b67ae21ee37e2c06789dd4442",
     "runtime/executor/media_containers.go": "87d05189cc12108aca250bc7e76d2fc5e8cab200d080e12f66058fd5241e62f6",
     "runtime/executor/media_validation.go": "c0aeeb595c56ee712d44efe512813593078a86f08a152c1e0107934e45406ed3",
     "runtime/executor/model_constraints.go": "69bdac2996b25a202db92b30866a126cdddfc95153b589a427f1ee533e405253",
@@ -35,7 +35,7 @@
     "runtime/executor/support_summary.go": "98596be4ed5fbe09bb04e2704846fccc848a7b33733440d9ad3c1a164148156b",
     "runtime/executor/task_records.go": "0d3da12db211d0571f36e625fbe2d4cc3bd6e872df8fc6fa3913f5f0d39b4836",
     "runtime/executor/task_recovery.go": "b365c170fe33b3eb784ce623a180653b9162f063d39c0bf5dfafaa6a68435b24",
-    "runtime/executor/task_state.go": "ee148a9a653a9c53bdfb71e4b145a4822814e665384813fde4fe2375c6af2c4f",
+    "runtime/executor/task_state.go": "be225f73d91a202ceee9fbd65ee39810e3aa5fb932cb30dbd64a6de79f0bd801",
     "runtime/executor/zcode_credentials.go": "f5b8923ba031c8c5ac70afb1c4adc76e19bd3f70bf5b3f113a4430d6d14a2650",
     "scripts/build-executor.mjs": "f854f4e76be911241a0b06473cb0475dbdbf28fe04082eee4607e99e83c9b0a2",
     "scripts/executor-build-proof.mjs": "526659d04d84d3b48bb49bf4729166fc9936375fd4f30583a77c5cc0694b003f"
@@ -43,27 +43,27 @@
   "artifacts": {
     "darwin-amd64": {
       "path": "bin/puretokens-api-darwin-amd64",
-      "sha256": "fe5f407e8456d4cebaf0852d08a717e56205d5e2b9d9efc451f9c2b1205660af"
+      "sha256": "e5a47ba869501319cf8b06b37b2ede5678a9e39d42daa5ee119179097408eb0b"
     },
     "darwin-arm64": {
       "path": "bin/puretokens-api-darwin-arm64",
-      "sha256": "f59595d833b3d3e4e6041ecdcea48f1c540e75e5f8971129c37648451d2fbdd6"
+      "sha256": "339039fcd68702d92e3b1cdf7aa291c9cc1d6da79f4f7a42ba342566e6373405"
     },
     "linux-amd64": {
       "path": "bin/puretokens-api-linux-amd64",
-      "sha256": "1384b20e2cbb73bfa3fa35164b8d2934f810cfb28ee2d6b27a3116f30116c676"
+      "sha256": "0729ef6de51908d1cd387bc259e2053f21f4fa9db0fb84328701294a897b8fab"
     },
     "linux-arm64": {
       "path": "bin/puretokens-api-linux-arm64",
-      "sha256": "44f287e4024b9275788134603df08b187399df90e7efc11f9a4bf574d2ce519d"
+      "sha256": "d60cf0aeac5e14aea6f315bb76f1b2a6f50f7e0d01a2c4b5433160b7de9bb23d"
     },
     "windows-amd64": {
       "path": "bin/puretokens-api-windows-amd64.exe",
-      "sha256": "c9268c986743f75522b01d5e536f498dbf945f2c71c5e894b720e558362647d1"
+      "sha256": "713108529acad62b67a8f79f05b64f9d563949d265706db6638ed882d7ac512d"
     },
     "windows-arm64": {
       "path": "bin/puretokens-api-windows-arm64.exe",
-      "sha256": "96dd36823c858601295765395fe0ad6851d6e3374717e5cc8a0acd37485c98bb"
+      "sha256": "cbc799a93bac435f4efb725ff316dcef519cd01ecc55fba53bca6683aa991567"
     }
   }
 }

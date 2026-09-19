@@ -30,7 +30,12 @@ func fixedClient(client *http.Client) *http.Client {
 	copy.CheckRedirect = rejectRedirect
 	return &copy
 }
-func validTaskID(id string) bool { return regexp.MustCompile(`^[A-Za-z0-9_-]{1,256}$`).MatchString(id) }
+
+// Public IDs are opaque: model-labelled IDs contain dots; legacy outputs contain
+// colons. Keep them in one path segment and exclude leading dot segments.
+var taskIDPattern = regexp.MustCompile(`^[A-Za-z0-9_-][A-Za-z0-9._:-]{0,255}$`)
+
+func validTaskID(id string) bool { return taskIDPattern.MatchString(id) }
 func safePublicCode(code string) string {
 	if !publicCodePattern.MatchString(code) {
 		return ""

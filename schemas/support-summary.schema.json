@@ -17,7 +17,7 @@
     "request_phase": {"enum": ["identity", "catalog", "balance_usage", "balance_metadata", "submission", "status", "content"]},
     "http_status": {"type": "integer", "minimum": 100, "maximum": 599},
     "request_id": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", "description": "Validated gateway correlation for the latest HTTP attempt, never a task ID or idempotency key."},
-    "task_id": {"type": "string", "pattern": "^[A-Za-z0-9_-]{1,256}$"},
+    "task_id": {"type": "string", "pattern": "^[A-Za-z0-9_-][A-Za-z0-9._:-]{0,255}$(?![\\s\\S])"},
     "kind": {"enum": ["image", "video"]},
     "failure_phase": {"enum": ["validation", "submission", "status", "content"]},
     "submission_outcome": {"enum": ["accepted", "rejected", "unknown", "not_submitted"]},

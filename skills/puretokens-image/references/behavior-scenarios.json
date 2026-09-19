@@ -201,7 +201,7 @@
     {
       "id": "image-task-id-normalization",
       "when": "a submission returns a valid top-level task_id, or top-level id when task_id is absent",
-      "then": "Use the executor-returned task_id unchanged. Supported IDs contain only ASCII letters, digits, underscores or hyphens and have length 1..256. Never derive an ID from URLs or nested data."
+      "then": "Use the executor-returned task_id unchanged, including dots in model labels and colons in legacy output IDs. Supported IDs have length 1..256: an ASCII letter, digit, underscore or hyphen first, then those characters plus dots and colons. Reject paths, encoded input, whitespace and control characters. Never derive an ID from URLs or nested data or parse its model hint."
     },
     {
       "id": "image-task-id-missing",

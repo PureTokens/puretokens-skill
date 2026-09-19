@@ -35,7 +35,7 @@
     },
     "task_id": {
       "type": "string",
-      "pattern": "^[A-Za-z0-9_-]{1,256}$"
+      "pattern": "^[A-Za-z0-9_-][A-Za-z0-9._:-]{0,255}$(?![\\s\\S])"
     },
     "task_status": {
       "enum": [

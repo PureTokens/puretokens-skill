@@ -87,7 +87,7 @@
       "task_id",
       "id"
     ],
-    "acceptedFormat": "^[A-Za-z0-9_-]{1,256}$",
+    "acceptedFormat": "^[A-Za-z0-9_-][A-Za-z0-9._:-]{0,255}$(?![\\s\\S])",
     "neverDerivesIdFromUrlsNestedObjectsOrPrompt": true,
     "pathEncoding": "percent_encode_opaque_id_as_one_path_segment",
     "whenMissing": "report_task_id_not_returned_and_do_not_poll_download_or_resubmit"

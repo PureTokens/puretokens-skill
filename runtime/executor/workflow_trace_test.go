@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -19,12 +18,14 @@ import (
 // Simulated attachment handoff reads the output bytes before acknowledgement.
 func TestOfflineMediaCommandTrajectories(t *testing.T) {
 	for _, scenario := range []struct {
-		name, kind, operation, model string
-		count                        int
+		name, kind, operation, model, id string
+		count                            int
 	}{
-		{"two-images", "image", "generate", "seedream-5.0-pro", 2},
-		{"local-image-edit", "image", "edit", "gpt-image-2", 1},
-		{"video", "video", "generate", "grok-imagine-video-1.5-preview", 1},
+		{"two-images", "image", "generate", "seedream-5.0-pro", "pic-seedream-5.0-pro-abcdefghijklmnop", 2},
+		{"local-image-edit", "image", "edit", "gpt-image-2", "pic-gpt-image-2-abcdefghijklmnop", 1},
+		{"gpt-image-2.5", "image", "generate", "gpt-image-2.5", "pic-gpt-image-2.5-abcdefghijklmnop", 1},
+		{"legacy-output-id", "image", "edit", "gpt-image-2", "pic-gpt-image-2-abcdefghijklmnop:image-1", 1},
+		{"video", "video", "generate", "grok-imagine-video-1.5-preview", "video-grok-imagine-video-1.5-preview-abcdefghijklmnop", 1},
 	} {
 		t.Run(scenario.name, func(t *testing.T) {
 			request := taskRequest{Kind: scenario.kind, Operation: scenario.operation, Model: scenario.model, Prompt: "synthetic fixture", RequestedCount: scenario.count}
@@ -36,7 +37,7 @@ func TestOfflineMediaCommandTrajectories(t *testing.T) {
 				body, mediaType = fixtureWebM(false, false), "video/webm"
 			}
 			var trace []string
-			taskRoute := "/v1/" + scenario.kind + "s/trace-task"
+			taskRoute := "/v1/" + scenario.kind + "s/" + scenario.id
 			submitRoute := "/v1/videos"
 			if scenario.kind == "image" {
 				submitRoute = "/v1/images/generations"
@@ -58,9 +59,9 @@ func TestOfflineMediaCommandTrajectories(t *testing.T) {
 							}
 						}
 					}
-					io.WriteString(w, `{"id":"trace-task","status":"pending"}`)
+					fmt.Fprintf(w, `{"id":%q,"status":"pending"}`, scenario.id)
 				case r.Method == http.MethodGet && r.URL.Path == taskRoute:
-					io.WriteString(w, `{"id":"trace-task","status":"completed"}`)
+					fmt.Fprintf(w, `{"id":%q,"status":"completed"}`, scenario.id)
 				case r.Method == http.MethodGet && r.URL.Path == taskRoute+"/content":
 					w.Header().Set("Content-Type", mediaType)
 					w.Write(body)
@@ -87,7 +88,7 @@ func TestOfflineMediaCommandTrajectories(t *testing.T) {
 					t.Fatalf("%s failed: %v", command, err)
 				}
 				result := decodeReceipt(t, &output)
-				if result.TaskID != "trace-task" || result.OriginalOperation != scenario.operation {
+				if result.TaskID != scenario.id || result.OriginalOperation != scenario.operation {
 					t.Fatal("lost task identity or original operation")
 				}
 				trace = append(trace, "receipt:"+result.NextStep)
@@ -123,7 +124,7 @@ func TestOfflineMediaCommandTrajectories(t *testing.T) {
 				if ack.NextStep != next {
 					t.Fatalf("incorrect acknowledged progress: %+v", ack)
 				}
-				expected = append(expected, "command:content", "GET "+contentPath(scenario.kind, "trace-task", index), "receipt:deliver",
+				expected = append(expected, "command:content", "GET "+contentPath(scenario.kind, scenario.id, index), "receipt:deliver",
 					"command:resume", "receipt:deliver", fmt.Sprintf("handoff:%d", index), "command:delivered", "receipt:"+next)
 			}
 			invoke("resume", 0)
