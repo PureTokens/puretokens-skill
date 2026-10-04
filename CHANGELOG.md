@@ -4,6 +4,13 @@
 
 # Changelog
 
+## 0.18.8 - 2026-10-04
+
+- Explain command, HTTPS and directory permissions before the initial download in the complete installation prompts. Preserve the one-line installation entry and do not require Full Access by default.
+- Distinguish Windows socket access denial from unavailable HTTPS security context, ordinary TLS errors and HTTP rejection. Report sanitized failure stages and next steps without exposing exception details or retrying automatically.
+- Resume installation only after explicit continuation and current authorization. If synchronization succeeded but connection verification failed, continue init alone without reinstalling; uncertain synchronization still requires diagnosis.
+- Keep installer guidance, update Skill scenarios and regression coverage aligned, including preservation of existing files and init-only continuation.
+
 ## 0.18.7 - 2026-10-04
 
 - Refresh 29 image/video model profiles and GPT Image parameters. Set the default image model to `gpt-image-2.5-flare` and video model to `minimax_h3`; explicit model selections remain unchanged.

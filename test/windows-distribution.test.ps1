@@ -15,6 +15,7 @@ if (-not $Child) {
   return
 }
 $repository = Split-Path -Parent $PSScriptRoot
+& (Join-Path $PSScriptRoot 'support/windows-download-diagnostics.ps1')
 $root = Join-Path ([IO.Path]::GetTempPath()) ("pt-download-test-" + [Guid]::NewGuid().ToString("N"))
 $savedEnvironment = @{}
 foreach ($name in @("USERPROFILE", "HOME", "CODEX_HOME", "TMP", "TEMP")) { $savedEnvironment[$name] = [Environment]::GetEnvironmentVariable($name, "Process") }
@@ -62,9 +63,15 @@ try {
     } }
   }
   $release | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $root "release.json") -Encoding UTF8
+  $global:fixtureFailureMatch = $null
+  $global:fixtureFailureKind = $null
   function global:Invoke-WebRequest {
     param($Uri, $OutFile, $TimeoutSec, $Headers, $UserAgent, [switch]$UseBasicParsing, [switch]$PassThru)
     $global:fixtureRequests.Add([string]$Uri)
+    if ($global:fixtureFailureMatch -and $Uri -like $global:fixtureFailureMatch) {
+      if ($global:fixtureFailureKind -eq 'network_access_denied') { throw [System.Net.Sockets.SocketException]::new(10013) }
+      throw [System.Security.Authentication.AuthenticationException]::new('private-fixture', [System.ComponentModel.Win32Exception]::new(-2146893042, 'private-fixture'))
+    }
     switch -Regex ($Uri) {
       "/releases/download/v$global:fixtureVersion/puretokens-skill-install.ps1$" { Copy-Item -LiteralPath (Join-Path $global:fixtureSource "runtime/puretokens-skill-install.ps1") -Destination $OutFile }
       '/releases/latest/download/release-manifest.json$' {
@@ -102,6 +109,39 @@ try {
       }) -join "`n"
     }
     $before = Get-FixtureSnapshot $target
+    foreach ($failure in @(
+      @{ Match = '*release-manifest.json'; Stage = 'read_release_manifest'; Count = 1 },
+      @{ Match = '*puretokens-skill-install.ps1'; Stage = 'download_selector'; Count = 2 }
+    )) {
+      foreach ($category in @('network_access_denied', 'tls_security_context_unavailable')) {
+        $global:fixtureFailureMatch = $failure.Match
+        $global:fixtureFailureKind = $category
+        $global:fixtureRequests.Clear()
+        $rejected = $false
+        try { & $fetch update -Target $target }
+        catch {
+          $message = $_.Exception.Message
+          $rejected = $message.Contains("stage=$($failure.Stage) error_code=$category http_status=0") -and
+            $message.Contains('installed_files_changed=false next_step=review_host_permissions') -and
+            $message -notmatch 'private-fixture'
+        }
+        if (-not $rejected -or $global:fixtureRequests.Count -ne $failure.Count -or (Get-FixtureSnapshot $target) -cne $before) { throw 'Denied download retried or changed existing installation' }
+        if (@(Get-ChildItem -LiteralPath $env:TMP -Force).Count -ne 0) { throw 'Denied download retained staging files' }
+      }
+    }
+    $global:fixtureFailureMatch = '*-windows-*.zip'
+    $global:fixtureFailureKind = 'network_access_denied'
+    $global:fixtureRequests.Clear()
+    $newTarget = Join-Path $root 'explicit-continuation'
+    $rejected = $false
+    try { & $fetch install -Target $newTarget }
+    catch { $rejected = $_.Exception.Message -like '*stage=download_platform_archive error_code=network_access_denied*' }
+    if (-not $rejected -or $global:fixtureRequests.Count -ne 3 -or (Test-Path -LiteralPath $newTarget)) { throw 'Denied archive download created an installation or retried' }
+    $global:fixtureFailureMatch = $null
+    $global:fixtureRequests.Clear()
+    # Explicit new invocation after the simulated blocker changes; still verifies all release inputs.
+    & $fetch install -Target $newTarget
+    if ($global:fixtureRequests.Count -ne 3 -or -not (Test-Path -LiteralPath (Join-Path $newTarget '.puretokens-executor/puretokens-api.exe'))) { throw 'Explicit installation continuation failed' }
     foreach ($command in @("install", "update")) {
       $global:fixtureRequests.Clear()
       $output = & $fetch $command -Target $target -HostId codex

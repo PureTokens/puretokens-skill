@@ -6,11 +6,17 @@
 
 Official Skills for checking a Pure Tokens connection, balance and model catalog, generating images or videos, and evaluating text with Jev.
 
+Version 0.18.8 improves installation permission guidance, Windows download diagnostics and explicit continuation after an interrupted setup. It does not require Full Access by default or change your client permissions automatically.
+
 Version 0.18.7 adds MiniMax Code Desktop for local macOS/Windows default connections. Standalone installation with Desktop preferences requires a confirmed target or the client runtime data-directory environment. See `references/switch-skill-compatibility.md` for the connection and session requirements.
 
 ## Agent-assisted installation
 
 The one-line compatibility entry is preserved below. For explicit installation steps, copy the complete [Chinese](#chinese-installation-prompt) or [English](#english-installation-prompt) prompt.
+
+Before installation, the current client session needs permission to run local commands, download over HTTPS, and write the temporary download and target Skill directories. Use the client's supported approval controls; a network-only grant does not establish command or filesystem access. Do not require Full Access by default or change permissions automatically. Use permissions already reported by the host; do not add diagnostic probes to a normal installation.
+
+If reading this README or downloading the entry script fails, the installer has not started. Check the client session's execution/network permissions first and report that stage; do not infer an API-key problem or reinstall. The complete prompts below include permission guidance before the first download; use one of them for step-by-step installation. See the [permission and continuation guide](skills/puretokens-update/references/install-permissions.md) only when troubleshooting.
 
 ### Copy this to a terminal-capable local agent
 
@@ -23,7 +29,7 @@ Install or update the official Pure Tokens Skills from https://github.com/PureTo
 ```text
 请为我当前使用的客户端安装或更新 Pure Tokens 官方 Skills，仓库：https://github.com/PureTokens/puretokens-skill。
 
-1. 阅读官方安装说明，只确定本次安装所需的当前客户端、官方宿主 ID 和执行环境。不要从模型名称或共享 Skill 目录猜客户端；无法确定时只问必要信息。需要能在该客户端实际使用的本机环境执行命令，遵守其执行审批；不支持或没有执行能力时说明并停止。
+1. 下载官方说明前，先依据当前客户端已报告的信息确认能执行本地命令、HTTPS 下载并写入下载临时目录及目标 Skill 目录；未报告的权限记为未知，不等于拒绝；按正常流程执行，不增加探测命令或读取配置。需要授权时使用客户端实际提供的审批，过期或上轮授权不能代替当前审批；网络授权不代表全部执行权限，不默认要求完全访问或自动修改权限。阅读官方安装说明，只确定本次安装所需的当前客户端、官方宿主 ID 和执行环境。不要从模型名称或共享 Skill 目录猜客户端；无法确定时只问必要信息。不支持、审批被拒或没有执行能力时说明并停止。
 
 2. 首次安装，将以下官方稳定版入口下载为本地文件：
    macOS/Linux：https://github.com/PureTokens/puretokens-skill/releases/latest/download/puretokens-skill-fetch.sh
@@ -35,7 +41,7 @@ Install or update the official Pure Tokens Skills from https://github.com/PureTo
    Windows：powershell.exe -NoProfile -ExecutionPolicy Bypass -File "<fetch脚本绝对路径>" <操作> -Host <当前宿主ID>
    自定义目录按官方说明附加 --target / -Target 绝对路径；Octop 必须指定当前工作区的 .octop/skills。由官方脚本选择当前系统和架构的稳定版包，校验并同步完整 Skills 与原生执行器。不要复制单个 SKILL.md、使用通用安装器或回退 main、源码包、镜像；不要为此安装 Node、npm、Python、Go、Git 或服务。
 
-4. 保留现有连接和用户文件。不要自行读取、展示或修改认证配置，也不要索取或转述凭据；由原生执行器按当前宿主规则完成只读验证。下载、校验、执行权限或文件冲突失败时，报告已完成阶段与脱敏原因并停止；不自动删除、修复、重装、换宿主或改用其他执行方式。超时或输出不确定时不得猜测成功。
+4. 保留现有连接和用户文件。不要自行读取、展示或修改认证配置，也不要索取或转述凭据；由原生执行器按当前宿主规则完成只读验证。下载、校验、执行权限或文件冲突失败时，报告已完成阶段与脱敏原因并停止；不自动删除、修复、重装、换宿主或改用其他执行方式。读取说明或下载入口脚本失败时明确“安装尚未开始”，先引导检查当前会话权限，不仅凭 TLS 错误断定 Key、证书或客户端有问题。用户处理阻塞并明确要求继续后，尚未同步才在原宿主执行一次官方流程；已同步且仅连接验证失败时，只在用户要求继续验证后执行一次 init，不重装。超时、同步中断或输出不确定时不得猜测成功或直接重跑，先另行诊断。
 
 5. 复用脚本的同步与自动 init 结果，不另跑 init、doctor、余额或模型查询。自动 init 最多两次只读请求，共用 20 秒预算；安装成功而 init 失败应报告“安装已完成，连接验证未完成”。同版完整性校验通过的快速返回表示“已是当前稳定版且文件完整”，无需再下载、写入或初始化。
 
@@ -47,7 +53,7 @@ Install or update the official Pure Tokens Skills from https://github.com/PureTo
 ```text
 Install or update the official Pure Tokens Skills for the client I am currently using. Repository: https://github.com/PureTokens/puretokens-skill.
 
-1. Read the official installation instructions and identify only the current client, its documented host ID and its execution environment. Do not infer the client from a model name or shared Skill directory; ask only for missing essential information. Commands must run in the local environment actually used by that client. Respect execution approvals; explain and stop if the environment is unsupported or cannot execute commands.
+1. Before downloading instructions, use information already reported by the current client to establish local command, HTTPS download, temporary-directory and target Skill-directory access. Unreported permissions remain unknown, not denied; proceed normally without extra probes or configuration reads. Use the client's actual approval controls when needed; expired or previous-turn grants do not replace current approval. Network approval does not establish all execution permissions; do not require Full Access by default or change permissions automatically. Read the official installation instructions and identify only the current client, its documented host ID and its execution environment. Do not infer the client from a model name or shared Skill directory; ask only for missing essential information. Explain and stop if the environment is unsupported, approval is denied or commands cannot execute.
 
 2. For a first installation, save the official stable-release entry point as a local file:
    macOS/Linux: https://github.com/PureTokens/puretokens-skill/releases/latest/download/puretokens-skill-fetch.sh
@@ -59,7 +65,7 @@ Install or update the official Pure Tokens Skills for the client I am currently 
    Windows: powershell.exe -NoProfile -ExecutionPolicy Bypass -File "<absolute-fetch-path>" <operation> -Host <current-host-id>
    For a custom directory, add the documented --target / -Target absolute path; Octop requires the current workspace's .octop/skills. Let the official script select, verify and synchronize the stable package for this OS and architecture, including the complete Skills and native executor. Do not copy only SKILL.md, use a generic installer, or fall back to main, source archives or mirrors. Do not install Node, npm, Python, Go, Git or services for this task.
 
-4. Preserve existing connections and user files. Do not independently read, display or modify authentication configuration, or request or relay credentials; let the native executor perform the documented read-only verification for this host. On download, checksum, execution-permission or file-conflict failure, report the completed stage and sanitized cause, then stop. Do not automatically delete, repair, reinstall, switch hosts or use another execution path. A timeout or uncertain output does not establish success.
+4. Preserve existing connections and user files. Do not independently read, display or modify authentication configuration, or request or relay credentials; let the native executor perform the documented read-only verification for this host. On download, checksum, execution-permission or file-conflict failure, report the completed stage and sanitized cause, then stop. Do not automatically delete, repair, reinstall, switch hosts or use another execution path. If reading instructions or downloading the entry script fails, say "Installation has not started" and guide the user to check current-session permissions first; TLS errors alone do not establish a key, certificate or client defect. After the user resolves the blocker and explicitly continues, run the official workflow once on the same host only if synchronization has not begun. After successful sync with failed connection verification, run init alone only when further verification is requested; do not reinstall. A timeout, interrupted sync or uncertain output requires separate diagnosis, not assumed success or an automatic rerun.
 
 5. Reuse the script's synchronization and automatic init results. Do not add init, doctor, balance or model queries. Automatic init allows at most two read-only requests within one 20-second budget. Successful synchronization followed by failed init means “Installed; connection not verified.” A same-version verified fast return means “Already on the current stable version; files verified,” with no further download, writes or initialization.
 
@@ -69,6 +75,8 @@ Install or update the official Pure Tokens Skills for the client I am currently 
 The agent saves the latest official stable release's `puretokens-skill-fetch.sh` (Windows: `.ps1`) locally and runs install with the current host ID. The fixed bootstrap URL is `https://github.com/PureTokens/puretokens-skill/releases/latest/download/puretokens-skill-fetch.sh`; Windows uses the `.ps1` suffix. Installed copies in `.puretokens-executor` provide check-update and update. Never pipe remote content into a shell or fall back to main, source archives or mirrors when stable assets are absent.
 
 Installation boundary: after identifying the host, save the official fetch script locally and run it once. Let it pin the commit, download, verify, sync and initialize. Do not add full-script audits, PowerShell capability probes, duplicate inventory checks or doctor to ordinary installation. Respect required host approvals. On launch denial, unavailable output, timeout, download or verification failure, report the completed stage and sanitized failure, then stop. Do not create probes, shims or Python patches, modify official scripts, switch launch paths or retry automatically. Debugging requires a separate user request.
+
+After the user resolves a permission issue and explicitly asks to continue, resume according to the last confirmed phase. Before synchronization, use the same official fetch workflow once; it resolves and verifies the stable release again, without reusing partial downloads. If synchronization succeeded and only init failed, perform one init only when the user asks to continue connection verification; do not reinstall. Unknown output or interrupted synchronization needs a separately authorized local installation diagnosis, not an automatic rerun. Never use this installation recovery to resubmit a media task.
 
 ## What is installed
 

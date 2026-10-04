@@ -15,33 +15,8 @@ const scripts = ["puretokens-skill-install.sh", "puretokens-skill-install.ps1", 
 test("PowerShell download diagnostics classify exceptions and suppress private messages", async t => {
   try { await execFile("pwsh", ["-NoProfile", "-Command", "$PSVersionTable.PSVersion.ToString()"]); }
   catch (error) { if (error.code === "ENOENT") { t.skip("PowerShell is unavailable; Windows execution remains unverified"); return; } throw error; }
-  const root = await mkdtemp(path.join(os.tmpdir(), "pt-ps-diagnostic-"));
-  t.after(() => rm(root, { recursive: true, force: true }));
-  const source = await readFile(path.join(repositoryRoot, "runtime/puretokens-skill-fetch.ps1"), "utf8");
-  const functions = source.slice(source.indexOf("function Fail("), source.indexOf("$locationOptions ="));
-  const script = path.join(root, "diagnostic.ps1");
-  await writeFile(script, `$ErrorActionPreference='Stop'
-${functions}
-function Invoke-WebRequest {
-  param($Uri,$OutFile,$TimeoutSec,$Headers,$UserAgent,[switch]$UseBasicParsing,[switch]$PassThru)
-  $script:calls++
-  if ($script:mode -eq 'timeout') { throw [System.Net.WebException]::new('private-fixture', [System.Net.WebExceptionStatus]::Timeout) }
-  if ($script:mode -eq 'dns_failure') { throw [System.Net.WebException]::new('private-fixture', [System.Net.WebExceptionStatus]::NameResolutionFailure) }
-  if ($script:mode -eq 'tls_failure') { throw [System.Net.WebException]::new('private-fixture', [System.Net.WebExceptionStatus]::TrustFailure) }
-  return [PSCustomObject]@{StatusCode=403}
-}
-foreach ($mode in @('timeout','dns_failure','tls_failure','http_error')) {
-  $script:mode=$mode; $script:calls=0; $failed=$false
-  try { Get-OfficialFile 'https://example.invalid/private' 'unused' resolve_revision | Out-Null }
-  catch {
-    $failed=$true; $message=$_.Exception.Message
-    if ($message -notlike "*stage=resolve_revision error_code=$mode *" -or $message -match 'private-fixture|example.invalid') { throw 'unsafe or incorrect diagnostic' }
-    if ($message -notlike '*installed_files_changed=false*') { throw 'missing preservation state' }
-  }
-  if (-not $failed -or $script:calls -ne 1) { throw 'failure retried or suppressed' }
-}
-`);
-  await execFile("pwsh", ["-NoProfile", "-File", script]);
+  const { stdout } = await execFile("pwsh", ["-NoProfile", "-File", path.join(repositoryRoot, "test/support/windows-download-diagnostics.ps1")]);
+  assert.match(stdout, /14 failure cases and one explicit successful continuation passed/);
 });
 
 async function fixture(t) {

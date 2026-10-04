@@ -248,10 +248,18 @@ for (const kind of ["image", "video"]) {
 
 test("the public install prompt remains extractable in both README files", async () => {
   const expected = "Install or update the official Pure Tokens Skills from https://github.com/PureTokens/puretokens-skill.";
+  let prompts;
   for (const file of ["README.md", "README.zh-CN.md"]) {
     const readme = await readFile(path.join(repositoryRoot, file), "utf8");
     const match = readme.match(/### (?:Copy this to a terminal-capable local agent|复制给可在本机执行命令的 Agent)\n\n```text\n([^\n]+)\n```/);
     assert.equal(match?.[1], expected);
+    const complete = [
+      readme.match(/### (?:Chinese installation prompt|中文安装提示词)\n\n```text\n([\s\S]*?)\n```/)?.[1],
+      readme.match(/### (?:English installation prompt|英文安装提示词)\n\n```text\n([\s\S]*?)\n```/)?.[1]
+    ];
+    assert.ok(complete.every(Boolean), "both complete prompts must remain copyable");
+    if (prompts) assert.deepEqual(complete, prompts, "permission/continuation instructions must not drift between READMEs");
+    prompts = complete;
   }
 });
 

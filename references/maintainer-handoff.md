@@ -1,6 +1,6 @@
 # Pure Tokens Skills 当前开发状态
 
-> 历史交接说明：下文保留2026-09-13任务及其一次性发布授权，不适用于当前版本。2026-10-04的客户端／模型事实和验证结果以 `acceptance/client-model-sync-20261004.md`、`switch-skill-compatibility.md` 为准；0.18.7的新版本发布例外独立记录于 `host-acceptance.json`，不复用旧授权，不将待验收状态改为通过。
+> 历史交接说明：下文保留2026-09-13任务及其一次性发布授权，不适用于当前版本。2026-10-04的客户端／模型事实和验证结果以 `acceptance/client-model-sync-20261004.md`、`switch-skill-compatibility.md` 为准；0.18.8仅增加安装权限指引和下载诊断，恢复规则见 `../skills/puretokens-update/references/install-permissions.md`。0.18.8的独立发布决定记录于 `host-acceptance.json`，0.18.7记录已归档于 `acceptance/0.18.7-host-acceptance.json`，不复用旧授权，不将待验收状态改为通过。
 
 更新日期：2026-09-13（本机 Asia/Shanghai）。任务标识：stable-distribution-performance-2026-09-12。此文件仅维护当前任务；历史实现和发布记录见 Git 与 CHANGELOG。
 

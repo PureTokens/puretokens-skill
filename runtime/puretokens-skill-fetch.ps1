@@ -18,6 +18,8 @@ function Get-OfficialFile([string]$Url, [string]$Destination, [string]$Stage) {
   $status = 0
   $category = "transport_failure"
   $completed = $false
+  $networkAccessDenied = $false
+  $securityContextUnavailable = $false
   try {
     $result = Invoke-WebRequest -UseBasicParsing -Uri $Url -OutFile $Destination -PassThru -TimeoutSec 180 -Headers @{ Accept = "application/vnd.github+json" } -UserAgent "puretokens-skill-installer"
     $status = [int]$result.StatusCode
@@ -43,15 +45,37 @@ function Get-OfficialFile([string]$Url, [string]$Destination, [string]$Stage) {
       if ($exception -is [System.OperationCanceledException] -or $exception -is [System.TimeoutException]) { $category = 'timeout' }
       if ($exception -is [System.Security.Authentication.AuthenticationException]) { $category = 'tls_failure' }
       if ($exception -is [System.Net.Sockets.SocketException]) {
+        if ($exception.SocketErrorCode -eq [System.Net.Sockets.SocketError]::AccessDenied) { $networkAccessDenied = $true }
         $category = if ($exception.SocketErrorCode.ToString() -in @('HostNotFound','TryAgain','NoData')) { 'dns_failure' } elseif ($exception.SocketErrorCode.ToString() -eq 'TimedOut') { 'timeout' } else { 'connection_failure' }
       }
+      # SEC_E_NO_CREDENTIALS is a Windows security-context failure, not an API-key rejection.
+      # Match a typed native code only; never classify or display private exception text.
+      if ($exception -is [System.ComponentModel.Win32Exception] -and $exception.NativeErrorCode -eq -2146893042) { $securityContextUnavailable = $true }
       if ($exception -is [System.UnauthorizedAccessException]) { $category = 'local_io_failure' }
       $exception = $exception.InnerException
     }
   }
   if ($status -eq 200 -and $completed) { return 200 }
+  if ($networkAccessDenied) { $category = 'network_access_denied' }
+  if ($securityContextUnavailable) { $category = 'tls_security_context_unavailable' }
   if ($status -ge 400 -and $status -le 599) { $category = 'http_error' } elseif ($status -lt 100 -or $status -gt 599) { $status = 0 }
-  Fail "stage=$Stage error_code=$category http_status=$status installation_status=not_completed installed_files_changed=false; the official source download failed; installed files were not changed; no automatic retry"
+  $nextStep = 'review_download_failure'
+  $guidance = 'Review the failure stage before explicitly continuing.'
+  switch ($category) {
+    'network_access_denied' {
+      $nextStep = 'review_host_permissions'
+      $guidance = 'The socket denied access. Check current-session command and network permissions in the client. The code alone does not identify the blocking policy. Full Access is not a default installation requirement.'
+    }
+    'tls_security_context_unavailable' {
+      $nextStep = 'review_host_permissions'
+      $guidance = 'Windows HTTPS security context is unavailable. Check current-session execution and network permissions first; a network grant alone does not verify the full execution context. This does not establish a missing API key, damaged certificate or client defect. Full Access is not a default installation requirement.'
+    }
+    'local_io_failure' {
+      $nextStep = 'review_download_directory_permissions'
+      $guidance = 'Check permission to write the temporary download directory in the current client session.'
+    }
+  }
+  Fail "stage=$Stage error_code=$category http_status=$status installation_status=not_completed installed_files_changed=false next_step=$nextStep; $guidance Installed files were not changed. After resolving the issue and explicitly choosing to continue, run the same official fetch command once; no automatic retry."
 }
 $locationOptions = @{}
 if ($HostId) { $locationOptions.HostId = $HostId }

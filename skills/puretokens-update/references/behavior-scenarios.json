@@ -39,6 +39,26 @@
       "then": "Report the actual failure and stop before installed-file writes. Do not install Git, Node, Python, Go, dependencies or an alternate transport."
     },
     {
+      "id": "update-bootstrap-permission-denied",
+      "when": "the host denies command execution, network approval or the initial README/fetch download before the installer starts",
+      "then": "Report installation not started, the confirmed phase and sanitized restriction. Use only host-reported permission information and available native approval controls; do not invent a grant or retry a denial. Unknown permissions stay unknown. Explain required command, HTTPS and directory access without reading configuration, changing permissions or requiring Full Access by default."
+    },
+    {
+      "id": "update-network-granted-security-context-failure",
+      "when": "a request made during a valid network grant still returns network_access_denied or tls_security_context_unavailable",
+      "then": "Preserve the valid grant as evidence but do not equate it with all execution permissions. Report the stage, safe category and review_host_permissions next step; guide the user to check current-session permissions. Do not claim a Key rejection, certificate defect, damaged sandbox or mandatory Full Access, and do not repeat the same request without a resolved blocker and explicit continuation."
+    },
+    {
+      "id": "update-explicit-permission-continuation",
+      "when": "the user has addressed an execution/download permission blocker and explicitly asks to continue, with confirmation that sync has not begun",
+      "then": "On the same host, download the official fetch to a local file if it was never obtained, then invoke the same official workflow once. Historical approvals are evidence, not permission beyond their scope; obtain any native approval required for the current turn/action without looping on a denial. Resolve and verify the stable manifest and selected files afresh, without partial-download reuse or alternate transport. A new failure stops again; this never authorizes paid-task resubmission."
+    },
+    {
+      "id": "update-explicit-init-continuation",
+      "when": "sync is confirmed successful, only init failed, and the user explicitly asks to continue connection verification after addressing the blocker",
+      "then": "Invoke only the installed executor init once on the same host, with its existing 20-second budget and at most two read-only requests. Do not fetch, sync, reinstall, run doctor or submit a paid task. Keep installation status separate from the new verification result."
+    },
+    {
       "id": "update-validation-failed",
       "when": "the stable selector or platform archive fails checksum or source validation",
       "then": "report the validation failure and stop before changing installed Skills. Do not run Node, npm packages, generators, docs sync, formatters, repair commands, Git writes, or any other source-mutating command to make the official checkout pass."
@@ -46,7 +66,7 @@
     {
       "id": "update-execution-unconfirmed",
       "when": "the host interrupts, times out, or otherwise returns before the installer prints the exact synchronized-version completion receipt",
-      "then": "Report synchronization as unconfirmed without automatic retry. On the next explicit request, the official fetch/sync path can recover a managed interrupted transaction."
+      "then": "Report synchronization as unconfirmed without automatic retry. Obtain separate authorization for local installation diagnosis before deciding on recovery; doctor is not an inventory verifier. Preserve unknown or modified files and unresolved transactions. Only a separately authorized official sync can recover a verified managed transaction; this is not a permission-retry case."
     },
     {
       "id": "update-unmanaged-conflict",

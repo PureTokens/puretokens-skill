@@ -13,7 +13,11 @@ description: 用户要求安装、升级、检查版本、初始化并验证认�
 
 确认宿主后直接使用官方 fetch 入口，不委托通用 skill-installer 复制目录，不调用 CUA／浏览器自动化兜底，不反复检查环境或只重复说明计划。下载脚本已取得时直接运行一次；宿主阻止执行或下载失败就保留脱敏结果并停止，不绕过权限。
 
+安装需当前会话允许命令执行、HTTPS 下载及临时／目标目录写入；优先使用宿主已报告的权限与审批能力，不额外探测或读取宿主配置。未知权限不等于拒绝，按正常流程及原生审批执行；已过期或上轮的授权不能代替当前审批。网络授权不证明完整执行权限，不默认要求“完全访问”或自动扩大权限。读取官方说明或下载 fetch 之前失败应报告“安装尚未开始”。权限错误、Windows 安全上下文错误及用户明确要求继续安装时，按需读 `references/install-permissions.md`，不要一律归因于 Key、证书或客户端损坏。
+
 下载失败时明确“安装未完成”，报告 stage、error_code 和非零 http_status；http_status=0 表示没有可报告的 HTTP 状态，不猜测为 403 或密钥问题。不展示原始异常、响应、请求头或配置，不自动重试或改用镜像。同步成功但 init 失败时说明“安装已完成，连接验证未完成”，不回滚、不重装。同步后脚本自动执行一次同宿主 init；同版完整性核验快速返回则不执行。已有结果不重复运行 init，不在安装会话自动继续生成。
+
+保留下载回执的 next_step；network_access_denied／tls_security_context_unavailable 提示用户先核实客户端当前会话权限，不宣称原因已唯一确定。用户处理阻塞并明确要求继续后：同步前只在原宿主再执行一次官方 fetch；已同步且仅 init 失败，明确要求继续连接验证才执行一次 init；同步状态未知先另行诊断本地状态，不自动重跑。未变更环境的同一错误不反复测试，不更换传输、宿主或权限模式。
 
 已安装时，从本 SKILL.md 的绝对目录解析`../.puretokens-executor/puretokens-skill-fetch.sh`（Windows 为 `.ps1`）。首次安装由宿主现成 HTTPS 下载能力把 `https://github.com/PureTokens/puretokens-skill/releases/latest/download/puretokens-skill-fetch.sh`（Windows 改为 `.ps1`）下载为本地文件，再运行；不把远程响应管道进 shell，不安装 Git、Node、Python 或 Go。
 

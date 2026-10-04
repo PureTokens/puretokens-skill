@@ -83,6 +83,23 @@ For Windows, run the native installer fixtures with `powershell.exe` (5.1),
 these entrances on its Windows runner; this is not a record of real-host execution. That evidence is
 separate from actual host discovery, authenticated API use and attachment handoff.
 
+Installation permission cases are described in
+`skills/puretokens-update/references/install-permissions.md`. In isolated tests,
+cover socket access denial, granted networking followed by a Windows security-context
+failure, ordinary TLS/DNS/HTTP errors, temporary-file write denial and explicit
+continuation after the blocker changes. Assert one request per failed invocation,
+sanitized phase/category/next step, no automatic retry or permission changes, and
+preservation of the old installation. Unknown synchronization output is not a
+permission-retry case; successful sync plus failed init must not trigger reinstall.
+The fixtures simulate failures, not a real approval system. For real hosts, record
+the actual execution mode and only host-reported permission/approval outcomes,
+including scope; unknown stays unknown. Exercise denied approval and later
+user-approved continuation only in an authorized test session; do not change a
+user's normal security settings for testing. Do not mark a sandbox case passed
+from an external-terminal or Full Access run. Full Access is not required by this
+guide. Bootstrap failure before the script starts must also be observed through
+the host's installation instructions, not claimed as covered by fetch alone.
+
 For each host/OS, attach an evidence entry with `host`, `os`, `hostVersion`,
 `osVersion`, `osArchitecture` (`amd64` or `arm64`), `shellVersion`,
 `executionMode` (`local`, `wsl`, `remote` or `sandbox`),
@@ -222,7 +239,11 @@ share the acceptance record date, and explain the approval. It only bypasses the
 stable promotion gate; it never changes pending, unavailable or failed evidence,
 does not count as real-host acceptance, and must not be copied to a later version.
 
-For 0.18.7, the maintainer approved this exception on 2026-10-04 and requested
+For 0.18.8, the maintainer explicitly requested publication after the installation
+permissions readiness review on 2026-10-04. This independent version-specific
+decision retains the previously requested maintenance-only gap reporting. The
+0.18.7 record is archived at `acceptance/0.18.7-host-acceptance.json`; its approval
+was not copied forward. The maintainer requested
 that its gaps remain in the maintenance record, not in user-facing release,
 installation or update notices. `host-acceptance.json` retains all 166 pending
 summary checks and the empty real-host evidence array. The exception does not

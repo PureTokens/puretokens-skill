@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { execFile as execFileCallback } from "node:child_process";
 import { promisify } from "node:util";
-import { mkdtemp, mkdir, readFile, readdir, rm, writeFile, chmod, rename, cp } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, readdir, rm, writeFile, chmod, rename, cp, stat } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import path from "node:path";
 import os from "node:os";
 import { repositoryRoot } from "../scripts/skill-registry.mjs";
@@ -144,6 +145,39 @@ test("next sync restores a recoverable interrupted transaction", async t => {
  await install(f);
  assert.equal((await readdir(f.target)).includes(".puretokens-skill-stage.fixture"), false);
  assert.match(await readFile(path.join(f.target, "puretokens-image/SKILL.md"), "utf8"), /submit/);
+});
+test("successful sync with unverified init allows init-only continuation without rewriting installation", async t => {
+ const f = await fixture(t);
+ // Missing synthetic Codex configuration stops credential resolution before any API call.
+ const env = { ...f.env, PTP_OPERATIONS_RECEIPTS: "0" };
+ const { stdout: installed } = await install(f, env, ["--host", "codex"]);
+ assert.match(installed, /synchronized with the native API executor/);
+ assert.match(installed.split("\n").find(line => line.startsWith("Pure Tokens Skill init:")), /\[active_connection_record_missing\]/);
+ async function snapshot(directory) {
+  const entries = {};
+  async function visit(relative = "") {
+   for (const item of await readdir(path.join(directory, relative), { withFileTypes: true })) {
+    const name = path.join(relative, item.name);
+    if (item.isDirectory()) await visit(name);
+    else {
+     const file = path.join(directory, name);
+     entries[name] = { sha256: createHash("sha256").update(await readFile(file)).digest("hex"), mtime: (await stat(file)).mtimeMs };
+    }
+   }
+  }
+  await visit(); return entries;
+ }
+ const before = await snapshot(f.target);
+ const { stdout: result } = await execFile(path.join(f.target, ".puretokens-executor/puretokens-api"), ["init", "--host", "codex"], { env }).catch(error => {
+  // An unverified connection may have a nonzero exit, but still has a typed receipt.
+  if (error.stdout) return { stdout: error.stdout }; throw error;
+ });
+ const receipt = JSON.parse(result);
+ assert.equal(receipt.configuration_status, "active_connection_record_missing");
+ assert.equal(receipt.credential_verified, false);
+ assert.equal(receipt.api_request_executed, false);
+ assert.deepEqual(await snapshot(f.target), before);
+ assert.equal((await readdir(f.target)).some(name => name.includes("stage") || name.includes("lock")), false);
 });
 test("live update lock prevents all installation writes", async t => {
  const f = await fixture(t); await mkdir(path.join(f.target, ".puretokens-install-lock"), { recursive: true });
