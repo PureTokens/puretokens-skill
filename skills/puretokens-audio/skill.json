@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 1,
+  "name": "puretokens-audio",
+  "version": "0.18.7",
+  "entry": "SKILL.md",
+  "displayName": "Pure Tokens Audio",
+  "description": "Use when the current Pure Tokens connection should turn text into speech, transcribe a user recording generate a sound scene, or create instrumental music or a song.",
+  "executionContract": "references/execution-contract.json",
+  "behaviorScenarios": "references/behavior-scenarios.json",
+  "distribution": {
+    "codex": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.agents/skills",
+      "requiresPluginFeature": false
+    },
+    "claudeCode": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.claude/skills"
+    },
+    "geminiCli": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.gemini/skills"
+    },
+    "workbuddy": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.workbuddy/skills"
+    },
+    "grokBuild": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.grok/skills"
+    },
+    "opencode": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.config/opencode/skills"
+    },
+    "trae": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.trae/skills"
+    },
+    "claudeDesktop": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.claude/skills"
+    },
+    "dshDesktop": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/Library/Application Support/dsh-desktop/harness/skills"
+    },
+    "zcode": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.zcode/skills"
+    },
+    "kimiCode": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.kimi-code/skills"
+    },
+    "qoder": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.qoder/skills"
+    },
+    "pi": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.pi/agent/skills"
+    },
+    "hermes": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.hermes/skills"
+    },
+    "evox": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.evox/agent/skills"
+    },
+    "vscode": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.copilot/skills"
+    },
+    "octop": {
+      "manualInstallationSupported": true,
+      "workspaceSkillDirectory": ".octop/skills"
+    },
+    "deepseekHarness": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.dsh/skills"
+    },
+    "minimaxCode": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.minimax/skills"
+    }
+  },
+  "supportedClients": [
+    "claude-code",
+    "codex",
+    "workbuddy",
+    "gemini-cli",
+    "grok-build",
+    "opencode",
+    "trae",
+    "claude-desktop",
+    "dsh-desktop",
+    "deepseek-harness",
+    "minimax-code",
+    "zcode",
+    "kimi-code",
+    "qoder",
+    "pi",
+    "hermes",
+    "evox",
+    "vscode",
+    "octop"
+  ],
+  "rules": {
+    "usesFixedPureTokensApiOrigin": true,
+    "usesFullApiUrls": true,
+    "usesManagedNativeExecutor": true,
+    "usesCurrentHostConfiguredCredential": true,
+    "resolvesCurrentHostConnectionCredentialInMemoryForFixedRequest": true,
+    "doesNotUseNodeRuntime": true,
+    "doesNotUseMcp": true,
+    "doesNotUseComputerUseOrUiAutomation": true,
+    "doesNotInvokeOtherMediaSkillsAsApiFallback": true,
+    "neverExposesCredentialsOrHostConfiguration": true,
+    "doesNotUseMcpOrFallbackTransport": true,
+    "neverAutomaticallyRetries": true,
+    "noMediaFallback": true,
+    "synchronousSpeechTranscriptionAndSound": true,
+    "asynchronousMusicWithExplicitTaskRecord": true,
+    "requiresActualAudioBytesForDelivery": true
+  },
+  "sourceSha256": "3109020210a180643203f1a707fc781312fe372cb4053101fb0e85435cd7a2bb"
+}

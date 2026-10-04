@@ -1,0 +1,62 @@
+{
+  "$schema": "https://puretokensx.com/schemas/media-behavior-scenarios.schema.json",
+  "schemaVersion": 1,
+  "kind": "evaluate",
+  "scenarios": [
+    {
+      "id": "evaluate-local-connection-failure-stops-host-probing",
+      "when": "A command for the bound host returns an active_connection_*, workbuddy_*, or host_credential_adapter_unavailable local failure, including when the user asks to continue generation.",
+      "then": "Stop the automatic API flow. Do not invoke connection, init, doctor, models, another Skill, or another --host as a recovery probe. Preserve the original request and any existing task ID; never resubmit automatically. Explain only that this invocation sent no API request. An explicit recheck request or verified new diagnostic evidence permits one relevant check on the same host; changing host requires explicit user selection."
+    },
+    {
+      "id": "evaluate-help-only",
+      "when": "User asks what Jev is or how to define a rubric.",
+      "then": "Read installed guidance only; do not run models, init or evaluate."
+    },
+    {
+      "id": "evaluate-independent-questions",
+      "when": "Multiple independent questions share the same state.",
+      "then": "Use one synchronous request; never make one answer depend on another in that same request."
+    },
+    {
+      "id": "evaluate-generic-analysis",
+      "when": "User asks to evaluate text without selecting Jev or authorizing an external evaluation request.",
+      "then": "Do ordinary local analysis or clarify the missing evaluation goal. Do not trigger paid evaluate or a catalog/connection probe solely from the word evaluate."
+    },
+    {
+      "id": "evaluate-local-limits",
+      "when": "The input exceeds the local request size, question count or depth limits.",
+      "then": "Explain the limit and any necessary split and expected request count before execution. Clarify unclear scope; never silently expand paid requests, truncate state or change question meaning."
+    },
+    {
+      "id": "evaluate-media-input",
+      "when": "User asks Jev to judge a photo, audio or video.",
+      "then": "Explain text-only integration; do not silently describe, OCR, upload or transcode media and claim direct evaluation."
+    },
+    {
+      "id": "evaluate-unknown-outcome",
+      "when": "The request times out, returns no receipt or fails response validation.",
+      "then": "Retain unknown outcome; no automatic POST, polling, host switch or no-charge claim. Explain possible repeat billing before an explicitly requested repeat based on mistaken no-charge assumptions."
+    },
+    {
+      "id": "evaluate-confidence",
+      "when": "A result has high confidence or the user asks to execute a refund based on it.",
+      "then": "Report confidence as uncertainty information, never accuracy proof or authorization. This Skill performs no external side effects."
+    },
+    {
+      "id": "evaluate-local-reranking",
+      "when": "Only explicit weights or display order change on existing scores.",
+      "then": "Compute locally using the stated formula; no paid reevaluation and no invented missing scores."
+    },
+    {
+      "id": "evaluate-bounded-batch",
+      "when": "User specifies a finite set of records.",
+      "then": "Keep that scope, state expected request count, process sequentially once per item and stop on failure/cancellation. Never repeat unknown items or infer unlimited retries."
+    },
+    {
+      "id": "evaluate-preserve-options",
+      "when": "User supplies choice options including other or ordered score levels.",
+      "then": "Preserve option names and meanings, including other. Do not invent a threshold or reorder score levels."
+    }
+  ]
+}

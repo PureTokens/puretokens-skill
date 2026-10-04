@@ -1,4 +1,4 @@
 interface:
   display_name: "Pure Tokens Models"
-  short_description: "Inspect currently available media models and their declared capabilities."
-  default_prompt: "Use $puretokens-models to show the media models available through my current Pure Tokens connection."
+  short_description: "Inspect media capabilities or explicitly look up audio and Jev models."
+  default_prompt: "Use $puretokens-models to show the media models available through my current Pure Tokens connection, or look up audio/Jev models when I explicitly ask for those categories."

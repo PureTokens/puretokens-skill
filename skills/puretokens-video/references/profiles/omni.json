@@ -1,0 +1,90 @@
+{
+  "$schema": "https://puretokensx.com/schemas/model-profile.schema.json",
+  "schemaVersion": 1,
+  "capability": "video",
+  "catalogUpdatedAt": "2026-10-04",
+  "catalogCapturedAt": "2026-10-04T06:19:22.134Z",
+  "id": "omni",
+  "parameterSchema": {
+    "properties": {
+      "reference_images": {
+        "type": "string[]"
+      },
+      "video": {
+        "type": "string"
+      },
+      "prompt": {
+        "type": "string",
+        "required": true
+      },
+      "duration": {
+        "type": "integer",
+        "enum": [
+          4,
+          6,
+          8,
+          10
+        ]
+      },
+      "aspect_ratio": {
+        "type": "string",
+        "enum": [
+          "16:9",
+          "9:16"
+        ]
+      },
+      "resolution": {
+        "type": "string",
+        "enum": [
+          "360p",
+          "720p",
+          "1080p"
+        ]
+      }
+    },
+    "constraints": {
+      "resolution_by_mode": {
+        "text": [
+          "360p",
+          "720p",
+          "1080p"
+        ],
+        "image": [
+          "360p",
+          "720p",
+          "1080p"
+        ],
+        "reference": [
+          "360p",
+          "720p",
+          "1080p"
+        ]
+      }
+    },
+    "operations": {
+      "video_edit": {
+        "request": {
+          "method": "POST",
+          "path": "/v1/videos/edits",
+          "contentType": "application/json"
+        },
+        "requiredBodyFields": [
+          "model",
+          "prompt",
+          "video"
+        ],
+        "inputs": {
+          "video": {
+            "field": "video",
+            "required": true,
+            "minItems": 1,
+            "maxItems": 1,
+            "transports": [
+              "https_url"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

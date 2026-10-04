@@ -54,11 +54,45 @@ test("interrupted update recovery preserves user changes and retains its backup"
 });
 test("all managed provenance entries derive from the registry", async () => {
   const entries = await getManagedSkillProvenances();
-  assert.equal(entries.length, 6);
+  assert.equal(entries.length, 8);
   for (const entry of entries) {
     assert.match(entry.name, /^puretokens-/);
     assert.match(entry.sourceSha256, /^[a-f0-9]{64}$/);
   }
+});
+
+test("six-Skill upgrade adds evaluation and preserves a conflicting user-owned Skill", async t => {
+  const f = await fixture(t);
+  await f.install();
+  const evaluation = path.join(f.target, "puretokens-evaluate");
+  await rm(evaluation, { recursive: true });
+  await rm(path.join(f.target, "puretokens-audio"), { recursive: true });
+  const executor = path.join(f.target, ".puretokens-executor", "puretokens-api");
+  // Model a verified previous release: six Skill inventories plus its executor.
+  const entries = (await readdir(f.target)).filter(name => name.startsWith("puretokens-") || name === ".puretokens-executor");
+  for (const name of entries) {
+    const directory = path.join(f.target, name);
+    const metadataFile = path.join(directory, name === ".puretokens-executor" ? "runtime.json" : "skill.json");
+    const metadata = JSON.parse(await readFile(metadataFile, "utf8"));
+    metadata.version = "0.18.6";
+    await writeFile(metadataFile, JSON.stringify(metadata, null, 2) + "\n");
+    const { stdout } = await execFile(executor, ["install-inventory", "--directory", directory, "--name", name]);
+    await writeFile(path.join(directory, ".puretokens-managed.json"), stdout);
+  }
+  assert.equal(entries.length, 7);
+  await mkdir(evaluation);
+  await writeFile(path.join(evaluation, "SKILL.md"), "# My independent evaluation Skill");
+  await assert.rejects(f.install(), /ownership/);
+  assert.equal(await readFile(path.join(evaluation, "SKILL.md"), "utf8"), "# My independent evaluation Skill");
+  assert.equal(JSON.parse(await readFile(path.join(f.target, "puretokens-image/skill.json"), "utf8")).version, "0.18.6");
+  await rm(evaluation, { recursive: true });
+  await f.install();
+  const current = JSON.parse(await readFile(path.join(repositoryRoot, "package.json"), "utf8")).version;
+  assert.equal(JSON.parse(await readFile(path.join(evaluation, "skill.json"), "utf8")).version, current);
+  await execFile("sh", [installer, "verify-installed", "--target", f.target]);
+  await rm(path.join(evaluation, "SKILL.md"));
+  await assert.rejects(execFile("sh", [installer, "verify-installed", "--target", f.target]), /missing the managed Skill: puretokens-evaluate/);
+  await assert.rejects(readFile(path.join(evaluation, "SKILL.md")), { code: "ENOENT" });
 });
 
 
@@ -73,4 +107,21 @@ test("native installation ignores retired directories and preserves their bytes"
   assert.equal(await readFile(path.join(f.target,name,"personal.txt"),"utf8"),"untouched");
  }
  await f.install();
+});
+
+test("seven-Skill installation adds audio without replacing user-owned audio content", async t => {
+ const f=await fixture(t);
+ await f.install();
+ const audio=path.join(f.target,"puretokens-audio");
+ await rm(audio,{recursive:true});
+ await mkdir(audio);
+ await writeFile(path.join(audio,"SKILL.md"),"# User audio instructions");
+ await assert.rejects(f.install(),/ownership/);
+ assert.equal(await readFile(path.join(audio,"SKILL.md"),"utf8"),"# User audio instructions");
+ await rm(audio,{recursive:true});
+ await f.install();
+ await execFile("sh",[installer,"verify-installed","--target",f.target]);
+ assert.equal(JSON.parse(await readFile(path.join(audio,"skill.json"),"utf8")).name,"puretokens-audio");
+ await rm(path.join(audio,"SKILL.md"));
+ await assert.rejects(execFile("sh",[installer,"verify-installed","--target",f.target]),/missing the managed Skill: puretokens-audio/);
 });

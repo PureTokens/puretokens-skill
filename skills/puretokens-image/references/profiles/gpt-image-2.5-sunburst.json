@@ -1,0 +1,173 @@
+{
+  "$schema": "https://puretokensx.com/schemas/model-profile.schema.json",
+  "schemaVersion": 1,
+  "capability": "image",
+  "catalogUpdatedAt": "2026-10-04",
+  "catalogCapturedAt": "2026-10-04T06:19:22.134Z",
+  "id": "gpt-image-2.5-sunburst",
+  "parameterSchema": {
+    "properties": {
+      "n": {
+        "type": "integer",
+        "enum": [
+          1
+        ],
+        "default": 1
+      },
+      "image_size": {
+        "type": "string",
+        "enum": [
+          "1K",
+          "2K",
+          "4K"
+        ],
+        "default": "1K"
+      },
+      "aspect_ratio": {
+        "type": "string",
+        "enum": [
+          "1:1",
+          "2:3",
+          "3:2",
+          "3:4",
+          "4:3",
+          "4:5",
+          "5:4",
+          "9:16",
+          "16:9",
+          "21:9"
+        ],
+        "default": "1:1"
+      },
+      "quality": {
+        "type": "string",
+        "enum": [
+          "auto",
+          "low",
+          "medium",
+          "high"
+        ],
+        "default": "auto"
+      },
+      "output_format": {
+        "type": "string",
+        "enum": [
+          "png",
+          "jpeg",
+          "webp"
+        ],
+        "default": "jpeg"
+      },
+      "response_format": {
+        "type": "string",
+        "enum": [
+          "url"
+        ],
+        "default": "url"
+      },
+      "image": {
+        "type": "string[]",
+        "maxLength": 10
+      }
+    },
+    "constraints": {
+      "reference_transport": {
+        "image": [
+          "public_https_url"
+        ]
+      },
+      "aspect_ratio_by_image_size": {
+        "1K": [
+          "1:1",
+          "2:3",
+          "3:2",
+          "3:4",
+          "4:3",
+          "4:5",
+          "5:4",
+          "9:16",
+          "16:9",
+          "21:9"
+        ],
+        "2K": [
+          "1:1",
+          "2:3",
+          "3:2",
+          "3:4",
+          "4:3",
+          "4:5",
+          "5:4",
+          "9:16",
+          "16:9",
+          "21:9"
+        ],
+        "4K": [
+          "1:1",
+          "2:3",
+          "3:2",
+          "3:4",
+          "4:3",
+          "4:5",
+          "5:4",
+          "9:16",
+          "16:9",
+          "21:9"
+        ]
+      }
+    },
+    "lifecycle": {
+      "create": {
+        "successStatus": 200,
+        "idField": "id",
+        "object": "image",
+        "initialStatuses": [
+          "pending"
+        ]
+      },
+      "poll": {
+        "method": "GET",
+        "path": "/v1/images/{image_id}",
+        "intervalSeconds": 3,
+        "statusField": "status",
+        "pendingStatuses": [
+          "pending"
+        ],
+        "successStatuses": [
+          "completed"
+        ],
+        "failureStatuses": [
+          "failed"
+        ],
+        "resultFields": [
+          "content_url",
+          "content_urls"
+        ]
+      }
+    },
+    "operations": {
+      "image_edit": {
+        "request": {
+          "method": "POST",
+          "path": "/v1/images/edits",
+          "contentType": "multipart/form-data"
+        },
+        "requiredBodyFields": [
+          "model",
+          "prompt",
+          "image"
+        ],
+        "inputs": {
+          "image": {
+            "field": "image",
+            "required": true,
+            "minItems": 1,
+            "maxItems": 10,
+            "transports": [
+              "multipart_file"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

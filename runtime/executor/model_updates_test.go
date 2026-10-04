@@ -61,7 +61,7 @@ func TestImage25QualityAndEditBoundaries(t *testing.T) {
 	}
 }
 func TestSeedanceFrameReferences(t *testing.T) {
-	for _, model := range []string{"seedance-2.0", "seedance-2.0-fast", "seedance-2.0-mini", "seedance-2.5"} {
+	for _, model := range []string{"seedance-2.0", "seedance-2.0-fast", "seedance-2.0-mini"} {
 		r := taskRequest{Kind: "video", Operation: "generate", Model: model, Prompt: "fixture", Parameters: map[string]any{"first_frame_image": "https://example.com/first.png", "last_frame_image": "https://example.com/last.png"}}
 		if err := prepareProfileRequest(&r, profileService()); err != nil {
 			t.Fatal(err)

@@ -23,7 +23,9 @@
         "models",
         "image",
         "video",
-        "update"
+        "update",
+        "evaluate",
+        "audio"
       ]
     },
     "transport": {
@@ -121,6 +123,30 @@
             }
           },
           "additionalProperties": false
+        },
+        "evaluationCatalog": {
+          "$ref": "#/$defs/request"
+        },
+        "speech": {
+          "$ref": "#/$defs/request"
+        },
+        "transcribe": {
+          "$ref": "#/$defs/request"
+        },
+        "generate": {
+          "$ref": "#/$defs/request"
+        },
+        "audioCatalog": {
+          "$ref": "#/$defs/request"
+        },
+        "musicSubmit": {
+          "$ref": "#/$defs/request"
+        },
+        "musicStatus": {
+          "$ref": "#/$defs/request"
+        },
+        "musicContent": {
+          "$ref": "#/$defs/request"
         }
       },
       "additionalProperties": false
@@ -721,6 +747,61 @@
             "properties": {
               "fixedApiOrigin": {
                 "const": "https://api.puretokensx.com"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "audio"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "operations"
+        ],
+        "properties": {
+          "operations": {
+            "required": [
+              "speech",
+              "transcribe",
+              "generate"
+            ],
+            "properties": {
+              "speech": {
+                "properties": {
+                  "method": {
+                    "const": "POST"
+                  },
+                  "url": {
+                    "const": "https://api.puretokensx.com/v1/audio/speech"
+                  }
+                }
+              },
+              "transcribe": {
+                "properties": {
+                  "method": {
+                    "const": "POST"
+                  },
+                  "url": {
+                    "const": "https://api.puretokensx.com/v1/audio/transcriptions"
+                  }
+                }
+              },
+              "generate": {
+                "properties": {
+                  "method": {
+                    "const": "POST"
+                  },
+                  "url": {
+                    "const": "https://api.puretokensx.com/v1/audio/generate"
+                  }
+                }
               }
             }
           }

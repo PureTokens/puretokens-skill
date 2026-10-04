@@ -2,8 +2,10 @@ package main
 
 import (
 	"bytes"
+	"crypto/subtle"
 	"encoding/json"
 	"io"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -342,31 +344,100 @@ func credentialFromVSCodeFile(path string) (string, error) {
 	var selected map[string]any
 	for _, raw := range groups {
 		group := jsonObject(raw)
+		for _, field := range []string{"url", "baseURL", "baseUrl", "modelsUrl"} {
+			if vscodeClaimsPureTokens(jsonString(group[field])) {
+				return "", clientFormatFailure()
+			}
+		}
+		matches := false
 		for _, rawModel := range jsonArray(group["models"]) {
 			model := jsonObject(rawModel)
 			endpoint := jsonString(model["url"])
 			if !matchesPureTokensEndpoint(endpoint, "/v1/chat/completions", "/v1/responses", "/v1/messages") {
+				if vscodeClaimsPureTokens(endpoint) {
+					return "", clientFormatFailure()
+				}
 				continue
 			}
+			matches = true
+		}
+		if matches {
+			// A group is a connection boundary, not a provider-name assertion.
+			// Never merge separate groups, even when their keys happen to match.
 			if selected != nil {
-				return "", credentialFailure("active_connection_ambiguous", "VS Code has multiple matching model connections without a verified effective selection; no API request was sent.", "")
+				return "", vscodeConnectionAmbiguous()
 			}
-			if jsonString(group["vendor"]) != "customendpoint" || hasClientOverride(group, "apiKey", "requestHeaders") {
-				return "", clientFormatFailure()
-			}
-			selected = model
+			selected = group
 		}
 	}
 	if selected == nil {
 		return "", clientSelectionFailure()
 	}
-	headers := jsonObject(selected["requestHeaders"])
-	if len(headers) != 1 {
+	if jsonString(selected["vendor"]) != "customendpoint" ||
+		hasClientOverride(selected, "apiKey", "requestHeaders", "url", "baseURL", "baseUrl", "modelsUrl", "apiType") {
 		return "", clientFormatFailure()
 	}
-	token, ok := strings.CutPrefix(jsonString(headers["Authorization"]), "Bearer ")
-	if !ok {
+	models := jsonArray(selected["models"])
+	if len(models) == 0 || len(models) > 512 {
 		return "", clientFormatFailure()
 	}
-	return strictInlineCredential(apiOrigin+"/v1", token)
+	var token string
+	ids := make(map[string]bool)
+	for _, rawModel := range models {
+		model := jsonObject(rawModel)
+		id := jsonString(model["id"])
+		if id == "" || len(id) > 1024 || ids[id] || strings.IndexFunc(id, unicode.IsControl) >= 0 ||
+			hasClientOverride(model, "apiKey", "api_key", "baseURL", "baseUrl", "headers", "auth", "authentication") {
+			return "", clientFormatFailure()
+		}
+		ids[id] = true
+		// Every model of this group must describe the same supported service.
+		// The chat route is recognized here but never reused as the API target.
+		endpoint := jsonString(model["url"])
+		apiType := ""
+		for _, route := range []struct{ path, kind string }{
+			{"/v1/chat/completions", "chat-completions"},
+			{"/v1/responses", "responses"},
+			{"/v1/messages", "messages"},
+		} {
+			if matchesPureTokensEndpoint(endpoint, route.path) {
+				apiType = route.kind
+			}
+		}
+		if apiType == "" {
+			return "", clientFormatFailure()
+		}
+		if value, exists := model["apiType"]; exists && value != apiType {
+			return "", clientFormatFailure()
+		}
+		headers := jsonObject(model["requestHeaders"])
+		if len(headers) != 1 {
+			return "", clientFormatFailure()
+		}
+		candidate, ok := strings.CutPrefix(jsonString(headers["Authorization"]), "Bearer ")
+		if !ok || len(candidate) > 8000 || strings.TrimSpace(candidate) != candidate {
+			return "", clientFormatFailure()
+		}
+		candidate, err = strictInlineCredential(apiOrigin+"/v1", candidate)
+		if err != nil {
+			return "", err
+		}
+		if token == "" {
+			token = candidate
+		} else if subtle.ConstantTimeCompare([]byte(token), []byte(candidate)) != 1 {
+			return "", vscodeConnectionAmbiguous()
+		}
+	}
+	// Only the credential leaves this local scope. No model is selected, and
+	// neither key values nor their equality/fingerprints enter any receipt.
+	return token, nil
+}
+
+func vscodeConnectionAmbiguous() error {
+	return credentialFailure("active_connection_ambiguous", "VS Code does not expose one uniquely supported connection in the declared profile; no API request was sent.", "")
+}
+
+func vscodeClaimsPureTokens(endpoint string) bool {
+	parsed, err := url.Parse(strings.TrimSpace(endpoint))
+	return err == nil && strings.EqualFold(parsed.Hostname(), pureTokensHost)
 }

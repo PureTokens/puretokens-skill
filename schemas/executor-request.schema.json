@@ -9,7 +9,8 @@
     "kind": {
       "enum": [
         "image",
-        "video"
+        "video",
+        "music"
       ]
     },
     "operation": {
@@ -228,6 +229,143 @@
             "const": 0
           }
         }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "music"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "model": {
+            "const": "stepaudio-3-music-preview"
+          },
+          "requested_count": {
+            "maximum": 1
+          },
+          "index": {
+            "const": 0
+          },
+          "operation": {
+            "enum": [
+              "generate",
+              "continue"
+            ]
+          },
+          "media_operation": {
+            "const": ""
+          },
+          "attachments": {
+            "maxItems": 0
+          },
+          "poll": {
+            "properties": {
+              "max_status_reads": {
+                "maximum": 7
+              }
+            }
+          }
+        },
+        "required": [
+          "model"
+        ],
+        "allOf": [
+          {
+            "if": {
+              "required": [
+                "task_id"
+              ]
+            },
+            "then": {
+              "properties": {
+                "prompt": {
+                  "const": ""
+                },
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "instrumental": {
+                      "type": "boolean"
+                    },
+                    "response_format": {
+                      "enum": [
+                        "mp3",
+                        "wav"
+                      ]
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            },
+            "else": {
+              "required": [
+                "parameters",
+                "output_dir"
+              ],
+              "properties": {
+                "prompt": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1000,
+                  "pattern": "\\S"
+                },
+                "output_dir": {
+                  "type": "string",
+                  "pattern": "^(?:/|[A-Za-z]:[\\\\/]|\\\\\\\\)[^\\u0000]+$"
+                },
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "instrumental",
+                    "response_format"
+                  ],
+                  "properties": {
+                    "instrumental": {
+                      "type": "boolean"
+                    },
+                    "response_format": {
+                      "enum": [
+                        "mp3",
+                        "wav"
+                      ]
+                    },
+                    "lyrics": {
+                      "type": "string",
+                      "maxLength": 4000
+                    }
+                  },
+                  "additionalProperties": false,
+                  "allOf": [
+                    {
+                      "if": {
+                        "properties": {
+                          "instrumental": {
+                            "const": true
+                          }
+                        }
+                      },
+                      "then": {
+                        "properties": {
+                          "lyrics": {
+                            "const": ""
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        ]
       }
     }
   ]

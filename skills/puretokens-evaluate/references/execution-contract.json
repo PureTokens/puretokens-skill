@@ -1,0 +1,40 @@
+{
+  "$schema": "https://puretokensx.com/schemas/media-execution-contract.schema.json",
+  "schemaVersion": 1,
+  "kind": "evaluate",
+  "transport": {
+    "fixedApiOrigin": "https://api.puretokensx.com",
+    "usesFullApiUrls": true,
+    "usesManagedNativeExecutor": true,
+    "usesCurrentHostConfiguredCredential": true,
+    "credentialSourceNeverBecomesRequestTarget": true,
+    "neverExposesCredentialsOrHostConfiguration": true,
+    "doesNotUseNodeRuntime": true,
+    "doesNotUseMcpOrFallbackTransport": true,
+    "doesNotUseComputerUseOrUiAutomation": true,
+    "doesNotInvokeOtherMediaSkillsAsApiFallback": true,
+    "executionStart": "invoke_the_checksum_verified_managed_native_executor_with_the_current_host_id_and_fixed_request",
+    "whenManagedNativeExecutorUnavailable": "report_only_an_actual_executor_network_credential_adapter_or_attachment_byte_failure_and_never_open_a_browser_desktop_ui_or_computer_use"
+  },
+  "operations": {
+    "submit": {
+      "method": "POST",
+      "url": "https://api.puretokensx.com/typesafe/v1/systemone",
+      "requiredBodyFields": [
+        "model",
+        "state",
+        "questions"
+      ]
+    }
+  },
+  "result": {
+    "synchronous": true,
+    "neverAutomaticallyRetries": true,
+    "onePostPerInvocation": true,
+    "neverPoll": true,
+    "typedQuestionMatching": true,
+    "unknownSubmissionStops": true,
+    "supportExcludesInputsAndResults": true,
+    "confidenceIsNotAccuracy": true
+  }
+}

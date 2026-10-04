@@ -1,0 +1,4 @@
+{
+  "patch": "- id: llm-pi-ai\n  config:\n    providers:\n      puretokens:\n        apiKeyEnv: PURETOKENS_SWITCH_DEEPSEEK_HARNESS_API_KEY\n        api: openai-completions\n        baseURL: https://api.puretokensx.com/v1\n        models:\n          - id: deepseek-v3\n- id: agent-default-model\n  config:\n    provider: puretokens\n    model: deepseek-v3\n",
+  "credentials": "version: 1\nrefs:\n  PURETOKENS_SWITCH_DEEPSEEK_HARNESS_API_KEY: pts-fixture-token\n"
+}

@@ -17,7 +17,11 @@
     "userMediaInput",
     "asyncTaskHandling",
     "mediaDeliveryResourceBounds",
-    "balance"
+    "balance",
+    "evaluation",
+    "audio",
+    "music",
+    "operationsReceipts"
   ],
   "properties": {
     "$schema": {
@@ -211,18 +215,31 @@
         "neverSwitchToSynchronousProviderTransport"
       ],
       "properties": {
-        "providerProtocolOwner": { "const": "gateway" },
-        "publicImageContract": { "const": "submit_once_receive_durable_task_id_then_read_same_task_status_and_protected_content" },
-        "asyncFlagMeaning": { "const": "product_task_compatibility_not_supplier_async_capability" },
-        "neverSendInternalWorkspaceDeliveryHeaders": { "const": true },
-        "neverSwitchToSynchronousProviderTransport": { "const": true }
+        "providerProtocolOwner": {
+          "const": "gateway"
+        },
+        "publicImageContract": {
+          "const": "submit_once_receive_durable_task_id_then_read_same_task_status_and_protected_content"
+        },
+        "asyncFlagMeaning": {
+          "const": "product_task_compatibility_not_supplier_async_capability"
+        },
+        "neverSendInternalWorkspaceDeliveryHeaders": {
+          "const": true
+        },
+        "neverSwitchToSynchronousProviderTransport": {
+          "const": true
+        }
       }
     },
     "supportSummary": {
       "const": {
         "format": "puretokens-support-v1",
         "source": "current_invocation_receipt_and_latest_http_attempt_only",
-        "requestIdHeaders": ["X-Request-ID", "X-Oneapi-Request-Id"],
+        "requestIdHeaders": [
+          "X-Request-ID",
+          "X-Oneapi-Request-Id"
+        ],
         "requestIdRule": "one_canonical_lowercase_uuid_legacy_only_if_standard_absent_omit_conflicts",
         "neverUseUpstreamRequestId": true,
         "noAdditionalIO": true,
@@ -306,8 +323,96 @@
     "optionalCommands": {
       "type": "object"
     },
+    "evaluation": {
+      "const": {
+        "method": "POST",
+        "url": "https://api.puretokensx.com/typesafe/v1/systemone",
+        "command": "evaluate",
+        "deadlineSeconds": 90,
+        "maxRequests": 1,
+        "requestSchema": "schemas/evaluation-request.schema.json",
+        "responseSchema": "schemas/evaluation-receipt.schema.json",
+        "modelDiscoveryUrl": "https://api.puretokensx.com/v1/models",
+        "modelDiscoveryScope": "explicit_reviewed_model_visibility_only",
+        "synchronous": true,
+        "neverAutomaticallyRetries": true,
+        "onePostPerInvocation": true,
+        "neverPoll": true
+      }
+    },
     "unimplementedServerDependencies": {
       "type": "object"
+    },
+    "audio": {
+      "const": {
+        "commands": [
+          "audio",
+          "audio-verify"
+        ],
+        "urls": [
+          "https://api.puretokensx.com/v1/audio/speech",
+          "https://api.puretokensx.com/v1/audio/transcriptions",
+          "https://api.puretokensx.com/v1/audio/generate"
+        ],
+        "method": "POST",
+        "deadlineSeconds": 90,
+        "maxRequests": 1,
+        "synchronous": true,
+        "neverAutomaticallyRetries": true,
+        "neverPoll": true,
+        "modelDiscoveryUrl": "https://api.puretokensx.com/v1/models",
+        "modelDiscoveryScope": "explicit_reviewed_model_visibility_only",
+        "requestSchema": "schemas/audio-request.schema.json",
+        "responseSchema": "schemas/audio-receipt.schema.json",
+        "verifySchema": "schemas/audio-artifact-verify-request.schema.json",
+        "verifyLocalOnly": true,
+        "nativeAudioBytesRequired": true,
+        "downloadIsNotDelivery": true
+      }
+    },
+    "operationsReceipts": {
+      "const": {
+        "enabledByDefault": false,
+        "enablement": "PTP_OPERATIONS_RECEIPTS=1",
+        "url": "https://console.puretokensx.com/api/product/analytics/client-receipts",
+        "method": "POST",
+        "schemaVersion": 1,
+        "fields": ["schemaVersion", "id", "source", "event", "platform", "occurredAt"],
+        "source": "skill",
+        "events": ["installed", "connection_verified", "execution_succeeded", "execution_failed"],
+        "authentication": "none",
+        "readsHostConfiguration": false,
+        "persistentIdentifier": false,
+        "deadlineSeconds": 1,
+        "retries": 0,
+        "durableQueue": false,
+        "changesBusinessResult": false,
+        "asyncSuccessMeaning": "submission_accepted_not_output_delivered",
+        "initBudget": "outside_existing_two_reads_and_twenty_seconds"
+      }
+    },
+    "music": {
+      "const": {
+        "kind": "music",
+        "model": "stepaudio-3-music-preview",
+        "submitUrl": "https://api.puretokensx.com/v1/audio/music/submit",
+        "statusUrlTemplate": "https://api.puretokensx.com/v1/audio/music/tasks/{task_id}",
+        "contentUrlTemplate": "https://api.puretokensx.com/v1/audio/music/tasks/{task_id}/content",
+        "asynchronous": true,
+        "onePostPerSubmission": true,
+        "neverAutomaticallyResubmits": true,
+        "recordRequiredBySkill": true,
+        "recordExcludesPromptAndLyrics": true,
+        "apiTaskBoundToOwnerAndOriginatingKey": true,
+        "maxOutputBytes": 33554432,
+        "artifactRetentionSeconds": 86400,
+        "retentionStarts": "gateway_artifact_saved_at",
+        "waitWindowMaxReads": 7,
+        "waitWindowDeadlineSeconds": 300,
+        "maxAutomaticWaitWindows": 2,
+        "reconciliationStopsAutomaticContinuation": true,
+        "downloadIsNotDelivery": true
+      }
     }
   },
   "additionalProperties": false

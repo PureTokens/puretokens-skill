@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-10-04",
+  "candidateVersion": "0.18.7",
+  "publishedVersion": "0.18.6",
+  "catalog": {
+    "capturedAt": "2026-10-04T06:04:05.191Z",
+    "sha256": "04d6912296063b1c480217d00f04b93e54ce226caa35407adf0075f092048830",
+    "total": 112,
+    "media": {
+      "current": 29,
+      "image": 15,
+      "video": 14,
+      "added": [],
+      "removed": [
+        "seedream-5.0-pro"
+      ],
+      "changed": []
+    },
+    "defaults": [
+      {
+        "id": "gpt-image-2.5-flare",
+        "present": true,
+        "changed": false
+      },
+      {
+        "id": "minimax_h3",
+        "present": true,
+        "changed": false
+      }
+    ]
+  },
+  "sourceClientCount": 20,
+  "installableHostCount": 19,
+  "fixtureAdapterCount": 18,
+  "miniMaxDesktop": {
+    "version": "3.1.0",
+    "inspection": "Static application bundle only. No execution, credentials or client configuration inspected.",
+    "files": {
+      "node_modules/@mavis/config/dist/config.js": "7581929077c640b036fe35ef9d84ff65edd762d16d4bf42c03cd1e4509c84167",
+      "node_modules/@mavis/config/dist/byok-config.js": "648b1548c0726b790afcd7f54f528ac0d878cde17cf9735afe2c9a1dd7414b03",
+      "node_modules/@mavis/config/dist/credential-reference.js": "6604253ade36fe01b6a79d0ffbb3e0b2cbe9f128e3c170bd37faca3065591355",
+      "node_modules/@mavis/local-runtime-v2/dist/service/skill/registry/roots.js": "1c52c3167417068b00e48fe785f5bce9c525f2180d6f53ee9a1b0ed187f9cafa",
+      "node_modules/@mavis/local-runtime-v2/dist/service/model-system/resolution/model-resolver-byok.js": "f93ad398437c10a892814f50776f9b90f9377c8bba805b20e648a0c1b9a25594",
+      "node_modules/@mavis/local-runtime-v2/dist/service/turn-system/agent-host/preparation/config/session-model-selection.js": "6c39c9d81010b0fc8dcfd5b1581747638c2c599894776225ea67a6f63577765d",
+      "dist/main/modules/local-runtime/data-dir.js": "b87818c2d4407d915beba77e6f68fce9d759ba2f8146c901d8de76a5218a2698"
+    },
+    "sharedSyntheticFixture": "test/fixtures/switch-minimax-code-connection.json",
+    "fixtureSha256": "cfa8e17c59fa7e2c263d3a5b3203048c8d388a5bb75899202a03a63393d33357",
+    "scope": "Local macOS/Windows Desktop saved default only; unknown session/CLI overrides unsupported; standalone preference-aware install requires explicit confirmed target or runtime directory environment."
+  },
+  "realHostAcceptance": "pending",
+  "billableRequests": 0,
+  "publication": "not performed",
+  "validation": {
+    "engineering": "passed: Go tests/vet, Node 111 passed / 1 PowerShell unavailable skip",
+    "releaseFreshness": "passed: candidate 0.18.7 and six reproducible platform executors",
+    "executorSourceSha256": "8260868a3df679a32aa9286fe78b6251c3bd406f42f53163d2d084159ff4f52f",
+    "switch": "16 frontend tests, TypeScript, targeted ESLint, 12 MiniMax adapter tests and scoped rustfmt passed",
+    "web": "dedicated group-model permission refresh test passed; documentation only changed",
+    "crossRepository": "20 public client members/order and matrix rows, shared writer fixture bytes match",
+    "realHostPendingSummaries": 166
+  }
+}

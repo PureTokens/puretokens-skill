@@ -3,10 +3,10 @@
 
 set -eu
 
-current_skills="puretokens-balance puretokens-connection puretokens-models puretokens-image puretokens-video puretokens-update"
+current_skills="puretokens-balance puretokens-connection puretokens-models puretokens-image puretokens-video puretokens-audio puretokens-evaluate puretokens-update"
 
 usage() {
-  printf '%s\n' "Usage: puretokens-skill-install.sh <check|verify-installed|init|sync|locate> (--host <claude-code|codex|workbuddy|gemini-cli|grok-build|opencode|trae|claude-desktop|dsh-desktop|zcode|kimi-code|qoder|pi|hermes|evox|vscode|octop> | --target <absolute-skill-directory>) [--source <absolute-official-source-directory>]"
+  printf '%s\n' "Usage: puretokens-skill-install.sh <check|verify-installed|init|sync|locate> (--host <claude-code|codex|workbuddy|gemini-cli|grok-build|opencode|trae|claude-desktop|dsh-desktop|deepseek-harness|minimax-code|zcode|kimi-code|qoder|pi|hermes|evox|vscode|octop> | --target <absolute-skill-directory>) [--source <absolute-official-source-directory>]"
 }
 
 fail() {
@@ -115,6 +115,32 @@ target_for_host() {
       fi
       ;;
     zcode) printf '%s\n' "${ZCODE_DATA_BASE_DIR:-$HOME}/.zcode/skills" ;;
+    minimax-code)
+      [ "$(uname -s)" = Darwin ] || fail "MiniMax Code requires local macOS or Windows Desktop"
+      [ -z "${MAVIS_PROFILE:-}${MINIMAX_PROFILE:-}${AGENTARCHON_PROFILE:-}${AGENTARCHON_DATA_DIR:-}${__MAVIS_RUNTIME_PROFILE:-}${__MAVIS_RUNTIME_DATA_DIR:-}" ] || fail "MiniMax CLI and runtime profile overrides are unsupported"
+      client_root=${MINIMAX_DATA_DIR:-${MAVIS_DATA_DIR:-}}
+      if [ -z "$client_root" ]; then
+        for app in "MiniMax Code" "MiniMax" "MiniMax Agent"; do
+          for store in minimax-agent-cn-config.json minimax-agent-config.json; do
+            prefs="$HOME/Library/Application Support/$app/$store"
+            if [ -e "$prefs" ] || [ -L "$prefs" ] || [ -L "$(dirname "$prefs")" ]; then
+              fail "MiniMax Desktop preferences require its runtime data directory; run inside the local client with MINIMAX_DATA_DIR or pass the confirmed absolute --target; no directory was guessed"
+            fi
+          done
+        done
+        if [ ! -e "$HOME/.minimax/config.yaml" ] && { [ -e "$HOME/.mavis" ] || [ -L "$HOME/.mavis" ]; }; then
+          fail "MiniMax legacy migration is pending; let the client migrate before installing"
+        fi
+        client_root="$HOME/.minimax"
+      fi
+      validate_client_root "$client_root"
+      printf '%s\n' "$client_root/skills"
+      ;;
+    deepseek-harness)
+      client_root=${DSH_HOME:-$HOME/.dsh}
+      validate_client_root "$client_root"
+      printf '%s\n' "$client_root/skills"
+      ;;
     dsh-desktop)
       if [ -n "${DSH_HOME:-}" ]; then
         printf '%s\n' "$DSH_HOME/skills"
@@ -291,7 +317,7 @@ restore_transaction() (
   recovery_stage=$2
   [ -f "$recovery_stage/plan" ] || return 0
   while read -r action entry; do
-    case "$entry" in puretokens-balance|puretokens-connection|puretokens-models|puretokens-image|puretokens-video|puretokens-update|.puretokens-executor) ;; *) return 1 ;; esac
+    case "$entry" in puretokens-balance|puretokens-connection|puretokens-models|puretokens-image|puretokens-video|puretokens-audio|puretokens-evaluate|puretokens-update|.puretokens-executor) ;; *) return 1 ;; esac
     case "$entry" in */*|*..*) return 1 ;; esac
     if [ "$action" = replace ] && [ -e "$recovery_stage/backup/$entry" ]; then
       if [ -e "$recovery_root/$entry" ] || [ -L "$recovery_root/$entry" ]; then
@@ -486,6 +512,11 @@ sync_target() {
   stage_root=
   release_update_lock
   trap - EXIT HUP INT TERM
+  # Optional anonymous completion receipt. No credentials, paths or host data;
+  # failure must not alter the committed install or connection check.
+  if [ "${PTP_OPERATIONS_RECEIPTS:-}" = "1" ]; then
+    "$target_root/.puretokens-executor/puretokens-api" operations-receipt installed >/dev/null 2>&1 || :
+  fi
   init_target "$target_root" "$host"
 }
 
@@ -507,7 +538,7 @@ while [ "$#" -gt 0 ]; do
 done
 
 [ -n "$target" ] || [ -n "$host" ] || fail "--host or --target is required"
-case "$host" in ''|claude-code|codex|workbuddy|gemini-cli|grok-build|opencode|trae|claude-desktop|dsh-desktop|zcode|kimi-code|qoder|pi|hermes|evox|vscode|octop) ;; *) fail "unsupported host" ;; esac
+case "$host" in ''|claude-code|codex|workbuddy|gemini-cli|grok-build|opencode|trae|claude-desktop|dsh-desktop|deepseek-harness|minimax-code|zcode|kimi-code|qoder|pi|hermes|evox|vscode|octop) ;; *) fail "unsupported host" ;; esac
 case "$host" in pi|hermes|evox) target_for_host "$host" >/dev/null ;; esac
 if [ "$host" = octop ] && [ -n "$target" ]; then
   validate_client_root "$target"

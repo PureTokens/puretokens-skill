@@ -21,11 +21,11 @@ func TestOfflineMediaCommandTrajectories(t *testing.T) {
 		name, kind, operation, model, id string
 		count                            int
 	}{
-		{"two-images", "image", "generate", "seedream-5.0-pro", "pic-seedream-5.0-pro-abcdefghijklmnop", 2},
+		{"two-images", "image", "generate", "fixture-multi-image", "pic-fixture-multi-image-abcdefghijklmnop", 2},
 		{"local-image-edit", "image", "edit", "gpt-image-2", "pic-gpt-image-2-abcdefghijklmnop", 1},
 		{"gpt-image-2.5", "image", "generate", "gpt-image-2.5", "pic-gpt-image-2.5-abcdefghijklmnop", 1},
 		{"legacy-output-id", "image", "edit", "gpt-image-2", "pic-gpt-image-2-abcdefghijklmnop:image-1", 1},
-		{"video", "video", "generate", "grok-imagine-video-1.5-preview", "video-grok-imagine-video-1.5-preview-abcdefghijklmnop", 1},
+		{"video", "video", "generate", "grok-imagine-video-1.5", "video-grok-imagine-video-1.5-abcdefghijklmnop", 1},
 	} {
 		t.Run(scenario.name, func(t *testing.T) {
 			request := taskRequest{Kind: scenario.kind, Operation: scenario.operation, Model: scenario.model, Prompt: "synthetic fixture", RequestedCount: scenario.count}
@@ -72,6 +72,9 @@ func TestOfflineMediaCommandTrajectories(t *testing.T) {
 			}))
 			defer server.Close()
 			svc := fixtureService(server)
+			if scenario.model == "fixture-multi-image" {
+				svc = syntheticMultiImageService(t, svc)
+			}
 			now := time.Date(2026, 9, 17, 0, 0, 0, 0, time.UTC)
 			svc.now = func() time.Time { return now }
 			svc.wait = func(_ context.Context, delay time.Duration) bool { now = now.Add(delay); return true }

@@ -4,6 +4,19 @@
 
 # Changelog
 
+## 0.18.7 - 2026-10-04
+
+- Refresh 29 image/video model profiles and GPT Image parameters. Set the default image model to `gpt-image-2.5-flare` and video model to `minimax_h3`; explicit model selections remain unchanged.
+- Add official DeepSeek Harness Desktop and MiniMax Code Desktop installation and connection adapters, with documented local-session and custom-directory support.
+- Fix VS Code connection resolution for Switch configurations containing multiple models that share one supported connection and Key. Conflicting connections stop with a clear error.
+- Correct H3 first/last-frame requests to use `image_to_video` with both frame inputs.
+- Add `puretokens-audio` command handling for speech, recording transcription, sound generation and asynchronous music, plus `puretokens-evaluate` for Jev Choice/Score/Noul text evaluation.
+- Improve image/video intent selection, parameter guidance and composite workflows. Preserve original prompts, lyrics and attachment bytes.
+- Improve task-response diagnostics, same-task recovery and local artifact reattachment. Unknown submissions are not automatically retried.
+- Improve bilingual installation guidance and synchronize eight Skills with one native platform executor. No additional user runtime is required.
+- Add optional anonymous operational completion reports, disabled by default, without account, configuration or content data.
+- Extend automated coverage for client connections, model permissions, attachment handling, task recovery and dedicated APIs.
+
 ## 0.18.6 - 2026-09-19
 
 - Accept public task IDs containing dotted model labels and legacy output suffixes without rewriting their identity. Apply the same bounded rules to submission, status/wait/content, task records and support schemas; continue rejecting paths, URLs, encoded input and control characters.

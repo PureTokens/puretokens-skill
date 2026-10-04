@@ -26,6 +26,12 @@ func executeModelQuery(output io.Writer, svc service, input io.Reader) error {
 		writeReceipt(output, validationFailure("Use an optional model filter object with kind, exact model, declared operation and parameters. No API request was sent."))
 		return err
 	}
+	if query.Kind == "evaluation" {
+		return executeEvaluationModelQuery(output, svc, query)
+	}
+	if query.Kind == "audio" {
+		return executeAudioModelQuery(output, svc, query)
+	}
 	body, status, retry, code, message, err := svc.request(context.Background(), http.MethodGet, "/v1/media/models", nil, "")
 	if err != nil || status < 200 || status >= 300 {
 		writeReceipt(output, apiFailure("submission", status, retry, code, message, "The live model catalog could not be read. No media task was submitted."))
@@ -96,8 +102,14 @@ func decodeModelQuery(input io.Reader) (modelQuery, error) {
 			return query, errors.New("model filter fields must not be null")
 		}
 	}
-	if query.Kind != "" && query.Kind != "image" && query.Kind != "video" {
+	if query.Kind != "" && query.Kind != "image" && query.Kind != "video" && query.Kind != "evaluation" && query.Kind != "audio" {
 		return query, errors.New("unknown media kind")
+	}
+	if query.Kind == "evaluation" && (query.Operation != "" || len(query.Parameters) > 0) {
+		return query, errors.New("evaluation catalog cannot filter undeclared operation parameters")
+	}
+	if query.Kind == "audio" && (len(query.Parameters) > 0 || (query.Operation != "" && query.Operation != "speech" && query.Operation != "transcribe" && query.Operation != "generate" && query.Operation != "music")) {
+		return query, errors.New("audio discovery accepts only reviewed operations and no parameter filters")
 	}
 	if query.Model != "" && (!validModelID(query.Model) || safePublicString(query.Model) != query.Model) {
 		return query, errors.New("invalid exact model")
@@ -111,6 +123,70 @@ func decodeModelQuery(input io.Reader) (modelQuery, error) {
 		}
 	}
 	return query, nil
+}
+
+func executeAudioModelQuery(output io.Writer, svc service, query modelQuery) error {
+	body, status, retry, code, message, err := svc.request(context.Background(), http.MethodGet, "/v1/models", nil, "")
+	if err != nil || status < 200 || status >= 300 {
+		writeReceipt(output, apiFailure("submission", status, retry, code, message, "Audio model visibility could not be read; no audio request was submitted."))
+		return errors.New("audio catalog unavailable")
+	}
+	catalog, err := readAPIObject(body)
+	entries, ok := catalog["data"].([]any)
+	if err != nil || !ok {
+		writeReceipt(output, validationFailure("The API did not return a readable directory. No audio request was submitted."))
+		return errors.New("invalid audio catalog")
+	}
+	profiles := audioProfiles()
+	matched, seen := []any{}, map[string]bool{}
+	for _, entry := range entries {
+		id, _ := jsonObject(entry)["id"].(string)
+		profile, ok := profiles[id]
+		if !ok || seen[id] || (query.Model != "" && id != query.Model) || (query.Operation != "" && profile.Operation != query.Operation) {
+			continue
+		}
+		seen[id] = true
+		matched = append(matched, map[string]any{"id": id, "capabilities": []string{"audio"}, "input_schema": map[string]any{}})
+	}
+	writeJSON(output, map[string]any{"ok": true, "command": "models", "result": map[string]any{
+		"data": matched, "matched_count": len(matched),
+		"filter":         map[string]any{"kind": "audio", "model": query.Model, "operation": query.Operation, "parameter_names": []string{}},
+		"matching_scope": "reviewed_audio_models_listed_by_api",
+		"note":           "Reviewed audio IDs visible in the authenticated directory. Operations and model/voice limits come from the installed audio contract, not live capability declarations. This does not verify route deployment, permission, price or output quality.",
+	}})
+	return nil
+}
+
+// The general authenticated catalog declares visibility, not a native schema.
+// Only exact reviewed IDs are exposed; no prefix-based capability inference.
+func executeEvaluationModelQuery(output io.Writer, svc service, query modelQuery) error {
+	body, status, retry, code, message, err := svc.request(context.Background(), http.MethodGet, "/v1/models", nil, "")
+	if err != nil || status < 200 || status >= 300 {
+		writeReceipt(output, apiFailure("submission", status, retry, code, message, "Evaluation model visibility could not be read; no evaluation was submitted."))
+		return errors.New("evaluation catalog unavailable")
+	}
+	catalog, err := readAPIObject(body)
+	entries, valid := catalog["data"].([]any)
+	if err != nil || !valid {
+		writeReceipt(output, validationFailure("The API did not return a readable model directory. No evaluation was submitted."))
+		return errors.New("invalid evaluation catalog")
+	}
+	matched, seen := []any{}, map[string]bool{}
+	for _, value := range entries {
+		id, _ := jsonObject(value)["id"].(string)
+		if !evaluationModels[id] || seen[id] || (query.Model != "" && query.Model != id) {
+			continue
+		}
+		seen[id] = true
+		matched = append(matched, map[string]any{"id": id, "capabilities": []string{"evaluation"}, "input_schema": map[string]any{}})
+	}
+	writeJSON(output, map[string]any{"ok": true, "command": "models", "result": map[string]any{
+		"data": matched, "matched_count": len(matched),
+		"filter":         map[string]any{"kind": "evaluation", "model": query.Model, "operation": "", "parameter_names": []string{}},
+		"matching_scope": "reviewed_evaluation_models_listed_by_api",
+		"note":           "Exact reviewed evaluation IDs present in the authenticated model directory. Native route availability, price, submission permission and output quality are not verified; question types come from the installed evaluation contract, not this directory.",
+	}})
+	return nil
 }
 
 func modelQueryMatches(query modelQuery, entry map[string]any) bool {

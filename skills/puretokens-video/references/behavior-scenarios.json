@@ -24,6 +24,26 @@
       "then": "submit directly without reading /v1/media/models first"
     },
     {
+      "id": "video-h3-first-last-declared-operation",
+      "when": "The user explicitly requests a transition from attached image A to attached image B using default minimax_h3.",
+      "then": "Read only minimax_h3 profile; choose declared image_to_video, bind A as first_frame_image and B as last_frame_image and submit once to /v1/videos. Do not choose undeclared first_last_frame_video, drop B, swap roles or change the model. Ordinary supported first/last submission does not fetch the catalog."
+    },
+    {
+      "id": "video-workflow-downstream-recovery",
+      "when": "A video step fails after its image input was generated and delivered in an explicitly requested image-to-video workflow.",
+      "then": "Keep the image and its original record. If video has a verified task ID, continue only that task; if its submission outcome is unknown, stop without resubmission. A content failure cannot be reported as delivery. Never recreate the image, silently drop its bytes or restart the full workflow."
+    },
+    {
+      "id": "video-workflow-delivered-file-unavailable",
+      "when": "A later workflow step needs an already delivered image whose local file is missing, changed or inaccessible on the current computer.",
+      "then": "A done record is not fresh file verification. Stop rather than treating a same-named file as the original; do not rewrite delivered indexes or download proofs, silently fetch a completed delivery again or regenerate. Only undelivered indexes retain the documented same-task content recovery path."
+    },
+    {
+      "id": "video-workflow-no-composition",
+      "when": "User requires a single finished video with separately generated narration or music.",
+      "then": "Explain the absent composition/mixing capability before submitting partial paid tasks. Independent video/audio files may be generated only when that output scope is accepted; do not claim they have been combined or aligned."
+    },
+    {
       "id": "video-failure-receipt-safe",
       "when": "validation, submission, task-status, or content delivery fails",
       "then": "return failure_phase, api_error_code only when the public API explicitly returned that exact code and omit it otherwise, HTTP status only when returned, a sanitized user-facing error message, and an actionable next step; include retry_after_seconds when the executor returns a valid positive Retry-After and never expose raw response bodies, upstream identifiers, internal URLs, stacks, request data, credentials, or user media"
@@ -327,6 +347,26 @@
       "id": "video-spending-history-question",
       "when": "the user explicitly asks for historical charges, spending details or an individual generation cost that available results cannot confirm",
       "then": "Offer https://console.puretokensx.com/usage-logs for the user to inspect by time and model. Do not call balance to derive a charge, infer billing from missing records or task status, guarantee refunds, recover unknown task IDs or automatically append the link to every failure."
+    },
+    {
+      "id": "video-non-generation-intent",
+      "when": "The user asks only for media understanding, OCR, screenshot/video diagnosis, script or prompt writing, or model capability information.",
+      "then": "Do not create a media task. Understanding and writing need no media executor; model capability questions use puretokens-models only. An attachment or model name alone does not authorize generation."
+    },
+    {
+      "id": "video-existing-task-intent",
+      "when": "The user asks to check, resume or retrieve an existing task.",
+      "then": "Route to the matching media Skill and continue only the original task identity; never POST a new task. Preserve existing stop conditions and wait budgets."
+    },
+    {
+      "id": "video-verbatim-prompt-parameter-separation",
+      "when": "The user supplies a prompt to use verbatim, including prose such as 8K quality, while actual API parameters specify a supported output tier.",
+      "then": "Preserve the exact prompt without translation, quality templates or negative templates. Treat actual API fields separately using the selected profile; do not turn prose into fields. A distinct explicit requirement for actual 8K output must be checked and never silently downgraded."
+    },
+    {
+      "id": "video-submission-identity-diagnosis",
+      "when": "A successful HTTP submission response is unreadable, lacks a non-empty top-level identity or contains an unsupported identity type/format.",
+      "then": "Report the corresponding task_response_unreadable, task_id_missing or task_id_invalid local classification, never raw values or invented API error codes. The submission remains unknown; no polling, automatic update, alternate transport or resubmission. Use the existing support.executor_version from the affected client; never substitute the maintainer computer version."
     }
   ]
 }

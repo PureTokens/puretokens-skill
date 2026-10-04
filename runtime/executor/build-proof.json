@@ -1,69 +1,77 @@
 {
   "schemaVersion": 1,
-  "version": "0.18.6",
+  "version": "0.18.7",
   "toolchain": "go1.26.0",
-  "sourceSha256": "4f6cab2fd0cf9d30289332cc4c5aeb27b082ae7334be82f14646befeff0604f8",
+  "sourceSha256": "8260868a3df679a32aa9286fe78b6251c3bd406f42f53163d2d084159ff4f52f",
   "inputs": {
-    "package.json": "9a17c34a2351ac849d4e281569536866825ff656057206b20ccf721e99b0d5e1",
+    "package.json": "9891c06ca264888391492bf3beaad2628ba5eafbe92542b4ab414d0f01bca5db",
     "runtime/executor/attachment_stream.go": "13a7a2b7fa599e4cc79ef1401b022a6a20e78f21fb9c4c34034a4c78ae449884",
+    "runtime/executor/audio-profiles.json": "2bc72df45be95807d419e3c3bd8430b2a7faf6f865bbc7da4e974554962f3c56",
+    "runtime/executor/audio.go": "86b12fd5cf587618cb929c40fd60ec517ef35ba46c1ec9f163de6d5bede24254",
+    "runtime/executor/audio_validation.go": "94afefd1632722f6c5cee5720346fb17c7823fc73ee620ff4dc14cf72b8250df",
     "runtime/executor/balance.go": "838f9b9896dfce80e1b4a5adb1502ad88344711047b218e44dd7ec68c2e2b0b0",
     "runtime/executor/build-config.json": "d952dc406aec67ab7d84dd844d783bc0b79a6ef05216c5da5aeee4762e09b33b",
-    "runtime/executor/client_file_credentials.go": "eb15b222b97f883d2875e5499ab6ba512346b89734e12b6b511500441a2b4e17",
+    "runtime/executor/client_file_credentials.go": "d4e9f47bf3ab5ffb39f55fa4c648ff46cfca3cf97b16033a5ccda08e53505730",
     "runtime/executor/client_file_unix.go": "6ba42fec83b224809a05982879f2d6836b2b79036589c5e41ce66bedc86ead8a",
     "runtime/executor/client_file_windows.go": "450be40b5b13d1e2135f545f2f50246145c21eac488261cd23394ffdeaf89237",
     "runtime/executor/config_json.go": "4a02e70da728d9af04f5488d13a516fb2515711339eb71b7f79c11a45fe7c61b",
     "runtime/executor/credentials.go": "e6ec982d0d411cd8d6125002855197b77c331ac162d775ede7252fbfcda406d8",
+    "runtime/executor/deepseek_harness_credentials.go": "48d6c328e3640c86c2ae050c0dd4b627b0ee5b3c6bd57c9a730f2c6fea67dc43",
     "runtime/executor/desktop_credentials.go": "2ad82aa2b81c24a0b6df35d5c65f40efec2e879d9cf09f9060778ccf6eab81f7",
-    "runtime/executor/diagnostics.go": "71b286af1c48c06fb77f8c178cd530a4ae32ceb87ac86fad05ff11838f04b0bf",
-    "runtime/executor/download_proof.go": "187c097f468ff94f625f691631592d6006ccdbdb6371b5a4f1c20d4e30f8863b",
+    "runtime/executor/diagnostics.go": "2fdc97c4e85aef072a783a7200bf795cc74da86040cd499d7988c0dc960084e2",
+    "runtime/executor/download_proof.go": "9cd5d786ab44462c76163d4dbfe8e3b81f9bddc0aae7c4146da7e80aade19ade",
     "runtime/executor/error_guidance.go": "9611c550c6ab738f5bb50c7135fdab9bafcee975d5710d5d383321946d0c62b8",
+    "runtime/executor/evaluation.go": "1501f7b4188e3494597fbf591a37d9cee86f42df2e94848433848312e6e6e247",
     "runtime/executor/go.mod": "0a81f881dd845d841cbd33640310e8cd57b3f2cdcd62d0c17154731e92f39666",
     "runtime/executor/go.sum": "61610778bc9c3f204cc9fa67ece26fd895ab8e2a578bbcdda600dd4eca8c6b7d",
-    "runtime/executor/installation_guard.go": "3b5e0d55d681bbefd886f0f68987ab80aee37307a4e0207266d95cfdae8290b7",
-    "runtime/executor/main.go": "c6f34a9e345f32800a864d6cfde392f07e08c74b67ae21ee37e2c06789dd4442",
+    "runtime/executor/installation_guard.go": "1757143860f40a9cc397f9c404f56db4702c9336f29e9e50995be9ca32f3a3a6",
+    "runtime/executor/main.go": "a5ab1e613ad025f470f38bc6332882f060d4d0dcb5b45f64f1eec2ae8a58a881",
     "runtime/executor/media_containers.go": "87d05189cc12108aca250bc7e76d2fc5e8cab200d080e12f66058fd5241e62f6",
-    "runtime/executor/media_validation.go": "c0aeeb595c56ee712d44efe512813593078a86f08a152c1e0107934e45406ed3",
-    "runtime/executor/model_constraints.go": "69bdac2996b25a202db92b30866a126cdddfc95153b589a427f1ee533e405253",
+    "runtime/executor/media_validation.go": "20f2f96fc9d9668ec95b9432aa8751bff8c905f64e4e4d13b083dd4a7a9c073e",
+    "runtime/executor/minimax_code_credentials.go": "3d60f12a92fb43408356bc558a424e0502d5937a7c816b8fde2df6b147d170cf",
+    "runtime/executor/model_constraints.go": "3cabcdf2a791504f8fec43cd0507f01eec2a3a58a88d9dededaa7761c3560afc",
     "runtime/executor/model_id.go": "c3704943acef8d88c89fac6bb10be77f4445ce7617b943356ff41c4c979d9353",
-    "runtime/executor/model_query.go": "a09e60236f10fa4c7949ce7bf89b3d86cc74225001414b4a911d587138020fd9",
+    "runtime/executor/model_query.go": "acb832b3b32e3173d6d234a89155f991f6c6ffa20d65a783aa88879eee4dbe8f",
+    "runtime/executor/music.go": "f1277839e14dbf9d3864ffe3f5c96be544729e78a3bb2c51ee38040daa515366",
     "runtime/executor/new_host_credentials.go": "03be42666a290c5ade28777ef10597a6f026bd2b7ec15cd0de72043a104eb2bb",
     "runtime/executor/octop_credentials.go": "7059e47f661719fe1b0929875e345abb6bb49fa0b8b092230f04a5fc112616a1",
     "runtime/executor/opencode_credentials.go": "f903988956eb37de5d888e24e62479d5aaf48b2776a18eb8c458e38c9f8cd6e6",
-    "runtime/executor/profiles.go": "288c26826056c5a6b587bed1cb29f2fb933933d60c0a44e8676f7dd7eff86652",
+    "runtime/executor/operations_receipt.go": "8dd4db7615d5e066baec9de7d5a79b18e6339e07e414ada5a6feb155ad422cff",
+    "runtime/executor/profiles.go": "241924a53a385c829b41e65fbf52f59eaf2ff9f6ef1dd777e403b24e5c0acc84",
     "runtime/executor/public_errors.go": "44bf70d52c4c59f1b53870ea32012108891c379c238f14085d9a711d10eda791",
-    "runtime/executor/response_sanitization.go": "38f5ecc1dc79f9ac267ac4fba2a093a3a61f7242e3c7ae398fb908f838ca7449",
-    "runtime/executor/support_summary.go": "98596be4ed5fbe09bb04e2704846fccc848a7b33733440d9ad3c1a164148156b",
-    "runtime/executor/task_records.go": "0d3da12db211d0571f36e625fbe2d4cc3bd6e872df8fc6fa3913f5f0d39b4836",
+    "runtime/executor/response_sanitization.go": "3b70f4ef704e44a887d9e7bf729f9db7299c834a1b5505a2d2f9c84728b48580",
+    "runtime/executor/support_summary.go": "44c37c110bb7c4dee48ddfe0b24e0fb9b33e2f3a15e83e01b9907c49d42c176e",
+    "runtime/executor/task_records.go": "04040cc796001532a562aeebf3238b28697a6c9a6b1246131a00ba0874e73fd8",
     "runtime/executor/task_recovery.go": "b365c170fe33b3eb784ce623a180653b9162f063d39c0bf5dfafaa6a68435b24",
-    "runtime/executor/task_state.go": "be225f73d91a202ceee9fbd65ee39810e3aa5fb932cb30dbd64a6de79f0bd801",
+    "runtime/executor/task_state.go": "a430a4841e3940d06eb997aa254a0aae27c5b4047408a0f5e436475411b51eff",
     "runtime/executor/zcode_credentials.go": "f5b8923ba031c8c5ac70afb1c4adc76e19bd3f70bf5b3f113a4430d6d14a2650",
     "scripts/build-executor.mjs": "f854f4e76be911241a0b06473cb0475dbdbf28fe04082eee4607e99e83c9b0a2",
-    "scripts/executor-build-proof.mjs": "526659d04d84d3b48bb49bf4729166fc9936375fd4f30583a77c5cc0694b003f"
+    "scripts/executor-build-proof.mjs": "6463f82a2a4eb7d236d383d54caf8e9b4127296e8c2e18e33b1620fc50ea2aae"
   },
   "artifacts": {
     "darwin-amd64": {
       "path": "bin/puretokens-api-darwin-amd64",
-      "sha256": "e5a47ba869501319cf8b06b37b2ede5678a9e39d42daa5ee119179097408eb0b"
+      "sha256": "3ae84ab9edf1ff0915e6adaefb108f1e20b6ae4f4692e46e729ded934f7bba79"
     },
     "darwin-arm64": {
       "path": "bin/puretokens-api-darwin-arm64",
-      "sha256": "339039fcd68702d92e3b1cdf7aa291c9cc1d6da79f4f7a42ba342566e6373405"
+      "sha256": "d7a920c9926849c48fe27ee8102eb45f1cbd6173c07978e1ffc25a87157b6127"
     },
     "linux-amd64": {
       "path": "bin/puretokens-api-linux-amd64",
-      "sha256": "0729ef6de51908d1cd387bc259e2053f21f4fa9db0fb84328701294a897b8fab"
+      "sha256": "c9ccfca0f448b88688e8522ef550536a619c21fcd138ee500d50f327375f2d9b"
     },
     "linux-arm64": {
       "path": "bin/puretokens-api-linux-arm64",
-      "sha256": "d60cf0aeac5e14aea6f315bb76f1b2a6f50f7e0d01a2c4b5433160b7de9bb23d"
+      "sha256": "5c923cec386ed9fdc794018f1d4e1ae4f212ccd7bf07b042185aaf8b98e5aed3"
     },
     "windows-amd64": {
       "path": "bin/puretokens-api-windows-amd64.exe",
-      "sha256": "713108529acad62b67a8f79f05b64f9d563949d265706db6638ed882d7ac512d"
+      "sha256": "0fadbc55eeb55ab989f32c3a878926474a84a29e5371ceb68f1226017a1927e8"
     },
     "windows-arm64": {
       "path": "bin/puretokens-api-windows-arm64.exe",
-      "sha256": "cbc799a93bac435f4efb725ff316dcef519cd01ecc55fba53bca6683aa991567"
+      "sha256": "5832399c750ae983a4f43c370ecf038bb72a5281e126351adfb37dbb69f81f85"
     }
   }
 }

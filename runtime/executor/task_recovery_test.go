@@ -229,11 +229,11 @@ func TestTaskRecordLifecycleAndExplicitDelivery(t *testing.T) {
 		io.WriteString(w, `{"id":"paid-task","status":"completed"}`)
 	}))
 	defer server.Close()
-	svc := fixtureService(server)
+	svc := syntheticMultiImageService(t, fixtureService(server))
 	svc.wait = func(context.Context, time.Duration) bool { return true }
 	dir := t.TempDir()
 	path := filepath.Join(dir, "task.json")
-	request := taskRequest{Kind: "image", Operation: "generate", Model: "seedream-5.0-pro", Prompt: "private-prompt-marker", Parameters: map[string]any{"n": float64(3)}, OutputDir: dir}
+	request := taskRequest{Kind: "image", Operation: "generate", Model: "fixture-multi-image", Prompt: "private-prompt-marker", Parameters: map[string]any{"n": float64(3)}, OutputDir: dir}
 	var out bytes.Buffer
 	if err := executeRecordedTask("submit", path, request, 0, "", &out, svc); err != nil {
 		t.Fatal(err, out.String())

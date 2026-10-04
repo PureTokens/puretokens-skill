@@ -2,32 +2,40 @@
   "$schema": "https://puretokensx.com/schemas/model-profile.schema.json",
   "schemaVersion": 1,
   "capability": "image",
-  "catalogUpdatedAt": "2026-09-18",
-  "catalogCapturedAt": "2026-09-18T09:53:14.617Z",
-  "id": "seedream-5.0-pro",
+  "catalogUpdatedAt": "2026-10-04",
+  "catalogCapturedAt": "2026-10-04T06:19:22.134Z",
+  "id": "gpt-image-2.5-flare",
   "parameterSchema": {
     "properties": {
-      "prompt": {
-        "type": "string",
-        "required": true,
-        "minLength": 3,
-        "maxLength": 2000
-      },
       "n": {
         "type": "integer",
-        "default": 1,
-        "min": 1,
-        "max": 6
+        "enum": [
+          1
+        ],
+        "default": 1
       },
-      "width": {
-        "type": "integer",
-        "min": 768,
-        "max": 2048
+      "image": {
+        "type": "string[]",
+        "maxLength": 10
       },
-      "height": {
-        "type": "integer",
-        "min": 768,
-        "max": 2048
+      "quality": {
+        "type": "string",
+        "enum": [
+          "auto",
+          "low",
+          "medium",
+          "high"
+        ],
+        "default": "auto"
+      },
+      "image_size": {
+        "type": "string",
+        "enum": [
+          "1K",
+          "2K",
+          "4K"
+        ],
+        "default": "1K"
       },
       "aspect_ratio": {
         "type": "string",
@@ -37,94 +45,76 @@
           "3:2",
           "3:4",
           "4:3",
-          "16:9",
+          "4:5",
+          "5:4",
           "9:16",
+          "16:9",
           "21:9"
         ],
         "default": "1:1"
       },
-      "size": {
+      "output_format": {
         "type": "string",
         "enum": [
-          "2048x2048",
-          "1024x1536",
-          "1536x1024",
-          "1152x1536",
-          "1536x1152",
-          "1920x1080",
-          "1080x1920",
-          "2016x864"
-        ]
+          "png",
+          "jpeg",
+          "webp"
+        ],
+        "default": "jpeg"
       },
-      "image_urls": {
-        "type": "string[]",
-        "maxLength": 10
-      },
-      "strength": {
+      "response_format": {
         "type": "string",
         "enum": [
-          "LOW",
-          "MID",
-          "HIGH"
-        ]
+          "url"
+        ],
+        "default": "url"
       }
     },
     "constraints": {
-      "size_expression_precedence": {
-        "order": [
-          "width+height",
-          "aspect_ratio",
-          "size"
-        ]
-      },
-      "requires_together": {
-        "width": [
-          "height"
-        ],
-        "height": [
-          "width"
-        ]
-      },
       "reference_transport": {
-        "image_urls": [
+        "image": [
           "public_https_url"
+        ]
+      },
+      "aspect_ratio_by_image_size": {
+        "1K": [
+          "1:1",
+          "2:3",
+          "3:2",
+          "3:4",
+          "4:3",
+          "4:5",
+          "5:4",
+          "9:16",
+          "16:9",
+          "21:9"
+        ],
+        "2K": [
+          "1:1",
+          "2:3",
+          "3:2",
+          "3:4",
+          "4:3",
+          "4:5",
+          "5:4",
+          "9:16",
+          "16:9",
+          "21:9"
+        ],
+        "4K": [
+          "1:1",
+          "2:3",
+          "3:2",
+          "3:4",
+          "4:3",
+          "4:5",
+          "5:4",
+          "9:16",
+          "16:9",
+          "21:9"
         ]
       }
     },
-    "outputSizes": [
-      {
-        "aspectRatio": "1:1",
-        "size": "2048x2048"
-      },
-      {
-        "aspectRatio": "2:3",
-        "size": "1024x1536"
-      },
-      {
-        "aspectRatio": "3:2",
-        "size": "1536x1024"
-      },
-      {
-        "aspectRatio": "3:4",
-        "size": "1152x1536"
-      },
-      {
-        "aspectRatio": "4:3",
-        "size": "1536x1152"
-      },
-      {
-        "aspectRatio": "16:9",
-        "size": "1920x1080"
-      },
-      {
-        "aspectRatio": "9:16",
-        "size": "1080x1920"
-      },
-      {
-        "aspectRatio": "21:9",
-        "size": "2016x864"
-      }
-    ],
     "lifecycle": {
       "create": {
         "successStatus": 200,

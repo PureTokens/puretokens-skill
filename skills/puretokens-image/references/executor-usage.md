@@ -15,13 +15,13 @@ Create UTF-8 JSON using the host file tool; use escaped backslashes or forward s
 Generation:
 
 ```json
-{"kind":"image","operation":"generate","model":"gpt-image-2","prompt":"A mountain lake at sunrise","parameters":{"image_size":"1K"}}
+{"kind":"image","operation":"generate","model":"gpt-image-2.5-flare","prompt":"A mountain lake at sunrise","parameters":{"image_size":"1K"}}
 ```
 
 Current local image edit:
 
 ```json
-{"kind":"image","operation":"edit","media_operation":"image_edit","model":"gpt-image-2","prompt":"Change only the sky","attachments":[{"field":"image","path":"/absolute/current.png"}]}
+{"kind":"image","operation":"edit","media_operation":"image_edit","model":"gpt-image-2.5-flare","prompt":"Change only the sky","attachments":[{"field":"image","path":"/absolute/current.png"}]}
 ```
 
 `submit` returns the task ID immediately; it never polls or downloads. Do not repeat a submission with unknown output. `status` reads once and `wait` performs one bounded window. Carry the original operation as `original_operation`, model, confirmed count, safe parameters and the exact returned `retry_not_before` into a same-task request. The timestamp below is illustrative; copy the actual receipt value without recalculating it, or use `--record`:
@@ -29,7 +29,7 @@ Current local image edit:
 Task IDs are opaque and must be preserved exactly, including dots in model-labelled IDs and colons in legacy output IDs. Never remove punctuation, derive a model from the ID, or construct a replacement ID. The executor accepts 1-256 ASCII characters: a letter, digit, `_` or `-` first, then those characters plus `.` and `:`. URLs, paths, whitespace and percent-encoded input are not task IDs; only the executor encodes the validated ID for the request path.
 
 ```json
-{"kind":"image","original_operation":"generate","task_id":"RETURNED_ID","model":"gpt-image-2","requested_count":1,"parameters":{"image_size":"1K"},"retry_not_before":"2026-09-06T00:00:05Z"}
+{"kind":"image","original_operation":"generate","task_id":"RETURNED_ID","model":"gpt-image-2.5-flare","requested_count":1,"parameters":{"image_size":"1K"},"retry_not_before":"2026-09-06T00:00:05Z"}
 ```
 
 For a newly accepted pending image, `submit` sets `retry_not_before` to 5 seconds after receipt of the accepted response, unless the API supplied a valid positive `Retry-After`. This timestamp survives tool handoff and task records, so time already spent processing the receipt is not waited again. Do not add a separate sleep. `wait` checks when the timestamp is reached, then waits 3 seconds between reads. Expired or absent timestamps (including older task records) allow an immediate first read; continuation never invents another initial wait. API `Retry-After` remains authoritative. Each window allows at most 40 status reads and 120 seconds including network time, whichever ends first; stop when the next wait cannot fit. Optional `poll.max_status_reads` and `poll.deadline_seconds` may shorten these limits. Waiting stops immediately on completion, reconciliation, unknown state or an unrecoverable status error; it never submits another task.
@@ -37,7 +37,7 @@ For a newly accepted pending image, `submit` sets `retry_not_before` to 5 second
 After a completed same-task receipt, `content --host codex --request <file>` downloads one index:
 
 ```json
-{"kind":"image","original_operation":"generate","task_id":"RETURNED_ID","model":"gpt-image-2","requested_count":1,"parameters":{"image_size":"1K"},"task_status":"completed","index":0,"output_dir":"/absolute/existing/output-directory"}
+{"kind":"image","original_operation":"generate","task_id":"RETURNED_ID","model":"gpt-image-2.5-flare","requested_count":1,"parameters":{"image_size":"1K"},"task_status":"completed","index":0,"output_dir":"/absolute/existing/output-directory"}
 ```
 
 For multiple images, preserve the accepted count and retrieve indexes 0..n-1. Attach the returned `downloaded_paths` file before requesting another index. Downloading is not delivery. Reuse requires a matching SHA-256, byte count and media type in an explicit task record. Without that proof, preserve any existing file and select another output directory for this same task index.

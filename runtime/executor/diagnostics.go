@@ -13,7 +13,7 @@ import (
 
 var doctorSkillNames = []string{
 	"puretokens-balance", "puretokens-connection", "puretokens-models",
-	"puretokens-image", "puretokens-video", "puretokens-update",
+	"puretokens-image", "puretokens-video", "puretokens-audio", "puretokens-evaluate", "puretokens-update",
 }
 
 var doctorVersionPattern = regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+([+-][A-Za-z0-9.-]+)?$`)
@@ -103,6 +103,26 @@ func doctorHostLocations(host, home string, getenv func(string) string) []doctor
 		}
 	case "grok-build":
 		location = filepath.Join(home, ".grok")
+	case "minimax-code":
+		root, err := miniMaxCodeRoot(runtime.GOOS, home, getenv)
+		if err != nil {
+			return nil
+		}
+		return []doctorLocation{{"host_skills", filepath.Join(root, "skills")}}
+	case "deepseek-harness":
+		root, err := deepSeekHarnessRoot(home, getenv)
+		if err != nil {
+			return nil
+		}
+		shared := getenv("DSH_AGENTS_HOME")
+		if shared == "" {
+			shared = filepath.Join(home, ".agents")
+		}
+		result := []doctorLocation{{"host_skills", filepath.Join(root, "skills")}}
+		if clientAbsoluteRoot(shared) {
+			result = append(result, doctorLocation{"shared_agents_skills", filepath.Join(shared, "skills")})
+		}
+		return result
 	case "dsh-desktop":
 		location = getenv("DSH_HOME")
 		if location == "" {
@@ -189,7 +209,7 @@ func collectDoctorAt(loadedRoot, host, home string, getenv func(string) string) 
 		NextAction: "Review the local findings; run the connection checks and verify attachment handoff in the current host.",
 	}
 	switch host {
-	case "claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae", "claude-desktop", "dsh-desktop", "zcode", "kimi-code", "qoder", "pi", "hermes", "evox", "vscode", "octop":
+	case "claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae", "claude-desktop", "dsh-desktop", "deepseek-harness", "minimax-code", "zcode", "kimi-code", "qoder", "pi", "hermes", "evox", "vscode", "octop":
 	default:
 		result.Host = "unsupported"
 		result.NextAction = "Choose a supported current host before running diagnostics."

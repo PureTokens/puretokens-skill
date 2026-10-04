@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pure Tokens Audio"
+  short_description: "Create speech, sound scenes or music, and transcribe recordings."
+  default_prompt: "Use $puretokens-audio for my requested narration, recording transcription, sound scene or music through the current Pure Tokens connection."

@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "reviewedAt": "2026-09-27",
+  "model": "stepaudio-3-music-preview",
+  "operation": "music",
+  "path": "/v1/audio/music/submit",
+  "content_type": "application/json",
+  "synchronous": false,
+  "executor_kind": "music",
+  "executor_operation": "generate",
+  "max_prompt_characters": 1000,
+  "max_lyrics_characters": 4000,
+  "formats": [
+    "mp3",
+    "wav"
+  ],
+  "instrumental_required": true,
+  "instrumental_excludes_lyrics": true,
+  "status_path": "/v1/audio/music/tasks/{task_id}",
+  "content_path": "/v1/audio/music/tasks/{task_id}/content",
+  "max_output_bytes": 33554432,
+  "artifact_retention_seconds": 86400,
+  "artifact_retention_starts": "gateway_artifact_saved_at",
+  "never_automatically_retries": true
+}

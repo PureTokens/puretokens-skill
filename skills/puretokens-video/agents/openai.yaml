@@ -1,4 +1,4 @@
 interface:
   display_name: "Pure Tokens Video"
-  short_description: "Primary video Skill for the current Pure Tokens connection; use before generic video Skills."
-  default_prompt: "Use $puretokens-video as the primary Skill for this video request; do not use a generic video Skill."
+  short_description: "Primary Pure Tokens video generation/editing and same-task recovery."
+  default_prompt: "Use $puretokens-video for video generation, editing or recovery with the current Pure Tokens connection, before generic video Skills. Video analysis, troubleshooting, script/prompt-only writing and model questions do not authorize generation. Continue existing tasks without a new submission."

@@ -13,7 +13,8 @@ const schemaNames = [
   "executor-request.schema.json", "executor-receipt.schema.json", "task-record.schema.json",
   "model-query.schema.json", "model-query-receipt.schema.json", "balance-snapshot.schema.json",
   "balance-receipt.schema.json", "init-receipt.schema.json", "doctor-receipt.schema.json",
-  "support-summary.schema.json"
+  "support-summary.schema.json", "evaluation-request.schema.json", "evaluation-receipt.schema.json",
+  "audio-request.schema.json", "audio-receipt.schema.json", "audio-artifact-verify-request.schema.json"
 ];
 const documents = await Promise.all(schemaNames.map(async (name) =>
   JSON.parse(await readFile(path.join(repositoryRoot, "schemas", name), "utf8"))));
@@ -105,6 +106,80 @@ test("media receipt schemas reject lost task context and unsafe metadata", () =>
   const retry = example("status-retry");
   rejects("executor-receipt.schema.json", { ...retry, retry_not_before: "2026-02-30T12:00:00Z" }, "format");
   rejects("executor-receipt.schema.json", { ...retry, retry_not_before: "tomorrow" }, "format");
+});
+
+test("music schemas preserve asynchronous identity, paid intent and private lyrics", () => {
+  const input = example("docs-music-0");
+  for (const addition of [
+    {model:"other"}, {operation:"edit"}, {requested_count:2}, {index:1},
+    {prompt:"字".repeat(1001)}, {output_dir:"relative"},
+    {parameters:{response_format:"mp3"}},
+    {parameters:{instrumental:true,response_format:"mp3",lyrics:"not instrumental"}},
+    {parameters:{instrumental:false,response_format:"wav",lyrics:"字".repeat(4001)}},
+    {parameters:{instrumental:false,response_format:"mp3",group:"other"}},
+  ]) rejects("executor-request.schema.json",{...input,...addition});
+  const record=example("music-1-content-record");
+  assert.equal(record.parameters.instrumental,false);
+  assert.equal(record.parameters.response_format,"wav");
+  assert.equal(record.parameters.lyrics,undefined);
+  assert.equal(record.prompt,undefined);
+  rejects("task-record.schema.json",{...record,parameters:{...record.parameters,lyrics:"private"}});
+  rejects("task-record.schema.json",{...record,kind:"audio"});
+  assert.equal(example("music-0-resume").next_step,"deliver");
+  assert.equal(example("music-0-delivered").next_step,"done");
+  assert.deepEqual(example("music-model-receipt").result.data.map(item=>item.id),["stepaudio-3-music-preview"]);
+});
+
+test("evaluation schemas reject malformed questions and invented result fields", () => {
+  const input = example("evaluation-request");
+  rejects("evaluation-request.schema.json", {...input, async: true});
+  rejects("evaluation-request.schema.json", {...input, model: "jev"});
+  rejects("evaluation-request.schema.json", {...input, questions: {}});
+  rejects("evaluation-request.schema.json", {...input, questions: Object.fromEntries(Array.from({length: 65}, (_, i) => [`q${i}`, {type:"noul",instructions:"Is this relevant?"}]))});
+  rejects("evaluation-request.schema.json", {...input, questions: {q: {type:"score",instructions:"Rate",criteria:["single"]}}});
+  const receipt = example("evaluation-success");
+  for (const addition of [{state:"private"}, {task_id:"invented"}, {next_step:"wait"}]) {
+    rejects("evaluation-receipt.schema.json", {...receipt,...addition});
+  }
+  const invalid = structuredClone(receipt);
+  invalid.result.answers.urgency.noul = 2;
+  rejects("evaluation-receipt.schema.json", invalid);
+  const unknown = example("evaluation-invalid-response");
+  rejects("evaluation-receipt.schema.json", {...unknown,result:receipt.result});
+  rejects("evaluation-receipt.schema.json", {...unknown,next_step:"done"});
+  const support = example("support-evaluation-success");
+  for (const key of ["state","questions","answers","result"]) rejects("support-summary.schema.json", {...support,[key]:{}});
+});
+
+test("audio schemas distinguish local verification, synchronous text and binary handoff", () => {
+  const speech = example("docs-audio-0");
+  for (const extra of [
+    { voice: "invented" }, { speed: 2.1 }, { input: "字".repeat(1001) },
+    { file: "/private/extra.wav" }, { async: true }, { response_format: "url" },
+    { output_dir: "relative" }, { model: "stepaudio-3-tts" }
+  ]) rejects("audio-request.schema.json", { ...speech, ...extra });
+  const transcript = example("audio-transcribe");
+  for (const extra of [{task_id:"invented"}, {next_step:"wait"}, {delivery_status:"downloaded"}, {artifact:example("audio-speech").artifact}]) {
+    rejects("audio-receipt.schema.json", { ...transcript, ...extra });
+  }
+  const generated = example("audio-speech");
+  for (const extra of [{next_step:"done"}, {delivery_status:"delivered"}, {result:{text:"invented"}}, {submission_outcome:"not_submitted"}]) {
+    rejects("audio-receipt.schema.json", { ...generated, ...extra });
+  }
+  const unknown = example("audio-unknown");
+  for (const extra of [{artifact:generated.artifact}, {next_step:"deliver"}, {submission_outcome:"accepted"}]) {
+    rejects("audio-receipt.schema.json", { ...unknown, ...extra });
+  }
+  const verify = example("audio-verify-false");
+  rejects("audio-receipt.schema.json", {...verify,submission_outcome:"accepted"});
+  rejects("audio-receipt.schema.json", {...verify,http_status:200});
+  rejects("audio-artifact-verify-request.schema.json", {artifact:{...generated.artifact,sha256:"wrong"}});
+  const support = example("support-audio-transcribe");
+  for (const field of ["input", "instruction", "text", "artifact", "file"]) {
+    rejects("support-summary.schema.json", {...support,[field]:"private"});
+  }
+  rejects("model-query.schema.json", {kind:"audio",operation:"clone"});
+  rejects("model-query.schema.json", {kind:"audio",parameters:{speed:1}});
 });
 
 test("support summaries reject private data and invented network evidence", () => {

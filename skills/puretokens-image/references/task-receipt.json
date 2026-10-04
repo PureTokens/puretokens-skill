@@ -41,7 +41,8 @@
       "http_status": "Only when returned and useful; otherwise omit.",
       "api_error_code": "Only the exact returned public code; otherwise omit.",
       "retry_after_seconds": "Only when returned and useful.",
-      "support": "Only the existing allowlisted support block when the user requests private support; never the whole receipt, an automatic upload or an extra request. Request correlation is not task identity or idempotency."
+      "support": "Only the existing allowlisted support block when the user requests private support; never the whole receipt, an automatic upload or an extra request. Request correlation is not task identity or idempotency.",
+      "local_error_code": "Use the executor classification: task_response_unreadable, task_id_missing and task_id_invalid are distinct; an invalid ID does not mean the server omitted it. Preserve unknown submission and never repeat POST automatically."
     },
     "nextAction": "State what failed and the next safe action; unknown submission never authorizes automatic repetition."
   }

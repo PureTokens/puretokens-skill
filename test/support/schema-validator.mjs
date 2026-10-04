@@ -8,7 +8,7 @@ const annotations = new Set(["$schema", "$id", "$comment", "title", "description
 const keywords = new Set([
   ...annotations, "$ref", "$defs", "type", "const", "enum", "required", "properties",
   "patternProperties", "additionalProperties", "items", "minItems", "maxItems",
-  "uniqueItems", "minLength", "maxLength", "minProperties", "pattern", "format", "minimum", "maximum",
+  "uniqueItems", "minLength", "maxLength", "minProperties", "maxProperties", "pattern", "format", "minimum", "maximum",
   "exclusiveMinimum", "exclusiveMaximum", "anyOf", "oneOf", "allOf", "not", "if", "then", "else"
 ]);
 const types = {
@@ -112,6 +112,7 @@ export function compileSchema(schema, documents) {
       }
       if (types.object(value)) {
         if (rule.minProperties !== undefined && Object.keys(value).length < rule.minProperties) fail("minProperties");
+        if (rule.maxProperties !== undefined && Object.keys(value).length > rule.maxProperties) fail("maxProperties");
         for (const key of rule.required ?? []) if (!Object.hasOwn(value, key)) fail(`required ${key}`);
         for (const [key, child] of properties) if (Object.hasOwn(value, key)) errors.push(...child(value[key], `${at}/${key}`));
         for (const [key, entry] of Object.entries(value)) {

@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "name": "puretokens-image",
-  "version": "0.18.6",
+  "version": "0.18.7",
   "entry": "SKILL.md",
   "displayName": "Pure Tokens Image",
-  "description": "Primary image Skill for the current Pure Tokens connection; generate and profile-gated edit images through the fixed Images API before generic imagegen or Imagen.",
+  "description": "Primary image Skill for the current Pure Tokens connection: image generation, profile-gated editing and same-task recovery before generic imagegen or Imagen. Image understanding, OCR, screenshot diagnosis, prompt-only writing and model questions do not authorize generation.",
   "modelIndex": "references/model-index.json",
   "executionContract": "references/execution-contract.json",
   "taskReceipt": "references/task-receipt.json",
@@ -78,6 +78,14 @@
     "octop": {
       "manualInstallationSupported": true,
       "workspaceSkillDirectory": ".octop/skills"
+    },
+    "deepseekHarness": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.dsh/skills"
+    },
+    "minimaxCode": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.minimax/skills"
     }
   },
   "supportedClients": [
@@ -90,6 +98,8 @@
     "trae",
     "claude-desktop",
     "dsh-desktop",
+    "deepseek-harness",
+    "minimax-code",
     "zcode",
     "kimi-code",
     "qoder",
@@ -110,7 +120,7 @@
     "doesNotUseComputerUseOrUiAutomation": true,
     "doesNotInvokeOtherMediaSkillsAsApiFallback": true,
     "neverExposesCredentialsOrHostConfiguration": true,
-    "defaultModel": "gpt-image-2",
+    "defaultModel": "gpt-image-2.5-flare",
     "imagesAlwaysAsync": true,
     "normalSubmissionUsesSelectedProfileAndIndexWhenNeeded": true,
     "usesLazyModelProfileLoading": true,
@@ -152,5 +162,5 @@
     "supportsOptionalContinuationRecord": true,
     "userReceiptIsConcise": true
   },
-  "sourceSha256": "5a1e4ea052c5829c42c2100d8d2f3a0c85101e7d5f53acb411096f30ebac1998"
+  "sourceSha256": "f9a55acc29a87930effbdcf1ebb170afc993f748b8b3d4c9f84234814c4b5156"
 }

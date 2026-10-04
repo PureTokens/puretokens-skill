@@ -15,13 +15,14 @@ var canonicalRequestID = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4
 // One invocation's evidence, never a credential store or a task record. The
 // latest HTTP attempt replaces the previous one, even if it got no response.
 type supportReceiptWriter struct {
-	output       io.Writer
-	host         string
-	command      string
-	attempted    bool
-	requestPhase string
-	requestID    string
-	httpStatus   int
+	output          io.Writer
+	host            string
+	command         string
+	attempted       bool
+	requestPhase    string
+	requestID       string
+	httpStatus      int
+	operationsEvent string
 }
 
 func (writer *supportReceiptWriter) Write(data []byte) (int, error) {
@@ -38,7 +39,7 @@ func (writer *supportReceiptWriter) beginRequest(method, path string) {
 	switch {
 	case path == "/v1":
 		writer.requestPhase = "identity"
-	case path == "/v1/media/models":
+	case path == "/v1/media/models" || path == "/v1/models":
 		writer.requestPhase = "catalog"
 	case path == balanceUsagePath:
 		writer.requestPhase = "balance_usage"
@@ -89,6 +90,7 @@ func (writer *supportReceiptWriter) writeJSON(value any) {
 	// Existing local paths, free text, parameters and result objects never
 	// enter the shareable block.
 	summary := writer.summary(document)
+	writer.operationsEvent = operationsEvent(writer.command, writer.attempted, document)
 	document["support"], _ = json.Marshal(summary)
 	writeJSON(writer.output, document)
 }
@@ -104,12 +106,12 @@ func (writer *supportReceiptWriter) summary(document map[string]json.RawMessage)
 	}
 	switch writer.host {
 	case "codex", "claude-code", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae",
-		"claude-desktop", "dsh-desktop", "zcode", "kimi-code", "qoder", "pi", "hermes", "evox", "vscode", "octop":
+		"claude-desktop", "dsh-desktop", "deepseek-harness", "minimax-code", "zcode", "kimi-code", "qoder", "pi", "hermes", "evox", "vscode", "octop":
 		summary["host"] = writer.host
 	}
 	switch writer.command {
 	case "init", "doctor", "connection", "balance", "models", "preflight", "submit",
-		"status", "wait", "content", "resume", "delivered":
+		"status", "wait", "content", "resume", "delivered", "evaluate", "audio", "audio-verify":
 		summary["command"] = writer.command
 	}
 	if writer.attempted {
@@ -133,7 +135,7 @@ func (writer *supportReceiptWriter) summary(document map[string]json.RawMessage)
 		summary["api_error_code"] = code
 	}
 	for key, allowed := range map[string]string{
-		"kind":               "|image|video|",
+		"kind":               "|image|video|music|",
 		"failure_phase":      "|validation|submission|status|content|",
 		"submission_outcome": "|accepted|rejected|unknown|not_submitted|",
 		"next_step":          "|wait|content|deliver|await_user|done|",
@@ -181,4 +183,7 @@ var supportLocalErrorCodes = map[string]bool{
 	"invalid_media_content": true, "output_permission_denied": true, "media_download_timeout": true, "output_file_conflict": true,
 	"api_response_unreadable": true, "api_network_unavailable": true, "api_identity_rejected": true,
 	"api_identity_unreadable": true, "credential_unverified": true, "api_identity_unconfirmed": true,
+	"task_response_unreadable": true, "task_id_missing": true, "task_id_invalid": true,
+	"evaluation_request_invalid": true, "evaluation_response_invalid": true, "evaluation_request_failed": true,
+	"audio_artifact_invalid": true, "audio_request_invalid": true, "audio_request_failed": true, "audio_response_invalid": true, "audio_output_unavailable": true,
 }

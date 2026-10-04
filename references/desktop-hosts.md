@@ -16,6 +16,18 @@ Project .dsh/skills, project .agents/skills and custom roots can shadow user ski
 
 DSH settings select agent-default-model.provider/model and llm-pi-ai.providers.<selected>. Its apiKeyEnv references exactly one entry in the sibling version-1 .credentials.yaml refs mapping. The executor checks the selected endpoint before reading that file; no process-environment credential fallback.
 
+## Official DeepSeek Harness
+
+Use `--host deepseek-harness` only in official DeepSeek Harness's default local Desktop session. This is distinct from community DSH Desktop (`dsh-desktop`). Install to absolute `DSH_HOME/skills`, otherwise `~/.dsh/skills`; project `.dsh/skills`, project `.agents/skills` and custom roots can shadow it. Verify the loaded Skill path. No Node installation is required by Skills.
+
+The adapter reads the default Desktop Cordis patch and the selected version-1 credential reference. Higher-priority home patches, custom composition, multiple matching connections, model route/auth overrides and inherited credential overrides stop. CLI/remote sessions or session-specific provider selection not represented by this default profile are unsupported: stop before invoking the executor; never substitute another host. Saved default selection is not proof of current chat identity. API permission and native attachment handoff remain pending real-host acceptance.
+
+## MiniMax Code Desktop
+
+Use `--host minimax-code` only in MiniMax Code Desktop 3.1.0 macOS/Windows local conversations confirmed to use the saved default connection. CLI profiles, remote execution and session/request-specific model selection are unsupported. Desktop priority is explicit request → session override → saved default; a saved default does not identify an overridden conversation. If that binding is unknown, stop before the executor. Never borrow the official MiniMax login or another host's connection.
+
+Desktop loads `<runtime-data>/skills`. Use the explicitly supplied `MINIMAX_DATA_DIR`, then `MAVIS_DATA_DIR`; without overrides or Desktop directory preferences the default is `~/.minimax`. The standalone installer does not parse Desktop settings: if either regional preferences store exists, provide the already confirmed absolute Skill target or run within the current Desktop runtime with its declared data root. It refuses to guess or migrate `.mavis`. The credential adapter separately resolves only the documented preferences files and the saved default in `<runtime-data>/config.yaml`. Verify the loaded Skill path because project, agent and shared roots may shadow it; doctor only examines the selected global root and loaded installation, never session stores. Real Skill loading, API and attachment delivery remain pending.
+
 ## ZCode
 
 Use host `zcode` in a local execution environment. Install into `~/.zcode/skills`, or `ZCODE_DATA_BASE_DIR/.zcode/skills` when that explicit base directory is absolute. Refresh and enable the installed Skills in ZCode. The executor reads only the v2 connection store and uses one uniquely enabled matching Pure Tokens connection. This confirms API capability, not the current conversation model. Route media here only when host context explicitly selects Pure Tokens or the user explicitly requests it; connection presence alone is not a routing signal. Multiple matching enabled connections stop before a request. Legacy migration belongs to ZCode; no legacy-store fallback is attempted. Remote workspaces need their own accessible executor and connection; syncing Skills alone does not supply either. Native image/video attachment delivery remains pending real-host acceptance.
@@ -42,7 +54,7 @@ After verifying the endpoint, the executor checks the matching native API-key en
 
 Installation selects `OPENCODE_CONFIG_DIR/skills` when explicitly set, otherwise `XDG_CONFIG_HOME/opencode/skills`, defaulting to `~/.config/opencode/skills`. These overrides must be absolute without parent traversal. A user-specified absolute target remains available; it does not establish host discovery.
 
-Doctor checks the loaded root, selected/global OpenCode roots and the documented `~/.agents/skills` and `~/.claude/skills` compatibility roots. It inspects only the six managed Skill names and the executor, not credentials in those shared roots. It does not enumerate projects or arbitrary `skills.paths`. Duplicate detection does not establish which copy the host selected and never deletes copies. Verify the actual loaded Skill location and version in a fresh local session; installing new bytes alone does not prove that OpenCode loaded them.
+Doctor checks the loaded root, selected/global OpenCode roots and the documented `~/.agents/skills` and `~/.claude/skills` compatibility roots. It inspects only the eight managed Skill names and the executor, not credentials in those shared roots. It does not enumerate projects or arbitrary `skills.paths`. Duplicate detection does not establish which copy the host selected and never deletes copies. Verify the actual loaded Skill location and version in a fresh local session; installing new bytes alone does not prove that OpenCode loaded them.
 
 ## Pi
 
@@ -68,11 +80,17 @@ configuration. Unrepresented profile/session overrides are unsupported.
 Use `--host vscode` in the local default profile; Skills install to
 `~/.copilot/skills`. Named profiles, portable mode, SSH/WSL and remote hosts
 are outside this adapter's verified scope. The native customendpoint file must
-have exactly one endpoint-matching model with an inline Bearer header.
-Multiple matching models stop as ambiguous, including multi-model Switch
-configurations; never choose the first model, compare keys, remove models,
-or alter the user's chat selection to force init to pass. This initial
-adapter does not establish full multi-model Switch compatibility.
+have one uniquely matching group; all its models must use supported Pure Tokens
+routes and one identical inline Bearer credential. Candidate 0.18.7 verifies
+this only in executor memory without reporting comparison data. Different
+Keys, multiple matching groups, dynamic authentication, discovery/route
+overrides or mixed-service groups stop. Do not remove models, alter chat
+selection or inspect configuration to force init to pass. This identifies
+the saved connection, not the selected chat model; route here only when
+the user or current host context explicitly requests Pure Tokens.
+Unrepresented session/profile overrides remain unsupported and cannot be
+inferred from this file. Version 0.18.6 still rejects multiple matching models;
+candidate fixtures do not establish real API or attachment delivery.
 
 ## Octop
 

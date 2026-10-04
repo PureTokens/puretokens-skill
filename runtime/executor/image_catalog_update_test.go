@@ -45,7 +45,7 @@ func TestCurrentGPTImageParameters(t *testing.T) {
 			}
 		}
 		for _, parameters := range []map[string]any{
-			{"image_size": "2K"}, {"image_size": "4K"}, {"quality": "xhigh"},
+			{"image_size": "8K"}, {"image_size": "2k"}, {"quality": "xhigh"},
 			{"quality": "max"}, {"output_format": "gif"}, {"response_format": "b64_json"}, {"n": 2},
 		} {
 			request := taskRequest{Kind: "image", Operation: "generate", Model: model, Prompt: "fixture", Parameters: parameters}

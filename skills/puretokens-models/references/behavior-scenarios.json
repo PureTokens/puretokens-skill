@@ -49,6 +49,16 @@
       "then": "ask for an explicit compatible constraint or show the complete authenticated catalog; do not rank unverified quality, price, or speed"
     },
     {
+      "id": "models-compare-hard-requirements",
+      "when": "User asks which model can accept a local first-frame image with specified duration/resolution, then asks for the cheapest or fastest option.",
+      "then": "Use one declared-schema query for the hard requirements, preserving input role and transport. Explain all matching IDs and declared differences from the existing receipt. Do not rank unreturned price/latency/quality, make another catalog read for presentation, substitute an incompatible model or submit generation."
+    },
+    {
+      "id": "models-price-only-no-useless-discovery",
+      "when": "User only asks for an exact price or fastest/best ranking without a capability question represented in the catalog.",
+      "then": "Explain the absent authoritative quote/comparable performance data without credentials or a catalog request that cannot answer it. Offer comparison by declared constraints when requested; never infer prices or rank from names."
+    },
+    {
       "id": "models-catalog-response",
       "when": "the fixed Pure Tokens API returns authenticated model data",
       "then": "display only returned exact IDs, declared capabilities, properties, non-input constraints, and operations in a user-readable grouped format, then stop without submitting media work"

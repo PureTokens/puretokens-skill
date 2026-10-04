@@ -1,0 +1,79 @@
+{
+  "$schema": "https://puretokensx.com/schemas/media-execution-contract.schema.json",
+  "schemaVersion": 1,
+  "kind": "audio",
+  "transport": {
+    "fixedApiOrigin": "https://api.puretokensx.com",
+    "usesFullApiUrls": true,
+    "usesManagedNativeExecutor": true,
+    "usesCurrentHostConfiguredCredential": true,
+    "credentialSourceNeverBecomesRequestTarget": true,
+    "neverExposesCredentialsOrHostConfiguration": true,
+    "doesNotUseNodeRuntime": true,
+    "doesNotUseMcpOrFallbackTransport": true,
+    "doesNotUseComputerUseOrUiAutomation": true,
+    "doesNotInvokeOtherMediaSkillsAsApiFallback": true,
+    "executionStart": "invoke_the_checksum_verified_managed_native_executor_with_the_current_host_id_and_fixed_request",
+    "whenManagedNativeExecutorUnavailable": "report_only_an_actual_executor_network_credential_adapter_or_attachment_byte_failure_and_never_open_a_browser_desktop_ui_or_computer_use"
+  },
+  "operations": {
+    "speech": {
+      "method": "POST",
+      "url": "https://api.puretokensx.com/v1/audio/speech"
+    },
+    "transcribe": {
+      "method": "POST",
+      "url": "https://api.puretokensx.com/v1/audio/transcriptions"
+    },
+    "generate": {
+      "method": "POST",
+      "url": "https://api.puretokensx.com/v1/audio/generate"
+    },
+    "musicSubmit": {
+      "method": "POST",
+      "url": "https://api.puretokensx.com/v1/audio/music/submit"
+    },
+    "musicStatus": {
+      "method": "GET",
+      "urlTemplate": "https://api.puretokensx.com/v1/audio/music/tasks/{task_id}"
+    },
+    "musicContent": {
+      "method": "GET",
+      "urlTemplate": "https://api.puretokensx.com/v1/audio/music/tasks/{task_id}/content"
+    }
+  },
+  "result": {
+    "onePostPerInvocation": true,
+    "neverAutomaticallyRetries": true,
+    "nativeAudioBytesRequired": true,
+    "localArtifactVerification": true,
+    "downloadIsNotDelivery": true,
+    "supportExcludesInputsAndResults": true,
+    "synchronousOperations": [
+      "speech",
+      "transcribe",
+      "generate"
+    ],
+    "asynchronousMusic": {
+      "kind": "music",
+      "model": "stepaudio-3-music-preview",
+      "submitUrl": "https://api.puretokensx.com/v1/audio/music/submit",
+      "statusUrlTemplate": "https://api.puretokensx.com/v1/audio/music/tasks/{task_id}",
+      "contentUrlTemplate": "https://api.puretokensx.com/v1/audio/music/tasks/{task_id}/content",
+      "asynchronous": true,
+      "onePostPerSubmission": true,
+      "neverAutomaticallyResubmits": true,
+      "recordRequiredBySkill": true,
+      "recordExcludesPromptAndLyrics": true,
+      "apiTaskBoundToOwnerAndOriginatingKey": true,
+      "maxOutputBytes": 33554432,
+      "artifactRetentionSeconds": 86400,
+      "retentionStarts": "gateway_artifact_saved_at",
+      "waitWindowMaxReads": 7,
+      "waitWindowDeadlineSeconds": 300,
+      "maxAutomaticWaitWindows": 2,
+      "reconciliationStopsAutomaticContinuation": true,
+      "downloadIsNotDelivery": true
+    }
+  }
+}

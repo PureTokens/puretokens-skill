@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "name": "puretokens-models",
-  "version": "0.18.6",
+  "version": "0.18.7",
   "entry": "SKILL.md",
   "displayName": "Pure Tokens Models",
-  "description": "Inspect fixed-Pure-Tokens authenticated media models, declared parameters, and media operations.",
+  "description": "Inspect fixed-Pure-Tokens media capabilities and parameters, or explicitly look up reviewed audio or Jev evaluation models in the authenticated directory.",
   "executionContract": "references/execution-contract.json",
   "behaviorScenarios": "references/behavior-scenarios.json",
   "distribution": {
@@ -76,6 +76,14 @@
     "octop": {
       "manualInstallationSupported": true,
       "workspaceSkillDirectory": ".octop/skills"
+    },
+    "deepseekHarness": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.dsh/skills"
+    },
+    "minimaxCode": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.minimax/skills"
     }
   },
   "supportedClients": [
@@ -88,6 +96,8 @@
     "trae",
     "claude-desktop",
     "dsh-desktop",
+    "deepseek-harness",
+    "minimax-code",
     "zcode",
     "kimi-code",
     "qoder",
@@ -109,12 +119,13 @@
     "doesNotInvokeOtherMediaSkillsAsApiFallback": true,
     "neverExposesCredentialsOrHostConfiguration": true,
     "catalogReadOnly": true,
-    "reportsOnlyLiveDeclaredCapabilities": true,
+    "reportsOnlyLiveDeclaredMediaCapabilities": true,
+    "evaluationCapabilityComesFromReviewedContract": true,
     "doesNotSubmitMediaTasks": true,
     "compatibilityShortlistsRequireLiveCapabilityAndInputSchema": true,
     "doesNotRankUndeclaredModelAttributes": true,
     "doesNotUseMcpOrFallbackTransport": true,
     "supportsExplicitCatalogFilter": true
   },
-  "sourceSha256": "9e9882d349f93f14ed5cddca0ac084afb87932b2cf3e31ae2594ef3f297d6d9f"
+  "sourceSha256": "055729d603baf9407b2b078bc90d74bce4555f885b0a9a22eed02bab7f9951ca"
 }

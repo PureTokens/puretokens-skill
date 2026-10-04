@@ -1,0 +1,150 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://puretokensx.com/schemas/evaluation-request.schema.json",
+  "title": "Bounded synchronous Jev evaluation request",
+  "type": "object",
+  "required": [
+    "model",
+    "state",
+    "questions"
+  ],
+  "properties": {
+    "model": {
+      "enum": [
+        "jev-latest",
+        "jev-1.13.0",
+        "jev-preview"
+      ]
+    },
+    "state": {
+      "type": [
+        "string",
+        "object",
+        "array"
+      ]
+    },
+    "questions": {
+      "type": "object",
+      "minProperties": 1,
+      "maxProperties": 64,
+      "patternProperties": {
+        "^[A-Za-z][A-Za-z0-9_-]{0,63}$(?![\\s\\S])": {
+          "oneOf": [
+            {
+              "type": "object",
+              "required": [
+                "type",
+                "instructions",
+                "criteria"
+              ],
+              "properties": {
+                "type": {
+                  "const": "choice"
+                },
+                "instructions": {
+                  "type": [
+                    "string",
+                    "object",
+                    "array"
+                  ]
+                },
+                "criteria": {
+                  "type": "object",
+                  "minProperties": 1,
+                  "maxProperties": 255,
+                  "patternProperties": {
+                    "^(?=.*\\S)[^\\u0000-\\u001f\\u007f-\\u009f]{1,128}$(?![\\s\\S])": {
+                      "type": [
+                        "string",
+                        "object",
+                        "array",
+                        "null"
+                      ]
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "required": [
+                "type",
+                "instructions",
+                "criteria"
+              ],
+              "properties": {
+                "type": {
+                  "const": "score"
+                },
+                "instructions": {
+                  "type": [
+                    "string",
+                    "object",
+                    "array"
+                  ]
+                },
+                "criteria": {
+                  "type": "array",
+                  "minItems": 2,
+                  "maxItems": 10,
+                  "items": {
+                    "type": [
+                      "string",
+                      "object",
+                      "array"
+                    ]
+                  }
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "required": [
+                "type",
+                "instructions"
+              ],
+              "properties": {
+                "type": {
+                  "const": "noul"
+                },
+                "instructions": {
+                  "type": [
+                    "string",
+                    "object",
+                    "array"
+                  ]
+                },
+                "criteria": {
+                  "type": "object",
+                  "properties": {
+                    "true": {
+                      "type": [
+                        "string",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "false": {
+                      "type": [
+                        "string",
+                        "object",
+                        "array"
+                      ]
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

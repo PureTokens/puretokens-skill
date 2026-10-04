@@ -170,14 +170,14 @@ func profileRequestGap(request taskRequest, profile modelProfile) (bool, error) 
 		transports, referenceDeclared := profile.Parameters.Constraints["reference_transport"][key]
 		if referenceDeclared || inputExists || mediaReferenceField(key) {
 			if inputExists && opName != "" {
-				if !contains(input.Transports, "public_https_url") {
+				if !contains(input.Transports, "public_https_url") && !contains(input.Transports, "https_url") {
 					gap = true
 				}
 				if !referenceDeclared {
 					transports = input.Transports
 				}
 			}
-			if !hasValue(array(transports), "public_https_url") {
+			if !hasValue(array(transports), "public_https_url") && !hasValue(array(transports), "https_url") {
 				gap = true
 			}
 			// Validate public-host and count restrictions before any refresh.
@@ -196,7 +196,7 @@ func profileRequestGap(request taskRequest, profile modelProfile) (bool, error) 
 
 func mediaReferenceField(key string) bool {
 	switch key {
-	case "image", "image_urls", "audio_urls", "first_frame_image", "last_frame_image", "reference_images", "reference_videos", "reference_audios", "video", "audio":
+	case "image", "image_urls", "audio_urls", "video_urls", "first_frame_image", "last_frame_image", "reference_images", "reference_videos", "reference_audios", "video", "audio":
 		return true
 	}
 	return false
@@ -216,6 +216,9 @@ func requestedMediaOperation(request taskRequest) (string, error) {
 	return opName, nil
 }
 func prepareProfileRequest(request *taskRequest, svc service) error {
+	if request.Kind == "music" {
+		return prepareMusicRequest(request)
+	}
 	if request.Parameters == nil {
 		request.Parameters = make(map[string]any)
 	}
@@ -465,7 +468,7 @@ func validateReferences(value, transport any) error {
 	maxCount := 0
 	for _, entry := range array(transport) {
 		text := fmt.Sprint(entry)
-		if text == "public_https_url" {
+		if text == "public_https_url" || text == "https_url" {
 			allowsURL = true
 		}
 		if strings.HasPrefix(text, "max_") {

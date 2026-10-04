@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pure Tokens Evaluate"
+  short_description: "Jev text classification, scoring and yes/no judgments."
+  default_prompt: "Use $puretokens-evaluate when the user requests a Jev evaluation through the current Pure Tokens connection. Help, prompt drafting and media understanding do not authorize a paid evaluation."

@@ -7,7 +7,7 @@ param(
   [Parameter(Mandatory = $false)]
   [string]$Target,
   [Parameter(Mandatory = $false)]
-  [ValidateSet("claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae", "claude-desktop", "dsh-desktop", "zcode", "kimi-code", "qoder", "pi", "hermes", "evox", "vscode", "octop")]
+  [ValidateSet("claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae", "claude-desktop", "dsh-desktop", "deepseek-harness", "minimax-code", "zcode", "kimi-code", "qoder", "pi", "hermes", "evox", "vscode", "octop")]
   [Alias("Host")]
   [string]$HostId,
   [Parameter(Mandatory = $false)]
@@ -17,7 +17,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$currentSkills = @("puretokens-balance", "puretokens-connection", "puretokens-models", "puretokens-image", "puretokens-video", "puretokens-update")
+$currentSkills = @("puretokens-balance", "puretokens-connection", "puretokens-models", "puretokens-image", "puretokens-video", "puretokens-audio", "puretokens-evaluate", "puretokens-update")
 
 function Fail([string]$Message) { throw "Pure Tokens Skill installer: $Message" }
 
@@ -270,6 +270,32 @@ function Get-TargetForHost([string]$RequestedHost) {
       }
       return (Join-Path $env:USERPROFILE ".zcode\skills")
     }
+    "minimax-code" {
+      foreach ($override in @("MAVIS_PROFILE", "MINIMAX_PROFILE", "AGENTARCHON_PROFILE", "AGENTARCHON_DATA_DIR", "__MAVIS_RUNTIME_PROFILE", "__MAVIS_RUNTIME_DATA_DIR")) {
+        if (-not [string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($override))) { Fail "MiniMax CLI and runtime profile overrides are unsupported" }
+      }
+      $root = if ($env:MINIMAX_DATA_DIR) { $env:MINIMAX_DATA_DIR } else { $env:MAVIS_DATA_DIR }
+      if ([string]::IsNullOrWhiteSpace($root)) {
+        if (-not $env:APPDATA -or -not [IO.Path]::IsPathRooted($env:APPDATA)) { Fail "MiniMax Desktop application directory is unavailable" }
+        foreach ($app in @("MiniMax Code", "MiniMax", "MiniMax Agent")) {
+          $appRoot = Join-Path $env:APPDATA $app
+          foreach ($store in @("minimax-agent-cn-config.json", "minimax-agent-config.json")) {
+            if ((Test-Path -LiteralPath (Join-Path $appRoot $store)) -or ((Test-Path -LiteralPath $appRoot) -and ((Get-Item -LiteralPath $appRoot).Attributes -band [IO.FileAttributes]::ReparsePoint))) {
+              Fail "MiniMax Desktop preferences require its runtime data directory; run inside the local client with MINIMAX_DATA_DIR or pass the confirmed absolute -Target; no directory was guessed"
+            }
+          }
+        }
+        $root = Join-Path $env:USERPROFILE ".minimax"
+        if (-not (Test-Path -LiteralPath (Join-Path $root "config.yaml")) -and (Test-Path -LiteralPath (Join-Path $env:USERPROFILE ".mavis"))) { Fail "MiniMax legacy migration is pending; let the client migrate before installing" }
+      }
+      if ($root -notmatch '^[A-Za-z]:[\\/]' -or ($root -split '[\\/]') -contains '..' -or $root -match '[\x00-\x1f\x7f]') { Fail "MiniMax directory must be local and absolute without parent traversal" }
+      return (Join-Path $root "skills")
+    }
+    "deepseek-harness" {
+      $root = if ($env:DSH_HOME) { $env:DSH_HOME } else { Join-Path $env:USERPROFILE ".dsh" }
+      if ($root -notmatch '^[A-Za-z]:[\\/]' -or ($root -split '[\\/]') -contains '..' -or $root -match '[\x00-\x1f\x7f]') { Fail "DeepSeek Harness directory must be local and absolute without parent traversal" }
+      return (Join-Path $root "skills")
+    }
     "dsh-desktop" {
       if ($env:DSH_HOME) { return (Join-Path $env:DSH_HOME "skills") }
       if (-not $env:APPDATA -or -not [System.IO.Path]::IsPathRooted($env:APPDATA)) { throw "DSH Desktop application directory is unavailable" }
@@ -443,6 +469,9 @@ try {
   Remove-CompletedStage $stageRoot
   $stageRoot = $null
   $updateLock.Dispose(); $updateLock = $null
+  if ($env:PTP_OPERATIONS_RECEIPTS -eq "1") {
+    try { $null = Invoke-NativeExecutor (Join-Path (Join-Path $targetRoot ".puretokens-executor") "puretokens-api.exe") @("operations-receipt", "installed") } catch { }
+  }
   Invoke-Init $targetRoot $HostId
 } finally {
   try {

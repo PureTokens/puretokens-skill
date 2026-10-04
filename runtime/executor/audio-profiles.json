@@ -1,0 +1,251 @@
+{
+  "schemaVersion": 1,
+  "reviewedAt": "2026-09-27",
+  "sources": [
+    "https://platform.stepfun.com/docs/zh/guides/developer/tts",
+    "https://platform.stepfun.com/docs/zh/api-reference/audio/generate",
+    "PureTokenPlus_web/docs/product/audio-workspace-integration.md",
+    "https://platform.stepfun.com/docs/zh/api-reference/audio/music"
+  ],
+  "models": {
+    "stepaudio-2.5-tts": {
+      "model": "stepaudio-2.5-tts",
+      "operation": "speech",
+      "path": "/v1/audio/speech",
+      "content_type": "application/json",
+      "max_input_characters": 1000,
+      "formats": [
+        "mp3",
+        "wav"
+      ],
+      "voices": {
+        "boyinnansheng": "播音男声",
+        "cixingnansheng": "磁性男声",
+        "elegantgentle-female": "气质温婉",
+        "ganliannvsheng": "干练女声",
+        "huolinvsheng": "活力女声",
+        "jilingshaonv": "机灵少女",
+        "jingdiannvsheng": "经典女声",
+        "lengyanyujie": "冷艳御姐",
+        "linjiajiejie": "邻家姐姐",
+        "linjiameimei": "邻家妹妹",
+        "lively-girl": "Lively Girl",
+        "livelybreezy-female": "活力轻快",
+        "magnetic-voiced-male": "Magnetic-voiced Male",
+        "qingchunshaonv": "清纯少女",
+        "qingniandaxuesheng": "青年大学生",
+        "qinhenvsheng": "亲和女声",
+        "qinqienvsheng": "亲切女声",
+        "ruanmengnvsheng": "软萌女声",
+        "ruyananshi": "儒雅男士",
+        "shenchennanyin": "深沉男音",
+        "shuangkuaijiejie": "爽快姐姐",
+        "shuangkuainansheng": "爽快男声",
+        "soft-spoken-gentleman": "Soft-spoken Gentleman",
+        "tianmeinvsheng": "甜美女声",
+        "vibrant-youth": "Vibrant Youth",
+        "wenjingxuejie": "文静学姐",
+        "wenrougongzi": "温柔公子",
+        "wenrounansheng": "温柔男声",
+        "wenrounvsheng": "温柔女声",
+        "wenroushunv": "温柔熟女",
+        "youyanvsheng": "优雅女声",
+        "yuanqinansheng": "元气男声",
+        "yuanqishaonv": "元气少女",
+        "zhengpaiqingnian": "正派青年",
+        "zhixingjiejie": "知性姐姐",
+        "zixinnansheng": "自信男声"
+      },
+      "speed_min": 0.5,
+      "speed_max": 2,
+      "supports_instruction": true
+    },
+    "step-tts-2": {
+      "model": "step-tts-2",
+      "operation": "speech",
+      "path": "/v1/audio/speech",
+      "content_type": "application/json",
+      "max_input_characters": 1000,
+      "formats": [
+        "mp3",
+        "wav"
+      ],
+      "voices": {
+        "boyinnansheng": "播音男声",
+        "cixingnansheng": "磁性男声",
+        "elegantgentle-female": "气质温婉",
+        "ganliannvsheng": "干练女声",
+        "huolinvsheng": "活力女声",
+        "jilingshaonv": "机灵少女",
+        "jingdiannvsheng": "经典女声",
+        "lengyanyujie": "冷艳御姐",
+        "linjiajiejie": "邻家姐姐",
+        "linjiameimei": "邻家妹妹",
+        "lively-girl": "Lively Girl",
+        "livelybreezy-female": "活力轻快",
+        "magnetic-voiced-male": "Magnetic-voiced Male",
+        "qingchunshaonv": "清纯少女",
+        "qingniandaxuesheng": "青年大学生",
+        "qinhenvsheng": "亲和女声",
+        "qinqienvsheng": "亲切女声",
+        "ruanmengnvsheng": "软萌女声",
+        "ruyananshi": "儒雅男士",
+        "shenchennanyin": "深沉男音",
+        "shuangkuaijiejie": "爽快姐姐",
+        "shuangkuainansheng": "爽快男声",
+        "soft-spoken-gentleman": "Soft-spoken Gentleman",
+        "tianmeinvsheng": "甜美女声",
+        "vibrant-youth": "Vibrant Youth",
+        "wenjingxuejie": "文静学姐",
+        "wenrougongzi": "温柔公子",
+        "wenrounansheng": "温柔男声",
+        "wenrounvsheng": "温柔女声",
+        "wenroushunv": "温柔熟女",
+        "youyanvsheng": "优雅女声",
+        "yuanqinansheng": "元气男声",
+        "yuanqishaonv": "元气少女",
+        "zhengpaiqingnian": "正派青年",
+        "zhixingjiejie": "知性姐姐",
+        "zixinnansheng": "自信男声"
+      },
+      "speed_min": 0.5,
+      "speed_max": 2,
+      "supports_instruction": false
+    },
+    "step-tts-mini": {
+      "model": "step-tts-mini",
+      "operation": "speech",
+      "path": "/v1/audio/speech",
+      "content_type": "application/json",
+      "max_input_characters": 1000,
+      "formats": [
+        "mp3",
+        "wav"
+      ],
+      "voices": {
+        "boyinnansheng": "播音男声",
+        "cixingnansheng": "磁性男声",
+        "elegantgentle-female": "气质温婉",
+        "jilingshaonv": "机灵少女",
+        "jingdiannvsheng": "经典女声",
+        "lengyanyujie": "冷艳御姐",
+        "linjiajiejie": "邻家姐姐",
+        "linjiameimei": "邻家妹妹",
+        "livelybreezy-female": "活力轻快",
+        "qingchunshaonv": "清纯少女",
+        "qingniandaxuesheng": "青年大学生",
+        "qinqienvsheng": "亲切女声",
+        "ruanmengnvsheng": "软萌女声",
+        "ruyananshi": "儒雅男士",
+        "shenchennanyin": "深沉男音",
+        "shuangkuaijiejie": "爽快姐姐",
+        "tianmeinvsheng": "甜美女声",
+        "wenjingxuejie": "文静学姐",
+        "wenrougongzi": "温柔公子",
+        "wenrounansheng": "温柔男声",
+        "wenrounvsheng": "温柔女声",
+        "wenroushunv": "温柔熟女",
+        "youyanvsheng": "优雅女声",
+        "yuanqinansheng": "元气男声",
+        "yuanqishaonv": "元气少女",
+        "zhengpaiqingnian": "正派青年",
+        "zhixingjiejie": "知性姐姐"
+      },
+      "speed_min": 0.5,
+      "speed_max": 2,
+      "supports_instruction": false
+    },
+    "stepaudio-2.5-asr": {
+      "model": "stepaudio-2.5-asr",
+      "operation": "transcribe",
+      "path": "/v1/audio/transcriptions",
+      "content_type": "multipart/form-data",
+      "input_formats": [
+        "mp3",
+        "wav",
+        "ogg"
+      ],
+      "max_input_bytes": 8388608,
+      "response_format": "json",
+      "gateway_aggregates_sse": false
+    },
+    "step-asr": {
+      "model": "step-asr",
+      "operation": "transcribe",
+      "path": "/v1/audio/transcriptions",
+      "content_type": "multipart/form-data",
+      "input_formats": [
+        "mp3",
+        "wav",
+        "ogg"
+      ],
+      "max_input_bytes": 8388608,
+      "response_format": "json",
+      "gateway_aggregates_sse": false
+    },
+    "stepaudio-3-asr-max": {
+      "model": "stepaudio-3-asr-max",
+      "operation": "transcribe",
+      "path": "/v1/audio/transcriptions",
+      "content_type": "multipart/form-data",
+      "input_formats": [
+        "mp3",
+        "wav",
+        "ogg"
+      ],
+      "max_input_bytes": 8388608,
+      "response_format": "json",
+      "gateway_aggregates_sse": true
+    },
+    "stepaudio-2-asr-pro": {
+      "model": "stepaudio-2-asr-pro",
+      "operation": "transcribe",
+      "path": "/v1/audio/transcriptions",
+      "content_type": "multipart/form-data",
+      "input_formats": [
+        "mp3",
+        "wav",
+        "ogg"
+      ],
+      "max_input_bytes": 8388608,
+      "response_format": "json",
+      "gateway_aggregates_sse": true
+    },
+    "stepaudio-3-gen-preview": {
+      "model": "stepaudio-3-gen-preview",
+      "operation": "generate",
+      "path": "/v1/audio/generate",
+      "content_type": "application/json",
+      "max_instruction_characters": 500,
+      "formats": [
+        "mp3",
+        "wav"
+      ],
+      "task": "text_to_audio",
+      "stream_format": "audio"
+    },
+    "stepaudio-3-music-preview": {
+      "model": "stepaudio-3-music-preview",
+      "operation": "music",
+      "path": "/v1/audio/music/submit",
+      "content_type": "application/json",
+      "synchronous": false,
+      "executor_kind": "music",
+      "executor_operation": "generate",
+      "max_prompt_characters": 1000,
+      "max_lyrics_characters": 4000,
+      "formats": [
+        "mp3",
+        "wav"
+      ],
+      "instrumental_required": true,
+      "instrumental_excludes_lyrics": true,
+      "status_path": "/v1/audio/music/tasks/{task_id}",
+      "content_path": "/v1/audio/music/tasks/{task_id}/content",
+      "max_output_bytes": 33554432,
+      "artifact_retention_seconds": 86400,
+      "artifact_retention_starts": "gateway_artifact_saved_at",
+      "never_automatically_retries": true
+    }
+  }
+}

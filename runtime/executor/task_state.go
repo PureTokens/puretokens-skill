@@ -45,7 +45,7 @@ func safePublicCode(code string) string {
 func taskReceipt(request taskRequest, id, status string) receipt {
 	parameters := make(map[string]any)
 	// Media URLs, prompts and file paths are deliberately excluded from receipts.
-	for _, key := range []string{"n", "size", "image_size", "aspect_ratio", "width", "height", "duration", "resolution", "generate_audio", "strength", "quality", "output_format", "response_format"} {
+	for _, key := range []string{"n", "size", "image_size", "aspect_ratio", "width", "height", "duration", "resolution", "generate_audio", "instrumental", "strength", "quality", "output_format", "response_format"} {
 		if value, exists := request.Parameters[key]; exists {
 			switch v := value.(type) {
 			case string:
@@ -73,7 +73,7 @@ func taskReceipt(request taskRequest, id, status string) receipt {
 					continue
 				}
 			}
-			if key == "generate_audio" {
+			if key == "generate_audio" || key == "instrumental" {
 				if _, ok := value.(bool); !ok {
 					continue
 				}
@@ -105,7 +105,7 @@ func taskReceipt(request taskRequest, id, status string) receipt {
 		count = 0
 	}
 	kind := request.Kind
-	if kind != "image" && kind != "video" {
+	if kind != "image" && kind != "video" && kind != "music" {
 		kind = ""
 	}
 	operation := safePublicCode(request.Operation)
@@ -130,7 +130,7 @@ func safeParameterString(key, text string) bool {
 		"strength":        `^(LOW|MID|HIGH)$`,
 		"quality":         `^(auto|low|medium|high|xhigh|max)$`,
 		"output_format":   `^(png|jpeg|webp)$`,
-		"response_format": `^url$`,
+		"response_format": `^(url|mp3|wav)$`,
 	}
 	pattern, ok := patterns[key]
 	return ok && regexp.MustCompile(pattern).MatchString(text)
@@ -147,8 +147,11 @@ func mergeFailure(current, failure receipt) receipt {
 	return current
 }
 func applyTaskStatus(result receipt, body []byte, httpStatus int) (receipt, error) {
-	id, state, reconcile, ok := taskIdentity(body)
-	if !ok || id != result.TaskID {
+	id, state, reconcile, code := parseTaskIdentity(body)
+	if code != "" {
+		return mergeFailure(result, taskIdentityFailure("status", code, httpStatus)), errors.New("task identity unreadable")
+	}
+	if id != result.TaskID {
 		return mergeFailure(result, receipt{FailurePhase: "status", HTTPStatus: httpStatus, ErrorMessage: "The status response did not identify this task.", NextAction: "Keep this task ID; do not create another task."}), errors.New("task identity mismatch")
 	}
 	result.Status = state
@@ -185,7 +188,7 @@ func executeExistingTask(command string, input io.Reader, output io.Writer, svc 
 		if !validTaskID(request.TaskID) {
 			result.TaskID = ""
 		}
-		writeReceipt(output, mergeFailure(result, validationFailure("Choose image or video, a valid existing task ID, and valid continuation metadata.")))
+		writeReceipt(output, mergeFailure(result, validationFailure("Choose image, video or music, a valid existing task ID, and valid continuation metadata.")))
 		return errors.New("invalid existing task")
 	}
 	if command == "wait" {
@@ -212,7 +215,11 @@ func executeExistingTask(command string, input io.Reader, output io.Writer, svc 
 	}
 	body, status, retry, code, message, err := svc.request(context.Background(), http.MethodGet, statusPath(request.Kind, result.TaskID), nil, "")
 	if err != nil || status < 200 || status >= 300 {
-		writeReceipt(output, withRetry(mergeFailure(result, apiFailure("status", status, retry, code, message, "Keep this task ID; continue the same task later.")), retry, svc.clock()))
+		failure := apiFailure("status", status, retry, code, message, "Keep this task ID; continue the same task later.")
+		if status >= 200 && status < 300 && errors.Is(err, errAPIResponseUnreadable) {
+			failure = taskIdentityFailure("status", "task_response_unreadable", status)
+		}
+		writeReceipt(output, withRetry(mergeFailure(result, failure), retry, svc.clock()))
 		return errors.New("status failed")
 	}
 	result, err = applyTaskStatus(result, body, status)

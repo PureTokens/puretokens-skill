@@ -113,6 +113,7 @@
     "existingOutputReuse": "explicit_record_matching_sha256_bytes_media_type_only_otherwise_preserve_and_choose_another_directory"
   },
   "parameterValidation": {
+    "defaultModel": "minimax_h3",
     "normalSubmissionUsesSelectedProfileAndIndexWhenNeeded": true,
     "exactModelCoreSubmissionDoesNotRequireCatalogPreflight": true,
     "onDemandLiveCatalogRead": "only_for_explicit_discovery_installed_profile_gap_or_post_rejection_diagnosis",

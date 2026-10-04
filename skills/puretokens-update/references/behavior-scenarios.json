@@ -56,7 +56,7 @@
     {
       "id": "update-managed-sync",
       "when": "a supported host has no conflicting target directories",
-      "then": "Run the official sync once, report the synchronized version and relevant changes, then advise a new host conversation. Do not repeat the full six-Skill version list."
+      "then": "Run the official sync once, report the synchronized version and relevant changes, then advise a new host conversation. Do not repeat the full seven-Skill version list."
     },
     {
       "id": "update-help-only",
@@ -86,7 +86,7 @@
     {
       "id": "same-version-verified",
       "when": "install or update finds the selected stable version already installed",
-      "then": "Verify the selected release executor checksum and all seven managed inventories. Only an intact installation with no unresolved transaction returns already current, without archive download, file writes or init. Missing or modified files stop without automatic repair."
+      "then": "Verify the selected release executor checksum and all nine managed inventories. Only an intact installation with no unresolved transaction returns already current, without archive download, file writes or init. Missing or modified files stop without automatic repair."
     },
     {
       "id": "install-host-launch-failure",

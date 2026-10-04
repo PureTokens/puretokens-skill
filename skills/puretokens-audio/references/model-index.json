@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "reviewedAt": "2026-09-27",
+  "scope": "reviewed_contract_not_live_availability",
+  "defaults": {
+    "speech": "stepaudio-2.5-tts",
+    "transcribe": "stepaudio-2.5-asr",
+    "generate": "stepaudio-3-gen-preview",
+    "music": "stepaudio-3-music-preview"
+  },
+  "models": [
+    {
+      "id": "stepaudio-2.5-tts",
+      "operation": "speech",
+      "profile": "profiles/stepaudio-2.5-tts.json"
+    },
+    {
+      "id": "step-tts-2",
+      "operation": "speech",
+      "profile": "profiles/step-tts-2.json"
+    },
+    {
+      "id": "step-tts-mini",
+      "operation": "speech",
+      "profile": "profiles/step-tts-mini.json"
+    },
+    {
+      "id": "stepaudio-2.5-asr",
+      "operation": "transcribe",
+      "profile": "profiles/stepaudio-2.5-asr.json"
+    },
+    {
+      "id": "step-asr",
+      "operation": "transcribe",
+      "profile": "profiles/step-asr.json"
+    },
+    {
+      "id": "stepaudio-3-asr-max",
+      "operation": "transcribe",
+      "profile": "profiles/stepaudio-3-asr-max.json"
+    },
+    {
+      "id": "stepaudio-2-asr-pro",
+      "operation": "transcribe",
+      "profile": "profiles/stepaudio-2-asr-pro.json"
+    },
+    {
+      "id": "stepaudio-3-gen-preview",
+      "operation": "generate",
+      "profile": "profiles/stepaudio-3-gen-preview.json"
+    },
+    {
+      "id": "stepaudio-3-music-preview",
+      "operation": "music",
+      "profile": "profiles/stepaudio-3-music-preview.json"
+    }
+  ]
+}

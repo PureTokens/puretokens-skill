@@ -1,17 +1,39 @@
 ---
 name: puretokens-image
-description: 当前宿主使用 Pure Tokens 连接时，任何生成或编辑图片的请求都优先使用本 Skill。
+description: 当前宿主使用 Pure Tokens 连接时，生成或编辑图片、续接已有图片任务或取回结果优先使用本 Skill。仅看图、OCR、解释截图、只写提示词或询问模型能力时不提交生成。
 ---
 
 # Pure Tokens Image
 
 宿主绑定与本地失败停止：首次调用前根据当前应用或用户明确指定确定一个 host；本次任务所有 Skill 和执行器命令沿用该 host，不从安装目录推断宿主。任何命令返回 `active_connection_*`、`workbuddy_*` 或 `host_credential_adapter_unavailable` 本地失败时，立即停止本次 API 流程并返回脱敏说明；不得自动调用 puretokens-connection、init、doctor、models 或其他 Skill 重复探测，不得枚举、更换 `--host` 或借用其他客户端凭据。保留用户原任务和已有 task ID；本次调用未发请求不代表此前没有提交任务，不自动重提。只有用户明确要求重查或出现可验证的新诊断依据时，才在原 host 做一次相应检查；“继续生成”本身不是切换宿主或重复探测的授权。改变执行宿主必须有用户明确指定，不能把失败恢复当作指定。
 
+## 触发与意图
+
+<!-- generated:operations -->
+| 用户需求 | 命令与请求 | 返回方式 | 恢复与交付 |
+| --- | --- | --- | --- |
+| 图片生成／编辑 | `submit`；`kind=image` | 异步；先回执，再独立等待／下载 | 原任务 `resume`；仅实际附件交付后 `delivered` |
+
+文件路径／下载回执不等于交付；附件须实际附加，文本须展示校验后的结果。未知提交不证明未处理或未扣费，均不自动重发。
+<!-- /generated:operations -->
+
+只有用户要求生成／编辑图片时才进入新任务提交。仅看图、OCR、解释截图报错或只写提示词，直接按理解／写作任务处理，不调用媒体执行器；只问用法读 puretokens-update 的使用指南，只问模型能力交给 puretokens-models。已有任务的进度、恢复或取结果走同任务续接，不创建新任务。单独出现图片附件、模型名称或“图片”一词不是生成授权。
+
+| 用户需求 | 操作选择 |
+| --- | --- |
+| 用文字生成一张新图 | `generate`，读取所选 profile |
+| 只修改附件背景、保留主体／文案 | 本地附件用声明的 `image_edit`；公网 URL 编辑须有对应 JSON 编辑声明 |
+| 参考附件的外观／风格生成新图 | 保留“参考”用途；本地参考走声明的 `image_edit`，公网参考用 profile 声明的 JSON 字段 |
+| 多张附件合成／分别参考 | 先明确各图角色，再验证同一 operation 的数量和组合；不由附件数量猜用途 |
+| 继续原任务、下载已有结果 | `resume`／同任务查询与交付；不得新 POST |
+
+用户已说明角色时不重复追问；用途不明或模型能力不支持时才澄清。此表只判断意图，具体字段、传输、数量和能力以所选 profile 为准。
+
 ## 执行边界
 
 必须调用安装的原生执行器；它是唯一 API 传输，固定请求 `https://api.puretokensx.com`。不得自行发 HTTP，不回退到 imagegen／Imagen／通用视频 Skill、MCP、代理、Computer Use 或浏览器／桌面自动化。仅执行器在内存中使用当前宿主匹配连接；Skill 不读配置、不传或展示凭据，不新增用户运行环境。
 
-从本 SKILL.md 绝对目录解析 `../.puretokens-executor/puretokens-api`，Windows 使用 `puretokens-api.exe`；不依赖 PATH 或工作目录。当前宿主 ID 为 claude-code、codex、workbuddy、gemini-cli、grok-build、opencode、trae、claude-desktop、dsh-desktop、zcode、kimi-code、qoder、pi、hermes、evox、vscode、octop。
+从本 SKILL.md 绝对目录解析 `../.puretokens-executor/puretokens-api`，Windows 使用 `puretokens-api.exe`；不依赖 PATH 或工作目录。当前宿主 ID 为 claude-code、codex、workbuddy、gemini-cli、grok-build、opencode、trae、claude-desktop、dsh-desktop、deepseek-harness、minimax-code、zcode、kimi-code、qoder、pi、hermes、evox、vscode、octop。
 
 宿主已明确无法提供本次附件字节或交付媒体时，提交前停止，不创建付费任务；远程／沙箱限制不允许复制凭据或换传输。安装、init、API 或夹具成功不证明实机附件能力，验收待完成也不等于不支持。未反映在有效连接文件中的会话覆盖必须停止；ZCode／Qoder 配置存在不证明当前聊天选择。
 
@@ -24,10 +46,12 @@ description: 当前宿主使用 Pure Tokens 连接时，任何生成或编辑图
 
 ## 选择与提交
 
-1. 默认 `gpt-image-2` 或用户精确 ID：只读 `references/profiles/<model>.json`；选模型或唯一别名解析才读 `references/model-index.json`。不遍历 profile，不先查余额、init、doctor、preflight 或实时目录。未知精确 ID 的纯文本请求可只传 model/prompt；字段／操作缺口由执行器按需读一次目录。
-2. 保留用户意图、指定文案和修改范围，只发 profile 声明的字段、值、operation。物理尺寸不是 API 尺寸。本地参考／编辑走声明的 `image_edit`；`gpt-image-2` 使用 `https://api.puretokensx.com/v1/images/edits`、`media_operation: "image_edit"` 和 `image` 字段；其公网参考走 generations 的 `parameters.image`。数量使用 `n`，可省略 requested_count，提供时须一致。不同设计不擅自拆成多个付费任务；附件用途不明确时才澄清。
+1. 默认 `gpt-image-2.5-flare` 或用户精确 ID：只读 `references/profiles/<model>.json`；选模型或唯一别名解析才读 `references/model-index.json`。不遍历 profile，不先查余额、init、doctor、preflight 或实时目录。未知精确 ID 的纯文本请求可只传 model/prompt；字段／操作缺口由执行器按需读一次目录。
+2. 保留用户意图、指定文案和修改范围，只发 profile 声明的字段、值、operation。物理尺寸不是 API 尺寸。本地参考／编辑走声明的 `image_edit`；`gpt-image-2.5-flare` 使用 `https://api.puretokensx.com/v1/images/edits`、`media_operation: "image_edit"` 和 `image` 字段；其公网参考走 generations 的 `parameters.image`。数量使用 `n`，可省略 requested_count，提供时须一致。不同设计不擅自拆成多个付费任务；附件用途不明确时才澄清。
 3. 本次本地附件只随声明的 multipart 发送；用户公网 HTTPS URL 只进声明的 JSON 字段。不下载、探测、转存参考媒体或改成提示词；没有声明的传输方式就停止。
 4. 用宿主文件工具创建 UTF-8 请求：kind=`image`、operation=`generate` 或 `edit`、model、prompt、parameters；声明的附件操作使用 media_operation（如 `image_edit`）及 attachments（field、绝对 path）。执行 `<执行器> submit --host <当前宿主> --request <绝对请求文件>`，之后清理该临时文件；提示词和凭据不进命令行。命令／请求示例按需读 [executor-usage.md](references/executor-usage.md)。
+
+用户要求原样使用的提示词逐字保留，不翻译、润色或追加质量词／负面词；海报指定文案逐字保留，不增写文案。提示词中的“8K”等画质描述不自动成为 API 尺寸；用户明确要求实际 8K 输出时才按 profile 检查支持。只有需要组织商品图、文字海报或局部编辑的模糊需求时，按需读 [场景提示词指南](references/prompt-guide.md) 对应段落；简单明确请求不额外读取。
 
 ## 同任务完成交付
 
@@ -42,6 +66,8 @@ description: 当前宿主使用 Pure Tokens 连接时，任何生成或编辑图
 交付失败只重交已有文件。已完成且无对账标记的记录用 resume 本地校验，不读凭据或请求 API；跨命令复用须匹配 SHA-256、字节数、媒体类型。无记录仅重交本会话刚下载且未改变的文件；证明不足时保留文件，另选目录取同任务索引。换电脑、旧记录、对账或跨会话恢复时读 [续接与恢复](references/executor-usage.md#continuation-record)；无 ID 的未知提交不能靠记录恢复。
 
 ## 按需说明
+
+- 组合需求（先出图再做首帧视频）才读 [组合流程](references/workflows.md)；单次请求不增加步骤。进度与交付含义不明才读 [回执说明](references/receipt-guide.md)。
 
 - 失败／费用／支持摘要：读 `references/failure-guide.md`，只说明实际阶段、已有任务及脱敏 next_action，不展示整份 JSON、原始错误、内部 URL 或配置。本地未识别不等于未配置，不据此要求重装、重配、换模型或凭据。
 - 用户明确检查参数才用 preflight；不创建任务、不报价、不证明权限。宿主限制读 `references/desktop-hosts.md`。

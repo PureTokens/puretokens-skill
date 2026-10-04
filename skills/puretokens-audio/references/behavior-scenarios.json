@@ -1,0 +1,107 @@
+{
+  "$schema": "https://puretokensx.com/schemas/media-behavior-scenarios.schema.json",
+  "schemaVersion": 1,
+  "kind": "audio",
+  "scenarios": [
+    {
+      "id": "audio-local-connection-failure-stops-host-probing",
+      "when": "A command for the bound host returns an active_connection_*, workbuddy_*, or host_credential_adapter_unavailable local failure, including when the user asks to continue generation.",
+      "then": "Stop the automatic API flow. Do not invoke connection, init, doctor, models, another Skill, or another --host as a recovery probe. Preserve the original request and any existing task ID; never resubmit automatically. Explain only that this invocation sent no API request. An explicit recheck request or verified new diagnostic evidence permits one relevant check on the same host; changing host requires explicit user selection."
+    },
+    {
+      "id": "audio-speech",
+      "when": "User requests narration of provided text.",
+      "then": "Preserve every word; choose speech with reviewed model and voice, no invented instruction or paid split."
+    },
+    {
+      "id": "audio-writing-only",
+      "when": "User only asks to write or revise narration, a sound prompt or lyrics, without requesting an audio file.",
+      "then": "Return the requested text. Negative mentions of generation in the Skill description are not positive triggers; do not read credentials, query models or submit audio/music."
+    },
+    {
+      "id": "audio-style-does-not-rewrite-text",
+      "when": "User supplies exact speech text plus voice, speed or style requirements.",
+      "then": "Preserve text, punctuation and line breaks. Send supported voice/speed/instruction separately with the reviewed profile; if a required style has no declared representation, explain that limitation before submission, without inserting control tags, dropping the requirement or switching models."
+    },
+    {
+      "id": "audio-transcribe",
+      "when": "User supplies a recording for transcription.",
+      "then": "Use original local MP3/WAV/OGG bytes in multipart once; show returned text as model transcription, not guaranteed verbatim truth; do not replace it with a summary."
+    },
+    {
+      "id": "audio-sound",
+      "when": "User requests a sound scene.",
+      "then": "Use synchronous generate for a sound scene; music follows the separate async task guide."
+    },
+    {
+      "id": "audio-unsupported",
+      "when": "User requests voice cloning, translation or live microphone conversation.",
+      "then": "Explain unsupported first release; no paid call, upload, alternate host, browser or generic Skill fallback."
+    },
+    {
+      "id": "audio-limits",
+      "when": "Text exceeds1000 characters or sound instruction exceeds500, or recording exceeds8MiB.",
+      "then": "Explain limit and needed user choice; no silent truncation, conversion or paid splitting."
+    },
+    {
+      "id": "audio-unknown",
+      "when": "Timeout or malformed successful response leaves outcome unknown.",
+      "then": "Stop without retry or no-charge claim; explain potential repeat billing before a new informed user decision."
+    },
+    {
+      "id": "audio-delivery",
+      "when": "Audio file exists but host attachment handoff failed.",
+      "then": "Run audio-verify on the saved artifact receipt locally and attach that file; never regenerate or claim delivery from a path alone."
+    },
+    {
+      "id": "audio-help",
+      "when": "User only asks about use, models supported by the installed guide, or voices.",
+      "then": "Read installed guidance/profiles only; no init, credentials or catalog request."
+    },
+    {
+      "id": "audio-batch",
+      "when": "User authorizes a finite batch.",
+      "then": "State expected requests; execute serially once per item and deliver each result (attach audio files; display transcript text); stop on failure; never repeat unknown items."
+    },
+    {
+      "id": "audio-video-independent-assets",
+      "when": "User requests video with narration or music, either as independent files or as one composed video.",
+      "then": "Read the bounded workflow guide only for this composite request. If one composed video is required, explain the missing mixing/composition capability before any paid step; proceed with independent assets only when that scope is accepted. Deliver each authorized asset serially, stop on uncertainty/failure, and never repeat completed steps."
+    },
+    {
+      "id": "music-create",
+      "when": "User requests instrumental music or a song.",
+      "then": "Use reviewed music profile and kind=music, explicit instrumental boolean and exact prompt/lyrics; submit once into a new explicit task record, return receipt before wait or content."
+    },
+    {
+      "id": "music-writing-only",
+      "when": "User only requests lyrics, revisions or composition advice.",
+      "then": "Do not submit or query models; produce the requested text only."
+    },
+    {
+      "id": "music-unknown",
+      "when": "Music submission loses response or returns reconciliation_required.",
+      "then": "Keep unknown record or returned public ID. Stop automatic continuation; never resubmit, infer no charge or use web account routes."
+    },
+    {
+      "id": "music-recovery",
+      "when": "User continues an existing music task, including pending or downloaded output.",
+      "then": "Use original record, retain wait count and proof. Resume verifies and reuses already downloaded files locally; attach actual MP3/WAV before delivered. A reconciliation resume makes one same-task status read."
+    },
+    {
+      "id": "music-expired",
+      "when": "Music content returns410 after gateway artifact retention.",
+      "then": "Preserve completed task and local files. Reuse matching local proof if available; otherwise report unavailable content. No refund assertion or automatic regeneration."
+    },
+    {
+      "id": "music-batch",
+      "when": "A finite music batch has a pending, unknown or failed item.",
+      "then": "Every item has its own record. Pending is already submitted; complete and attach serially. Stop on errors or uncertain output, and process only unattempted items after explicit continuation."
+    },
+    {
+      "id": "music-key-scope",
+      "when": "An existing music task is denied after changing host or key.",
+      "then": "Explain original owner/key binding, preserve task, do not read or ask for keys, switch hosts or recreate automatically."
+    }
+  ]
+}

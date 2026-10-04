@@ -15,7 +15,7 @@ import (
 
 func TestModelQueryAndSubmissionShareReferenceConstraints(t *testing.T) {
 	root := filepath.Join("..", "..", "skills")
-	data, err := os.ReadFile(filepath.Join(root, "puretokens-video", "references", "profiles", "seedance-2.5.json"))
+	data, err := os.ReadFile(filepath.Join(root, "puretokens-video", "references", "profiles", "seedance-2.0.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -153,7 +153,7 @@ func TestModelQueryMatchesExplicitFieldsAndOperations(t *testing.T) {
 
 func TestModelQueryRejectsInvalidFilterBeforeNetwork(t *testing.T) {
 	for _, input := range []string{
-		`{"kind":"audio"}`, `{"model":"https://invalid.example"}`,
+		`{"kind":"music"}`, `{"model":"https://invalid.example"}`,
 		`{"model":"sk-secret-fixture"}`, `{"prompt":"unsupported-root-field"}`,
 		`{"parameters":{"bad field":1}}`, `{} {}`, `[]`, `null`,
 		`{"kind":`, `{"kind":"image","parameters":[]}`, `{"model":".."}`,

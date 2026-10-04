@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { acceptanceCases, acceptancePlatforms, hostAcceptanceLevel, validStablePublicationException, validateHostAcceptance, validateStableHostAcceptance } from "../scripts/validate-host-acceptance.mjs";
+import { acceptanceCases, acceptanceGroups, acceptancePlatforms, hostAcceptanceLevel, hostCapabilityAcceptance, validateAcceptanceMeasurements, validStablePublicationException, validateHostAcceptance, validateStableHostAcceptance } from "../scripts/validate-host-acceptance.mjs";
+import { createAcceptanceEvidence } from "../scripts/prepare-host-acceptance.mjs";
 const version = "0.17.1";
 const sha = "a".repeat(64);
 const manifest = { artifacts: { "darwin-arm64": { sha256: sha } } };
@@ -133,7 +134,7 @@ test("hosts without adapters accept installation-only evidence but never API or 
   });
   assert.deepEqual(validateHostAcceptance(record, version, manifest, installationOnlyHosts), []);
   assert.equal(hostAcceptanceLevel(record.evidence[0]), "installation-verified");
-  for (const id of acceptanceCases.filter(id => id !== "installation")) for (const state of ["pending", "failed", "passed"]) {
+  for (const id of acceptanceCases.filter(id => !["installation", "help-no-api"].includes(id))) for (const state of ["pending", "failed", "passed"]) {
     const changed = structuredClone(record);
     changed.evidence[0].cases[id] = state;
     assert.ok(validateHostAcceptance(changed, version, manifest, installationOnlyHosts)
@@ -144,6 +145,117 @@ test("hosts without adapters accept installation-only evidence but never API or 
   assert.deepEqual(validateHostAcceptance(record, version, manifest, renamedSupport), []);
   record.hosts[0].macOS.authenticatedAPI = record.evidence[0].cases.authenticatedAPI = "passed";
   assert.ok(validateHostAcceptance(record, version, manifest, renamedSupport).some(error => error.includes("no credential adapter")));
+});
+
+test("image/video acceptance does not imply audio, music, evaluation or complete stable acceptance", () => {
+  const record = fixture();
+  const evidence = {
+    method: "real-host", host: "codex", os: "macOS", executionMode: "local",
+    cases: Object.fromEntries(acceptanceCases.map(id => [id, acceptanceGroups.media.includes(id) ? "passed" : "pending"])),
+  };
+  record.evidence.push(evidence);
+  for (const id of ["installation", "authenticatedAPI", "sameTaskResume", "nativeAttachmentDelivery"]) record.hosts[0].macOS[id] = "passed";
+  assert.equal(hostAcceptanceLevel(evidence), "media-verified");
+  assert.deepEqual(hostCapabilityAcceptance(evidence), {
+    media: "passed", audio: "pending", music: "pending", evaluation: "pending", workflows: "pending", help: "pending",
+  });
+  assert.ok(validateStableHostAcceptance(record).some(error => error.includes("audio, music, evaluation")));
+  const separate = structuredClone(evidence);
+  for (const id of acceptanceCases) separate.cases[id] = acceptanceGroups.media.includes(id) ? "pending" : "passed";
+  record.evidence.push(separate);
+  assert.equal(hostCapabilityAcceptance(separate).audio, "pending", "cannot join separate incomplete environments");
+  assert.ok(validateStableHostAcceptance(record).some(error => error.includes("audio, music, evaluation")));
+  evidence.cases["music-generation"] = "passed";
+  assert.equal(hostCapabilityAcceptance(evidence).music, "pending", "music resume still needs evidence");
+  evidence.cases["music-resume"] = "failed";
+  assert.equal(hostCapabilityAcceptance(evidence).music, "failed");
+});
+
+test("local help can be verified without a credential adapter", () => {
+  const record = installationOnlyFixture();
+  record.evidence.push({
+    method: "real-host", host: "trae", os: "macOS", hostVersion: "fixture",
+    osVersion: "fixture", osArchitecture: "arm64", executionMode: "local", shellVersion: "fixture",
+    executorPlatform: "darwin-arm64", executorSha256: sha, version, checkedAt: record.checkedAt,
+    artifact: "references/fixture.md",
+    cases: Object.fromEntries(acceptanceCases.map(id => [id, ["installation", "help-no-api"].includes(id) ? "passed" : "unavailable"])),
+  });
+  assert.deepEqual(validateHostAcceptance(record, version, manifest, installationOnlyHosts), []);
+  assert.equal(hostCapabilityAcceptance(record.evidence[0]).help, "passed");
+  assert.equal(hostCapabilityAcceptance(record.evidence[0]).audio, "unavailable");
+});
+
+test("stage timings reject private fields, invented phases, fixture data and invalid counters", () => {
+  const cases = {"speech-generation": "passed", "help-no-api": "passed"};
+  const valid = {case: "speech-generation", basis: "client-observed",
+    durationsMs: {request: 1250, handoff: 80}, requests: {submit: 1, status: 0, content: 0, other: 0}};
+  assert.deepEqual(validateAcceptanceMeasurements([valid], cases), []);
+  for (const invalid of [
+    {...valid, prompt: "private"}, {...valid, task_id: "private"},
+    {...valid, basis: "fixture"}, {...valid, durationsMs: {serverGeneration: 1000}},
+    {...valid, durationsMs: {request: -1}}, {...valid, durationsMs: {request: Infinity}},
+    {...valid, durationsMs: []}, {...valid, durationsMs: {}},
+    {...valid, requests: {submit: 1.5}}, {...valid, requests: {headers: {}}},
+    {...valid, requests: []}, {...valid, case: "unregistered"},
+  ]) assert.ok(validateAcceptanceMeasurements([invalid], cases).length);
+  assert.ok(validateAcceptanceMeasurements([valid, valid], cases).length);
+  assert.ok(validateAcceptanceMeasurements([valid], {"speech-generation": "pending"}).length);
+  const help = {...valid, case: "help-no-api"};
+  assert.ok(validateAcceptanceMeasurements([help], cases).length, "help must not make paid requests");
+  help.requests = {submit: 0, status: 0, content: 0, other: 0};
+  assert.deepEqual(validateAcceptanceMeasurements([help], cases), []);
+  delete help.requests.other;
+  assert.ok(validateAcceptanceMeasurements([help], cases).length, "unmeasured is not zero");
+  for (const invalid of [
+    {...valid, requests: {...valid.requests, submit: 2}},
+    {...valid, requests: {...valid.requests, status: 1}},
+    {...valid, durationsMs: {request: 50, wait: 100}},
+    {...valid, durationsMs: {request: 50, download: 10}},
+  ]) assert.ok(validateAcceptanceMeasurements([invalid], cases).length, "sync measurement must preserve single-request lifecycle");
+  for (const id of ["sameTaskResume", "music-resume", "audio-reattachment"]) {
+    assert.ok(validateAcceptanceMeasurements([{...valid, case: id}], {[id]: "passed"}).length, "recovery must not recreate");
+  }
+});
+
+test("release evidence checks measurements without promoting outcomes or rejecting emulation", () => {
+  const record = fixture();
+  const evidence = {
+    method: "real-host", host: "codex", os: "macOS", hostVersion: "fixture", osVersion: "fixture",
+    osArchitecture: "arm64", executionMode: "local", shellVersion: "fixture", executorPlatform: "darwin-arm64",
+    executorSha256: sha, version, checkedAt: record.checkedAt, artifact: "references/fixture.md",
+    cases: Object.fromEntries(acceptanceCases.map(id => [id, id === "authenticatedAPI" ? "failed" : "pending"])),
+    measurements: [{case: "authenticatedAPI", basis: "client-observed", durationsMs: {init: 50},
+      requests: {submit: 0, status: 0, content: 0, other: 0}}],
+  };
+  record.evidence.push(evidence);
+  assert.deepEqual(validateHostAcceptance(record, version, manifest, supportedHosts), []);
+  assert.equal(hostAcceptanceLevel(evidence), "unverified");
+  evidence.osArchitecture = "amd64";
+  assert.deepEqual(validateHostAcceptance(record, version, manifest, supportedHosts), [], "OS architecture can differ from emulated executor architecture");
+  evidence.osArchitecture = "arm64";
+  evidence.measurements[0].rawResponse = "private";
+  assert.ok(validateHostAcceptance(record, version, manifest, supportedHosts).some(error => error.includes("private data")));
+});
+
+test("offline evidence templates never inherit passes or invent observed identity and durations", () => {
+  const document = fixture();
+  document.hosts[0].macOS.installation = "passed";
+  const inputs = {document, manifest: {...manifest, version}, support: {supported: supportedHosts}};
+  const evidence = createAcceptanceEvidence({host: "codex", platform: "macOS", architecture: "arm64"}, inputs);
+  assert.ok(Object.values(evidence.cases).every(state => state === "pending"));
+  assert.deepEqual(evidence.measurements, []);
+  assert.equal(evidence.executorSha256, sha);
+  for (const key of ["hostVersion", "osVersion", "shellVersion", "checkedAt", "artifact"]) assert.equal(evidence[key], "");
+  document.evidence.push(evidence);
+  assert.ok(validateHostAcceptance(document, version, manifest, supportedHosts).length, "blank template cannot count as evidence");
+  assert.throws(() => createAcceptanceEvidence({host: "unknown", platform: "macOS", architecture: "arm64"}, inputs));
+  assert.throws(() => createAcceptanceEvidence({host: "codex", platform: "macOS", architecture: "arm64", executionMode: "wsl"}, inputs));
+  assert.throws(() => createAcceptanceEvidence({host: "codex", platform: "macOS", architecture: "arm64"},
+    {...inputs, manifest: {...manifest, version: "different"}}));
+  const installationOnly = createAcceptanceEvidence({host: "trae", platform: "macOS", architecture: "arm64"},
+    {...inputs, document: installationOnlyFixture(), support: {supported: installationOnlyHosts}});
+  assert.equal(installationOnly.cases["help-no-api"], "pending");
+  assert.equal(installationOnly.cases["speech-generation"], "unavailable");
 });
 
 test("stable acceptance permits installation-only hosts only with evidence and another complete media host", () => {

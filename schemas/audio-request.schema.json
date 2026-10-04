@@ -1,0 +1,366 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://puretokensx.com/schemas/audio-request.schema.json",
+  "title": "One synchronous reviewed audio request",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": [
+        "operation",
+        "model",
+        "response_format",
+        "output_dir",
+        "input",
+        "voice"
+      ],
+      "properties": {
+        "operation": {
+          "const": "speech"
+        },
+        "model": {
+          "const": "stepaudio-2.5-tts"
+        },
+        "response_format": {
+          "enum": [
+            "mp3",
+            "wav"
+          ]
+        },
+        "output_dir": {
+          "type": "string",
+          "pattern": "^(?:/|[A-Za-z]:[\\\\/]|\\\\\\\\)[^\\u0000]+$(?![\\s\\S])"
+        },
+        "input": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "\\S"
+        },
+        "voice": {
+          "enum": [
+            "boyinnansheng",
+            "cixingnansheng",
+            "elegantgentle-female",
+            "ganliannvsheng",
+            "huolinvsheng",
+            "jilingshaonv",
+            "jingdiannvsheng",
+            "lengyanyujie",
+            "linjiajiejie",
+            "linjiameimei",
+            "lively-girl",
+            "livelybreezy-female",
+            "magnetic-voiced-male",
+            "qingchunshaonv",
+            "qingniandaxuesheng",
+            "qinhenvsheng",
+            "qinqienvsheng",
+            "ruanmengnvsheng",
+            "ruyananshi",
+            "shenchennanyin",
+            "shuangkuaijiejie",
+            "shuangkuainansheng",
+            "soft-spoken-gentleman",
+            "tianmeinvsheng",
+            "vibrant-youth",
+            "wenjingxuejie",
+            "wenrougongzi",
+            "wenrounansheng",
+            "wenrounvsheng",
+            "wenroushunv",
+            "youyanvsheng",
+            "yuanqinansheng",
+            "yuanqishaonv",
+            "zhengpaiqingnian",
+            "zhixingjiejie",
+            "zixinnansheng"
+          ]
+        },
+        "speed": {
+          "type": "number",
+          "minimum": 0.5,
+          "maximum": 2
+        },
+        "instruction": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500,
+          "pattern": "\\S"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "operation",
+        "model",
+        "response_format",
+        "output_dir",
+        "input",
+        "voice"
+      ],
+      "properties": {
+        "operation": {
+          "const": "speech"
+        },
+        "model": {
+          "const": "step-tts-2"
+        },
+        "response_format": {
+          "enum": [
+            "mp3",
+            "wav"
+          ]
+        },
+        "output_dir": {
+          "type": "string",
+          "pattern": "^(?:/|[A-Za-z]:[\\\\/]|\\\\\\\\)[^\\u0000]+$(?![\\s\\S])"
+        },
+        "input": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "\\S"
+        },
+        "voice": {
+          "enum": [
+            "boyinnansheng",
+            "cixingnansheng",
+            "elegantgentle-female",
+            "ganliannvsheng",
+            "huolinvsheng",
+            "jilingshaonv",
+            "jingdiannvsheng",
+            "lengyanyujie",
+            "linjiajiejie",
+            "linjiameimei",
+            "lively-girl",
+            "livelybreezy-female",
+            "magnetic-voiced-male",
+            "qingchunshaonv",
+            "qingniandaxuesheng",
+            "qinhenvsheng",
+            "qinqienvsheng",
+            "ruanmengnvsheng",
+            "ruyananshi",
+            "shenchennanyin",
+            "shuangkuaijiejie",
+            "shuangkuainansheng",
+            "soft-spoken-gentleman",
+            "tianmeinvsheng",
+            "vibrant-youth",
+            "wenjingxuejie",
+            "wenrougongzi",
+            "wenrounansheng",
+            "wenrounvsheng",
+            "wenroushunv",
+            "youyanvsheng",
+            "yuanqinansheng",
+            "yuanqishaonv",
+            "zhengpaiqingnian",
+            "zhixingjiejie",
+            "zixinnansheng"
+          ]
+        },
+        "speed": {
+          "type": "number",
+          "minimum": 0.5,
+          "maximum": 2
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "operation",
+        "model",
+        "response_format",
+        "output_dir",
+        "input",
+        "voice"
+      ],
+      "properties": {
+        "operation": {
+          "const": "speech"
+        },
+        "model": {
+          "const": "step-tts-mini"
+        },
+        "response_format": {
+          "enum": [
+            "mp3",
+            "wav"
+          ]
+        },
+        "output_dir": {
+          "type": "string",
+          "pattern": "^(?:/|[A-Za-z]:[\\\\/]|\\\\\\\\)[^\\u0000]+$(?![\\s\\S])"
+        },
+        "input": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "\\S"
+        },
+        "voice": {
+          "enum": [
+            "boyinnansheng",
+            "cixingnansheng",
+            "elegantgentle-female",
+            "jilingshaonv",
+            "jingdiannvsheng",
+            "lengyanyujie",
+            "linjiajiejie",
+            "linjiameimei",
+            "livelybreezy-female",
+            "qingchunshaonv",
+            "qingniandaxuesheng",
+            "qinqienvsheng",
+            "ruanmengnvsheng",
+            "ruyananshi",
+            "shenchennanyin",
+            "shuangkuaijiejie",
+            "tianmeinvsheng",
+            "wenjingxuejie",
+            "wenrougongzi",
+            "wenrounansheng",
+            "wenrounvsheng",
+            "wenroushunv",
+            "youyanvsheng",
+            "yuanqinansheng",
+            "yuanqishaonv",
+            "zhengpaiqingnian",
+            "zhixingjiejie"
+          ]
+        },
+        "speed": {
+          "type": "number",
+          "minimum": 0.5,
+          "maximum": 2
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "operation",
+        "model",
+        "file"
+      ],
+      "properties": {
+        "operation": {
+          "const": "transcribe"
+        },
+        "model": {
+          "const": "stepaudio-2.5-asr"
+        },
+        "file": {
+          "type": "string",
+          "pattern": "^(?:/|[A-Za-z]:[\\\\/]|\\\\\\\\)[^\\u0000]+$(?![\\s\\S])"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "operation",
+        "model",
+        "file"
+      ],
+      "properties": {
+        "operation": {
+          "const": "transcribe"
+        },
+        "model": {
+          "const": "step-asr"
+        },
+        "file": {
+          "type": "string",
+          "pattern": "^(?:/|[A-Za-z]:[\\\\/]|\\\\\\\\)[^\\u0000]+$(?![\\s\\S])"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "operation",
+        "model",
+        "file"
+      ],
+      "properties": {
+        "operation": {
+          "const": "transcribe"
+        },
+        "model": {
+          "const": "stepaudio-3-asr-max"
+        },
+        "file": {
+          "type": "string",
+          "pattern": "^(?:/|[A-Za-z]:[\\\\/]|\\\\\\\\)[^\\u0000]+$(?![\\s\\S])"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "operation",
+        "model",
+        "file"
+      ],
+      "properties": {
+        "operation": {
+          "const": "transcribe"
+        },
+        "model": {
+          "const": "stepaudio-2-asr-pro"
+        },
+        "file": {
+          "type": "string",
+          "pattern": "^(?:/|[A-Za-z]:[\\\\/]|\\\\\\\\)[^\\u0000]+$(?![\\s\\S])"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "operation",
+        "model",
+        "response_format",
+        "output_dir",
+        "instruction"
+      ],
+      "properties": {
+        "operation": {
+          "const": "generate"
+        },
+        "model": {
+          "const": "stepaudio-3-gen-preview"
+        },
+        "response_format": {
+          "enum": [
+            "mp3",
+            "wav"
+          ]
+        },
+        "output_dir": {
+          "type": "string",
+          "pattern": "^(?:/|[A-Za-z]:[\\\\/]|\\\\\\\\)[^\\u0000]+$(?![\\s\\S])"
+        },
+        "instruction": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500,
+          "pattern": "\\S"
+        }
+      },
+      "additionalProperties": false
+    }
+  ]
+}

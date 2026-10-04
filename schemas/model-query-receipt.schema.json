@@ -9,7 +9,9 @@
     "result"
   ],
   "properties": {
-    "support": {"$ref": "support-summary.schema.json"},
+    "support": {
+      "$ref": "support-summary.schema.json"
+    },
     "ok": {
       "const": true
     },
@@ -46,7 +48,9 @@
                 "items": {
                   "enum": [
                     "image",
-                    "video"
+                    "video",
+                    "evaluation",
+                    "audio"
                   ]
                 }
               },
@@ -82,7 +86,9 @@
               "enum": [
                 "",
                 "image",
-                "video"
+                "video",
+                "evaluation",
+                "audio"
               ]
             },
             "model": {
@@ -103,7 +109,11 @@
           "additionalProperties": false
         },
         "matching_scope": {
-          "const": "declared_schema_only"
+          "enum": [
+            "declared_schema_only",
+            "reviewed_evaluation_models_listed_by_api",
+            "reviewed_audio_models_listed_by_api"
+          ]
         },
         "note": {
           "type": "string",

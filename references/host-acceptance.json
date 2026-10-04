@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
-  "version": "0.18.6",
-  "checkedAt": "2026-09-19",
-  "method": "isolated fixture coverage and packaged native offline task recovery; real-host acceptance remains pending; historical 0.18.3 evidence remains in references/acceptance/0.18.3-host-acceptance.json",
+  "version": "0.18.7",
+  "checkedAt": "2026-10-04",
+  "method": "isolated fixture coverage and packaged native offline task recovery; nineteen real-host cases now include audio, music, evaluation, workflows and local help, all remain pending; historical 0.18.3 evidence remains in references/acceptance/0.18.3-host-acceptance.json",
   "stablePublicationException": {
     "kind": "maintainer-approved-pending-acceptance",
-    "version": "0.18.6",
+    "version": "0.18.7",
     "approved": true,
-    "approvedAt": "2026-09-19",
-    "reason": "Maintainer authorized stable publication of 0.18.6 after disclosure that offline regressions and builds passed but real-host media acceptance was not performed; all pending checks remain unchanged."
+    "approvedAt": "2026-10-04",
+    "reason": "The maintainer approved publication of 0.18.7 with version-specific acceptance gaps recorded for maintenance, without a user-facing release or installation notice. All 166 pending host/OS summary checks and the empty real-host evidence array remain unchanged. Engineering, reproducible-build, CI and uploaded-asset verification gates remain mandatory."
   },
   "guide": "references/host-acceptance-guide.md",
   "evidence": [],
@@ -218,6 +218,52 @@
       }
     },
     {
+      "host": "deepseek-harness",
+      "credentialFixtures": "passed",
+      "macOS": {
+        "installation": "pending",
+        "authenticatedAPI": "pending",
+        "sameTaskResume": "pending",
+        "nativeAttachmentDelivery": "pending"
+      },
+      "windows": {
+        "installation": "pending",
+        "authenticatedAPI": "pending",
+        "sameTaskResume": "pending",
+        "nativeAttachmentDelivery": "pending"
+      },
+      "linux": {
+        "installation": "unavailable",
+        "authenticatedAPI": "unavailable",
+        "sameTaskResume": "unavailable",
+        "nativeAttachmentDelivery": "unavailable",
+        "reason": "No verified local Linux client acceptance target for this release; native Linux executor availability does not establish client support."
+      }
+    },
+    {
+      "host": "minimax-code",
+      "credentialFixtures": "passed",
+      "macOS": {
+        "installation": "pending",
+        "authenticatedAPI": "pending",
+        "sameTaskResume": "pending",
+        "nativeAttachmentDelivery": "pending"
+      },
+      "windows": {
+        "installation": "pending",
+        "authenticatedAPI": "pending",
+        "sameTaskResume": "pending",
+        "nativeAttachmentDelivery": "pending"
+      },
+      "linux": {
+        "installation": "unavailable",
+        "authenticatedAPI": "unavailable",
+        "sameTaskResume": "unavailable",
+        "nativeAttachmentDelivery": "unavailable",
+        "reason": "No verified local Linux client acceptance target for this release; native Linux executor availability does not establish client support."
+      }
+    },
+    {
       "host": "zcode",
       "credentialFixtures": "passed",
       "macOS": {
@@ -312,30 +358,94 @@
     {
       "host": "hermes",
       "credentialFixtures": "passed",
-      "macOS": {"installation": "pending", "authenticatedAPI": "pending", "sameTaskResume": "pending", "nativeAttachmentDelivery": "pending"},
-      "windows": {"installation": "pending", "authenticatedAPI": "pending", "sameTaskResume": "pending", "nativeAttachmentDelivery": "pending"},
-      "linux": {"installation": "unavailable", "authenticatedAPI": "unavailable", "sameTaskResume": "unavailable", "nativeAttachmentDelivery": "unavailable", "reason": "No verified Linux real-host acceptance target; native executor compilation is not client acceptance."}
+      "macOS": {
+        "installation": "pending",
+        "authenticatedAPI": "pending",
+        "sameTaskResume": "pending",
+        "nativeAttachmentDelivery": "pending"
+      },
+      "windows": {
+        "installation": "pending",
+        "authenticatedAPI": "pending",
+        "sameTaskResume": "pending",
+        "nativeAttachmentDelivery": "pending"
+      },
+      "linux": {
+        "installation": "unavailable",
+        "authenticatedAPI": "unavailable",
+        "sameTaskResume": "unavailable",
+        "nativeAttachmentDelivery": "unavailable",
+        "reason": "No verified Linux real-host acceptance target; native executor compilation is not client acceptance."
+      }
     },
     {
       "host": "evox",
       "credentialFixtures": "passed",
-      "macOS": {"installation": "pending", "authenticatedAPI": "pending", "sameTaskResume": "pending", "nativeAttachmentDelivery": "pending"},
-      "windows": {"installation": "pending", "authenticatedAPI": "pending", "sameTaskResume": "pending", "nativeAttachmentDelivery": "pending"},
-      "linux": {"installation": "unavailable", "authenticatedAPI": "unavailable", "sameTaskResume": "unavailable", "nativeAttachmentDelivery": "unavailable", "reason": "No verified Linux local client target."}
+      "macOS": {
+        "installation": "pending",
+        "authenticatedAPI": "pending",
+        "sameTaskResume": "pending",
+        "nativeAttachmentDelivery": "pending"
+      },
+      "windows": {
+        "installation": "pending",
+        "authenticatedAPI": "pending",
+        "sameTaskResume": "pending",
+        "nativeAttachmentDelivery": "pending"
+      },
+      "linux": {
+        "installation": "unavailable",
+        "authenticatedAPI": "unavailable",
+        "sameTaskResume": "unavailable",
+        "nativeAttachmentDelivery": "unavailable",
+        "reason": "No verified Linux local client target."
+      }
     },
     {
       "host": "vscode",
       "credentialFixtures": "passed",
-      "macOS": {"installation": "pending", "authenticatedAPI": "pending", "sameTaskResume": "pending", "nativeAttachmentDelivery": "pending"},
-      "windows": {"installation": "pending", "authenticatedAPI": "pending", "sameTaskResume": "pending", "nativeAttachmentDelivery": "pending"},
-      "linux": {"installation": "unavailable", "authenticatedAPI": "unavailable", "sameTaskResume": "unavailable", "nativeAttachmentDelivery": "unavailable", "reason": "Only local macOS/Windows default-profile credential paths are represented; multi-model configurations are ambiguous."}
+      "macOS": {
+        "installation": "pending",
+        "authenticatedAPI": "pending",
+        "sameTaskResume": "pending",
+        "nativeAttachmentDelivery": "pending"
+      },
+      "windows": {
+        "installation": "pending",
+        "authenticatedAPI": "pending",
+        "sameTaskResume": "pending",
+        "nativeAttachmentDelivery": "pending"
+      },
+      "linux": {
+        "installation": "unavailable",
+        "authenticatedAPI": "unavailable",
+        "sameTaskResume": "unavailable",
+        "nativeAttachmentDelivery": "unavailable",
+        "reason": "Only local macOS/Windows default-profile credential paths are represented; multi-model configurations are ambiguous."
+      }
     },
     {
       "host": "octop",
       "credentialFixtures": "passed",
-      "macOS": {"installation": "pending", "authenticatedAPI": "pending", "sameTaskResume": "pending", "nativeAttachmentDelivery": "pending"},
-      "windows": {"installation": "pending", "authenticatedAPI": "pending", "sameTaskResume": "pending", "nativeAttachmentDelivery": "pending"},
-      "linux": {"installation": "unavailable", "authenticatedAPI": "unavailable", "sameTaskResume": "unavailable", "nativeAttachmentDelivery": "unavailable", "reason": "No verified Linux local host/workspace delivery target."}
+      "macOS": {
+        "installation": "pending",
+        "authenticatedAPI": "pending",
+        "sameTaskResume": "pending",
+        "nativeAttachmentDelivery": "pending"
+      },
+      "windows": {
+        "installation": "pending",
+        "authenticatedAPI": "pending",
+        "sameTaskResume": "pending",
+        "nativeAttachmentDelivery": "pending"
+      },
+      "linux": {
+        "installation": "unavailable",
+        "authenticatedAPI": "unavailable",
+        "sameTaskResume": "unavailable",
+        "nativeAttachmentDelivery": "unavailable",
+        "reason": "No verified Linux local host/workspace delivery target."
+      }
     }
   ]
 }

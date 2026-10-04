@@ -12,16 +12,18 @@ test("shared guidance is generated, detects drift and synchronizes self-containe
   const root = await mkdtemp(path.join(os.tmpdir(), "pt-guidance-"));
   t.after(() => rm(root, { recursive: true, force: true }));
   await cp(path.join(repositoryRoot, "skills"), path.join(root, "skills"), { recursive: true });
+  await mkdir(path.join(root, "runtime/executor"), { recursive: true });
+  await cp(path.join(repositoryRoot, "runtime/executor/audio-profiles.json"), path.join(root, "runtime/executor/audio-profiles.json"));
   await mkdir(path.join(root, "references/skill-fragments"), { recursive: true });
-  for (const file of ["host-support.json", "desktop-hosts.md", "skill-fragments/host-binding.md"]) {
+  for (const file of ["host-support.json", "desktop-hosts.md", "direct-api-execution-contract.json", "operation-guidance.json", "skill-fragments/host-binding.md", "skill-fragments/receipt-guide.md", "skill-fragments/media-workflows.md"]) {
     await cp(path.join(repositoryRoot, "references", file), path.join(root, "references", file));
   }
   const fragment = path.join(root, "references/skill-fragments/host-binding.md");
   const next = (await readFile(fragment, "utf8")).replace("首次调用前", "开始调用前");
   await writeFile(fragment, next);
   const drift = await syncSkillGuidance(root);
-  assert.equal(drift.filter(file => file.endsWith("/SKILL.md")).length, 6);
-  assert.equal(drift.filter(file => file.endsWith("/desktop-hosts.md")).length, 6);
+  assert.equal(drift.filter(file => file.endsWith("/SKILL.md")).length, 8);
+  assert.equal(drift.filter(file => file.endsWith("/desktop-hosts.md")).length, 8);
   assert.deepEqual(await syncSkillGuidance(root, { write: true }), drift);
   assert.deepEqual(await syncSkillGuidance(root), []);
   const registry = JSON.parse(await readFile(path.join(root, "skills/index.json"), "utf8"));

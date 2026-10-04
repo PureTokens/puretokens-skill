@@ -1,6 +1,6 @@
 ---
 name: puretokens-models
-description: 查询当前 Pure Tokens 连接实际可用的图片和视频模型、参数或媒体操作时使用。
+description: 查询当前 Pure Tokens 连接的图片／视频模型、参数、媒体操作，或明确查询音频／Jev 评估模型是否在认证目录可见时使用。
 ---
 
 # Pure Tokens Models
@@ -15,7 +15,42 @@ description: 查询当前 Pure Tokens 连接实际可用的图片和视频模型
 
 详细字段按需读 `references/execution-contract.json`；只有对应异常时才读 `references/behavior-scenarios.json`。
 
-## 查询规则
+用户需要选型比较或提出“最好／最快／最便宜”时，按需读
+[选型指南](references/selection-guide.md)：先按必需能力筛选，明确哪些比较项没有数据。
+普通生成不增加这一步；仅问价格且没有可查询的兼容条件时，不调用无报价字段的目录。
+
+## 音频模型查询
+
+用户明确查询当前可见音频模型时，用 `{"kind":"audio"}` 筛选文件，
+可加精确 `model` 或 `operation`（speech／transcribe／generate／music），
+执行 `<绝对执行器路径> models --host <当前宿主 ID> --request <筛选文件>`。
+该模式只请求一次 `GET https://api.puretokensx.com/v1/models`，取返回 ID
+与已安装音频审核模型的交集，去重后展示；不接受 parameters 筛选。
+`matching_scope=reviewed_audio_models_listed_by_api` 仅证明本次目录可见。
+操作与音色参数来自本地审核契约，不能冒充目录返回的 schema，不能据此
+承诺路由上线、权限、价格或生成质量；空结果不证明模型下线。
+普通配音、录音转写、声音和音乐生成交给 puretokens-audio，不先查目录。
+仅问用法、安装版本支持范围或音色时读取 puretokens-audio 本地说明，
+不发请求。未限定范围的 models 保持图片／视频目录语义，只有用户明确
+要求多个类别时分别查询，禁止从一个目录推断其他类别可用。
+
+## Jev 评估模型查询
+
+用户明确查询当前 Jev／JEV／TypeSafe 评估模型时，用 UTF-8 筛选文件
+`{"kind":"evaluation"}`（可加精确 `model`），执行
+`<绝对执行器路径> models --host <当前宿主 ID> --request <筛选文件>`。
+该模式只发一次 `GET https://api.puretokensx.com/v1/models`，只列出返回 ID
+与已审查 `jev-latest`、`jev-1.13.0`、`jev-preview` 的交集，不以名称前缀
+猜能力，不接受 operation／parameters 筛选，不回退静态清单或媒体目录。
+返回的 evaluation 类型来自已安装契约，输入 schema 不由此目录声明；
+`matching_scope=reviewed_evaluation_models_listed_by_api` 只代表目录可见，
+不证明原生入口、评估权限、价格或质量。没有返回只说明本次未列出。
+仅询问 Jev 的概念／用法时读 puretokens-evaluate 本地指南，不发请求。
+普通评估不先查目录；明确评估任务交给 puretokens-evaluate。
+用户同时要媒体和评估目录时分别执行其明确请求的两个查询，不把一个响应
+冒充另一个；未限定范围的现有 models 命令仍只查询媒体目录。
+
+## 图片／视频查询规则
 
 - 每个用户查询只调用一次 `GET https://api.puretokensx.com/v1/media/models`；不得调用 Images/Videos 提交、任务状态、内容、余额或其他路径，也不得重试。
 - 当前认证目录是唯一事实来源。只报告实际返回的精确模型 ID、明确返回的 `capabilities`、`input_schema.properties` 参数资料、`input_schema.constraints` 条件限制和 `input_schema.operations`；不得以 README、安装包静态清单、模型名称或过往任务补全、猜测或回退。
@@ -23,7 +58,7 @@ description: 查询当前 Pure Tokens 连接实际可用的图片和视频模型
 - 需求匹配只基于当前条目明确声明的 capability、`input_schema.properties` 字段和值、适用的 `input_schema.constraints`、以及 `input_schema.operations`。例如图生视频只匹配发布 `image_to_video` 的模型；参考图、参考视频、参考音频和视频编辑分别只匹配 `reference_image_video`、`reference_video`、`reference_audio`、`video_edit`。没有明确声明就不列为兼容。
 - 不对模型质量、速度、价格、用量、排队时间、内容效果或未返回的可用性做推荐或排序。多个模型都满足已声明条件时，完整列出并说明它们在目录声明的差异；用户的需求无法映射到明确 capability、参数或 operation 时，请其选择明确约束或显示完整目录。
 
-## 用户可见输出
+## 图片／视频用户可见输出
 
 - 按用户的筛选条件展示；未筛选时先按图片和视频 capability 分组。
 - 每个模型仅展示实际返回的：精确 ID、capability、可选参数名称、`required` 标记、类型、默认值、`enum` 值、数值范围、非请求字段的条件限制（例如 `resolution_by_mode`），以及 operation 名称、请求方法、相对路径、content type、必需字段、附件数量和 transport。`constraints` 不是额外请求字段，绝不把它的名称或推断模式写入 API body。缺失字段写“目录未声明”，不得猜测。
@@ -33,6 +68,8 @@ description: 查询当前 Pure Tokens 连接实际可用的图片和视频模型
 用户明确筛选时，可用 `models --host <host-id> --request <UTF-8筛选文件>`，文件可含 `kind`、精确 `model`、`operation` 和 `parameters`，例如 `{"kind":"video","operation":"image_to_video","parameters":{"resolution":"720p"}}`。执行器只读取一次认证目录并按其声明筛选；缺少字段不视为兼容，不提交媒体。无筛选则省略 --request。查询目录不是普通生成的必需前置步骤。
 
 ## 线上声明与安装版本
+
+当前目录契约未声明模型退役状态、下线时间或替代模型，不能从查询缺失、名称、快照日期推断下线，也不推荐未经声明的替代模型。未来需 Web／网关先发布认证目录字段及其日期／范围契约，再适配本地 profile 和展示；现有 input_schema.lifecycle 是任务创建／轮询协议，不是模型退役信息。不为此增加普通生成前的联网检查。
 
 筛选复用提交的字段与组合校验，包含所选 operation 必需输入产生的互斥限制；查询不验证附件字节或保证实际提交权限。查询结果也不会改写已安装 profile。
 

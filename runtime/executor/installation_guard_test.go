@@ -91,3 +91,19 @@ func TestRetiredInstallationNamesAreNotManaged(t *testing.T) {
 		}
 	}
 }
+
+func TestEvaluationInstallationInventoryProtectsNewSkill(t *testing.T) {
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, "SKILL.md"), []byte("official evaluation guide"), 0600)
+	os.WriteFile(filepath.Join(dir, "skill.json"), []byte(`{"name":"puretokens-evaluate"}`), 0600)
+	writeInventoryFixture(t, dir, "puretokens-evaluate")
+	var out bytes.Buffer
+	args := []string{"install-verify", "--directory", dir, "--name", "puretokens-evaluate"}
+	if err := runInstallationGuard(args, &out); err != nil {
+		t.Fatal("new Skill inventory cannot be verified")
+	}
+	os.WriteFile(filepath.Join(dir, "SKILL.md"), []byte("personal edit"), 0600)
+	if runInstallationGuard(args, &out) == nil {
+		t.Fatal("new Skill overwrites local edits")
+	}
+}

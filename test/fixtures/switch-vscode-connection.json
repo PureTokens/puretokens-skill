@@ -1,0 +1,42 @@
+[
+  {
+    "name": "Pure Tokens (Switch)",
+    "vendor": "customendpoint",
+    "_puretokensSwitch": "vscode-file-v1",
+    "models": [
+      {
+        "id": "fixture-chat",
+        "name": "fixture-chat",
+        "url": "https://api.puretokensx.com/v1/chat/completions",
+        "apiType": "chat-completions",
+        "toolCalling": true,
+        "vision": false,
+        "maxInputTokens": 128000,
+        "maxOutputTokens": 16000,
+        "requestHeaders": {"Authorization": "Bearer pts-file-fake-not-real"}
+      },
+      {
+        "id": "fixture-responses",
+        "name": "fixture-responses",
+        "url": "https://api.puretokensx.com/v1/responses",
+        "apiType": "responses",
+        "toolCalling": true,
+        "vision": false,
+        "maxInputTokens": 128000,
+        "maxOutputTokens": 16000,
+        "requestHeaders": {"Authorization": "Bearer pts-file-fake-not-real"}
+      },
+      {
+        "id": "fixture-messages",
+        "name": "fixture-messages",
+        "url": "https://api.puretokensx.com/v1/messages",
+        "apiType": "messages",
+        "toolCalling": true,
+        "vision": false,
+        "maxInputTokens": 128000,
+        "maxOutputTokens": 16000,
+        "requestHeaders": {"Authorization": "Bearer pts-file-fake-not-real"}
+      }
+    ]
+  }
+]

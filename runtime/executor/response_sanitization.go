@@ -3,9 +3,12 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 	"strings"
 )
+
+var errAPIResponseUnreadable = errors.New("response unreadable")
 
 // sanitizeResponseJSON removes the active credential from decoded response
 // strings and object keys, so JSON escaping cannot bypass redaction. It is only

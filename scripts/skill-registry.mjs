@@ -6,6 +6,7 @@ import { validModelID } from "./model-id.mjs";
 
 export const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const skillsRoot = path.join(repositoryRoot, "skills");
+export const mediaDefaultModels = Object.freeze({ image: "gpt-image-2.5-flare", video: "minimax_h3" });
 
 const forbiddenPattern = /(BEGIN [A-Z ]*PRIVATE|127\.0\.0\.1:|\/Users\/)/i;
 const directApiOrigin = "https://api.puretokensx.com";
@@ -106,7 +107,7 @@ export async function validateRepository() {
     if (supportedHostIds.length && JSON.stringify(declaredClients) !== JSON.stringify(supportedHostIds)) {
       errors.push(`${directory}: supportedClients must match references/host-support.json`);
     }
-    if (name === "puretokens-image" || name === "puretokens-video") {
+    if (name === "puretokens-image" || name === "puretokens-video" || name === "puretokens-audio" || name === "puretokens-evaluate") {
       const hostLine = skillText.split("\n").find(line => line.includes("当前宿主 ID 为")) ?? "";
       const entryHosts = (hostLine.split("当前宿主 ID 为")[1]?.split("，")[0] ?? "").match(/[a-z]+(?:-[a-z]+)*/g) ?? [];
       if (!sameArray([...entryHosts].sort(), supportedHostIds)) {
@@ -119,9 +120,9 @@ export async function validateRepository() {
     }
   }
 
-  const expected = ["puretokens-balance", "puretokens-connection", "puretokens-models", "puretokens-image", "puretokens-video", "puretokens-update"];
+  const expected = ["puretokens-balance", "puretokens-connection", "puretokens-models", "puretokens-image", "puretokens-video", "puretokens-audio", "puretokens-evaluate", "puretokens-update"];
   if (registry.skills.length !== expected.length || expected.some((name, index) => registry.skills[index]?.name !== name)) {
-    errors.push("skills/index.json must list the six specialist Skills in order");
+    errors.push("skills/index.json must list the eight specialist Skills in order");
   }
 
   for (const entry of registry.skills) {
@@ -247,6 +248,45 @@ function validateDirectApiExecutionContract(errors, contract, hostSupport) {
     typeof balance.fallback !== "string" || !balance.fallback) {
     errors.push(`${label} must define the fixed direct balance endpoint and fallback`);
   }
+  const evaluation = contract.evaluation;
+  if (!evaluation || evaluation.method !== "POST" ||
+    evaluation.url !== `${directApiOrigin}/typesafe/v1/systemone` ||
+    evaluation.command !== "evaluate" || evaluation.deadlineSeconds !== 90 ||
+    evaluation.maxRequests !== 1 || evaluation.synchronous !== true ||
+    evaluation.neverAutomaticallyRetries !== true || evaluation.onePostPerInvocation !== true ||
+    evaluation.neverPoll !== true ||
+    evaluation.requestSchema !== "schemas/evaluation-request.schema.json" ||
+    evaluation.responseSchema !== "schemas/evaluation-receipt.schema.json" ||
+    evaluation.modelDiscoveryUrl !== `${directApiOrigin}/v1/models` ||
+    evaluation.modelDiscoveryScope !== "explicit_reviewed_model_visibility_only") {
+    errors.push(`${label} must define one synchronous fixed-route evaluation and explicit model visibility lookup`);
+  }
+  const audio = contract.audio;
+  if (!audio || !sameArray(audio.commands, ["audio", "audio-verify"]) ||
+    !sameArray(audio.urls, ["speech", "transcriptions", "generate"].map(op => `${directApiOrigin}/v1/audio/${op}`)) ||
+    audio.method !== "POST" || audio.deadlineSeconds !== 90 || audio.maxRequests !== 1 ||
+    audio.synchronous !== true || audio.neverAutomaticallyRetries !== true || audio.neverPoll !== true ||
+    audio.verifyLocalOnly !== true || audio.nativeAudioBytesRequired !== true || audio.downloadIsNotDelivery !== true ||
+    audio.modelDiscoveryUrl !== `${directApiOrigin}/v1/models` ||
+    audio.modelDiscoveryScope !== "explicit_reviewed_model_visibility_only" ||
+    audio.requestSchema !== "schemas/audio-request.schema.json" ||
+    audio.responseSchema !== "schemas/audio-receipt.schema.json" ||
+    audio.verifySchema !== "schemas/audio-artifact-verify-request.schema.json") {
+    errors.push(`${label} must define bounded synchronous audio and local artifact verification`);
+  }
+  const music = contract.music;
+  if (!music || music.kind !== "music" || music.model !== "stepaudio-3-music-preview" ||
+    music.submitUrl !== `${directApiOrigin}/v1/audio/music/submit` ||
+    music.statusUrlTemplate !== `${directApiOrigin}/v1/audio/music/tasks/{task_id}` ||
+    music.contentUrlTemplate !== `${directApiOrigin}/v1/audio/music/tasks/{task_id}/content` ||
+    music.maxOutputBytes !== 33554432 || music.artifactRetentionSeconds !== 86400 ||
+    music.retentionStarts !== "gateway_artifact_saved_at" || music.waitWindowMaxReads !== 7 ||
+    music.waitWindowDeadlineSeconds !== 300 || music.maxAutomaticWaitWindows !== 2 ||
+    ["asynchronous", "onePostPerSubmission", "neverAutomaticallyResubmits", "recordRequiredBySkill",
+      "recordExcludesPromptAndLyrics", "apiTaskBoundToOwnerAndOriginatingKey",
+      "reconciliationStopsAutomaticContinuation", "downloadIsNotDelivery"].some(key => music[key] !== true)) {
+    errors.push(`${label} must define bounded asynchronous music, original-key task recovery and native delivery`);
+  }
   const userMediaInput = contract.userMediaInput;
   if (!userMediaInput || userMediaInput.onlyCurrentUserExplicitMedia !== true ||
     userMediaInput.publicUrlRequiresInstalledOrOnDemandProfilePropertyAndTransport !== true ||
@@ -316,7 +356,14 @@ async function validateSpecialistReferences(errors, record) {
   }
   validateExecutionContract(errors, directory, references.executionContract);
   validateBehaviorScenarios(errors, directory, references.behaviorScenarios);
-  if (references.modelIndex) await validateModelIndex(errors, directory, skillDir, references.modelIndex);
+  if (references.modelIndex) {
+    await validateModelIndex(errors, directory, skillDir, references.modelIndex);
+    const defaultModel = references.modelIndex.defaultModel;
+    if (manifest.rules?.defaultModel !== defaultModel || references.executionContract?.parameterValidation?.defaultModel !== defaultModel ||
+        !record.skillText.includes(`默认 \`${defaultModel}\` 或用户精确 ID`)) {
+      errors.push(`${directory}: Skill entry, manifest and execution contract must match the model index defaultModel`);
+    }
+  }
   if (references.taskReceipt) validateTaskReceipt(errors, directory, references.taskReceipt);
   if (directory === "puretokens-update") {
     if (typeof manifest?.usageGuide !== "string" || !manifest.usageGuide) {
@@ -388,6 +435,29 @@ function validateExecutionContract(errors, directory, contract) {
     errors.push(`${label} must define operations`);
     return;
   }
+  if (kind === "evaluate") {
+    validateRequest(errors, `${label} submit`, operations.submit, "POST", `${directApiOrigin}/typesafe/v1/systemone`);
+    validateRequiredBodyFields(errors, `${label} submit`, operations.submit, ["model", "state", "questions"]);
+    for (const rule of ["synchronous", "neverAutomaticallyRetries", "onePostPerInvocation", "neverPoll", "typedQuestionMatching", "unknownSubmissionStops", "supportExcludesInputsAndResults", "confidenceIsNotAccuracy"]) {
+      if (contract.result?.[rule] !== true) errors.push(`${label} must require ${rule}`);
+    }
+    return;
+  }
+  if (kind === "audio") {
+    for (const [op, suffix] of [["speech", "speech"], ["transcribe", "transcriptions"], ["generate", "generate"]]) {
+      validateRequest(errors, `${label} ${op}`, operations[op], "POST", `${directApiOrigin}/v1/audio/${suffix}`);
+    }
+    validateRequest(errors, `${label} music submit`, operations.musicSubmit, "POST", `${directApiOrigin}/v1/audio/music/submit`);
+    validateRequest(errors, `${label} music status`, operations.musicStatus, "GET", `${directApiOrigin}/v1/audio/music/tasks/{task_id}`, true);
+    validateRequest(errors, `${label} music content`, operations.musicContent, "GET", `${directApiOrigin}/v1/audio/music/tasks/{task_id}/content`, true);
+    if (!sameArray(contract.result?.synchronousOperations, ["speech", "transcribe", "generate"]) ||
+      contract.result?.asynchronousMusic?.neverAutomaticallyResubmits !== true) errors.push(`${label} must separate synchronous audio and async music`);
+    for (const rule of ["onePostPerInvocation", "neverAutomaticallyRetries",
+      "nativeAudioBytesRequired", "localArtifactVerification", "downloadIsNotDelivery", "supportExcludesInputsAndResults"]) {
+      if (contract.result?.[rule] !== true) errors.push(`${label} must require ${rule}`);
+    }
+    return;
+  }
   if (kind === "balance") {
     validateRequest(errors, `${label} read`, operations.read, "GET", balanceUsageUrl);
     if (operations.read?.unitMetadataUrl !== balanceUnitUrl || operations.read?.unitMetadataRequiresConfiguredApiKey !== false ||
@@ -419,9 +489,14 @@ function validateExecutionContract(errors, directory, contract) {
   }
   if (kind === "models") {
     validateRequest(errors, `${label} catalog`, operations.catalog, "GET", `${directApiOrigin}/v1/media/models`);
+    validateRequest(errors, `${label} evaluation catalog`, operations.evaluationCatalog, "GET", `${directApiOrigin}/v1/models`);
+    validateRequest(errors, `${label} audio catalog`, operations.audioCatalog, "GET", `${directApiOrigin}/v1/models`);
     if (contract.result?.reportOnlyAuthenticatedCatalog !== true || contract.result?.doesNotSubmitMediaTasks !== true ||
       contract.result?.neverRetry !== true || contract.result?.noStaticCatalogFallback !== true ||
-      contract.result?.compatibilityShortlistsRequireDeclaredCapabilityAndInputSchema !== true) {
+      contract.result?.mediaCompatibilityShortlistsRequireDeclaredCapabilityAndInputSchema !== true ||
+      contract.result?.mediaFilterMatchesDeclaredSchemaOnly !== true ||
+      contract.result?.evaluationDiscovery !== "explicit_reviewed_model_visibility_only" ||
+      contract.result?.audioDiscovery !== "explicit_reviewed_model_visibility_only") {
       errors.push(`${label} must report only the live catalog, never submit media work or retry, and derive compatibility only from declared profile data`);
     }
     return;
@@ -443,7 +518,7 @@ function validateExecutionContract(errors, directory, contract) {
       operations.edit?.inputSource !== "current_user_explicit_public_url_or_native_media_only" || operations.edit?.transport !== "profile_declared_json_public_url_or_multipart_file") {
       errors.push(`${label} must fix async and declare the profile-gated JSON-URL or multipart image-edit input`);
     }
-    if (contract.parameterValidation?.defaultModel !== "gpt-image-2" || contract.parameterValidation?.normalSubmissionUsesSelectedProfileAndIndexWhenNeeded !== true ||
+    if (contract.parameterValidation?.defaultModel !== mediaDefaultModels.image || contract.parameterValidation?.normalSubmissionUsesSelectedProfileAndIndexWhenNeeded !== true ||
       contract.parameterValidation?.exactModelCoreSubmissionDoesNotRequireCatalogPreflight !== true ||
       contract.parameterValidation?.onDemandLiveCatalogRead !== "only_for_explicit_discovery_installed_profile_gap_or_post_rejection_diagnosis" ||
       contract.parameterValidation?.allOptionalParametersRequire !== "selected_profile_with_model_index_only_for_selection_parameter_schema_or_on_demand_live_input_schema" ||
@@ -678,7 +753,7 @@ async function validateModelIndex(errors, directory, skillDir, index) {
   const label = `${directory}: modelIndex`;
   if (!index || typeof index !== "object") return;
   const capability = skillKind(directory);
-  const expectedDefaultModel = capability === "image" ? "gpt-image-2" : "grok-imagine-video-1.5-preview";
+  const expectedDefaultModel = mediaDefaultModels[capability];
   if (index.$schema !== "https://puretokensx.com/schemas/model-index.schema.json") errors.push(`${label} must declare the model-index schema`);
   if (index.schemaVersion !== 1 || index.capability !== capability || typeof index.catalogUpdatedAt !== "string" || typeof index.catalogCapturedAt !== "string" ||
     typeof index.defaultModel !== "string" || !index.defaultModel || !Array.isArray(index.models) || !index.models.length) {
@@ -767,7 +842,12 @@ async function validateSchemaDocuments(errors) {
     "schemas/model-query-receipt.schema.json",
     "schemas/task-record.schema.json",
     "schemas/init-receipt.schema.json",
-    "schemas/doctor-receipt.schema.json"
+    "schemas/doctor-receipt.schema.json",
+    "schemas/evaluation-request.schema.json",
+    "schemas/evaluation-receipt.schema.json",
+    "schemas/audio-request.schema.json",
+    "schemas/audio-receipt.schema.json",
+    "schemas/audio-artifact-verify-request.schema.json"
   ];
   for (const schema of schemas) await verifyJsonFile(errors, schema, `schema ${schema}`);
 }

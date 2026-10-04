@@ -143,12 +143,12 @@ func TestProfileAllowsPublicImageAndValidatesCount(t *testing.T) {
 	if _, _, _, err := taskRequestBody(r); err != nil {
 		t.Fatal(err)
 	}
-	r = taskRequest{Kind: "image", Operation: "generate", Model: "seedream-5.0-pro", Prompt: "test", Parameters: map[string]any{"n": float64(3)}, RequestedCount: 1}
-	if prepareProfileRequest(&r, profileService()) == nil {
+	r = taskRequest{Kind: "image", Operation: "generate", Model: "fixture-multi-image", Prompt: "test", Parameters: map[string]any{"n": float64(3)}, RequestedCount: 1}
+	if prepareProfileRequest(&r, syntheticMultiImageService(t, profileService())) == nil {
 		t.Fatal("mismatched count accepted")
 	}
 	r.RequestedCount = 0
-	if err := prepareProfileRequest(&r, profileService()); err != nil || r.RequestedCount != 3 {
+	if err := prepareProfileRequest(&r, syntheticMultiImageService(t, profileService())); err != nil || r.RequestedCount != 3 {
 		t.Fatal("count not derived from n", err)
 	}
 }
@@ -161,6 +161,11 @@ func TestAllInstalledProfilesAcceptCoreParameters(t *testing.T) {
 			json.Unmarshal(b, &p)
 			t.Run(p.ID, func(t *testing.T) {
 				r := taskRequest{Kind: kind, Operation: "generate", Model: p.ID, Prompt: "test prompt"}
+				parameters := requiredProfileFixtureParameters(t, p)
+				if len(parameters) > 0 && prepareProfileRequest(&r, profileService()) == nil {
+					t.Fatal("missing required parameters accepted")
+				}
+				r.Parameters = parameters
 				if err := prepareProfileRequest(&r, profileService()); err != nil {
 					t.Fatal(err)
 				}
@@ -226,8 +231,8 @@ func TestProfileRejectsUnsupportedValuesBeforePOST(t *testing.T) {
 			t.Fatal("invalid parameters accepted")
 		}
 	}
-	r := taskRequest{Kind: "image", Operation: "generate", Model: "seedream-5.0-pro", Prompt: "test", Parameters: map[string]any{"width": 1024}}
-	if prepareProfileRequest(&r, profileService()) == nil {
+	r := taskRequest{Kind: "image", Operation: "generate", Model: "fixture-multi-image", Prompt: "test", Parameters: map[string]any{"width": 1024}}
+	if prepareProfileRequest(&r, syntheticMultiImageService(t, profileService())) == nil {
 		t.Fatal("unpaired dimensions accepted")
 	}
 }
@@ -242,7 +247,7 @@ func TestReferenceRoleCountAndResolution(t *testing.T) {
 		t.Fatal("wrong reference role accepted")
 	}
 	r.Attachments[0].Field = "reference_images"
-	r.Model = "grok-imagine-video-1.5-preview"
+	r.Model = "grok-imagine-video-1.5"
 	r.Parameters = map[string]any{"resolution": "1080p"}
 	if prepareProfileRequest(&r, profileService()) == nil {
 		t.Fatal("reference mode resolution ignored")

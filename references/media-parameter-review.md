@@ -1,5 +1,23 @@
 # Media Parameter Review
 
+2026-10-04复核：公开目录112项，29个媒体profile（15图片、14视频）。仅移出未再列出的 `seedream-5.0-pro`，不据此推断永久下线；其余schema经现有审核补充后未变。默认图片 `gpt-image-2.5-flare`、视频 `minimax_h3` 保持；H3首尾帧使用 `image_to_video` 与声明的first/last字段。当前所有图片profile仅声明n=1；多结果执行机制用仓库合成profile测试，不作为线上批量能力声明。脱敏证据见 `acceptance/client-model-sync-20261004.json`。
+
+## Current review — 2026-10-03
+
+The public catalog snapshot captured at 02:02 UTC on 2026-10-03 declares 30 media models. See `acceptance/client-model-sync-20261003.json` for source hash and exact additions/removals; the September findings below are historical and superseded where they conflict.
+
+- GPT Image adds exact `gpt-image-2.5-flare` and `gpt-image-2.5-sunburst`. All five current variants declare 1K/2K/4K, ten ratios, quality/output formats and at most ten references. Public tasks remain asynchronous.
+- New image profiles: qwen-image-3.0, qwen-image-3.0-pro, wan2.7-image, wan2.7-image-pro. Their edit operations declare JSON `images` HTTPS URLs, not local file upload. Do not upload/rehost user attachments to manufacture this transport.
+- User-approved defaults are `gpt-image-2.5-flare` for images and `minimax_h3` for videos; both exact IDs and their full input schemas were rechecked against the public catalog at 02:40 UTC on 2026-10-03. Removed IDs are removed only from installed selection, not rewritten in existing task records. minimax_h3 is an exact distinct ID, never an implicit alias of minimax-h3.
+- New video profiles: seedance2.0, omni, veo_fast, veo_lite, veo_quan, minimax_h3. Seedance2.0 and current seedance-2.5 require explicit duration; operation inputs are JSON HTTPS URLs. omni video_edit also declares JSON URL transport. Veo profiles omit native attachment operations, so do not claim that local attachments work.
+- Seedance-2.5 no longer declares frame fields; it no longer receives the reviewed first/last-frame supplement. Seedance-2.0/Fast/Mini still declare both fields and retain that separately sourced supplement.
+- Executor recognizes `https_url` and `public_https_url` as the same bounded public-only reference transport, checks declared input counts including scalar URLs, and enforces Minimax last-frame/first-frame and reference exclusivity. Added video_urls to reference validation so private URLs cannot pass as ordinary parameters.
+- Reviewed Step audio and Jev IDs are publicly listed now, but dedicated API permissions and native output remain unverified. Realtime/Qwen audio, embeddings and rerank are not enabled by a generic OpenAI catalog label; Web audio contract dated 2026-10-01 explicitly withdraws Qwen workspace support.
+
+No real-host, paid task, account entitlement or attachment acceptance is claimed.
+
+## Historical review — 2026-09-18
+
 Reviewed 2026-09-18. Public source: the production console's
 `/api/product/docs/model-catalog`. This is selection metadata, not authenticated
 model access or paid generation proof.

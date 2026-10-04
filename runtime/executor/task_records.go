@@ -159,7 +159,7 @@ func (writer *recordReceiptWriter) writeReceipt(result receipt) {
 
 func (record taskRecord) deliveryComplete() bool {
 	count := record.RequestedCount
-	if record.Kind == "video" {
+	if record.Kind == "video" || record.Kind == "music" {
 		count = 1
 	}
 	return count > 0 && len(record.Delivered) == count
@@ -210,7 +210,7 @@ func loadTaskRecord(path string) (taskRecord, error) {
 	if decoder.Decode(&extra) != io.EOF {
 		return record, errors.New("record contains additional content")
 	}
-	if record.Format != taskRecordFormat || (record.Kind != "image" && record.Kind != "video") || (record.TaskID != "" && !validTaskID(record.TaskID)) || record.RequestedCount < 0 || record.RequestedCount > 6 || record.WaitWindowsCompleted < 0 || record.WaitWindowsCompleted > 2 {
+	if record.Format != taskRecordFormat || (record.Kind != "image" && record.Kind != "video" && record.Kind != "music") || (record.TaskID != "" && !validTaskID(record.TaskID)) || record.RequestedCount < 0 || record.RequestedCount > 6 || record.WaitWindowsCompleted < 0 || record.WaitWindowsCompleted > 2 {
 		return record, errors.New("record has unsupported metadata")
 	}
 	if record.TaskID != "" {
@@ -227,6 +227,9 @@ func loadTaskRecord(path string) (taskRecord, error) {
 		}
 	}
 	for index, proof := range record.DownloadProofs {
+		if format, ok := record.Parameters["response_format"].(string); record.Kind == "music" && ok && proof.MediaType != audioMIME(format) {
+			return record, errors.New("music format differs from original request")
+		}
 		path, ok := record.Downloaded[index]
 		if !ok || !validDownloadProof(proof, record.Kind) ||
 			recordedDownloadFormat(record.Kind, record.TaskID, index, path) != proof.MediaType {
@@ -249,8 +252,8 @@ func recordedDownloadFormat(kind, taskID string, index int, filePath string) str
 		return ""
 	}
 	stem := fmt.Sprintf("puretokens-%x", sha256.Sum256([]byte(contentPath(kind, taskID, index))))
-	for _, format := range []string{"image/png", "image/jpeg", "image/webp", "image/gif", "image/avif", "video/mp4", "video/webm"} {
-		if strings.HasPrefix(format, kind+"/") && name == stem+"."+extensionFor(format, kind) {
+	for _, format := range []string{"image/png", "image/jpeg", "image/webp", "image/gif", "image/avif", "video/mp4", "video/webm", "audio/mpeg", "audio/wav"} {
+		if strings.HasPrefix(format, mediaKindPrefix(kind)) && name == stem+"."+extensionFor(format, kind) {
 			return format
 		}
 	}

@@ -1,6 +1,8 @@
 # Pure Tokens Skills 当前开发状态
 
-更新日期：2026-09-12。任务标识：stable-distribution-performance-2026-09-12。此文件仅维护当前任务；历史实现和发布记录见 Git 与 CHANGELOG。
+> 历史交接说明：下文保留2026-09-13任务及其一次性发布授权，不适用于当前版本。2026-10-04的客户端／模型事实和验证结果以 `acceptance/client-model-sync-20261004.md`、`switch-skill-compatibility.md` 为准；0.18.7的新版本发布例外独立记录于 `host-acceptance.json`，不复用旧授权，不将待验收状态改为通过。
+
+更新日期：2026-09-13（本机 Asia/Shanghai）。任务标识：stable-distribution-performance-2026-09-12。此文件仅维护当前任务；历史实现和发布记录见 Git 与 CHANGELOG。
 
 ## 目标与授权
 
@@ -8,17 +10,24 @@
 
 保留既有 Trae 验收分类修复、实机记录和维护文档修改，不回退用户已有工作。当前候选版本为 0.18.2；0.18.1 分发保持不可变，其验收表已完整归档至 `references/acceptance/0.18.1-host-acceptance.json`。
 
-最新指示：用户在 OpenCode 诊断后明确要求“那你去修复”。正在实施并验证 OpenCode 专项修复；Gemini 保持暂停。此前图片与 xAI／minimax-h3 视频测试授权保留；只有本次有新实现依据的同宿主 init 通过后才继续 API／媒体，失败则停止，不换宿主或凭据。没有新版本实机证据前，不能沿用 0.18.1 通过状态。
+最新指示与结果：用户明确“批准”本次 0.18.2 稳定发布的实机验收例外及公开限制，已据此完成发布。只对提交 `7ed8c815d68ffdd508881669d43b9e516f0f796d` 的 0.18.2 豁免实机验收门禁；不修改验收状态，不改变后续版本门禁。采用一次性手工发布，复用同提交已通过四项 CI 的 11 个产物；附有例外说明的版本标签和 Release 已公开，草稿上传后下载并运行 --publishable 复核通过，再转为 latest。例外记录保留在标签与 Release 正文，没有改分发字节或新增永久绕过开关。Gemini 保持暂停；没有为发布再次检查 OpenCode 连接或创建付费媒体任务。
 
 验收目标：默认仅取已发布稳定清单指定的平台 ZIP，无整库下载回退；同版且清单完整时不下载 ZIP、不写入、不 init；有改动或缺失则停止。init 两次只读请求共用 20 秒预算。六平台重建及包检查、工程与发布门禁通过；实机缺口如实保留，不以夹具标记通过。
 
 ## 有效决定与实现
 
+- 当前发布结果（2026-09-13 本机）：`v0.18.2` 已公开为 Latest，draft=false、prerelease=false；GitHub published_at 为 `2026-09-12T20:22:24Z`，即北京时间 9 月 13 日 04:22:24。发布页为 `https://github.com/PureTokens/puretokens-skill/releases/tag/v0.18.2`。附注标签对象为 f328b329bd8b71cd491505668ee1ce93e1a3e9c5，解引用提交为 7ed8c81；远端 main 已在资源上线后由 a1b7252 快进到同一提交，候选分支保持一致，无新分发改动。
+- 本轮发布核验：npm run check 通过（Go／vet、Node 80 通过、1 项本机无 PowerShell 跳过）；release:validate 通过（0.18.2 immutable、六平台可重现构建、目录新鲜度）；--stable 仍退出 1，按批准记录为例外而非通过。候选 CI 34688997434、标签 CI 34690580830、main CI 34716992585 的四项任务均 success，含 Windows 实际安装和下载夹具。11 个 CI 产物上传草稿后全量下载，--publishable 通过，逐文件字节与 CI 原件一致，远端文件集合、尺寸及 SHA-256 全部对应。匿名公开 latest 清单及 Shell／PowerShell fetch 均与已核验上传文件一致，main 的两份 README 和两个 fetch 入口也与本次发布源码一致。发布交付已完成；没有活动测试进程，没有待完成的本次发布动作。
+- 发布后安装抽查：`/tmp/pt-stable-0182-publication.pF87hl/public-install-smoke.mjs` 使用匿名公开 latest 入口，在隔离 HOME 和含空格／中文目标路径完成首次安装（11302 ms）及同版更新（5951 ms），均退出 0；恰好六个 Skill 和一个执行器目录，七份受管清单存在，执行器校验和匹配，更新后全部文件内容、inode、mtime、mode 和大小未变。未传 host，连接 init 明确延后，隔离 HOME 仍为空；不是任何真实客户端或 API／媒体验收，活跃验收仍为 118 pending、38 unavailable、0 passed。抽查目录为 `/tmp/pt-stable-0182-publication.pF87hl/isolated-install-G6qWKs`。
+- 发布材料：说明正文与例外、下载回查资源、公开入口文件和隔离抽查位于 `/tmp/pt-stable-0182-publication.pF87hl`；CI 原始下载位于 `/tmp/pt-ci-0182-34688997434.0vPNFQ`。本状态记录保持为本地未提交文件，不进入发布包。下方此前“待批准／不发布／未推 main”等状态均为已被本次批准与发布结果替代的历史，不作为下一步指令。
 - OpenCode 0.18.2 修复（当前有效）：支持有界 JSONC 多层合并、XDG 目录、显式配置和项目／系统管理层，以及端点验证后的原生 API-key 存储。明确 model 不回退；缺省 model 只接受唯一已启用的匹配服务，不据此声称当前聊天身份。动态引用、插件、远程／会话未表示的覆盖及不支持的认证安全停止。不读取真实配置原文或历史库，不改用户连接。精确读取范围已写入 credential-adapters.md，六份 desktop-hosts.md 同步。
 - 新增回归覆盖选择歧义、JSONC、合并优先级、原生凭据优先级、错误覆盖不回退、禁用过滤、重复键、体积／深度、插件、MDM、非普通文件和动态字段名。动态字段名漏洞经独立复核确认，五个用例实际先红后绿；修复前原始文本和解析后键／值都检查替换标记，避免继承旧凭据。独立安全复核无剩余明确阻断项；仅为代码复核，不是实机验收。
-- 当前验证：OpenCode 聚焦测试通过，最终 10 秒有界模糊测试 139598 次通过；只应用本次运行时修改的隔离 HEAD 4acf06d 工作区 Go 全测／vet 通过。六平台执行器已重建；npm run check 通过（Go／vet、Node 80 通过，1 项本机无 PowerShell 跳过）；release:validate 可重现构建通过；release:package 六平台草稿包校验通过，sourceCommit=null，不可发布。0.18.2 活跃验收已重置为 118 pending、38 unavailable、0 passed，旧证据未改版本。
-- 实机结果／材料：`/tmp/pt-opencode-0182.I7Qp8i/install.mjs` 从校验过的本平台 ZIP 更新 OpenCode 默认 Skill 目录，915 ms 完成；七份清单通过，14 个无关兄弟项元数据未变，安装后 executor 为 0.18.2。自动 init 观察一次，仍停止于 `active_connection_selection_unconfirmed`；未创建媒体任务。详见 `references/acceptance/0.18.2-opencode-macos-arm64.md`。隔离工作区 `/tmp/pt-opencode-isolated.GkB5sw/repo`。未提交、推送或发布。下方 0.18.1／Gemini 段落均为历史证据，不替代本段当前状态。
-- 进一步的原生脱敏探针显示：当前 OpenCode XDG 配置根下存在一个配置文件，但合并后的文档没有 `provider` 声明；因此 0.18.2 按契约返回 selection-unconfirmed，而不是从 auth store 或 provider 标签猜 endpoint。这个结果解释了本机 init 仍未通过：运行时修复已生效，但当前本地有效配置不在支持的“声明 endpoint + 原生 api auth”范围内。未输出路径、provider ID、凭据或配置内容。
+- 当前验证：OpenCode 聚焦测试通过，最终 10 秒有界模糊测试 139598 次通过；只应用本次运行时修改的隔离 HEAD 4acf06d 工作区 Go 全测／vet 通过。六平台执行器已重建；npm run check 通过（Go／vet、Node 80 通过，1 项本机无 PowerShell 跳过）；release:validate 可重现构建通过。0.18.2 活跃验收为 118 pending、38 unavailable、0 passed，涉及 31 个待验收 host/OS 组合；旧证据未改版本。
+- 提交与候选产物（2026-09-12）：`7ed8c815d68ffdd508881669d43b9e516f0f796d` 已推送到 `codex/stable-distribution-0.18.1`，远端 SHA 与本地一致。GitHub CI `34688997434` 的 repository、macOS、Linux、Windows 全部 success，含 Windows 安装生命周期与稳定下载夹具。提交后 `npm run release:package` 和 `npm run release:verify -- --publishable` 通过，六包 sourceCommit 已绑定 7ed8c81，不再为 null。下载 CI 产物到 `/tmp/pt-ci-0182-34688997434.0vPNFQ` 后，以同一 --publishable 校验器再次核对六包、脚本、完整源码字节及校验和通过。main 仍为 a1b7252，未创建 v0.18.2 标签或 GitHub Release；本段为推送后本地状态更新，不随本轮再次提交。
+- 稳定门禁已实际运行：`node scripts/validate-host-acceptance.mjs --stable` 退出 1，拒绝 31 个待验收 host/OS 组合及缺失完整媒体环境。纠正之前命令混淆：验收脚本只认 --stable，传 --publishable 不能执行稳定验收；--publishable 属于平台包校验器。完整媒体环境是必要而非充分条件，不能声称只补一个 OpenCode 就通过整个矩阵。没有放宽门禁或伪造验收。
+- 用户确认后的发布复查（2026-09-12）：本机 OpenCode 仍为 1.18.23；先将已安装执行器与仓库 darwin-arm64 哈希比对，再调用一次 `init --host opencode`，13 ms、退出码 1，`active_connection_selection_unconfirmed`，apiRequestExecuted／credentialVerified／apiIdentityConfirmed 均 false。只输出允许列表状态，未读配置原文、未输出凭据、未请求其他客户端、未创建媒体任务。该调用由维护终端执行，不是 OpenCode 会话中调用 Skill 的证据。--stable 再次退出 1；六包 CI 下载产物 --publishable 复核通过；CI 34688997434 仍 success，远端候选仍为 7ed8c81、main 为 a1b7252，无 v0.18.2 标签，Release 列表为空。本轮只更新此本地任务记录，未提交、创建标签、触发发布或修改门禁。
+- 实机结果／材料：`/tmp/pt-opencode-0182.I7Qp8i/install.mjs` 从校验过的本平台 ZIP 更新 OpenCode 默认 Skill 目录，915 ms 完成；七份清单通过，14 个无关兄弟项元数据未变，安装后 executor 为 0.18.2。自动 init 观察一次，仍停止于 `active_connection_selection_unconfirmed`；未创建媒体任务。详见 `references/acceptance/0.18.2-opencode-macos-arm64.md`。隔离工作区 `/tmp/pt-opencode-isolated.GkB5sw/repo`。下方 0.18.1／Gemini 段落均为历史证据，不替代本段当前状态。
+- 本地探针不证明当前聊天使用哪条连接，不能据此声称用户未配置或要求更换凭据。当前可报告的实机结论仅为 0.18.2 安装核验成功、连接选择仍未确认；其他客户端的代码扫描也不是实机全部通过或不存在同类问题的证明。后续不得重复读取真实配置原文或扫描历史来猜选项。
 - OpenCode 专项诊断（2026-09-12）：本机版本仍为 1.18.23；官方 v1.18.23 固定到 `ef2880f379129aa048be9e9353e30aa168d42c17`。原生执行器哈希与候选一致，同宿主一次显式 init 复查在 20 ms 以退出码 1 返回 `active_connection_selection_unconfirmed`，API 请求／身份确认／凭据验证均 false。这不是新 OpenCode 会话执行证据。根因边界：本仓库 `credentialFromOpenCodeFile` 要求单份全局 JSON 的根 model 含 provider；官方 defaultModel 允许 model 缺省，再看有效最近模型及可用模型，实际会话还受请求／Agent／会话选择和多层 JSON/JSONC 合并影响。六个合成用例复现现有拒绝边界及不可借用未选连接的限制，overlay 测试通过；第一次探针 JSON 缺括号已改为结构化序列化，没有改产品代码。公开两个终端执行路径没有提供可直接依赖的当前 provider/model 环境契约。没有读取真实配置、最近模型、会话库或认证存储，不断言用户实际用了哪个来源。修复应补有效选择证明，或明确按本项目既有独立服务适配器方式验证唯一已配置服务连接的较窄能力；不能删除保护后取第一个 provider、要求用户填默认 model 掩盖缺口或猜环境变量。调查源文件、overlay、脱敏重查在 `/tmp/pt-opencode-diagnosis.6vBdzU`；已补入现有 OpenCode 验收附件，验收状态不改。产品代码、0.18.1 分发字节及用户连接未改动；若实施运行时修复，必须处理不可变版本规则和新增配置读取范围。
 - Gemini 退出码 41 专项（2026-09-12）：0.57.0 的实际重查在 965 ms 退出，工具调用 0、执行器回执为空；仅对内存中的 stderr 做允许列表分类，命中 `client_auth_method_unresolved`（客户端未解析出认证方式），不是 API 拒绝。交互启动实际停在认证选择界面，没有输入或确认信任、登录、凭据。排查期间安装包版本从 0.57.0 变为 0.59.0，未由本任务执行升级；重新观察 0.59.0，启动前后版本一致，精确检测到认证选择提示和 API Key 选项，没有目录信任提示。探针结束时需终止启动包装进程，不将其退出状态当作对话成功。0.57.0 源码的网关类型校验遗漏不是本次命中的错误，已废弃此根因假设；不能从本地诊断断言用户未配置或 Key 无效。当前需要用户在本项目的 Gemini 认证界面确认现有 Pure Tokens 连接并先恢复普通对话，不要求提供配置或凭据、不改用 Google 登录替代 Pure Tokens 测试。完成后继续同宿主 init 和已授权图片／xAI 或 minimax-h3 视频验收。本轮未修改产品或客户端连接配置、未创建媒体任务。脱敏材料：`/tmp/pt-real-host-acceptance.ZqrAie/gemini-init-recheck-summary.json`、`gemini-startup-ui-current-summary.json`。
 - 当前实机验收环境：macOS 26.6.2（25G83）、arm64、zsh 5.9／系统 sh bash 3.2.57、Codex CLI 0.153.4。候选包为 CI 34676764666 的 0.18.1、提交 4acf06d，已重新通过 release:verify --publishable。Codex 默认目录首次真实安装完成（814 ms），7 份受管清单及执行器哈希通过，53 个无关兄弟项的元数据未变。新 Codex 进程发现 6 个启用的正确路径；临时新会话实际读取帮助并完成回复，但 CLI 进程未在 60 秒内退出，已终止，不能宣称命令退出／端到端延迟通过。

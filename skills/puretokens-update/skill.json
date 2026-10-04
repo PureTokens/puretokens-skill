@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "name": "puretokens-update",
-  "version": "0.18.6",
+  "version": "0.18.7",
   "entry": "SKILL.md",
   "displayName": "Pure Tokens Update",
   "description": "Install or safely upgrade local official Pure Tokens Skills.",
@@ -77,6 +77,14 @@
     "octop": {
       "manualInstallationSupported": true,
       "workspaceSkillDirectory": ".octop/skills"
+    },
+    "deepseekHarness": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.dsh/skills"
+    },
+    "minimaxCode": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.minimax/skills"
     }
   },
   "supportedClients": [
@@ -89,6 +97,8 @@
     "trae",
     "claude-desktop",
     "dsh-desktop",
+    "deepseek-harness",
+    "minimax-code",
     "zcode",
     "kimi-code",
     "qoder",
@@ -121,5 +131,5 @@
     "supportsReadOnlyDoctor": true,
     "doesNotSubmitMediaOrReadBilling": true
   },
-  "sourceSha256": "d01fde48d1e77875a11e66fe5c97b265ad3cd811dfd2053bab3567216dab3a2d"
+  "sourceSha256": "025e8ed5f1a1eb2f9892a48da31b695a2d1e994fb513b43a4e063a237869a6fe"
 }

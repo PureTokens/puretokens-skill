@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Existing version tag to publish after real-host acceptance review
+        description: Existing version tag to publish after version-specific release review
         required: true
 permissions:
   contents: read
@@ -58,12 +58,12 @@ jobs:
         run: node -e 'const p=require("./package.json");if(!/^v\d+\.\d+\.\d+$/.test(process.env.RELEASE_TAG)||process.env.RELEASE_TAG!=="v"+p.version)throw new Error("Tag must match the stable package version.")'
       - run: npm run check
       - run: npm run release:validate
-      - name: Require completed declared real-host acceptance
+      - name: Validate version-specific acceptance decision
         run: node scripts/validate-host-acceptance.mjs --stable
       - run: GITHUB_SHA="$(git rev-parse HEAD)" npm run release:package
       - run: npm run release:verify -- --publishable
       - name: Create a draft without changing the public stable release
-        run: gh release create "$RELEASE_TAG" --verify-tag --draft --title "$RELEASE_TAG" --notes "See the versioned changelog and documented host acceptance scope."
+        run: gh release create "$RELEASE_TAG" --verify-tag --draft --title "$RELEASE_TAG" --notes "See CHANGELOG.md or CHANGELOG.zh-CN.md for this version's features and fixes."
       - name: Upload only the verified release set
         run: |
           gh release upload "$RELEASE_TAG" dist/releases/release-manifest.json dist/releases/puretokens-skill-install.sh dist/releases/puretokens-skill-install.ps1 dist/releases/puretokens-skill-fetch.sh dist/releases/puretokens-skill-fetch.ps1 "dist/releases/puretokens-skill-${RELEASE_TAG#v}-darwin-amd64.zip" "dist/releases/puretokens-skill-${RELEASE_TAG#v}-darwin-arm64.zip" "dist/releases/puretokens-skill-${RELEASE_TAG#v}-linux-amd64.zip" "dist/releases/puretokens-skill-${RELEASE_TAG#v}-linux-arm64.zip" "dist/releases/puretokens-skill-${RELEASE_TAG#v}-windows-amd64.zip" "dist/releases/puretokens-skill-${RELEASE_TAG#v}-windows-arm64.zip"

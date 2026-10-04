@@ -1,8 +1,9 @@
 import { createHash } from "node:crypto";
-import { readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { repositoryRoot } from "./skill-registry.mjs";
+import { loadOperationGuidance, renderOperationGuidance, replaceGuidanceBlock } from "./operation-guidance.mjs";
 
 const bindingPattern = /^宿主绑定与本地失败停止：[^\n]+$/gm;
 
@@ -17,18 +18,52 @@ export async function syncSkillGuidance(root, { write = false } = {}) {
   const desktop = source.replace("<!-- host-binding -->", binding);
   const hostList = support.supported.map(host => host.id).join("、");
   const changed = [];
+  const operations = await loadOperationGuidance(root);
   async function output(file, next) {
     let current = "";
     try { current = await read(file); } catch (error) { if (error.code !== "ENOENT") throw error; }
     if (current === next) return;
     changed.push(file);
-    if (write) await writeFile(path.join(root, file), next);
+    if (write) {
+      await mkdir(path.dirname(path.join(root, file)), { recursive: true });
+      await writeFile(path.join(root, file), next);
+    }
+  }
+  const audio = JSON.parse(await read("runtime/executor/audio-profiles.json"));
+  const audioRoot = "skills/puretokens-audio/references";
+  const ids = Object.keys(audio.models);
+  const existing = await readdir(path.join(root, audioRoot, "profiles")).catch(error => {
+    if (error.code !== "ENOENT") throw error;
+    return [];
+  });
+  if (existing.some(file => !ids.some(id => file === `${id}.json`))) {
+    throw new Error("Audio profiles contain an unreviewed file; review and remove it explicitly");
+  }
+  await output(`${audioRoot}/model-index.json`, JSON.stringify({
+    schemaVersion: 1, reviewedAt: audio.reviewedAt,
+    scope: "reviewed_contract_not_live_availability",
+    defaults: { speech: "stepaudio-2.5-tts", transcribe: "stepaudio-2.5-asr", generate: "stepaudio-3-gen-preview", music: "stepaudio-3-music-preview" },
+    models: ids.map(id => ({ id, operation: audio.models[id].operation, profile: `profiles/${id}.json` }))
+  }, null, 2) + "\n");
+  for (const [id, profile] of Object.entries(audio.models)) {
+    if (!/^[a-z0-9.-]+$/.test(id) || profile.model !== id) throw new Error("Invalid audio model identifier");
+    await output(`${audioRoot}/profiles/${id}.json`, JSON.stringify({
+      schemaVersion: 1, reviewedAt: audio.reviewedAt, ...profile
+    }, null, 2) + "\n");
   }
   for (const skill of registry.skills) {
     const text = await read(skill.entry);
     if ([...text.matchAll(bindingPattern)].length !== 1) throw new Error(`${skill.name}: expected one host-binding paragraph`);
     let next = text.replace(bindingPattern, () => binding);
-    if (["puretokens-image", "puretokens-video"].includes(skill.name)) {
+    const selected = operations.filter(row => row.skill === skill.name);
+    if (selected.length) {
+      next = replaceGuidanceBlock(next, "operations", renderOperationGuidance(selected));
+      await output(`skills/${skill.name}/references/receipt-guide.md`, await read("references/skill-fragments/receipt-guide.md"));
+    }
+    if (["puretokens-image", "puretokens-video", "puretokens-audio"].includes(skill.name)) {
+      await output(`skills/${skill.name}/references/workflows.md`, await read("references/skill-fragments/media-workflows.md"));
+    }
+    if (["puretokens-image", "puretokens-video", "puretokens-audio", "puretokens-evaluate"].includes(skill.name)) {
       if (!/当前宿主 ID 为 [^。\n]+。/.test(next)) throw new Error(`${skill.name}: missing host list`);
       next = next.replace(/当前宿主 ID 为 [^。\n]+。/, `当前宿主 ID 为 ${hostList}。`);
     }
@@ -51,6 +86,8 @@ export async function syncSkillGuidance(root, { write = false } = {}) {
     if (manifest.sourceSha256 !== undefined) manifest.sourceSha256 = createHash("sha256").update(next).digest("hex");
     await output(skill.manifest, JSON.stringify(manifest, null, 2) + "\n");
   }
+  const usagePath = "skills/puretokens-update/references/usage-guide.md";
+  await output(usagePath, replaceGuidanceBlock(await read(usagePath), "operations", renderOperationGuidance(operations)));
   return changed;
 }
 

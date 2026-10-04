@@ -1,0 +1,278 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://puretokensx.com/schemas/evaluation-receipt.schema.json",
+  "title": "Safe synchronous evaluation receipt",
+  "type": "object",
+  "required": [
+    "ok",
+    "command",
+    "submission_outcome",
+    "next_step"
+  ],
+  "properties": {
+    "ok": {
+      "type": "boolean"
+    },
+    "command": {
+      "const": "evaluate"
+    },
+    "submission_outcome": {
+      "enum": [
+        "accepted",
+        "rejected",
+        "unknown",
+        "not_submitted"
+      ]
+    },
+    "next_step": {
+      "enum": [
+        "done",
+        "await_user"
+      ]
+    },
+    "result": {
+      "type": "object",
+      "required": [
+        "model",
+        "answers"
+      ],
+      "properties": {
+        "model": {
+          "type": "string",
+          "pattern": "^jev-(latest|preview|[0-9]{1,6}\\.[0-9]{1,6}\\.[0-9]{1,6})$(?![\\s\\S])"
+        },
+        "answers": {
+          "type": "object",
+          "minProperties": 1,
+          "maxProperties": 64,
+          "patternProperties": {
+            "^[A-Za-z][A-Za-z0-9_-]{0,63}$(?![\\s\\S])": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "noul"
+                  ],
+                  "properties": {
+                    "type": {
+                      "const": "noul"
+                    },
+                    "noul": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "choice",
+                    "probabilities",
+                    "confidence"
+                  ],
+                  "properties": {
+                    "type": {
+                      "const": "choice"
+                    },
+                    "choice": {
+                      "type": "string",
+                      "pattern": "^(?=.*\\S)[^\\u0000-\\u001f\\u007f-\\u009f]{1,128}$(?![\\s\\S])"
+                    },
+                    "probabilities": {
+                      "type": "object",
+                      "minProperties": 1,
+                      "maxProperties": 255,
+                      "patternProperties": {
+                        "^(?=.*\\S)[^\\u0000-\\u001f\\u007f-\\u009f]{1,128}$(?![\\s\\S])": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "confidence": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "score",
+                    "level_count",
+                    "probabilities",
+                    "confidence"
+                  ],
+                  "properties": {
+                    "type": {
+                      "const": "score"
+                    },
+                    "score": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 9
+                    },
+                    "level_count": {
+                      "type": "integer",
+                      "minimum": 2,
+                      "maximum": 10
+                    },
+                    "probabilities": {
+                      "type": "object",
+                      "minProperties": 2,
+                      "maxProperties": 10,
+                      "patternProperties": {
+                        "^[0-9]$(?![\\s\\S])": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "confidence": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "usage": {
+          "type": "object",
+          "minProperties": 1,
+          "properties": {
+            "input_tokens": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "output_tokens": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "support": {
+      "$ref": "support-summary.schema.json"
+    },
+    "failure_phase": {
+      "enum": [
+        "validation",
+        "submission"
+      ]
+    },
+    "local_error_code": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]+$(?![\\s\\S])"
+    },
+    "http_status": {
+      "type": "integer",
+      "minimum": 100,
+      "maximum": 599
+    },
+    "api_error_code": {
+      "type": "string"
+    },
+    "error_message": {
+      "type": "string",
+      "minLength": 1
+    },
+    "next_action": {
+      "type": "string",
+      "minLength": 1
+    },
+    "retry_after_seconds": {
+      "type": "integer",
+      "minimum": 1
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "ok": {
+            "const": true
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "result"
+        ],
+        "properties": {
+          "submission_outcome": {
+            "const": "accepted"
+          },
+          "next_step": {
+            "const": "done"
+          }
+        },
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "failure_phase"
+              ]
+            },
+            {
+              "required": [
+                "local_error_code"
+              ]
+            },
+            {
+              "required": [
+                "error_message"
+              ]
+            }
+          ]
+        }
+      },
+      "else": {
+        "required": [
+          "failure_phase",
+          "local_error_code",
+          "error_message",
+          "next_action"
+        ],
+        "properties": {
+          "submission_outcome": {
+            "enum": [
+              "not_submitted",
+              "unknown",
+              "rejected"
+            ]
+          },
+          "next_step": {
+            "const": "await_user"
+          }
+        },
+        "not": {
+          "required": [
+            "result"
+          ]
+        }
+      }
+    }
+  ],
+  "additionalProperties": false
+}

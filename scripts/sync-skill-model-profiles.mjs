@@ -2,13 +2,13 @@ import { mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { repositoryRoot } from "./skill-registry.mjs";
+import { mediaDefaultModels, repositoryRoot } from "./skill-registry.mjs";
 import { assertModelID } from "./model-id.mjs";
 
 const catalogPath = path.join(repositoryRoot, "references", "media-model-catalog.json");
 const targets = [
-  { capability: "image", skill: "puretokens-image", defaultModel: "gpt-image-2" },
-  { capability: "video", skill: "puretokens-video", defaultModel: "grok-imagine-video-1.5-preview" }
+  { capability: "image", skill: "puretokens-image", defaultModel: mediaDefaultModels.image },
+  { capability: "video", skill: "puretokens-video", defaultModel: mediaDefaultModels.video }
 ];
 
 function parseMode() {

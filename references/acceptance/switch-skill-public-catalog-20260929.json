@@ -1,0 +1,62 @@
+{
+  "evidenceLevel": "public-read-only-not-account-permission-or-price-quote",
+  "recordedAt": "2026-09-28T16:49:54.947Z",
+  "source": "https://console.puretokensx.com/api/product/docs/model-catalog",
+  "sourceSha256": "60eb15b64c9f9a1175ad3021e6653709e5f95444274878f0a31b314c63b214b9",
+  "pricingVersion": "a42d372ccf0b5dd13ecf71203521f9d2",
+  "models": [
+    {
+      "id": "minimax-h3",
+      "endpoints": [
+        "openai-video"
+      ],
+      "modelPrice": 4,
+      "requestByResolution": {
+        "2k": 4,
+        "4k": 8,
+        "720p": 3
+      },
+      "resolutionPriceUnit": "video"
+    },
+    {
+      "id": "gpt-image-2",
+      "endpoints": [
+        "image-generation"
+      ],
+      "modelPrice": 0.2,
+      "requestByResolution": {
+        "1k": 0.1,
+        "2k": 0.2,
+        "4k": 0.3
+      },
+      "resolutionPriceUnit": "image"
+    },
+    {
+      "id": "grok-imagine-video-1.5",
+      "endpoints": [
+        "openai-video"
+      ],
+      "modelPrice": 0.7,
+      "requestByResolution": {
+        "1080p": 1,
+        "480p": 0.5,
+        "720p": 0.7
+      },
+      "resolutionPriceUnit": "video"
+    }
+  ],
+  "candidateIdsAbsent": [
+    "stepaudio-2.5-tts",
+    "stepaudio-2.5-asr",
+    "stepaudio-3-gen-preview",
+    "stepaudio-3-music-preview",
+    "jev-latest",
+    "jev-1.13.0",
+    "jev-preview"
+  ],
+  "limitations": [
+    "No authentication used; not a user group or Key entitlement check.",
+    "Base and resolution pricing precedence and group multipliers not confirmed; not an executable quote.",
+    "Absence in this public catalog does not prove absence in every account group."
+  ]
+}

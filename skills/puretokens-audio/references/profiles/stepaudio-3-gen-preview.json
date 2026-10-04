@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "reviewedAt": "2026-09-27",
+  "model": "stepaudio-3-gen-preview",
+  "operation": "generate",
+  "path": "/v1/audio/generate",
+  "content_type": "application/json",
+  "max_instruction_characters": 500,
+  "formats": [
+    "mp3",
+    "wav"
+  ],
+  "task": "text_to_audio",
+  "stream_format": "audio"
+}

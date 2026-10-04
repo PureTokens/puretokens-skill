@@ -20,6 +20,14 @@
     "catalog": {
       "method": "GET",
       "url": "https://api.puretokensx.com/v1/media/models"
+    },
+    "evaluationCatalog": {
+      "method": "GET",
+      "url": "https://api.puretokensx.com/v1/models"
+    },
+    "audioCatalog": {
+      "method": "GET",
+      "url": "https://api.puretokensx.com/v1/models"
     }
   },
   "result": {
@@ -27,14 +35,16 @@
     "doesNotSubmitMediaTasks": true,
     "neverRetry": true,
     "noStaticCatalogFallback": true,
-    "compatibilityShortlistsRequireDeclaredCapabilityAndInputSchema": true,
+    "mediaCompatibilityShortlistsRequireDeclaredCapabilityAndInputSchema": true,
     "optionalFilterFields": [
       "kind",
       "model",
       "operation",
       "parameters"
     ],
-    "filterMatchesDeclaredSchemaOnly": true,
-    "filterNeverImpliesPriceAuthorizationOrQuality": true
+    "mediaFilterMatchesDeclaredSchemaOnly": true,
+    "filterNeverImpliesPriceAuthorizationOrQuality": true,
+    "evaluationDiscovery": "explicit_reviewed_model_visibility_only",
+    "audioDiscovery": "explicit_reviewed_model_visibility_only"
   }
 }

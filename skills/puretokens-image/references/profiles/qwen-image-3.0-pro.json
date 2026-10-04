@@ -1,0 +1,83 @@
+{
+  "$schema": "https://puretokensx.com/schemas/model-profile.schema.json",
+  "schemaVersion": 1,
+  "capability": "image",
+  "catalogUpdatedAt": "2026-10-04",
+  "catalogCapturedAt": "2026-10-04T06:19:22.134Z",
+  "id": "qwen-image-3.0-pro",
+  "parameterSchema": {
+    "properties": {
+      "n": {
+        "type": "integer",
+        "enum": [
+          1
+        ],
+        "default": 1
+      },
+      "size": {
+        "type": "string"
+      }
+    },
+    "constraints": {
+      "reference_transport": {
+        "image": [
+          "public_https_url"
+        ]
+      }
+    },
+    "lifecycle": {
+      "create": {
+        "successStatus": 202,
+        "idField": "id",
+        "object": "image",
+        "initialStatuses": [
+          "pending"
+        ]
+      },
+      "poll": {
+        "method": "GET",
+        "path": "/v1/images/{image_id}",
+        "intervalSeconds": 3,
+        "statusField": "status",
+        "pendingStatuses": [
+          "pending"
+        ],
+        "successStatuses": [
+          "completed"
+        ],
+        "failureStatuses": [
+          "failed"
+        ],
+        "resultFields": [
+          "content_url",
+          "content_urls"
+        ]
+      }
+    },
+    "operations": {
+      "image_edit": {
+        "request": {
+          "method": "POST",
+          "path": "/v1/images/edits",
+          "contentType": "application/json"
+        },
+        "requiredBodyFields": [
+          "model",
+          "prompt",
+          "images"
+        ],
+        "inputs": {
+          "images": {
+            "field": "images",
+            "required": true,
+            "minItems": 1,
+            "maxItems": 3,
+            "transports": [
+              "https_url"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

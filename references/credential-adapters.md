@@ -92,12 +92,19 @@ and the canonical Switch adapter, not a claim of complete runtime acceptance.
 - VS Code: default local `Code/User/chatLanguageModels.json` under macOS
   Application Support or Windows APPDATA; parse native JSONC with unique keys.
   Recognize the exact full Chat/Responses/Messages URL before using a model's
-  inline `requestHeaders.Authorization`. Require exactly one matching model,
-  independent of group names/ownership markers. More than one match is
-  ambiguous even if keys happen to match. No SecretStorage, extension,
+  inline `requestHeaders.Authorization`. In candidate 0.18.7, require one
+  matching `customendpoint` group whose models all use supported Pure Tokens
+  routes and the same inline Bearer credential. Compare only in executor
+  memory; never expose values, fingerprints or comparison results. Distinct
+  matching groups, different Keys, duplicate model IDs, mixed-service groups,
+  dynamic credentials, discovery URLs and group authentication/route overrides
+  stop without choosing a model or changing configuration. Names and ownership
+  markers are not service identity evidence. No SecretStorage, extension,
   process control, named/portable profile, conversation history or inferred
-  chat selection. Typical multi-model Switch configurations remain blocked;
-  this limitation must not be advertised as complete VS Code integration.
+  chat selection. The released 0.18.6 still rejects multiple matching models.
+  Switch's real writer and the candidate adapter share a synthetic three-route
+  fixture; this is not real-host or current-session verification. See
+  `switch-skill-compatibility.md` for all five acceptance stages.
 - Octop: absolute `OCTOP_HOME` or `~/.octop`; only `config.json` (storage
   selection), `octop.db` and its SQLite coordination files. Reject alternate
   database environment options, nondefault paths and PostgreSQL before opening
@@ -114,3 +121,23 @@ Paths reject traversal and non-regular/symlinked records; JSON rejects duplicate
 keys and excessive depth, YAML additionally rejects aliases and multiple
 documents. Unsupported effective overrides stop without environment credential
 fallback. No fixture establishes the active conversation or real media delivery.
+
+## Official DeepSeek Harness — 2026-10-03
+
+The `deepseek-harness` adapter is independent from `dsh-desktop`. Reviewed official source revision: `deepseek-ai/deepseek-harness@da00f7f5358f2949383b35c14f548bc20187d80c`, especially `apps/desktop/src/paths.ts`, `packages/boot/app-boot/src/profile-context.ts`, `packages/credentials/credentials-local/src/index.ts`, `packages/llm/llm-pi-ai/src/{index,auth}.ts` and `docs/subsystems/skills.md`. Switch writer: `crates/client-adapters/deepseek-harness/src/lib.rs`.
+
+Resolve absolute DSH_HOME without dot/parent traversal, otherwise ~/.dsh. Read only the optional home cordis.patch.yml (nonempty content stops) and profiles/desktop/cordis.patch.yml. The supported default patch has one enabled llm-pi-ai row and one agent-default-model row, without arbitrary plugin rows; YAML aliases, duplicate keys/rows and extra documents stop. Resolve selected provider/model structurally, verify the exact Pure Tokens /v1 endpoint and openai-completions protocol, and require the selected model in the declared list. Multiple matching providers and model/credential/header overrides stop; labels never identify the service.
+
+Only then read .credentials.yaml version 1 and the exact apiKeyEnv reference under refs. A nonempty inherited value for that exact reference shadows the store in the official host, so this adapter refuses it without comparing or using either value. No .env, OAuth records, community settings.yaml, arbitrary environment fallback or conversation database is read. Unknown credential-store fields stop. CLI launch overlays, custom bundles and session overrides cannot be inferred from saved defaults and remain outside support.
+
+Shared synthetic sample: test/fixtures/switch-deepseek-harness-connection.json; Switch validates it against actual writer output on macOS/Windows layouts. This is source/fixture support only, not a real-host loading, current-session identity, API or attachment-delivery pass.
+
+## MiniMax Code Desktop — candidate 0.18.7
+
+Independent `minimax-code` adapter, reviewed against installed Desktop 3.1.0 application code (not a running client or user configuration): `@mavis/config/dist/{config,byok-config,credential-reference}.js`, `@mavis/local-runtime-v2/dist/service/skill/registry/roots.js`, `service/model-system/resolution/model-resolver-byok.js`, and `service/turn-system/agent-host/preparation/config/session-model-selection.js`. Static file digests are recorded in `acceptance/client-model-sync-20261004.json`. CLI documentation alone is not Desktop evidence.
+
+The root follows Switch writer `crates/client-adapters/minimax-code/src/paths.rs`: nonempty `MINIMAX_DATA_DIR`, then `MAVIS_DATA_DIR`, then exactly the `MiniMax Code`, `MiniMax`, `MiniMax Agent` directories under macOS `~/Library/Application Support` or Windows `%APPDATA%`, and exactly `minimax-agent-cn-config.json` / `minimax-agent-config.json`. Only `config.localRuntimeDataParentDir` selects a parent plus `.minimax`; conflicting selections, duplicate/unreadable JSON and unsafe paths stop. Otherwise use `~/.minimax`. Do not migrate `.mavis`, inspect sessions, or scan other files. Supported data-directory values are local absolute paths; declared CLI/runtime-profile overrides stop.
+
+Read only `<root>/config.yaml`, with bounded duplicate-free YAML, no aliases/documents, symlinks/reparse points or hard links. `defaultModel` must select `custom_provider:<provider>/<exact-model>`; split once so model IDs containing `/` survive. Require the selected declared enabled model and enabled custom provider, a supported `openai-completions`, `openai-responses` or `anthropic-messages` protocol, and fixed Pure Tokens `/v1` connection identity before taking its inline Key. Labels do not identify a connection. Switch may write three protocol providers: the saved default selects one; never compare their Keys or select a sibling on failure. Foreign siblings and distinct sibling Keys do not authorize using them. Unsupported routing/header/auth overrides, dynamic references and OAuth stop; no official `minimax_api` credential or environment-Key fallback.
+
+The adapter cannot observe `explicit request > session override > defaultModel` through this file. Host binding must confirm the default local conversation; unknown/overridden sessions stop. Shared synthetic `test/fixtures/switch-minimax-code-connection.json` matches Switch writer output on both OS layouts. Fixtures and Desktop static inspection are not real loading, current-session identity, dedicated API or native delivery acceptance.

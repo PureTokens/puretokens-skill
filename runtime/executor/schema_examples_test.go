@@ -49,6 +49,260 @@ func TestContractExamples(t *testing.T) {
 		capture(name, schema, data)
 	}
 
+	t.Run("asynchronous music", func(t *testing.T) {
+		text, err := os.ReadFile("../../skills/puretokens-audio/references/music-usage.md")
+		if err != nil {
+			t.Fatal(err)
+		}
+		blocks := regexp.MustCompile("(?s)```json\\s*\\n(.*?)\\n```").FindAllSubmatch(text, -1)
+		if len(blocks) != 2 {
+			t.Fatal("music examples missing")
+		}
+		for index, block := range blocks {
+			t.Run(fmt.Sprintf("music-doc-%d", index), func(t *testing.T) {
+				capture(fmt.Sprintf("docs-music-%d", index), "executor-request.schema.json", block[1])
+				request, err := decodeTaskRequest(bytes.NewReader(block[1]))
+				if err != nil {
+					t.Fatal(err)
+				}
+				request.OutputDir = t.TempDir()
+				calls := 0
+				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					calls++
+					if r.Method == "POST" {
+						w.Header().Set("Content-Type", "application/json")
+						io.WriteString(w, `{"id":"music_schema","status":"pending"}`)
+					} else if strings.HasSuffix(r.URL.Path, "/content") {
+						format := request.Parameters["response_format"].(string)
+						w.Header().Set("Content-Type", audioMIME(format))
+						data := audioWAVFixture()
+						if format == "mp3" {
+							data = audioMP3Fixture()
+						}
+						w.Write(data)
+					} else {
+						w.Header().Set("Content-Type", "application/json")
+						io.WriteString(w, `{"id":"music_schema","status":"succeeded"}`)
+					}
+				}))
+				defer server.Close()
+				record := filepath.Join(request.OutputDir, "music-task.json")
+				for n, command := range []string{"submit", "status", "content", "resume", "delivered"} {
+					var out bytes.Buffer
+					writer := &supportReceiptWriter{output: &out, host: "codex", command: command}
+					svc := fixtureService(server)
+					svc.support = writer
+					if err := executeRecordedTask(command, record, request, 0, request.OutputDir, writer, svc); err != nil {
+						t.Fatal(err, out.String())
+					}
+					capture(fmt.Sprintf("music-%d-%s", index, command), "executor-receipt.schema.json", out.Bytes())
+					saved, err := os.ReadFile(record)
+					if err != nil {
+						t.Fatal(err)
+					}
+					capture(fmt.Sprintf("music-%d-%s-record", index, command), "task-record.schema.json", saved)
+					if n == 0 && calls != 1 {
+						t.Fatal("music submit must immediately return receipt")
+					}
+				}
+				if calls != 3 {
+					t.Fatal("music recovery repeated network work")
+				}
+			})
+		}
+		var out bytes.Buffer
+		query := `{"kind":"audio","operation":"music"}`
+		svc := service{baseURL: apiOrigin, client: &http.Client{Transport: evaluationTransport(func(*http.Request) (*http.Response, error) {
+			return evaluationHTTP(200, `{"data":[{"id":"stepaudio-3-music-preview"},{"id":"stepaudio-2.5-tts"}]}`), nil
+		})}}
+		if executeModelQuery(&out, svc, strings.NewReader(query)) != nil {
+			t.Fatal("music directory query failed")
+		}
+		capture("music-model-query", "model-query.schema.json", []byte(query))
+		capture("music-model-receipt", "model-query-receipt.schema.json", out.Bytes())
+	})
+
+	t.Run("synchronous audio", func(t *testing.T) {
+		for _, scenario := range []string{"speech", "generate", "transcribe", "rejected", "unknown", "invalid"} {
+			t.Run(scenario, func(t *testing.T) {
+				operation := scenario
+				if scenario == "rejected" || scenario == "unknown" || scenario == "invalid" {
+					operation = "speech"
+				}
+				result, err, raw := audioCLI(t, operation, func(r map[string]any) {
+					if scenario == "invalid" {
+						r["model"] = "unsupported"
+					}
+				}, func(*http.Request) (*http.Response, error) {
+					switch scenario {
+					case "rejected":
+						return evaluationHTTP(422, `{"detail":"private"}`), nil
+					case "unknown":
+						return nil, errors.New("fixture network")
+					case "transcribe":
+						r := evaluationHTTP(200, `{"text":"转写文本"}`)
+						r.Header.Set("Content-Type", "application/json")
+						return r, nil
+					default:
+						return &http.Response{StatusCode: 200, Header: http.Header{"Content-Type": {"audio/wav"}}, Body: io.NopCloser(bytes.NewReader(audioWAVFixture()))}, nil
+					}
+				})
+				expected := scenario == "speech" || scenario == "generate" || scenario == "transcribe"
+				if (err == nil) != expected {
+					t.Fatal("unexpected audio fixture result")
+				}
+				capture("audio-"+scenario, "audio-receipt.schema.json", []byte(raw))
+				if scenario == "speech" {
+					input := map[string]any{"artifact": result["artifact"]}
+					captureValue("audio-verify-request", "audio-artifact-verify-request.schema.json", input)
+					encoded, _ := json.Marshal(input)
+					file := filepath.Join(t.TempDir(), "verify.json")
+					os.WriteFile(file, encoded, 0600)
+					for _, tamper := range []bool{false, true} {
+						if tamper {
+							os.WriteFile(jsonObject(result["artifact"])["path"].(string), []byte("changed"), 0600)
+						}
+						var out bytes.Buffer
+						err := run([]string{"audio-verify", "--host", "codex", "--request", file}, strings.NewReader(""), &out)
+						if (err == nil) == tamper {
+							t.Fatal("unexpected verification result")
+						}
+						capture(fmt.Sprintf("audio-verify-%t", tamper), "audio-receipt.schema.json", out.Bytes())
+					}
+				}
+			})
+		}
+		text, err := os.ReadFile("../../skills/puretokens-audio/references/executor-usage.md")
+		if err != nil {
+			t.Fatal(err)
+		}
+		blocks := regexp.MustCompile("(?s)```json\\s*\n(.*?)\n```").FindAllSubmatch(text, -1)
+		if len(blocks) != 3 {
+			t.Fatal("audio examples missing")
+		}
+		for index, block := range blocks {
+			var input map[string]any
+			json.Unmarshal(block[1], &input)
+			operation := input["operation"].(string)
+			// Keep documentation portable: replace only illustrative absolute paths
+			// with temp output/attachment paths created by the CLI fixture.
+			_, err, _ := audioCLI(t, operation, func(r map[string]any) {
+				output, file := r["output_dir"], r["file"]
+				for key := range r {
+					delete(r, key)
+				}
+				for key, value := range input {
+					r[key] = value
+				}
+				if operation == "transcribe" {
+					r["file"] = file
+				} else {
+					r["output_dir"] = output
+				}
+			}, func(*http.Request) (*http.Response, error) {
+				if operation == "transcribe" {
+					r := evaluationHTTP(200, `{"text":"fixture text"}`)
+					r.Header.Set("Content-Type", "application/json")
+					return r, nil
+				}
+				format := input["response_format"].(string)
+				data := audioWAVFixture()
+				if format == "mp3" {
+					data = audioMP3Fixture()
+				}
+				return &http.Response{StatusCode: 200, Header: http.Header{"Content-Type": {audioMIME(format)}}, Body: io.NopCloser(bytes.NewReader(data))}, nil
+			})
+			if err != nil {
+				t.Fatal("documented audio request rejected")
+			}
+			capture(fmt.Sprintf("docs-audio-%d", index), "audio-request.schema.json", block[1])
+		}
+		var out bytes.Buffer
+		svc := service{baseURL: apiOrigin, client: &http.Client{Transport: evaluationTransport(func(*http.Request) (*http.Response, error) {
+			return evaluationHTTP(200, `{"data":[{"id":"stepaudio-2.5-tts"}]}`), nil
+		})}}
+		query := `{"kind":"audio","operation":"speech"}`
+		if executeModelQuery(&out, svc, strings.NewReader(query)) != nil {
+			t.Fatal("audio catalog failed")
+		}
+		capture("audio-model-query", "model-query.schema.json", []byte(query))
+		capture("audio-model-receipt", "model-query-receipt.schema.json", out.Bytes())
+	})
+
+	t.Run("synchronous evaluation", func(t *testing.T) {
+		for _, scenario := range []string{"success", "invalid-response", "rejected", "network", "invalid-request"} {
+			t.Run(scenario, func(t *testing.T) {
+				input := evaluationInputFixture
+				if scenario == "invalid-request" {
+					input = `{}`
+				}
+				_, err, raw := evaluationCLI(t, input, func(*http.Request) (*http.Response, error) {
+					switch scenario {
+					case "invalid-response":
+						return evaluationHTTP(200, `{"answers":{}}`), nil
+					case "rejected":
+						return evaluationHTTP(422, `{"detail":"private"}`), nil
+					case "network":
+						return nil, errors.New("fixture network")
+					default:
+						return evaluationHTTP(200, evaluationOutputFixture), nil
+					}
+				})
+				if (err == nil) != (scenario == "success") {
+					t.Fatal("unexpected evaluation fixture result")
+				}
+				capture("evaluation-"+scenario, "evaluation-receipt.schema.json", []byte(raw))
+			})
+		}
+		capture("evaluation-request", "evaluation-request.schema.json", []byte(evaluationInputFixture))
+		text, err := os.ReadFile("../../skills/puretokens-evaluate/references/executor-usage.md")
+		if err != nil {
+			t.Fatal(err)
+		}
+		blocks := regexp.MustCompile("(?s)```json\\s*\\n(.*?)\\n```").FindAllSubmatch(text, -1)
+		if len(blocks) != 1 {
+			t.Fatal("evaluation request example missing")
+		}
+		for index, block := range blocks {
+			if _, err := decodeEvaluationRequest(block[1]); err != nil {
+				t.Fatal("documented evaluation request rejected")
+			}
+			capture(fmt.Sprintf("docs-evaluation-%d", index), "evaluation-request.schema.json", block[1])
+		}
+		var output bytes.Buffer
+		svc := service{baseURL: apiOrigin, client: &http.Client{Transport: evaluationTransport(func(*http.Request) (*http.Response, error) {
+			return evaluationHTTP(200, `{"data":[{"id":"jev-latest"}]}`), nil
+		})}}
+		query := `{"kind":"evaluation"}`
+		if executeModelQuery(&output, svc, strings.NewReader(query)) != nil {
+			t.Fatal("evaluation catalog rejected")
+		}
+		capture("evaluation-model-query", "model-query.schema.json", []byte(query))
+		capture("evaluation-model-receipt", "model-query-receipt.schema.json", output.Bytes())
+	})
+
+	t.Run("submission identity diagnostics", func(t *testing.T) {
+		for _, scenario := range submissionIdentityCases() {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if scenario.name == "short-http-body" {
+					w.Header().Set("Content-Length", "4096")
+				}
+				io.WriteString(w, scenario.body)
+			}))
+			var output bytes.Buffer
+			writer := &supportReceiptWriter{output: &output, command: "submit", host: "codex"}
+			svc := fixtureService(server)
+			svc.support = writer
+			err := executePreparedTask(writer, svc, taskRequest{Kind: "video", Operation: "generate",
+				Model: "seedance-2.0", Prompt: "fixture"})
+			server.Close()
+			if err == nil || decodeReceipt(t, &output).LocalErrorCode != scenario.code {
+				t.Fatal("expected a classified unknown submission")
+			}
+			capture("identity-"+scenario.name, "executor-receipt.schema.json", output.Bytes())
+		}
+	})
+
 	t.Run("public task identity round trips", func(t *testing.T) {
 		for index, id := range taskIDBoundaryFixtures(t).Accepted {
 			name := fmt.Sprintf("task-id-%d", index)
@@ -196,13 +450,13 @@ func TestContractExamples(t *testing.T) {
 		defer server.Close()
 		recordPath := filepath.Join(t.TempDir(), "task.json")
 		outputDir := t.TempDir()
-		request := taskRequest{Kind: "image", Operation: "generate", Model: "seedream-5.0-pro",
+		request := taskRequest{Kind: "image", Operation: "generate", Model: "fixture-multi-image",
 			Prompt: "synthetic-private-prompt", Parameters: map[string]any{"n": 2.0, "size": "2048x2048", "image_urls": []any{"https://reference.example.test/private.png"}}}
 		steps := []struct {
 			command string
 			index   int
 		}{{"submit", 0}, {"resume", 0}, {"content", 0}, {"delivered", 0}, {"content", 1}, {"delivered", 1}}
-		svc := fixtureService(server)
+		svc := syntheticMultiImageService(t, fixtureService(server))
 		now := time.Date(2026, 9, 6, 0, 0, 0, 0, time.UTC)
 		svc.now = func() time.Time { return now }
 		svc.wait = func(_ context.Context, delay time.Duration) bool {
@@ -300,7 +554,8 @@ func TestContractExamples(t *testing.T) {
 		}
 		capture("validation-failure", "executor-receipt.schema.json", output.Bytes())
 		output.Reset()
-		request.Model = "seedream-5.0-pro"
+		svc = syntheticMultiImageService(t, svc)
+		request.Model = "fixture-multi-image"
 		request.Parameters = map[string]any{"width": true, "height": "large", "strength": false}
 		if err := executePreflight(&output, svc, request); err == nil {
 			t.Fatal("invalid parameter types passed validation")

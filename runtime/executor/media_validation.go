@@ -23,6 +23,10 @@ func validMediaPrefix(data []byte, contentType string) bool {
 		return len(data) >= 20 && string(data[:4]) == "RIFF" && string(data[8:12]) == "WEBP"
 	case "image/avif":
 		return len(data) >= 16 && string(data[4:8]) == "ftyp" && (bytes.Contains(data[8:], []byte("avif")) || bytes.Contains(data[8:], []byte("avis")))
+	case "audio/mpeg":
+		return (len(data) >= 10 && string(data[:3]) == "ID3") || (len(data) >= 4 && data[0] == 0xff && data[1]&0xe0 == 0xe0)
+	case "audio/wav":
+		return len(data) >= 12 && string(data[:4]) == "RIFF" && string(data[8:12]) == "WAVE"
 	case "video/mp4":
 		return len(data) >= 24 && string(data[4:8]) == "ftyp"
 	case "video/webm":
@@ -57,8 +61,27 @@ func validMediaFile(path, contentType string) bool {
 	if contentType == "video/mp4" || contentType == "video/webm" {
 		limit = maxVideoBytes
 	}
+	if contentType == "audio/mpeg" || contentType == "audio/wav" {
+		limit = maxMusicBytes
+	}
 	if stat.Size() > limit {
 		return false
+	}
+	if contentType == "audio/mpeg" || contentType == "audio/wav" {
+		if stat.Size() > maxMusicBytes {
+			return false
+		}
+		if _, err := f.Seek(0, io.SeekStart); err != nil {
+			return false
+		}
+		data, err := io.ReadAll(io.LimitReader(f, maxMusicBytes+1))
+		if err != nil || int64(len(data)) != stat.Size() {
+			return false
+		}
+		if contentType == "audio/mpeg" {
+			return validMP3(data)
+		}
+		return validWAV(data)
 	}
 	if contentType == "image/gif" {
 		_, err = f.Seek(0, io.SeekStart)

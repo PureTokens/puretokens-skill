@@ -7,7 +7,9 @@
     "kind": {
       "enum": [
         "image",
-        "video"
+        "video",
+        "evaluation",
+        "audio"
       ]
     },
     "model": {
@@ -23,5 +25,58 @@
       "type": "object"
     }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "evaluation"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "operation": {
+            "const": ""
+          },
+          "parameters": {
+            "type": "object",
+            "maxProperties": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "audio"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "operation": {
+            "enum": [
+              "speech",
+              "transcribe",
+              "generate",
+              "music"
+            ]
+          },
+          "parameters": {
+            "type": "object",
+            "maxProperties": 0
+          }
+        }
+      }
+    }
+  ]
 }

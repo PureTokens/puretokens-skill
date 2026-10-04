@@ -6,14 +6,17 @@
     "ok"
   ],
   "properties": {
-    "support": {"$ref": "support-summary.schema.json"},
+    "support": {
+      "$ref": "support-summary.schema.json"
+    },
     "ok": {
       "type": "boolean"
     },
     "kind": {
       "enum": [
         "image",
-        "video"
+        "video",
+        "music"
       ]
     },
     "operation": {
@@ -284,6 +287,46 @@
               ]
             }
           ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "music"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "model": {
+            "const": "stepaudio-3-music-preview"
+          },
+          "requested_count": {
+            "maximum": 1
+          },
+          "index": {
+            "const": 0
+          },
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "instrumental": {
+                "type": "boolean"
+              },
+              "response_format": {
+                "enum": [
+                  "mp3",
+                  "wav"
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
         }
       }
     }

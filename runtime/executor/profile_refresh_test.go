@@ -248,7 +248,31 @@ func TestInstalledProfileFieldsAndNativeOperationsNeedNoRefresh(t *testing.T) {
 					for _, value := range profileFieldValues(t, name, rule) {
 						request := taskRequest{
 							Kind: kind, Operation: "generate", Model: id, Prompt: "fixture prompt",
-							Parameters: map[string]any{name: value},
+							Parameters: requiredProfileFixtureParameters(t, profile),
+						}
+						request.Parameters[name] = value
+						if name == "last_frame_image" && profile.Parameters.Constraints["frame_exclusivity"] != nil {
+							request.Parameters["first_frame_image"] = "https://example.invalid/first.png"
+						}
+						if mediaReferenceField(name) && profile.Parameters.Constraints["reference_transport"][name] == nil {
+							for opName, op := range profile.Parameters.Operations {
+								if _, ok := op.Inputs[name]; ok && op.Request.ContentType == "application/json" {
+									request.MediaOperation = opName
+									if strings.HasSuffix(opName, "_edit") {
+										request.Operation = "edit"
+									}
+									break
+								}
+							}
+							if request.MediaOperation == "" {
+								// A typed reference property alone does not authorize a transport.
+								before := transport.calls
+								if prepareProfileRequest(&request, svc) == nil || transport.calls != before+1 {
+									t.Fatal("undeclared reference transport must stop after one lookup")
+								}
+								transport.calls = before
+								continue
+							}
 						}
 						if name == "width" {
 							request.Parameters["height"] = 1024
@@ -266,7 +290,7 @@ func TestInstalledProfileFieldsAndNativeOperationsNeedNoRefresh(t *testing.T) {
 				}
 				for name, op := range profile.Parameters.Operations {
 					for _, upperBound := range []bool{false, true} {
-						request := taskRequest{Kind: kind, Operation: "generate", Model: id, MediaOperation: name, Prompt: "fixture prompt"}
+						request := taskRequest{Kind: kind, Operation: "generate", Model: id, MediaOperation: name, Prompt: "fixture prompt", Parameters: requiredProfileFixtureParameters(t, profile)}
 						if strings.HasSuffix(name, "_edit") {
 							request.Operation = "edit"
 						}
@@ -275,8 +299,19 @@ func TestInstalledProfileFieldsAndNativeOperationsNeedNoRefresh(t *testing.T) {
 							if upperBound && input.Max > 0 {
 								count = input.Max
 							}
-							for i := 0; i < count; i++ {
-								request.Attachments = append(request.Attachments, attachment{Field: input.Field, Path: attachmentPath})
+							if op.Request.ContentType == "multipart/form-data" {
+								for i := 0; i < count; i++ {
+									request.Attachments = append(request.Attachments, attachment{Field: input.Field, Path: attachmentPath})
+								}
+							} else {
+								refs := make([]any, count)
+								for i := range refs {
+									refs[i] = "https://example.invalid/reference.png"
+								}
+								request.Parameters[input.Field] = refs
+								if profile.Parameters.Properties[input.Field]["type"] == "string" {
+									request.Parameters[input.Field] = refs[0]
+								}
 							}
 						}
 						if err := prepareProfileRequest(&request, svc); err != nil {
@@ -286,11 +321,14 @@ func TestInstalledProfileFieldsAndNativeOperationsNeedNoRefresh(t *testing.T) {
 						if err != nil {
 							t.Fatal(err)
 						}
-						if route != op.Request.Path || !strings.HasPrefix(contentType, "multipart/form-data;") {
+						if route != op.Request.Path || (op.Request.ContentType == "multipart/form-data" && !strings.HasPrefix(contentType, "multipart/form-data;")) || (op.Request.ContentType == "application/json" && contentType != "application/json") {
 							t.Fatal("operation route or native transport changed")
 						}
 						_, err = io.Copy(io.Discard, body)
-						closeErr := body.(io.Closer).Close()
+						var closeErr error
+						if closer, ok := body.(io.Closer); ok {
+							closeErr = closer.Close()
+						}
 						if err != nil || closeErr != nil {
 							t.Fatal("native attachment serialization failed", err, closeErr)
 						}
@@ -302,6 +340,18 @@ func TestInstalledProfileFieldsAndNativeOperationsNeedNoRefresh(t *testing.T) {
 			})
 		}
 	}
+}
+
+// Required values are explicit test inputs, not automatic request defaults.
+func requiredProfileFixtureParameters(t *testing.T, profile modelProfile) map[string]any {
+	t.Helper()
+	parameters := make(map[string]any)
+	for name, rule := range profile.Parameters.Properties {
+		if name != "prompt" && name != "model" && rule["required"] == true {
+			parameters[name] = profileFieldValues(t, name, rule)[0]
+		}
+	}
+	return parameters
 }
 
 func profileFieldValues(t *testing.T, name string, rule map[string]any) []any {

@@ -1,0 +1,57 @@
+{
+  "$schema": "https://puretokensx.com/schemas/model-profile.schema.json",
+  "schemaVersion": 1,
+  "capability": "video",
+  "catalogUpdatedAt": "2026-10-04",
+  "catalogCapturedAt": "2026-10-04T06:19:22.134Z",
+  "id": "veo_fast",
+  "parameterSchema": {
+    "properties": {
+      "first_frame_image": {
+        "type": "string"
+      },
+      "last_frame_image": {
+        "type": "string"
+      },
+      "reference_images": {
+        "type": "string[]"
+      },
+      "prompt": {
+        "type": "string",
+        "required": true
+      },
+      "duration": {
+        "type": "integer",
+        "enum": [
+          8
+        ]
+      },
+      "aspect_ratio": {
+        "type": "string",
+        "enum": [
+          "16:9",
+          "9:16"
+        ]
+      },
+      "resolution": {
+        "type": "string",
+        "enum": [
+          "720p"
+        ]
+      }
+    },
+    "constraints": {
+      "resolution_by_mode": {
+        "text": [
+          "720p"
+        ],
+        "image": [
+          "720p"
+        ],
+        "reference": [
+          "720p"
+        ]
+      }
+    }
+  }
+}

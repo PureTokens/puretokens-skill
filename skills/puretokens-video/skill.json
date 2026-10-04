@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "name": "puretokens-video",
-  "version": "0.18.6",
+  "version": "0.18.7",
   "entry": "SKILL.md",
   "displayName": "Pure Tokens Video",
-  "description": "Primary video Skill for the current Pure Tokens connection; generate and profile-gated animate, reference, or edit video through the fixed Videos API before generic video Skills.",
+  "description": "Primary video Skill for the current Pure Tokens connection: video generation, profile-gated editing and same-task recovery before generic video Skills. Video analysis, troubleshooting, script/prompt-only writing and model questions do not authorize generation.",
   "modelIndex": "references/model-index.json",
   "executionContract": "references/execution-contract.json",
   "taskReceipt": "references/task-receipt.json",
@@ -78,6 +78,14 @@
     "octop": {
       "manualInstallationSupported": true,
       "workspaceSkillDirectory": ".octop/skills"
+    },
+    "deepseekHarness": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.dsh/skills"
+    },
+    "minimaxCode": {
+      "manualInstallationSupported": true,
+      "globalSkillDirectory": "~/.minimax/skills"
     }
   },
   "supportedClients": [
@@ -90,6 +98,8 @@
     "trae",
     "claude-desktop",
     "dsh-desktop",
+    "deepseek-harness",
+    "minimax-code",
     "zcode",
     "kimi-code",
     "qoder",
@@ -110,7 +120,7 @@
     "doesNotUseComputerUseOrUiAutomation": true,
     "doesNotInvokeOtherMediaSkillsAsApiFallback": true,
     "neverExposesCredentialsOrHostConfiguration": true,
-    "defaultModel": "grok-imagine-video-1.5-preview",
+    "defaultModel": "minimax_h3",
     "normalSubmissionUsesSelectedProfileAndIndexWhenNeeded": true,
     "usesLazyModelProfileLoading": true,
     "simpleRequestsSkipPlanningOnlyRounds": true,
@@ -151,5 +161,5 @@
     "supportsOptionalContinuationRecord": true,
     "userReceiptIsConcise": true
   },
-  "sourceSha256": "a67a5c4a426455ba40791c2951a5d0c45ad2a9e1645f40c9aa5e3901225ebc55"
+  "sourceSha256": "de3d82fc8f5c31c756ecac310b72dd393c62332324c0762651628a09686e0541"
 }

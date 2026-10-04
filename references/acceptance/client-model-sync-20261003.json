@@ -1,0 +1,97 @@
+{
+  "checkedAt": "2026-10-03",
+  "evidenceLevel": "public-read-only-and-offline-fixtures-not-account-or-real-host-acceptance",
+  "source": "https://console.puretokensx.com/api/product/docs/model-catalog",
+  "sourceSha256": "bccee7c5556ced48c24b5588e8bc624f098b2ad2e96dca1565d354001a63a0fb",
+  "capturedAt": "2026-10-03T02:02:58.958Z",
+  "pricingVersion": "a42d372ccf0b5dd13ecf71203521f9d2",
+  "totalModels": 114,
+  "mediaModels": 30,
+  "added": [
+    "qwen-image-3.0",
+    "qwen-image-3.0-pro",
+    "wan2.7-image",
+    "wan2.7-image-pro",
+    "seedance2.0",
+    "omni",
+    "veo_fast",
+    "veo_lite",
+    "veo_quan",
+    "minimax_h3",
+    "gpt-image-2.5-flare",
+    "gpt-image-2.5-sunburst"
+  ],
+  "removedFromSelection": [
+    "grok-imagine",
+    "grok-imagine-1",
+    "grok-imagine-video-1.5-preview",
+    "grok-video-1.5",
+    "minimax-h3"
+  ],
+  "reviewedAudioVisible": [
+    "stepaudio-2.5-tts",
+    "step-tts-2",
+    "step-tts-mini",
+    "stepaudio-2.5-asr",
+    "step-asr",
+    "stepaudio-3-asr-max",
+    "stepaudio-2-asr-pro",
+    "stepaudio-3-gen-preview",
+    "stepaudio-3-music-preview"
+  ],
+  "reviewedEvaluationVisible": [
+    "jev-latest",
+    "jev-1.13.0",
+    "jev-preview"
+  ],
+  "clientRegistryCount": 21,
+  "installableSkillHosts": 18,
+  "credentialFixtureHosts": 17,
+  "officialHarnessSource": "deepseek-ai/deepseek-harness@da00f7f5358f2949383b35c14f548bc20187d80c",
+  "dedicatedRequestsSent": 0,
+  "realCredentialsRead": false,
+  "verification": {
+    "engineeringGate": "passed",
+    "releaseFreshnessAndReproducibleBuild": "passed",
+    "node": {
+      "passed": 110,
+      "failed": 0,
+      "skipped": 1,
+      "skipReason": "PowerShell unavailable; Windows execution unverified"
+    },
+    "goTestsAndVet": "passed",
+    "switchHarnessWriterTests": 9,
+    "switchMatrixTests": 5,
+    "webPermissionTests": 1,
+    "executorSourceSha256": "2f9c377f18844759ceeb5c7a64f8c72f329892ceba4538dc2576afaac2a88ee1",
+    "realHostAcceptance": "pending",
+    "published": false
+  },
+  "defaultModelUpdate": {
+    "checkedAt": "2026-10-03T02:40:54.463Z",
+    "defaults": {
+      "image": "gpt-image-2.5-flare",
+      "video": "minimax_h3"
+    },
+    "userVideoWording": "minmax-h3",
+    "source": "https://console.puretokensx.com/api/product/docs/model-catalog",
+    "sourceSha256": "da95a4bb6a599d321a24241d44a84c8977dee7e5c11b35f5394f3026b323d197",
+    "publicCatalogRowsAtRecheck": 113,
+    "selectedInputSchemasMatch": true,
+    "unrelatedCatalogChange": "seedream-5.0-pro absent from recheck; previous full-catalog snapshot retained; this follow-up changes defaults only",
+    "engineeringGate": "passed",
+    "releaseFreshnessAndReproducibleBuild": "passed",
+    "node": {
+      "passed": 110,
+      "failed": 0,
+      "skipped": 1,
+      "skipReason": "PowerShell unavailable; Windows execution unverified"
+    },
+    "dedicatedRequestsSent": 0,
+    "published": false,
+    "logs": [
+      "/tmp/pt-default-model-check-20261003.log",
+      "/tmp/pt-default-model-release-validate-20261003.log"
+    ]
+  }
+}

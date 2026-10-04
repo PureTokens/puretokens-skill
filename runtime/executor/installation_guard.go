@@ -55,7 +55,7 @@ func runInstallationGuard(args []string, output io.Writer) error {
 
 func validInstallationName(name string) bool {
 	switch name {
-	case ".puretokens-executor", "puretokens-balance", "puretokens-connection", "puretokens-image", "puretokens-video", "puretokens-models", "puretokens-update":
+	case ".puretokens-executor", "puretokens-balance", "puretokens-connection", "puretokens-image", "puretokens-video", "puretokens-models", "puretokens-audio", "puretokens-evaluate", "puretokens-update":
 		return true
 	}
 	return false

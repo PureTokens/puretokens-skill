@@ -26,15 +26,15 @@ Windows: powershell.exe -NoProfile -ExecutionPolicy Bypass -File <fetch脚本绝
 
 Windows 的 install／update 使用相同参数形式替换子命令。ExecutionPolicy 只作用于该进程，不修改系统策略；宿主明确阻止执行时停止，不绕过审批。
 
-宿主 ID 为 claude-code、codex、workbuddy、gemini-cli、grok-build、opencode、trae、claude-desktop、dsh-desktop、zcode、kimi-code、qoder、pi、hermes、evox、vscode、octop；识别不了先询问。自定义路径同时传 --target／-Target 绝对目录并保留 host。fetch 固定最新稳定发布清单中的版本、源码提交和 SHA-256，先下载并校验该发布的目录选择器，不复用旧版同目录选择器。普通安装只下载当前系统／架构平台包，不回退 main、源码归档或镜像。维护者明确指定本地官方检出时仍可执行其 sync。
+宿主 ID 为 claude-code、codex、workbuddy、gemini-cli、grok-build、opencode、trae、claude-desktop、dsh-desktop、deepseek-harness、minimax-code、zcode、kimi-code、qoder、pi、hermes、evox、vscode、octop；识别不了先询问。自定义路径同时传 --target／-Target 绝对目录并保留 host。fetch 固定最新稳定发布清单中的版本、源码提交和 SHA-256，先下载并校验该发布的目录选择器，不复用旧版同目录选择器。普通安装只下载当前系统／架构平台包，不回退 main、源码归档或镜像。维护者明确指定本地官方检出时仍可执行其 sync。
 
-check-update 只比较版本，不证明文件完整，也不修改安装或执行 init。同版 install／update 只有在发布执行器校验和与七份受管清单全部通过、无未完成事务时，才返回 `already current and verified`：不下载 ZIP、不写入、不 init。缺失、修改或未完成事务必须停止并保留现场，不自动修复。
+check-update 只比较版本，不证明文件完整，也不修改安装或执行 init。同版 install／update 只有在发布执行器校验和与九份受管清单全部通过、无未完成事务时，才返回 `already current and verified`：不下载 ZIP、不写入、不 init。缺失、修改或未完成事务必须停止并保留现场，不自动修复。
 
-只由 sync 写入六个 Skill 和一个当前平台原生执行器及下载／同步脚本。它保护非受管目录；更新锁阻止并发，中断的受管事务在下次显式 sync 时恢复。Gemini 如已有较高优先级的共享 `.agents/skills`，更新其有效目录并报告重复的低优先级副本，不擅自删除。只处理六个当前 Skill 和原生执行器；其他目录和用户配置保持不动。
+只由 sync 写入八个 Skill 和一个当前平台原生执行器及下载／同步脚本。它保护非受管目录；更新锁阻止并发，中断的受管事务在下次显式 sync 时恢复。Gemini 如已有较高优先级的共享 `.agents/skills`，更新其有效目录并报告重复的低优先级副本，不擅自删除。只处理八个当前 Skill 和原生执行器；其他目录和用户配置保持不动。
 
 受管识别核对 `.puretokens-managed.json` 的完整文件清单和校验值；没有记录的目录只有与当前官方源文件完全匹配才可接管，不能仅凭同名或目录中的自报版本判定归属。存在新增文件、本地修改、缺失文件或符号链接时停止覆盖；向用户说明需保留并处理该冲突，不自动删除、重建清单或声称更新完成。中断恢复遇到改动同样保留原目录和备份。
 
-只在收到 `Pure Tokens Skills <版本> synchronized with the native API executor at <目录>` 后报告本次同步完成；`already current and verified` 只表示原安装完整、未修改文件，不补跑 init。超时／中断不能声称完成或自动重试。实际同步成功后提醒新开宿主对话，不重复列出六份相同版本信息。
+只在收到 `Pure Tokens Skills <版本> synchronized with the native API executor at <目录>` 后报告本次同步完成；`already current and verified` 只表示原安装完整、未修改文件，不补跑 init。超时／中断不能声称完成或自动重试。实际同步成功后提醒新开宿主对话，不重复列出八份相同版本信息。
 
 ## 初始化与诊断
 

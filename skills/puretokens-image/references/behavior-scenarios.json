@@ -54,6 +54,11 @@
       "then": "preserve explicit purpose, subject, scene, style, composition, verbatim text, and constraints; only add intent-preserving detail to an underspecified request, identify each input image role, and do not invent brands, subjects, copy, or a different operation"
     },
     {
+      "id": "image-to-video-authorized-handoff",
+      "when": "User explicitly requests an image and then a video using that generated image as its first frame.",
+      "then": "Read the bounded workflow guide and both selected profiles. Confirm declared local-byte first-frame transport before generating the image, without network preflights. Deliver the selected image index before passing its unchanged verified local file to video. Keep separate records; unsupported inputs, uncertain submission or downstream failure stop the chain without repeating the image or silently substituting a URL/text prompt."
+    },
+    {
       "id": "image-submission-model-parameter-rejected",
       "when": "the Images API explicitly rejects a model, parameter, or capability and returns no task ID",
       "then": "read the catalog at most once for diagnosis, show returned current candidates or allowed values, and require an explicit corrected new request; never resubmit automatically"
@@ -352,6 +357,26 @@
       "id": "image-spending-history-question",
       "when": "the user explicitly asks for historical charges, spending details or an individual generation cost that available results cannot confirm",
       "then": "Offer https://console.puretokensx.com/usage-logs for the user to inspect by time and model. Do not call balance to derive a charge, infer billing from missing records or task status, guarantee refunds, recover unknown task IDs or automatically append the link to every failure."
+    },
+    {
+      "id": "image-non-generation-intent",
+      "when": "The user asks only for media understanding, OCR, screenshot/video diagnosis, script or prompt writing, or model capability information.",
+      "then": "Do not create a media task. Understanding and writing need no media executor; model capability questions use puretokens-models only. An attachment or model name alone does not authorize generation."
+    },
+    {
+      "id": "image-existing-task-intent",
+      "when": "The user asks to check, resume or retrieve an existing task.",
+      "then": "Route to the matching media Skill and continue only the original task identity; never POST a new task. Preserve existing stop conditions and wait budgets."
+    },
+    {
+      "id": "image-verbatim-prompt-parameter-separation",
+      "when": "The user supplies a prompt to use verbatim, including prose such as 8K quality, while actual API parameters specify a supported output tier.",
+      "then": "Preserve the exact prompt without translation, quality templates or negative templates. Treat actual API fields separately using the selected profile; do not turn prose into fields. A distinct explicit requirement for actual 8K output must be checked and never silently downgraded."
+    },
+    {
+      "id": "image-submission-identity-diagnosis",
+      "when": "A successful HTTP submission response is unreadable, lacks a non-empty top-level identity or contains an unsupported identity type/format.",
+      "then": "Report the corresponding task_response_unreadable, task_id_missing or task_id_invalid local classification, never raw values or invented API error codes. The submission remains unknown; no polling, automatic update, alternate transport or resubmission. Use the existing support.executor_version from the affected client; never substitute the maintainer computer version."
     }
   ]
 }

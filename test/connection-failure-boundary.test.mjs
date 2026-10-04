@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 test("every installed Skill stops the screenshot's local-failure to cross-host probe chain", async () => {
-  for (const kind of ["image", "video", "connection", "balance", "models", "update"]) {
+  for (const kind of ["image", "video", "connection", "balance", "models", "evaluate", "update"]) {
     const root = new URL(`../skills/puretokens-${kind}/`, import.meta.url);
     const skill = await readFile(new URL("SKILL.md", root), "utf8");
     const scenarios = JSON.parse(await readFile(new URL("references/behavior-scenarios.json", root), "utf8"));

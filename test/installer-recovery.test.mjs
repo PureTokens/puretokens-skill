@@ -7,7 +7,7 @@ import path from "node:path";
 import os from "node:os";
 import { repositoryRoot } from "../scripts/skill-registry.mjs";
 const execFile = promisify(execFileCallback);
-const names = ["puretokens-balance", "puretokens-connection", "puretokens-models", "puretokens-image", "puretokens-video", "puretokens-update"];
+const names = ["puretokens-balance", "puretokens-connection", "puretokens-models", "puretokens-image", "puretokens-video", "puretokens-audio", "puretokens-evaluate", "puretokens-update"];
 const installer = path.join(repositoryRoot, "runtime/puretokens-skill-install.sh");
 async function fixture(t) {
  const root = await mkdtemp(path.join(os.tmpdir(), "pt-installer-test-"));
@@ -48,7 +48,7 @@ test("OpenCode directory selection honors explicit and XDG roots without probing
 });
 test("desktop hosts locate and install into isolated local skill roots", async t => {
  const f = await fixture(t);
- for (const [host, key] of [["claude-desktop", "CLAUDE_CONFIG_DIR"], ["dsh-desktop", "DSH_HOME"]]) {
+ for (const [host, key] of [["claude-desktop", "CLAUDE_CONFIG_DIR"], ["dsh-desktop", "DSH_HOME"], ["deepseek-harness", "DSH_HOME"]]) {
   const directory = path.join(f.root, `${host} with spaces`);
   const env = { ...f.env, [key]: directory };
   const { stdout: located } = await execFile("sh", [installer, "locate", "--host", host], { env });
@@ -61,6 +61,9 @@ test("desktop hosts locate and install into isolated local skill roots", async t
   assert.equal((await readdir(path.join(directory, "skills"))).filter(x => x === ".puretokens-executor").length, 1);
   await assert.rejects(execFile("sh", [installer, "locate", "--host", host], { env: { ...env, [key]: "relative" } }));
  }
+ const harnessDefault = await execFile("sh", [installer, "locate", "--host", "deepseek-harness"], { env: { ...f.env, DSH_HOME: "" } });
+ assert.equal(harnessDefault.stdout.trim(), path.join(f.env.HOME, ".dsh", "skills"));
+ await assert.rejects(execFile("sh", [installer, "locate", "--host", "deepseek-harness"], { env: { ...f.env, DSH_HOME: path.join(f.root, "safe") + "/../unsafe" } }));
  // Default paths are platform-owned; no synthetic connection is opened.
  const env = { ...f.env, CLAUDE_CONFIG_DIR: "", DSH_HOME: "" };
  const { stdout } = await execFile("sh", [installer, "locate", "--host", "claude-desktop"], { env });
@@ -333,4 +336,27 @@ test("installation never invokes Codex plugins and still runs host init", async 
  await assert.rejects(readFile(marker),{code:"ENOENT"});
  await execFile(path.join(mockBin,"codex"),[],{env});
  assert.equal(await readFile(marker,"utf8"),"called");
+});
+
+test("MiniMax Desktop installer uses only a declared root and refuses ambiguous preferences", { skip: process.platform !== "darwin" }, async t => {
+ const f = await fixture(t);
+ const env = { ...f.env, MINIMAX_DATA_DIR: "", MAVIS_DATA_DIR: "", MAVIS_PROFILE: "", MINIMAX_PROFILE: "", AGENTARCHON_PROFILE: "", AGENTARCHON_DATA_DIR: "", __MAVIS_RUNTIME_PROFILE: "", __MAVIS_RUNTIME_DATA_DIR: "" };
+ const locate = overrides => execFile("sh", [installer, "locate", "--host", "minimax-code"], { env: { ...env, ...overrides } });
+ assert.equal((await locate({})).stdout.trim(), path.join(env.HOME, ".minimax/skills"));
+ const custom = path.join(f.root, "declared runtime");
+ assert.equal((await locate({ MINIMAX_DATA_DIR: custom, MAVIS_DATA_DIR: path.join(f.root, "other") })).stdout.trim(), path.join(custom, "skills"));
+ assert.equal((await locate({ MAVIS_DATA_DIR: custom })).stdout.trim(), path.join(custom, "skills"));
+ await assert.rejects(locate({ MINIMAX_DATA_DIR: "relative" }));
+ await assert.rejects(locate({ MINIMAX_DATA_DIR: custom + "/../other" }));
+ await assert.rejects(locate({ MAVIS_PROFILE: "cli-profile" }));
+ await mkdir(path.join(env.HOME, ".mavis"));
+ await assert.rejects(locate({}));
+ const prefs = path.join(env.HOME, "Library/Application Support/MiniMax Code");
+ await mkdir(prefs, { recursive: true });
+ await writeFile(path.join(prefs, "minimax-agent-config.json"), '{"config":{}}');
+ await assert.rejects(locate({}));
+ const result = await execFile("sh", [installer, "sync", "--host", "minimax-code"], { env: { ...env, MINIMAX_DATA_DIR: custom } });
+ assert.match(result.stdout, /synchronized/);
+ const manifest = JSON.parse(await readFile(path.join(custom, "skills/puretokens-image/skill.json"), "utf8"));
+ assert.ok(manifest.supportedClients.includes("minimax-code"));
 });

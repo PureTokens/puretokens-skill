@@ -84,13 +84,44 @@ the update Skill's usage guide. Load those sections only when relevant.
 Instruction fixtures protect these boundaries but do not prove an actual host
 or model followed them; do not convert byte savings into claimed latency gains.
 
-Align package, Skill index, all six manifests, executor version/manifest and host-acceptance release versions. Refresh each manifest's sourceSha256 after editing SKILL.md. Update both changelogs. Preserve the exact first text installation block and its heading in both READMEs; the client download page extracts them.
+Align package, Skill index, all registered Skill manifests, executor version/manifest and host-acceptance release versions. Refresh each manifest's sourceSha256 after editing SKILL.md. Update both changelogs. Preserve the exact first text installation block and its heading in both READMEs; the client download page extracts them.
 
 Shared guidance has one maintained source: `references/desktop-hosts.md`,
 `references/skill-fragments/host-binding.md` and `references/host-support.json`.
 Run `npm run docs:sync-guidance` after editing these or any Skill entrypoint.
 It expands self-contained installed copies, host lists and entrypoint hashes;
 `npm run check` rejects drift. This generator is a development tool only.
+
+Operation summaries are maintained in `references/operation-guidance.json`.
+The same generator checks their command/lifecycle/recovery/delivery against the
+owned execution contracts and expands marked sections in the media/evaluation
+entrypoints and usage guide. `references/skill-fragments/receipt-guide.md` and
+`media-workflows.md` are the only maintained sources of their installed copies.
+Do not edit generated sections/copies or mix synchronous audio recovery with
+asynchronous music. Local help and on-demand reference reads add no API calls.
+
+Multi-step guidance orchestrates existing commands, not a new background
+executor. Explicitly authorized generated artifacts may become the next step's
+input only through the selected profile's existing multipart representation;
+retain bytes and task identity, never synthesize a URL or silently drop an input.
+There is no composition/mixing, cross-step server artifact reference, authoritative
+quote, unknown-submit lookup or model-retirement interface added by this guidance.
+Those require a separately reviewed gateway contract, authorization/expiry/error
+semantics, replayable patch and paired documentation before Skill adaptation.
+Do not infer support from private Web workspace routes or expose their transport.
+
+The paired gateway contract's “Skill recovery and selection extensions” section
+(2026-09-27) records the next implementation requirements, not available APIs.
+First establish durable async image/video/music submission identity and read-only
+lookup with account/original-token scope, fingerprint conflicts, crash uncertainty
+and expiry tombstones. Do not reuse support request IDs or infer idempotency from
+the Web workspace UUID. Synchronous audio/Jev recovery remains out of scope until
+result retention exists. Quotes/retirement need authoritative revision, scope and
+expiry semantics; server artifact references need authorization, expiry pinning
+and destination input validation. Keep `unimplementedServerDependencies` and the
+installed instructions unchanged until actual gateway implementation, replayable
+patches, cross-database verification and compatible feature negotiation exist.
+No ordinary generation gains an extra capability preflight from this backlog.
 
 Model queries and submissions share `runtime/executor/model_constraints.go`.
 Queries infer required operation inputs without claiming attachment-byte
@@ -107,7 +138,7 @@ Keep positive fixtures, corrupted-payload cases and bounded-resource tests.
 
 ## Distribution
 
-This repository does not publish an npm package. Native fetch resolves the latest stable release manifest, pins its version/source commit and verifies its selector and current-platform ZIP. No ordinary install follows main or falls back to a source archive. Explicit local source sync remains available for maintainers. Keep six shared Skills; do not fork payloads per client or create a global shared-executor service.
+This repository does not publish an npm package. Native fetch resolves the latest stable release manifest, pins its version/source commit and verifies its selector and current-platform ZIP. No ordinary install follows main or falls back to a source archive. Explicit local source sync remains available for maintainers. Keep the registered shared Skills; do not fork payloads per client or create a global shared-executor service.
 
 `npm run release:package` produces six OS/architecture-only archives, four bootstrap/selector script assets and the schema-v2 release manifest. `npm run release:verify` checks all archive members against current source, checksums, lengths, platform-only contents and script hashes; `--publishable` additionally requires clean committed distribution sources. Dirty candidates cannot be promoted. The same checks run on the downloaded draft assets immediately before publication.
 
@@ -115,7 +146,7 @@ Release preparation remains read-only with respect to GitHub releases. The separ
 
 From 0.18.1 onward, each distributed version is immutable. Increment the version before changing installed Skills, profiles, executors or installation/build inputs; same-version fast verification and downgrade protection rely on this. `release:validate` checks complete first-parent Git history, including same-version changes that were later reverted, and includes untracked/deleted distribution files. A version-bumped dirty tree is only a candidate, never proof of publishable assets. Executor test-only changes do not require a new version. Keep the gate before push and publication; main changes are no longer the default installation source.
 
-Stable promotion also runs `node scripts/validate-host-acceptance.mjs --stable`: every declared available target needs real evidence, API-capable targets need all nine cases passed in one local environment, and an empty/all-unavailable matrix is rejected. Regular development gates still accept honest pending evidence. Run real-host acceptance only with explicit authorization; do not turn it into paid CI traffic.
+Stable promotion also runs `node scripts/validate-host-acceptance.mjs --stable`: every declared available target needs real evidence, API-capable targets need all nineteen cases passed in one local environment, and an empty/all-unavailable matrix is rejected. The original media level does not accept audio, music, Jev, composite workflows or help; capability groups are reported separately. Prepare pending-only entries with `node scripts/prepare-host-acceptance.mjs --host <id> --output <new-file>` and follow the guide for optional observed stage timings. Regular development gates still accept honest pending evidence. Run real-host acceptance only with explicit authorization; do not turn it into paid CI traffic.
 
 Acceptance classification must match the credential adapter state in `references/host-support.json`. Hosts without an adapter keep installation acceptance separate and mark API-dependent summaries and detailed cases `unavailable` with an explicit reason, not `pending` or `passed`. Credential fixtures never substitute for real-host evidence.
 

@@ -126,7 +126,11 @@ func TestVSCodeJSONCExactModelBoundary(t *testing.T) {
 	}{
 		{"inline", `[// native JSONC
 {"vendor":"customendpoint","models":[` + model + `,]},]`, true},
-		{"multiple-even-with-same-key", `[{"vendor":"customendpoint","models":[` + model + `,` + model + `]}]`, false},
+		{"multiple-same-connection", `[{"vendor":"customendpoint","models":[` + model + `,` + strings.Replace(model, "chat-model", "another-chat-model", 1) + `]}]`, true},
+		{"duplicate-model", `[{"vendor":"customendpoint","models":[` + model + `,` + model + `]}]`, false},
+		{"different-key", `[{"vendor":"customendpoint","models":[` + model + `,` + strings.ReplaceAll(strings.Replace(model, "chat-model", "another-chat-model", 1), "synthetic-client-fixture", "different-synthetic-key") + `]}]`, false},
+		{"separate-groups-same-key", `[{"vendor":"customendpoint","models":[` + model + `]},{"vendor":"customendpoint","models":[` + model + `]}]`, false},
+		{"mixed-connection-group", `[{"vendor":"customendpoint","models":[` + model + `,` + strings.ReplaceAll(strings.Replace(model, "chat-model", "other", 1), "api.puretokensx.com", "example.invalid") + `]}]`, false},
 		{"foreign", `[{"vendor":"customendpoint","models":[` + strings.Replace(model, "api.puretokensx.com", "example.invalid", 1) + `]}]`, false},
 		{"group-key", `[{"vendor":"customendpoint","apiKey":"unrepresented","models":[` + model + `]}]`, false},
 		{"dynamic", `[{"vendor":"customendpoint","models":[` + strings.Replace(model, "synthetic-client-fixture", "${input:secret}", 1) + `]}]`, false},

@@ -4,6 +4,21 @@ Run this guide on the selected release bytes, one host and OS at a time. Isolate
 executor/installer tests are recorded separately and never mark real-host cells
 passed. `references/host-acceptance.json` is the single acceptance record.
 
+Prepare an offline entry for the current release using:
+
+```sh
+node scripts/prepare-host-acceptance.mjs --host opencode --output /absolute/workspace/acceptance-entry.json
+```
+
+The parent directory must exist. Optional `--os macOS|windows|linux`,
+`--arch amd64|arm64` and `--mode local|wsl|remote|sandbox` describe the actual
+execution environment. The command reads only repository release metadata and
+writes a new private file; it never installs Skills, reads host configuration,
+calls an API, overwrites evidence or copies old passes. Host/OS/shell versions,
+date and artifact location are deliberately blank. Complete those from the actual run, retain
+untested cases as pending, and add the entry to the record's `evidence` array
+only when the evidence artifact exists. A template is not acceptance evidence.
+
 Before testing, record the release version, actual host version, OS version and
 architecture, shell version, execution mode, executor platform and SHA-256,
 date, and a workspace-relative evidence file.
@@ -29,6 +44,34 @@ Never add paid tests to CI.
 | video-generation | Generate one authorized video | Same task throughout; delivered video plays; no replacement submission |
 | sameTaskResume | Resume an existing task after an interrupted wait/new conversation | Same ID, original operation/count retained; no new POST; reconciliation checked once on explicit resume |
 | nativeAttachmentDelivery | Deliver image and video through the actual host | User can open the attached image and play the attached video; a local path or status text alone does not pass |
+| speech-generation | Read short synthetic text using a reviewed voice and supported style/speed | One synchronous POST; exact text preserved; real MP3/WAV attachment opens and plays |
+| audio-transcription | Transcribe one explicitly selected synthetic recording | Original bytes sent once; validated transcript displayed without replacing it with a summary; no task polling |
+| sound-generation | Generate one short sound scene | One synchronous POST; supported fields only; audio attachment plays; no music substitution |
+| audio-reattachment | Reattach the same already-downloaded audio after interrupted handoff | Local audio-verify validates original proof; no credential/network request or regeneration; actual attachment opens |
+| music-generation | Generate one authorized instrumental piece or song | Explicit instrumental intent and exact supplied lyrics; submit receipt before wait/content; same task and playable MP3/WAV |
+| music-resume | Continue that music task in a new conversation, before its output is acknowledged delivered | Same record/ID, wait budget and file proof retained; no replacement POST, synchronous audio command or unnecessary content GET |
+| jev-evaluation | Evaluate synthetic text with explicit choice, score and noul questions | One synchronous request; question/option order retained; validated typed results shown; no polling or external action |
+| image-to-video-workflow | Explicitly use an image just delivered as a video's first frame | Exact selected local image bytes passed through a declared multipart operation; distinct records; each actual attachment delivered |
+| video-audio-workflow | Request video and independent narration or music assets | User accepted separate assets; each delivered once; no claim of composition, mixing or duration alignment |
+| help-no-api | Ask for local help, then ask only to revise a narration/lyric/prompt | Correct guidance/text; no Skill executor API call, init, credentials read, model discovery or paid media/evaluation submission |
+
+The original nine image/video cases remain the `media` group. New cases form
+`audio`, `music`, `evaluation`, `workflows` and `help` groups. Report these
+separately: `media-verified` does not verify the new groups. A candidate with
+only offline request tests or an unavailable gateway deployment keeps those
+real-host cases pending; absence of credentials is not evidence of API success.
+The help case excludes the host's own conversational model traffic: its zero
+request claim is specifically about Skill API work and credential access.
+
+For synchronous audio, unknown responses and accepted-but-unsaved files have no
+task lookup; do not rerun a paid request to manufacture recovery evidence.
+For async music and composite flows, errors/unknown acceptance stop automatic
+continuation. Test those branches, malformed audio, unsupported fields, repeated
+submission and no-ID recovery using existing isolated executor fixtures, not
+production failures. A successful live sample cannot accept those fault cases.
+When the host cannot expose bytes or attach audio, record that limitation instead
+of marking a file path as playback. Reuse the same authorized assets for
+reattachment, continuation and workflow checks where their lifecycle permits.
 
 Use an existing safe task for continuation when possible. Network failure,
 reconciliation and malformed media cases are fault-injected only into isolated
@@ -58,7 +101,7 @@ into a remote or sandbox environment to make a case pass.
 Acceptance levels are derived from each individual evidence entry, not declared
 manually or assembled from unrelated versions: `installation-verified` requires
 the installation case; `api-verified` additionally requires authenticated API
-checks; `media-verified` requires all nine cases, including playable video and
+checks; `media-verified` requires the original nine media cases, including playable video and
 actual attachment handoff. No evidence is `unverified`. Registration and
 credential fixtures do not establish any real-host level; Trae remains without
 an API adapter.
@@ -80,7 +123,8 @@ reason; it is neither a pass nor missing test evidence.
 An adapter marked `pending` in the host registry is not implemented in this
 release. Its `credentialFixtures` must be `unavailable`, as must the
 `authenticatedAPI`, `sameTaskResume` and `nativeAttachmentDelivery` summaries
-on every OS and all detailed cases except `installation`. Trae currently has
+on every OS and all API-dependent detailed cases. Local `installation` and
+`help-no-api` can still be accepted independently. Trae currently has
 this classification: macOS and Windows installation remain pending, but API
 and media acceptance are unavailable. Installation-only real-host evidence is
 valid and establishes only `installation-verified`; a safe stop before a
@@ -94,7 +138,7 @@ from fixtures.
 
 This release schedules Linux targets for Claude Code, Codex, Gemini CLI, Grok Build and OpenCode; other Linux combinations are unavailable with an explicit reason until a client execution target is verified. Record Linux evidence with `os: linux` and a matching `linux-amd64` or `linux-arm64` executor. Do not substitute Windows/macOS hashes.
 
-Four summary checks and the nine detailed cases above are distinct. The validator reports pending summary cells and the count of detailed case outcomes actually recorded; absence of evidence is never a pass.
+Four summary checks and the nineteen detailed cases above are distinct. The validator reports pending summary cells, detailed outcomes and separate capability groups; absence of evidence is never a pass. Do not rewrite historical release records to add new passes.
 
 For installation, retain separate outcomes for a clean install and an upgrade
 from the preceding distributed version, default and explicit directories, spaces
@@ -138,11 +182,33 @@ GET. Local fixtures and virtual-clock timings remain separate from real-host
 acceptance. Start with the user's two most-used accessible hosts; do not infer
 which hosts or billable tasks are authorized from this guide.
 
+Each real-host evidence entry may include `measurements`, a bounded list with
+one row per actually observed case. A row contains `case`,
+`basis: "client-observed"`, `durationsMs` and optional `requests`. Allowed duration keys
+are `installation`, `init`, `preparation`, `request`, `wait`, `download`,
+`handoff`, `total`; values are nonnegative integer milliseconds. Request counters
+are `submit`, `status`, `content`, `other`. Count attempts, not just successful
+responses. Omit unmeasured counters/phases; never fill missing observations with
+zero. A passed `help-no-api` measurement requires all four counters observed zero.
+Host chat model traffic is outside these Skill counters.
+
+For synchronous audio/evaluation, `request` covers the entire command until
+its receipt (including audio response saving); there is no separately observed
+server-generation interval or task wait. Do not manufacture a breakdown.
+Audio/music handoff requires the real host, and transcript/Jev handoff means
+the result was displayed. Measurements must correspond to passed or failed
+cases; measuring a failed local validation does not establish network latency.
+No prompt, transcript, lyrics, media, headers, configuration, path, task ID or
+raw response may be added to measurement rows. Offline/virtual-clock values
+remain in test reports, never in real-host measurements.
+
 ## Stable publication
 
 The manual stable publication gate requires every declared available host/OS
 summary check to pass with matching real-host evidence. An API-capable target
-also needs all nine detailed cases passed together in one local environment.
+also needs all nineteen detailed cases passed together in one local environment,
+including the new capability groups. Older media-only evidence cannot satisfy
+this requirement by combining different hosts or unrelated runs.
 Hosts without an adapter require only installation acceptance on their declared
 installation targets; their API-dependent cases must remain unavailable.
 Unavailable targets must have an explicit reason; they are not advertised as
@@ -155,3 +221,11 @@ for a direct publication decision. The exception must identify the exact version
 share the acceptance record date, and explain the approval. It only bypasses the
 stable promotion gate; it never changes pending, unavailable or failed evidence,
 does not count as real-host acceptance, and must not be copied to a later version.
+
+For 0.18.7, the maintainer approved this exception on 2026-10-04 and requested
+that its gaps remain in the maintenance record, not in user-facing release,
+installation or update notices. `host-acceptance.json` retains all 166 pending
+summary checks and the empty real-host evidence array. The exception does not
+waive engineering tests, committed-source CI, reproducible builds or uploaded
+asset verification. Product restrictions and actual command failures retain
+their normal behavior; publication does not create real-host evidence.

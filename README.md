@@ -4,11 +4,13 @@
 
 # Pure Tokens Skills
 
-Official Skills for checking a Pure Tokens connection, balance and model catalog, and generating images or videos.
+Official Skills for checking a Pure Tokens connection, balance and model catalog, generating images or videos, and evaluating text with Jev.
+
+Version 0.18.7 adds MiniMax Code Desktop for local macOS/Windows default connections. Standalone installation with Desktop preferences requires a confirmed target or the client runtime data-directory environment. See `references/switch-skill-compatibility.md` for the connection and session requirements.
 
 ## Agent-assisted installation
 
-The client download page reads the first `text` block below this heading. Keep this heading and block unchanged.
+The one-line compatibility entry is preserved below. For explicit installation steps, copy the complete [Chinese](#chinese-installation-prompt) or [English](#english-installation-prompt) prompt.
 
 ### Copy this to a terminal-capable local agent
 
@@ -19,7 +21,49 @@ Install or update the official Pure Tokens Skills from https://github.com/PureTo
 ### Chinese installation prompt
 
 ```text
-请从官方仓库安装或更新 Pure Tokens Skills：https://github.com/PureTokens/puretokens-skill。
+请为我当前使用的客户端安装或更新 Pure Tokens 官方 Skills，仓库：https://github.com/PureTokens/puretokens-skill。
+
+1. 阅读官方安装说明，只确定本次安装所需的当前客户端、官方宿主 ID 和执行环境。不要从模型名称或共享 Skill 目录猜客户端；无法确定时只问必要信息。需要能在该客户端实际使用的本机环境执行命令，遵守其执行审批；不支持或没有执行能力时说明并停止。
+
+2. 首次安装，将以下官方稳定版入口下载为本地文件：
+   macOS/Linux：https://github.com/PureTokens/puretokens-skill/releases/latest/download/puretokens-skill-fetch.sh
+   Windows：https://github.com/PureTokens/puretokens-skill/releases/latest/download/puretokens-skill-fetch.ps1
+   已安装时，按官方说明定位该客户端官方 Skill 同级 .puretokens-executor 中的 fetch 脚本，执行 update。不要将远程内容直接管道进 shell。
+
+3. 替换下面的绝对路径、操作和宿主 ID 后执行一次；首次安装用 install，已有安装用 update：
+   macOS/Linux：sh "<fetch脚本绝对路径>" <操作> --host <当前宿主ID>
+   Windows：powershell.exe -NoProfile -ExecutionPolicy Bypass -File "<fetch脚本绝对路径>" <操作> -Host <当前宿主ID>
+   自定义目录按官方说明附加 --target / -Target 绝对路径；Octop 必须指定当前工作区的 .octop/skills。由官方脚本选择当前系统和架构的稳定版包，校验并同步完整 Skills 与原生执行器。不要复制单个 SKILL.md、使用通用安装器或回退 main、源码包、镜像；不要为此安装 Node、npm、Python、Go、Git 或服务。
+
+4. 保留现有连接和用户文件。不要自行读取、展示或修改认证配置，也不要索取或转述凭据；由原生执行器按当前宿主规则完成只读验证。下载、校验、执行权限或文件冲突失败时，报告已完成阶段与脱敏原因并停止；不自动删除、修复、重装、换宿主或改用其他执行方式。超时或输出不确定时不得猜测成功。
+
+5. 复用脚本的同步与自动 init 结果，不另跑 init、doctor、余额或模型查询。自动 init 最多两次只读请求，共用 20 秒预算；安装成功而 init 失败应报告“安装已完成，连接验证未完成”。同版完整性校验通过的快速返回表示“已是当前稳定版且文件完整”，无需再下载、写入或初始化。
+
+6. 完成后简要汇报实际客户端、实际安装版本、安装状态和连接验证状态（已验证／未验证／未执行）。按实际安装版本的本地使用指南列出可用能力，给出两条可复制的使用示例，仅展示、不执行。实际同步后提醒我新开对话加载 Skills；不要声称当前会话已经加载，不自动开始生成或付费体验。
+```
+
+### English installation prompt
+
+```text
+Install or update the official Pure Tokens Skills for the client I am currently using. Repository: https://github.com/PureTokens/puretokens-skill.
+
+1. Read the official installation instructions and identify only the current client, its documented host ID and its execution environment. Do not infer the client from a model name or shared Skill directory; ask only for missing essential information. Commands must run in the local environment actually used by that client. Respect execution approvals; explain and stop if the environment is unsupported or cannot execute commands.
+
+2. For a first installation, save the official stable-release entry point as a local file:
+   macOS/Linux: https://github.com/PureTokens/puretokens-skill/releases/latest/download/puretokens-skill-fetch.sh
+   Windows: https://github.com/PureTokens/puretokens-skill/releases/latest/download/puretokens-skill-fetch.ps1
+   For an existing installation, follow the official instructions to locate the fetch script in .puretokens-executor alongside that client's official Skills and use update. Never pipe remote content directly into a shell.
+
+3. Substitute the absolute path, operation and host ID below, then run once. Use install for a first installation or update for an existing installation:
+   macOS/Linux: sh "<absolute-fetch-path>" <operation> --host <current-host-id>
+   Windows: powershell.exe -NoProfile -ExecutionPolicy Bypass -File "<absolute-fetch-path>" <operation> -Host <current-host-id>
+   For a custom directory, add the documented --target / -Target absolute path; Octop requires the current workspace's .octop/skills. Let the official script select, verify and synchronize the stable package for this OS and architecture, including the complete Skills and native executor. Do not copy only SKILL.md, use a generic installer, or fall back to main, source archives or mirrors. Do not install Node, npm, Python, Go, Git or services for this task.
+
+4. Preserve existing connections and user files. Do not independently read, display or modify authentication configuration, or request or relay credentials; let the native executor perform the documented read-only verification for this host. On download, checksum, execution-permission or file-conflict failure, report the completed stage and sanitized cause, then stop. Do not automatically delete, repair, reinstall, switch hosts or use another execution path. A timeout or uncertain output does not establish success.
+
+5. Reuse the script's synchronization and automatic init results. Do not add init, doctor, balance or model queries. Automatic init allows at most two read-only requests within one 20-second budget. Successful synchronization followed by failed init means “Installed; connection not verified.” A same-version verified fast return means “Already on the current stable version; files verified,” with no further download, writes or initialization.
+
+6. Briefly report the actual client, installed version, installation status and connection verification status (verified / unverified / not run). List capabilities from that installed version's local usage guide and show two copyable examples without executing them. After actual synchronization, remind me to open a new conversation to load the Skills. Do not claim they are already loaded in this session or automatically start generation or a paid demo.
 ```
 
 The agent saves the latest official stable release's `puretokens-skill-fetch.sh` (Windows: `.ps1`) locally and runs install with the current host ID. The fixed bootstrap URL is `https://github.com/PureTokens/puretokens-skill/releases/latest/download/puretokens-skill-fetch.sh`; Windows uses the `.ps1` suffix. Installed copies in `.puretokens-executor` provide check-update and update. Never pipe remote content into a shell or fall back to main, source archives or mirrors when stable assets are absent.
@@ -35,6 +79,8 @@ Installation boundary: after identifying the host, save the official fetch scrip
 | `puretokens-models` | Read the authenticated current model catalog and declared capabilities. |
 | `puretokens-image` | Generate images and perform declared image edits. |
 | `puretokens-video` | Generate videos and use declared image/video/audio references or video edits. |
+| `puretokens-audio` | Turn text into speech, transcribe recordings, generate sound scenes, or create music and songs. |
+| `puretokens-evaluate` | Classify text, score against ordered criteria, or make yes/no judgments with Jev. |
 | `puretokens-update` | Initialize, show usage guidance, and safely synchronize these official Skills. |
 
 ## How direct API generation works
@@ -47,7 +93,47 @@ No Node, npm, Python, Go, Pure Tokens Desktop, MCP, or upload relay is required 
 
 Computer Use, browser automation, and opening or clicking Pure Tokens Switch/Desktop are not fallback execution paths. The Skills never use them to find a visible generation interface, obtain a credential, submit media, or deliver a result; they also never invoke another image or video Skill as a fallback.
 
+## Audio
+
+Ask “Read this text into an MP3,” “Transcribe this recording,” or “Generate rain
+and footsteps.” `puretokens-audio` reuses the current connection for one
+synchronous request, with a 90-second deadline and no polling or automatic retry.
+It supports speech up to 1000 characters, MP3/WAV/OGG recordings up to 8 MiB, and
+sound instructions up to 500 characters. Voices are reviewed per model; generated
+MP3/WAV files require actual attachment handoff. Voice cloning, translation
+and real-time conversation are not integrated. An unknown response does not prove
+no charge; failed attachment handoff can reuse the locally verified original file.
+Production calls, billing and real-host playback are tracked separately in the
+maintenance acceptance record.
+
+Music uses `stepaudio-3-music-preview` through the same Skill: describe an
+instrumental piece or provide lyrics for a song. The executor submits once and
+immediately returns a task receipt, then queries and downloads that same task
+through separate commands. Descriptions are limited to 1000 characters, lyrics
+to 4000; output is MP3/WAV up to 32 MiB. Explicit local task records support
+continuation without storing descriptions or lyrics. Gateway files remain
+available for 24 hours after storage; downloaded originals can be reattached
+after local verification. Deploy the paired Web gateway music API-key patch
+before enabling music requests. See `references/audio-execution-contract.md`.
+
+Audio [scenario guidance](skills/puretokens-audio/references/prompt-guide.md)
+separates spoken text, sound descriptions, music style and exact lyrics.
+Explicit combined requests can use [bounded workflows](skills/puretokens-video/references/workflows.md):
+generate an image and pass its unchanged local bytes as a supported video's first
+frame, or generate video and independent narration/music assets. Each step has its
+own progress and delivery; a later failure never restarts earlier tasks. These
+workflows do not compose, edit or mix a finished video. Simple requests do not load
+the workflow guide or add preflight calls.
+
+## Jev text evaluation
+
+Ask “Use Jev to classify this ticket as billing, technical, or other” or “Use Jev to judge urgency and score impact against these three levels.” The new `puretokens-evaluate` Skill uses one synchronous native request to the fixed `/typesafe/v1/systemone` endpoint. It reuses the current host's Pure Tokens connection; no TypeSafe SDK or additional key is needed. Independent questions over the same text share one request.
+
+The default is `jev-latest`; reviewed exact alternatives are `jev-1.13.0` and `jev-preview`. Choice, Score and Noul return typed options/numbers and probabilities. Confidence is not validated accuracy or authorization for external actions. Inputs are text/structured text, not images/audio/video. Timeouts or invalid responses stop without automatic retries, polling or claims about charges. Explicit evaluation model discovery lists only reviewed IDs returned by `/v1/models`; listing does not prove the native endpoint is callable. See [evaluation contract](references/jev-evaluation-contract.md). Production and real-host evaluation acceptance remains unverified.
+
 ## Media routing
+
+Image understanding, OCR, video analysis, screenshot troubleshooting, and prompt-only writing do not create media tasks. Model capability questions use model discovery; progress checks and result retrieval continue the existing task. The image and video entries include intent-to-operation tables, with scene prompt guides read only when needed. Verbatim prompts remain separate from actual output parameters, and attachment count alone does not imply first/last frames.
 
 When the current host uses a Pure Tokens connection, ordinary image requests select `puretokens-image` before generic `imagegen`, Imagen, or other image Skills; ordinary video requests select `puretokens-video` before generic video Skills. This applies even when the user does not explicitly say “Pure Tokens.” Once selected, the Pure Tokens specialist either executes its fixed API path or stops safely; it never falls back to a generic media Skill.
 
@@ -66,16 +152,22 @@ The priority is carried by the installed Skill metadata and the host's current c
 | Trae / TraeWork (`trae`) | `~/.trae/skills` (legacy installation only) | No credential adapter; current TraeWork discovery is not verified |
 | Claude Desktop | `~/.claude/skills` (shared with Claude Code) | Local Code sessions; Desktop credential fixtures tested, end-to-end acceptance pending |
 | DSH Desktop | macOS: `~/Library/Application Support/dsh-desktop/harness/skills`; Windows: `%APPDATA%\dsh-desktop\harness\skills` | Credential fixtures tested; host end-to-end acceptance pending |
+| Official DeepSeek Harness | `~/.dsh/skills` or absolute `DSH_HOME/skills` | Default local Desktop connection in 0.18.7 |
+| MiniMax Code Desktop | `~/.minimax/skills` or the explicit runtime data directory | Default local session; confirm the install target when Desktop preferences exist |
 | ZCode | `~/.zcode/skills` | Local connection adapter; real API and attachment delivery acceptance pending |
 | Kimi Code | `~/.kimi-code/skills` | Credential fixtures covered; real API and attachment delivery pending |
 | Qoder | `~/.qoder/skills` | Local IDE/CLI execution; real API and attachment delivery pending |
 | Pi | `~/.pi/agent/skills` | Inline authentication precedence covered by fixtures; real API and attachment delivery pending |
 | Hermes | `~/.hermes/skills`; Windows: `%LOCALAPPDATA%/hermes/skills` | Selected inline custom provider; pooled/dynamic authentication unsupported |
 | EvoX | `~/.evox/agent/skills` | Canonical default-instance settings/auth fixtures; legacy stores unsupported |
-| VS Code | `~/.copilot/skills` | Default local profile; exactly one matching model connection, otherwise stops as ambiguous |
+| VS Code | `~/.copilot/skills` | Default local profile; one supported multi-model connection sharing one Key in 0.18.7 |
 | Octop | Explicit current workspace `.octop/skills` target | Read-only local SQLite connection; no assumed global Skill installation |
 
-The four new adapters have fixture coverage, not real-host media acceptance.
+Connection adapters have fixture coverage; real-host acceptance is recorded separately.
+The [Switch × dedicated-task matrix](references/switch-skill-compatibility.md)
+separates Skill execution, connection resolution, model permissions, API routing
+and actual delivery. Audio/Jev command entries are included in 0.18.7; embedding/rerank have
+no Skill entry. Configuring a client or listing a model does not verify a task.
 Hermes and EvoX honor their documented absolute data-root overrides. Octop
 requires `--host octop --target <absolute-workspace>/.octop/skills` (PowerShell:
 `-HostId octop -Target <absolute-workspace>/.octop/skills`); do not enumerate
@@ -89,7 +181,7 @@ For Claude Desktop, use a local Code session and host ID `claude-desktop`; its a
 
 ## Images and videos
 
-Normal generation reads only the selected profile for a default or exact model ID; the small index is needed only for model selection or alias resolution. It does not load every model or fetch the catalog before every task. `puretokens-image` defaults to `gpt-image-2`; `puretokens-video` uses its installed default. The live catalog is read only when a user explicitly asks for current models, requests an option or media operation absent from the selected profile, or needs a post-rejection diagnosis.
+Normal generation reads only the selected profile for a default or exact model ID; the small index is needed only for model selection or alias resolution. It does not load every model or fetch the catalog before every task. `puretokens-image` defaults to `gpt-image-2.5-flare`; `puretokens-video` defaults to `minimax_h3`. An explicit user model choice takes precedence; an existing task retains its original model. The live catalog is read only when a user explicitly asks for current models, requests an option or media operation absent from the selected profile, or needs a post-rejection diagnosis.
 
 A normal wait window ending means the task is still processing, not failed. The active authorized delivery can continue for one more bounded foreground window, then pauses for user input. Task records preserve this budget; errors, reconciliation and deferred retries stop automatic continuation. Videos, multiple outputs and cross-session work use explicit workspace task records by default. A failed attachment handoff reuses the verified existing file rather than submitting or downloading again.
 
@@ -102,7 +194,7 @@ The selected installed profile governs ordinary requests. An explicit authentica
 <!-- media-model-catalog:start -->
 ## Media model catalog
 
-Synchronized with the base model catalog: 2026-09-18T09:53:14.617Z.
+Synchronized with the base model catalog: 2026-10-04T06:19:22.134Z.
 
 This list is an installed selection aid, not a per-request authorization check. Ordinary generation reads only the selected profile; live discovery is limited to explicit requests, profile gaps or rejection diagnosis. Reviewed local compatibility supplements are separately sourced.
 
@@ -114,16 +206,19 @@ README is generated only from base-catalog models with explicit image/video capa
 | --- | --- | --- | --- | --- |
 | `gpt-image-2` | OpenAI | `image2` | Image generation | `Use gpt-image-2 to generate an image.` |
 | `gpt-image-2.5` | OpenAI | Exact ID only | Image generation | `Use gpt-image-2.5 to generate an image.` |
+| `gpt-image-2.5-flare` | OpenAI | Exact ID only | Image generation | `Use gpt-image-2.5-flare to generate an image.` |
+| `gpt-image-2.5-sunburst` | OpenAI | Exact ID only | Image generation | `Use gpt-image-2.5-sunburst to generate an image.` |
 | `gpt-image-2(Sub)` | OpenAI | Exact ID only | Image generation | `Use gpt-image-2(Sub) to generate an image.` |
-| `grok-imagine` | xAI | Exact ID only | Image generation | `Use grok-imagine to generate an image.` |
-| `grok-imagine-1` | xAI | Exact ID only | Image generation | `Use grok-imagine-1 to generate an image.` |
 | `grok-imagine-image` | xAI | `grok image` | Image generation | `Use grok-imagine-image to generate an image.` |
 | `grok-imagine-image-2.0` | xAI | `grok image 2.0` | Image generation | `Use grok-imagine-image-2.0 to generate an image.` |
 | `grok-imagine-image-quality` | xAI | Exact ID only | Image generation | `Use grok-imagine-image-quality to generate an image.` |
 | `nano-banana-2` | Google | `nano banana 2` | Image generation | `Use nano-banana-2 to generate an image.` |
 | `nano-banana-2-lite` | Google | Exact ID only | Image generation | `Use nano-banana-2-lite to generate an image.` |
 | `nano-banana-pro` | Google | `nano banana pro` | Image generation | `Use nano-banana-pro to generate an image.` |
-| `seedream-5.0-pro` | ByteDance | Exact ID only | Image generation | `Use seedream-5.0-pro to generate an image.` |
+| `qwen-image-3.0` | Qwen | Exact ID only | Image generation | `Use qwen-image-3.0 to generate an image.` |
+| `qwen-image-3.0-pro` | Qwen | Exact ID only | Image generation | `Use qwen-image-3.0-pro to generate an image.` |
+| `wan2.7-image` | Qwen | Exact ID only | Image generation | `Use wan2.7-image to generate an image.` |
+| `wan2.7-image-pro` | Qwen | Exact ID only | Image generation | `Use wan2.7-image-pro to generate an image.` |
 
 ### Video models
 
@@ -131,19 +226,24 @@ README is generated only from base-catalog models with explicit image/video capa
 | --- | --- | --- | --- | --- |
 | `grok-imagine-video` | xAI | `grok video` | Video generation | `Use grok-imagine-video to generate a video.` |
 | `grok-imagine-video-1.5` | xAI | Exact ID only | Video generation | `Use grok-imagine-video-1.5 to generate a short video.` |
-| `grok-imagine-video-1.5-preview` | xAI | `grok 1.5 video` | Video generation | `Use grok-imagine-video-1.5-preview to generate a video.` |
-| `grok-video-1.5` | xAI | Exact ID only | Video generation | `Use grok-video-1.5 to generate a short video.` |
-| `minimax-h3` | MiniMax | `minimax h3` | Video generation | `Use minimax-h3 to generate a video.` |
+| `minimax_h3` | MiniMax | Exact ID only | Video generation | `Use minimax_h3 to generate a short video.` |
+| `omni` | Google | Exact ID only | Video generation | `Use omni to generate a short video.` |
 | `seedance-2.0` | ByteDance | Exact ID only | Video generation | `Use seedance-2.0 to generate a video.` |
 | `seedance-2.0-fast` | ByteDance | Exact ID only | Video generation | `Use seedance-2.0-fast to generate a video.` |
 | `seedance-2.0-mini` | ByteDance | Exact ID only | Video generation | `Use seedance-2.0-mini to generate a video.` |
 | `seedance-2.5` | ByteDance | Exact ID only | Video generation | `Use seedance-2.5 to generate a video.` |
+| `seedance2.0` | ByteDance | Exact ID only | Video generation | `Use seedance2.0 to generate a short video.` |
+| `veo_fast` | Google | Exact ID only | Video generation | `Use veo_fast to generate a short video.` |
+| `veo_lite` | Google | Exact ID only | Video generation | `Use veo_lite to generate a short video.` |
+| `veo_quan` | Google | Exact ID only | Video generation | `Use veo_quan to generate a short video.` |
 | `wan3.0-video` | Qwen | `wan3 video`, `wan 3 video` | Video generation | `Use wan3.0-video to generate a short video.` |
 | `wan3.0-video-prime` | Qwen | `wan3 video prime`, `wan 3 video prime` | Video generation | `Use wan3.0-video-prime to generate a short video.` |
 
 <!-- media-model-catalog:end -->
 
 ## Errors and receipts
+
+Unreadable submission responses, missing task IDs at the declared location, and unsupported ID types or formats have distinct local categories. None alone proves that the server omitted an ID or failed to generate media. Diagnosis uses the executor version in the affected client's original receipt, not another computer's version, and never repeats a paid request just to collect diagnostics.
 
 Machine receipts retain available model, task ID, original operation, state, safe parameters and progress. User-facing replies show only the useful status, actual attachment or actionable failure. Failures include a safe phase, public API code only when explicitly returned, HTTP status when returned, a sanitized message, and an action the user can take. The Skills never expose raw response bodies, request headers/bodies, internal URLs, credentials, or user media.
 
@@ -157,7 +257,7 @@ the newly confirmed status.
 
 ## Updating
 
-`puretokens-update` resolves the latest published stable manifest and pins its version, source commit, selector and platform archive checksums. It downloads only the current OS/architecture archive, containing six shared Skills, one executor and only the current system's scripts. Missing assets never fall back to main or a source archive. Check-update does not write files or run init. Same-version install/update verifies the release executor checksum and all seven managed inventories, then returns without archive download, writes or init. Missing/modified files or unresolved transactions stop without automatic repair. Explicit local source sync remains available for maintainers.
+`puretokens-update` resolves the latest published stable manifest and pins its version, source commit, selector and platform archive checksums. It downloads only the current OS/architecture archive, containing eight shared Skills, one executor and only the current system's scripts. Missing assets never fall back to main or a source archive. Check-update does not write files or run init. Same-version install/update verifies the release executor checksum and all nine managed inventories, then returns without archive download, writes or init. Missing/modified files or unresolved transactions stop without automatic repair. Explicit local source sync remains available for maintainers.
 
 A fresh installation or actual update still runs init automatically, with at most two read-only requests sharing one 20-second deadline and no automatic retry. File synchronization and connection verification are reported separately; an init timeout does not roll back installation, trigger reinstallation or prove an invalid credential. A versioned synchronization receipt confirms a completed installation; a same-version verification receipt confirms the existing installation without changing files.
 
@@ -173,6 +273,13 @@ After a fresh installation or actual version update, the installer automatically
 
 ## Development validation
 
+Optional anonymous completion reporting is disabled by default. Explicit
+`PTP_OPERATIONS_RECEIPTS=1` enables bounded installation, verified connection
+and execution event counts, without account IDs, credentials, prompts or
+configuration. Failed reporting never changes the operation result. See
+[the receipt contract](references/operations-receipts-contract.md) for the
+one-second send budget and the distinction between submission and delivery.
+
 Maintainers can run:
 
 ```bash
@@ -182,7 +289,7 @@ npm run release:validate
 
 Maintain shared guidance in `references/desktop-hosts.md`,
 `references/skill-fragments/host-binding.md` and the host registry, then run
-`npm run docs:sync-guidance`. It produces six self-contained installed copies
+`npm run docs:sync-guidance`. It produces eight self-contained installed copies
 and entrypoint hashes; the engineering gate rejects drift. No user runtime is added.
 
 PNG/JPEG download and reuse validate pixel data with a 33,554,432-pixel decode

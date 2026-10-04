@@ -80,6 +80,35 @@ func TestPackagedExecutorIdentityAndOfflinePreflight(t *testing.T) {
 		envelope.Support["request_id"] != nil || envelope.Support["http_status"] != nil {
 		t.Fatal("packaged preflight invented network evidence or omitted support metadata")
 	}
+	t.Run("offline-evaluation-validation", func(t *testing.T) {
+		file := filepath.Join(t.TempDir(), "evaluation.json")
+		if os.WriteFile(file, []byte(`{}`), 0600) != nil {
+			t.Fatal("cannot prepare evaluation fixture")
+		}
+		// Invalid evaluation must stop before even resolving this unsupported host.
+		output, err := exec.Command(absolute, "evaluate", "--host", "fixture-unsupported", "--request", file).Output()
+		var receipt map[string]any
+		if err == nil || json.Unmarshal(output, &receipt) != nil ||
+			receipt["command"] != "evaluate" || receipt["local_error_code"] != "evaluation_request_invalid" ||
+			receipt["submission_outcome"] != "not_submitted" || jsonObject(receipt["support"])["api_request_attempted"] != false {
+			t.Fatal("packaged evaluation lost validation-first behavior or safe receipt")
+		}
+	})
+	for _, command := range []string{"audio", "audio-verify"} {
+		t.Run("offline-"+command+"-validation", func(t *testing.T) {
+			file := filepath.Join(t.TempDir(), "audio.json")
+			if os.WriteFile(file, []byte(`{}`), 0600) != nil {
+				t.Fatal("cannot prepare audio fixture")
+			}
+			output, err := exec.Command(absolute, command, "--host", "fixture-unsupported", "--request", file).Output()
+			var receipt map[string]any
+			if err == nil || json.Unmarshal(output, &receipt) != nil ||
+				receipt["command"] != command || receipt["submission_outcome"] != "not_submitted" ||
+				jsonObject(receipt["support"])["api_request_attempted"] != false {
+				t.Fatal("packaged audio lost local validation or invented network evidence")
+			}
+		})
+	}
 	for index, id := range taskIDBoundaryFixtures(t).Accepted {
 		t.Run(fmt.Sprintf("offline-task-id-%d", index), func(t *testing.T) {
 			recordPath := filepath.Join(t.TempDir(), "task.json")

@@ -15,7 +15,7 @@ const skillNames = [
   "puretokens-models",
   "puretokens-image",
   "puretokens-video",
-  "puretokens-update"
+  "puretokens-audio", "puretokens-evaluate", "puretokens-update"
 ];
 const apiSkillNames = skillNames.filter((name) => name !== "puretokens-update");
 const apiOrigin = "https://api.puretokensx.com";
@@ -111,7 +111,7 @@ test("media routing prioritizes Pure Tokens specialists before generic media Ski
       readFile(path.join(base, "agents", "openai.yaml"), "utf8"),
       readFile(path.join(base, "references", "behavior-scenarios.json"), "utf8").then(JSON.parse)
     ]);
-    assert.match(skill, /任何生成或编辑.*请求都优先使用本 Skill/);
+    assert.match(skill, /生成或编辑.*续接已有.*任务或取回结果优先使用本 Skill/);
     assert.match(skill, new RegExp(genericSkill));
     assert.match(manifest.description, /Primary/);
     assert.match(agentMetadata, /Primary/);
@@ -141,7 +141,8 @@ test("media contracts retain fixed endpoints, asynchronous same-task handling, a
   assert.equal(image.operations.submit.url, `${apiOrigin}/v1/images/generations`);
   assert.equal(image.operations.status.urlTemplate, `${apiOrigin}/v1/images/{task_id}`);
   assert.equal(image.operations.content.urlTemplate, `${apiOrigin}/v1/images/{task_id}/content?index={index}`);
-  assert.equal(image.parameterValidation.defaultModel, "gpt-image-2");
+  assert.equal(image.parameterValidation.defaultModel, "gpt-image-2.5-flare");
+  assert.equal(video.parameterValidation.defaultModel, "minimax_h3");
   assert.equal(image.contentRetrieval.indexBase, 0);
   assert.equal(image.contentRetrieval.completeDeliveryRequiresEveryRequestedIndex, true);
   assert.equal(image.submissionFailure.hostExecutionPolicyBlockedBeforeRequestStarts, "report_validation_no_api_request_or_task_id_and_require_host_session_with_external_network_permission");
@@ -159,8 +160,8 @@ test("media contracts retain fixed endpoints, asynchronous same-task handling, a
 
 test("media Skills load a compact index and only the selected model profile", async () => {
   for (const [name, capability, defaultModel] of [
-    ["puretokens-image", "image", "gpt-image-2"],
-    ["puretokens-video", "video", "grok-imagine-video-1.5-preview"]
+    ["puretokens-image", "image", "gpt-image-2.5-flare"],
+    ["puretokens-video", "video", "minimax_h3"]
   ]) {
     const base = path.join(repositoryRoot, "skills", name);
     const [skill, manifest, index] = await Promise.all([
@@ -173,6 +174,8 @@ test("media Skills load a compact index and only the selected model profile", as
     assert.equal(manifest.rules.loadsBehaviorScenariosOnDemandOnly, true);
     assert.equal(index.capability, capability);
     assert.equal(index.defaultModel, defaultModel);
+    assert.equal(manifest.rules.defaultModel, defaultModel);
+    assert.ok(skill.includes(`默认 \`${defaultModel}\` 或用户精确 ID`));
     assert.equal(index.models.some((model) => model.id === defaultModel), true);
     for (const model of index.models) {
       const profile = JSON.parse(await readFile(path.join(base, "references", model.profile), "utf8"));
@@ -252,14 +255,14 @@ test("the public install prompt remains extractable in both README files", async
   }
 });
 
-test("host matrix lists seventeen installer hosts and the bounded credential adapters", async () => {
+test("host matrix lists nineteen installer hosts and the bounded credential adapters", async () => {
   const support = JSON.parse(await readFile(path.join(repositoryRoot, "references", "host-support.json"), "utf8"));
-  assert.deepEqual(support.supported.map((host) => host.id), ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae", "claude-desktop", "dsh-desktop", "zcode", "kimi-code", "qoder", "pi", "hermes", "evox", "vscode", "octop"]);
+  assert.deepEqual(support.supported.map((host) => host.id), ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "trae", "claude-desktop", "dsh-desktop", "deepseek-harness", "minimax-code", "zcode", "kimi-code", "qoder", "pi", "hermes", "evox", "vscode", "octop"]);
   for (const host of support.supported) {
     assert.equal(host.delivery, "native-installer");
     assert.equal(host.directMediaExecution, "managed-native-executor");
   }
-  assert.deepEqual(support.supported.filter((host) => host.credentialAdapter === "fixture-tested").map((host) => host.id), ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "claude-desktop", "dsh-desktop", "zcode", "kimi-code", "qoder", "pi", "hermes", "evox", "vscode", "octop"]);
+  assert.deepEqual(support.supported.filter((host) => host.credentialAdapter === "fixture-tested").map((host) => host.id), ["claude-code", "codex", "workbuddy", "gemini-cli", "grok-build", "opencode", "claude-desktop", "dsh-desktop", "deepseek-harness", "minimax-code", "zcode", "kimi-code", "qoder", "pi", "hermes", "evox", "vscode", "octop"]);
 });
 
 test("source installer synchronizes Skills and exactly one native executor", async (t) => {

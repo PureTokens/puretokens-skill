@@ -1,0 +1,417 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://puretokensx.com/schemas/audio-receipt.schema.json",
+  "title": "Synchronous audio or local artifact verification receipt",
+  "type": "object",
+  "required": [
+    "ok",
+    "command",
+    "submission_outcome",
+    "next_step"
+  ],
+  "properties": {
+    "ok": {
+      "type": "boolean"
+    },
+    "command": {
+      "enum": [
+        "audio",
+        "audio-verify"
+      ]
+    },
+    "operation": {
+      "enum": [
+        "speech",
+        "transcribe",
+        "generate"
+      ]
+    },
+    "model": {
+      "enum": [
+        "stepaudio-2.5-tts",
+        "step-tts-2",
+        "step-tts-mini",
+        "stepaudio-2.5-asr",
+        "step-asr",
+        "stepaudio-3-asr-max",
+        "stepaudio-2-asr-pro",
+        "stepaudio-3-gen-preview"
+      ]
+    },
+    "submission_outcome": {
+      "enum": [
+        "accepted",
+        "not_submitted",
+        "unknown",
+        "rejected"
+      ]
+    },
+    "next_step": {
+      "enum": [
+        "done",
+        "deliver",
+        "await_user"
+      ]
+    },
+    "delivery_status": {
+      "const": "downloaded"
+    },
+    "artifact": {
+      "type": "object",
+      "required": [
+        "path",
+        "sha256",
+        "bytes",
+        "media_type"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "^(?:/|[A-Za-z]:[\\\\/]|\\\\\\\\)[^\\u0000]+$(?![\\s\\S])"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$(?![\\s\\S])"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16777216
+        },
+        "media_type": {
+          "enum": [
+            "audio/mpeg",
+            "audio/wav"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "result": {
+      "type": "object",
+      "required": [
+        "text"
+      ],
+      "properties": {
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100000,
+          "pattern": "\\S"
+        }
+      },
+      "additionalProperties": false
+    },
+    "support": {
+      "$ref": "support-summary.schema.json"
+    },
+    "failure_phase": {
+      "enum": [
+        "validation",
+        "submission",
+        "content"
+      ]
+    },
+    "local_error_code": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]+$"
+    },
+    "http_status": {
+      "type": "integer",
+      "minimum": 100,
+      "maximum": 599
+    },
+    "api_error_code": {
+      "type": "string"
+    },
+    "error_message": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000,
+      "pattern": "\\S"
+    },
+    "next_action": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000,
+      "pattern": "\\S"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "ok": {
+            "const": true
+          }
+        }
+      },
+      "then": {
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "failure_phase"
+              ]
+            },
+            {
+              "required": [
+                "local_error_code"
+              ]
+            },
+            {
+              "required": [
+                "error_message"
+              ]
+            },
+            {
+              "required": [
+                "next_action"
+              ]
+            }
+          ]
+        },
+        "oneOf": [
+          {
+            "required": [
+              "operation",
+              "model",
+              "result"
+            ],
+            "properties": {
+              "command": {
+                "const": "audio"
+              },
+              "operation": {
+                "const": "transcribe"
+              },
+              "next_step": {
+                "const": "done"
+              },
+              "submission_outcome": {
+                "const": "accepted"
+              }
+            },
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "artifact"
+                  ]
+                },
+                {
+                  "required": [
+                    "delivery_status"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "required": [
+              "operation",
+              "model",
+              "artifact",
+              "delivery_status"
+            ],
+            "properties": {
+              "command": {
+                "const": "audio"
+              },
+              "operation": {
+                "enum": [
+                  "speech",
+                  "generate"
+                ]
+              },
+              "next_step": {
+                "const": "deliver"
+              },
+              "submission_outcome": {
+                "const": "accepted"
+              }
+            },
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "result"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "required": [
+              "artifact",
+              "delivery_status"
+            ],
+            "properties": {
+              "command": {
+                "const": "audio-verify"
+              },
+              "next_step": {
+                "const": "deliver"
+              },
+              "submission_outcome": {
+                "const": "not_submitted"
+              }
+            },
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "operation"
+                  ]
+                },
+                {
+                  "required": [
+                    "model"
+                  ]
+                },
+                {
+                  "required": [
+                    "result"
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "else": {
+        "required": [
+          "failure_phase",
+          "local_error_code",
+          "error_message",
+          "next_action"
+        ],
+        "properties": {
+          "next_step": {
+            "const": "await_user"
+          }
+        },
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "artifact"
+              ]
+            },
+            {
+              "required": [
+                "result"
+              ]
+            },
+            {
+              "required": [
+                "delivery_status"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "audio-verify"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "submission_outcome": {
+            "const": "not_submitted"
+          }
+        },
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "http_status"
+              ]
+            },
+            {
+              "required": [
+                "api_error_code"
+              ]
+            },
+            {
+              "required": [
+                "operation"
+              ]
+            },
+            {
+              "required": [
+                "model"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "failure_phase": {
+            "const": "validation"
+          }
+        },
+        "required": [
+          "failure_phase"
+        ]
+      },
+      "then": {
+        "properties": {
+          "submission_outcome": {
+            "const": "not_submitted"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "failure_phase": {
+            "const": "content"
+          }
+        },
+        "required": [
+          "failure_phase"
+        ]
+      },
+      "then": {
+        "properties": {
+          "submission_outcome": {
+            "const": "accepted"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "failure_phase": {
+            "const": "submission"
+          }
+        },
+        "required": [
+          "failure_phase"
+        ]
+      },
+      "then": {
+        "properties": {
+          "submission_outcome": {
+            "enum": [
+              "unknown",
+              "rejected"
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false
+}
